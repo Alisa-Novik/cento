@@ -1,0 +1,13 @@
+scripts/__pycache__/
+*.pyc
+
+workspace/inbox/*
+!workspace/inbox/.gitkeep
+
+workspace/runs/*
+!workspace/runs/.gitkeep
+
+workspace/tmp/*
+!workspace/tmp/.gitkeep
+
+logs/*
