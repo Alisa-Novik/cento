@@ -15,9 +15,10 @@ from pathlib import Path
 from typing import Any
 
 
-DEFAULT_REMOTE = "alice@127.0.0.1"
 DEFAULT_JUMP = "opc@129.213.17.199"
 DEFAULT_REMOTE_PORT = "2222"
+DEFAULT_LINUX_SOCKET = "/tmp/cento-linux.sock"
+DEFAULT_MAC_SOCKET = "/tmp/cento-mac.sock"
 
 
 def parse_args() -> argparse.Namespace:
@@ -26,9 +27,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--json", action="store_true", help="Emit JSON instead of Markdown.")
     parser.add_argument("--output", help="Write output to this path.")
     parser.add_argument("--no-remote", action="store_true", help="Skip SSH remote-node checks.")
-    parser.add_argument("--remote", default=DEFAULT_REMOTE, help=f"Remote user/host. Default: {DEFAULT_REMOTE}")
+    parser.add_argument("--remote", help="Remote user/host. Defaults to the opposite Cento node.")
     parser.add_argument("--jump", default=DEFAULT_JUMP, help=f"ProxyJump host. Default: {DEFAULT_JUMP}")
     parser.add_argument("--remote-port", default=DEFAULT_REMOTE_PORT, help=f"Remote SSH port. Default: {DEFAULT_REMOTE_PORT}")
+    parser.add_argument("--remote-socket", help="VM Unix socket for secure mesh mode. Defaults to the opposite Cento node socket.")
+    parser.add_argument("--tcp", action="store_true", help="Use the legacy VM TCP/ProxyJump path instead of Unix socket mesh.")
     parser.add_argument("--timeout", type=int, default=8, help="Per-command timeout in seconds.")
     return parser.parse_args()
 
@@ -160,15 +163,27 @@ def local_context(root: Path, timeout: int) -> dict[str, Any]:
     }
 
 
-def remote_context(remote: str, jump: str, port: str, timeout: int) -> dict[str, Any]:
+def default_remote_for_platform(local_platform: str) -> tuple[str, str, str]:
+    if local_platform == "linux":
+        return "anovik-air@cento-mac", DEFAULT_MAC_SOCKET, "/Users/anovik-air/bin/cento gather-context --no-remote | head -90"
+    return "alice@cento-linux", DEFAULT_LINUX_SOCKET, '/home/alice/bin/cento gather-context --no-remote | head -90'
+
+
+def remote_context(remote: str, jump: str, port: str, socket_path: str, use_tcp: bool, timeout: int) -> dict[str, Any]:
     remote_script = r'''
 set -eu
 printf 'hostname=%s\n' "$(hostname)"
 printf 'user=%s\n' "$(whoami)"
 printf 'home=%s\n' "$HOME"
+repo=""
 if [ -d "$HOME/projects/cento/.git" ]; then
-  printf 'repo=%s\n' "$HOME/projects/cento"
-  git -C "$HOME/projects/cento" status --short --branch | head -1 | sed 's/^/git_status=/'
+  repo="$HOME/projects/cento"
+elif [ -d "$HOME/cento/.git" ]; then
+  repo="$HOME/cento"
+fi
+if [ -n "$repo" ]; then
+  printf 'repo=%s\n' "$repo"
+  git -C "$repo" status --short --branch | head -1 | sed 's/^/git_status=/'
 else
   printf 'repo=missing\n'
 fi
@@ -196,21 +211,36 @@ else
   printf 'cmd_fd=\n'
 fi
 '''
-    cmd = [
-        "ssh",
-        "-o",
-        "BatchMode=yes",
-        "-o",
-        "StrictHostKeyChecking=accept-new",
-        "-o",
-        f"ConnectTimeout={timeout}",
-        "-J",
-        jump,
-        "-p",
-        port,
-        remote,
-        remote_script,
-    ]
+    if use_tcp:
+        cmd = [
+            "ssh",
+            "-o",
+            "BatchMode=yes",
+            "-o",
+            "StrictHostKeyChecking=accept-new",
+            "-o",
+            f"ConnectTimeout={timeout}",
+            "-J",
+            jump,
+            "-p",
+            port,
+            remote,
+            remote_script,
+        ]
+    else:
+        cmd = [
+            "ssh",
+            "-o",
+            "BatchMode=yes",
+            "-o",
+            "StrictHostKeyChecking=accept-new",
+            "-o",
+            f"ConnectTimeout={timeout}",
+            "-o",
+            f"ProxyCommand=ssh {jump} nc -U {socket_path}",
+            remote,
+            remote_script,
+        ]
     result = run(cmd, timeout=timeout + 2)
     parsed: dict[str, str] = {}
     if result["stdout"]:
@@ -218,7 +248,7 @@ fi
             if "=" in line:
                 key, value = line.split("=", 1)
                 parsed[key] = value
-    return {"connection": {"remote": remote, "jump": jump, "port": port}, "raw": result, "parsed": parsed}
+    return {"connection": {"remote": remote, "jump": jump, "port": port, "socket": socket_path, "transport": "tcp" if use_tcp else "socket"}, "raw": result, "parsed": parsed}
 
 
 def render_markdown(payload: dict[str, Any]) -> str:
@@ -266,7 +296,10 @@ def render_markdown(payload: dict[str, Any]) -> str:
         lines.extend(["", "## Remote Node", ""])
         parsed = remote.get("parsed", {})
         raw = remote.get("raw", {})
-        lines.append(f"- ssh: `{remote['connection']['remote']}` via `{remote['connection']['jump']}` port `{remote['connection']['port']}`")
+        if remote["connection"].get("transport") == "socket":
+            lines.append(f"- ssh: `{remote['connection']['remote']}` via `{remote['connection']['jump']}` socket `{remote['connection']['socket']}`")
+        else:
+            lines.append(f"- ssh: `{remote['connection']['remote']}` via `{remote['connection']['jump']}` port `{remote['connection']['port']}`")
         lines.append(f"- status: `{raw.get('returncode')}`")
         for key in ["hostname", "user", "home", "repo", "git_status", "cento", "cento_help"]:
             if key in parsed:
@@ -294,7 +327,11 @@ def main() -> int:
         "local": local_context(root, args.timeout),
     }
     if not args.no_remote:
-        payload["remote"] = remote_context(args.remote, args.jump, args.remote_port, args.timeout)
+        local_platform = payload["local"]["host"]["platform"]
+        default_remote, default_socket, _default_command = default_remote_for_platform(local_platform)
+        remote = args.remote or default_remote
+        socket_path = args.remote_socket or default_socket
+        payload["remote"] = remote_context(remote, args.jump, args.remote_port, socket_path, args.tcp, args.timeout)
 
     text = json.dumps(payload, indent=2) + "\n" if args.json else render_markdown(payload)
     if args.output:
