@@ -40,8 +40,10 @@ Commands:
   from-mac       Run a default or provided command on the Linux node from the Mac
   expose-linux   Expose this Linux node on the VM as a Unix socket
   expose-mac     Start user-level Mac sshd and expose this Mac as a VM Unix socket
-  to-linux       Run a command on the Linux node through the VM Unix socket
-  to-mac         Run a command on the Mac node through the VM Unix socket
+  to-linux       Open a shell on the Linux node through the VM Unix socket
+  to-mac         Open a shell on the Mac node through the VM Unix socket
+  context-linux  Print Linux node gather-context through the VM Unix socket
+  context-mac    Print Mac node gather-context through the VM Unix socket
   mesh-status    Show VM-side Cento Unix sockets
   command        Print the local tunnel command
   mac-command    Print the Mac command for connecting through the VM
@@ -68,6 +70,8 @@ Examples:
   cento bridge expose-mac
   cento bridge to-linux
   cento bridge to-mac
+  cento bridge context-linux
+  cento bridge context-mac
   cento bridge from-mac
   cento bridge from-mac -- 'cd "$HOME/projects/cento" && ./scripts/cento.sh platforms linux'
   cento bridge mac-command
@@ -305,6 +309,14 @@ run_via_socket() {
         "$remote_command"
 }
 
+open_shell_via_socket() {
+    local vm_user=$1 vm_host=$2 socket_path=$3 target_user=$4 host_alias=$5
+    exec ssh \
+        -o StrictHostKeyChecking=accept-new \
+        -o ProxyCommand="ssh ${vm_user}@${vm_host} nc -U ${socket_path}" \
+        "${target_user}@${host_alias}"
+}
+
 mesh_status() {
     local vm_user=$1 vm_host=$2
     ssh -o StrictHostKeyChecking=accept-new "${vm_user}@${vm_host}" 'ls -l /tmp/cento-*.sock 2>/dev/null || true'
@@ -452,11 +464,27 @@ main() {
             ;;
         to-linux)
             cento_require_cmd ssh
-            run_via_socket "$vm_user" "$vm_host" "$DEFAULT_LINUX_SOCKET" "$local_user" "cento-linux" 'cd "$HOME/projects/cento" && ./scripts/cento.sh gather-context --no-remote | head -90' "${passthrough[@]}"
+            if [[ ${#passthrough[@]} -gt 0 ]]; then
+                run_via_socket "$vm_user" "$vm_host" "$DEFAULT_LINUX_SOCKET" "$local_user" "cento-linux" "" "${passthrough[@]}"
+            else
+                open_shell_via_socket "$vm_user" "$vm_host" "$DEFAULT_LINUX_SOCKET" "$local_user" "cento-linux"
+            fi
             ;;
         to-mac)
             cento_require_cmd ssh
-            run_via_socket "$vm_user" "$vm_host" "$DEFAULT_MAC_SOCKET" "$mac_user" "cento-mac" "$HOME/bin/cento gather-context --no-remote | head -90" "${passthrough[@]}"
+            if [[ ${#passthrough[@]} -gt 0 ]]; then
+                run_via_socket "$vm_user" "$vm_host" "$DEFAULT_MAC_SOCKET" "$mac_user" "cento-mac" "" "${passthrough[@]}"
+            else
+                open_shell_via_socket "$vm_user" "$vm_host" "$DEFAULT_MAC_SOCKET" "$mac_user" "cento-mac"
+            fi
+            ;;
+        context-linux)
+            cento_require_cmd ssh
+            run_via_socket "$vm_user" "$vm_host" "$DEFAULT_LINUX_SOCKET" "$local_user" "cento-linux" 'cd "$HOME/projects/cento" && ./scripts/cento.sh gather-context --no-remote | head -90'
+            ;;
+        context-mac)
+            cento_require_cmd ssh
+            run_via_socket "$vm_user" "$vm_host" "$DEFAULT_MAC_SOCKET" "$mac_user" "cento-mac" "$HOME/bin/cento gather-context --no-remote | head -90"
             ;;
         mesh-status)
             cento_require_cmd ssh

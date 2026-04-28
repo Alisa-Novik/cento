@@ -54,6 +54,8 @@
   - `cento bridge mesh-status`
   - `cento bridge to-linux -- 'cd "$HOME/projects/cento" && ./scripts/cento.sh gather-context --no-remote | head -90'`
   - `cento bridge to-mac -- '/Users/anovik-air/bin/cento gather-context --no-remote | head -90'`
+  - `cento bridge context-linux`
+  - `cento bridge context-mac`
 
 ## Daily Execution Support
 

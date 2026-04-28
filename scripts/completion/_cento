@@ -111,8 +111,10 @@ _cento() {
               'check[Validate local and remote bridge context]' \
               'expose-linux[Expose this Linux node as a VM Unix socket]' \
               'expose-mac[Expose this Mac node as a VM Unix socket]' \
-              'to-linux[Run a command on the Linux node via VM Unix socket]' \
-              'to-mac[Run a command on the Mac node via VM Unix socket]' \
+              'to-linux[Open a shell on the Linux node via VM Unix socket]' \
+              'to-mac[Open a shell on the Mac node via VM Unix socket]' \
+              'context-linux[Print Linux node gather-context via VM Unix socket]' \
+              'context-mac[Print Mac node gather-context via VM Unix socket]' \
               'mesh-status[Show VM-side Cento Unix sockets]' \
               'from-mac[Run a command on the Linux node through the VM]' \
               'command[Print local tunnel command]' \
