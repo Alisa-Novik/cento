@@ -12,7 +12,8 @@ DEFAULT_REMOTE_BIND="127.0.0.1"
 DEFAULT_REMOTE_PORT="2222"
 DEFAULT_LOCAL_HOST="127.0.0.1"
 DEFAULT_LOCAL_PORT="22"
-DEFAULT_LOCAL_USER="${USER:-alice}"
+DEFAULT_LOCAL_USER="${CENTO_BRIDGE_TARGET_USER:-alice}"
+DEFAULT_REMOTE_CENTO_ROOT='$HOME/projects/cento'
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/cento"
 PID_FILE="$STATE_DIR/bridge.pid"
 LOG_FILE="$STATE_DIR/bridge.log"
@@ -27,6 +28,8 @@ Commands:
   stop           Stop the background tunnel started by cento bridge
   restart        Stop and start the background tunnel
   status         Show tunnel status and connection commands
+  check          Validate local repo and remote Mac-through-VM access
+  from-mac       Run a default or provided command on the Linux node from the Mac
   command        Print the local tunnel command
   mac-command    Print the Mac command for connecting through the VM
   docs           Print bridge notes
@@ -39,13 +42,16 @@ Options:
   --remote-bind ADDRESS   VM bind address (default: 127.0.0.1)
   --local-host ADDRESS    Local target address (default: 127.0.0.1)
   --local-port PORT       Local target port (default: 22)
-  --local-user USER       User Mac should SSH into on this machine (default: current user)
+  --local-user USER       User Mac should SSH into on the Linux node (default: alice)
   --public                Bind remote tunnel to 0.0.0.0; requires VM sshd GatewayPorts/firewall
   -h, --help              Show this help
 
 Examples:
   cento bridge start
   cento bridge status
+  cento bridge check
+  cento bridge from-mac
+  cento bridge from-mac -- 'cd "$HOME/projects/cento" && ./scripts/cento.sh platforms linux'
   cento bridge mac-command
   cento bridge foreground
 USAGE
@@ -124,6 +130,71 @@ print_status() {
     printf 'Log: %s\n' "$LOG_FILE"
 }
 
+run_check() {
+    local vm_user=$1 vm_host=$2 remote_port=$3 local_user=$4
+    local repo_dir=${CENTO_ROOT:-$(cd -- "$SCRIPT_DIR/.." && pwd)}
+
+    printf 'Bridge check\n'
+    printf 'local_host: %s\n' "$(hostname 2>/dev/null || true)"
+    printf 'local_repo: %s\n' "$repo_dir"
+
+    if [[ -d "$repo_dir/.git" ]]; then
+        printf 'local_git: '
+        git -C "$repo_dir" status --short --branch | head -1
+    else
+        printf 'local_git: missing\n'
+    fi
+
+    printf 'local_cento: '
+    if command -v cento >/dev/null 2>&1; then
+        command -v cento
+    elif [[ -x "$HOME/bin/cento" ]]; then
+        printf '%s\n' "$HOME/bin/cento"
+    else
+        printf 'missing\n'
+    fi
+
+    local -a remote_cmd=(
+        ssh
+        -o BatchMode=yes
+        -o StrictHostKeyChecking=accept-new
+        -o ConnectTimeout=8
+        -J "${vm_user}@${vm_host}"
+        -p "$remote_port"
+        "${local_user}@127.0.0.1"
+        'hostname; test -d "$HOME/projects/cento/.git" && git -C "$HOME/projects/cento" status --short --branch | head -1; if command -v cento >/dev/null 2>&1; then command -v cento; cento --help | head -1; elif test -x "$HOME/bin/cento"; then printf "%s\n" "$HOME/bin/cento"; "$HOME/bin/cento" --help | head -1; else printf "cento missing\n"; exit 1; fi'
+    )
+
+    printf 'remote_command: '
+    print_mac_command "$vm_user" "$vm_host" "$remote_port" "$local_user"
+    printf 'remote_check:\n'
+    if "${remote_cmd[@]}"; then
+        printf 'remote_status: ok\n'
+    else
+        printf 'remote_status: failed\n'
+        return 1
+    fi
+}
+
+run_from_mac() {
+    local vm_user=$1 vm_host=$2 remote_port=$3 local_user=$4
+    shift 4
+
+    local remote_command
+    if [[ $# -gt 0 ]]; then
+        remote_command="$*"
+    else
+        remote_command="cd $DEFAULT_REMOTE_CENTO_ROOT && ./scripts/cento.sh gather-context --no-remote | head -90"
+    fi
+
+    exec ssh \
+        -o StrictHostKeyChecking=accept-new \
+        -J "${vm_user}@${vm_host}" \
+        -p "$remote_port" \
+        "${local_user}@127.0.0.1" \
+        "$remote_command"
+}
+
 docs() {
     cat <<'DOCS'
 cento bridge creates a reverse SSH tunnel from this machine to the OCI VM.
@@ -154,6 +225,9 @@ main() {
     if [[ $# -gt 0 ]]; then
         shift
     fi
+    if [[ "$command" == "--from-mac" ]]; then
+        command="from-mac"
+    fi
 
     local vm_user=$DEFAULT_VM_USER
     local vm_host=$DEFAULT_VM_HOST
@@ -163,9 +237,15 @@ main() {
     local local_host=$DEFAULT_LOCAL_HOST
     local local_port=$DEFAULT_LOCAL_PORT
     local local_user=$DEFAULT_LOCAL_USER
+    local -a passthrough=()
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
+            --)
+                shift
+                passthrough=("$@")
+                break
+                ;;
             --vm-host)
                 vm_host=${2:-}
                 shift 2
@@ -207,6 +287,10 @@ main() {
                 return 0
                 ;;
             *)
+                if [[ "$command" == "from-mac" ]]; then
+                    passthrough=("$@")
+                    break
+                fi
                 cento_die "Unknown option: $1"
                 ;;
         esac
@@ -229,6 +313,15 @@ main() {
             ;;
         status)
             print_status "$vm_user" "$vm_host" "$remote_bind" "$remote_port" "$local_host" "$local_port" "$local_user"
+            ;;
+        check)
+            cento_require_cmd ssh
+            cento_require_cmd git
+            run_check "$vm_user" "$vm_host" "$remote_port" "$local_user"
+            ;;
+        from-mac)
+            cento_require_cmd ssh
+            run_from_mac "$vm_user" "$vm_host" "$remote_port" "$local_user" "${passthrough[@]}"
             ;;
         start)
             cento_require_cmd ssh

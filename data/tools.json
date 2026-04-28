@@ -25,7 +25,11 @@
         "cento conf --path",
         "cento completion zsh",
         "cento install zsh",
-        "cento run scan --query \"mcp\""
+        "cento run scan --query \"mcp\"",
+        "cento platforms",
+        "cento platforms macos",
+        "cento platforms linux",
+        "cento platforms --markdown"
       ],
       "outputs": [
         "~/.config/cento/aliases.sh"
@@ -34,7 +38,8 @@
         "Canonical built-in docs live in data/cento-cli.json.",
         "Use cento interactive for the Bubble Tea terminal browser of built-ins, tools, and aliases.",
         "Use cento docs for the non-interactive JSON-backed docs path.",
-        "Combined aliases can chain multiple cento subcommands through bash -lc."
+        "Combined aliases can chain multiple cento subcommands through bash -lc.",
+        "Use cento platforms to compare declared macOS and Linux support."
       ],
       "doc_json": "data/cento-cli.json",
       "subcommands": [
@@ -172,7 +177,11 @@
         "cento bridge foreground",
         "cento bridge command",
         "cento bridge mac-command",
-        "cento bridge docs"
+        "cento bridge docs",
+        "cento bridge check",
+        "cento bridge from-mac",
+        "cento bridge --from-mac",
+        "cento bridge from-mac -- 'cd \"$HOME/projects/cento\" && ./scripts/cento.sh platforms linux'"
       ],
       "outputs": [
         "~/.local/state/cento/bridge.pid",
@@ -184,7 +193,9 @@
         "Requests a localhost reverse tunnel on the VM: 127.0.0.1:2222 -> this machine 127.0.0.1:22.",
         "Some VM sshd configurations override remote-forward bind addresses; OCI ingress rules still control public reachability.",
         "The Mac connects with ProxyJump through the VM instead of using a public relay port.",
-        "Use --public only after configuring VM sshd GatewayPorts, VM firewall, and OCI ingress rules."
+        "Use --public only after configuring VM sshd GatewayPorts, VM firewall, and OCI ingress rules.",
+        "Use cento bridge check to validate the local repo and Mac-through-VM SSH path.",
+        "`cento bridge from-mac` runs remote gather-context on the Linux node through the OCI ProxyJump path by default."
       ]
     },
     {
@@ -709,6 +720,141 @@
       ],
       "outputs": [
         "docs/tool-index.md"
+      ]
+    },
+    {
+      "id": "platform-report",
+      "name": "Platform Report",
+      "lane": "general ops",
+      "kind": "python",
+      "entrypoint": "./scripts/platform_report.py",
+      "description": "Report declared macOS and Linux support for registered cento tools and generate docs/platform-support.md.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento platforms",
+        "cento platforms macos",
+        "python3 ./scripts/platform_report.py --markdown --output docs/platform-support.md"
+      ],
+      "outputs": [
+        "docs/platform-support.md"
+      ],
+      "notes": [
+        "Reads data/tools.json as the source of truth."
+      ]
+    },
+    {
+      "id": "quick-help-fzf",
+      "name": "Quick Help FZF",
+      "lane": "general ops",
+      "kind": "shell",
+      "entrypoint": "./scripts/quick_help_fzf.sh",
+      "description": "Cross-platform fzf command palette for cento built-ins, tools, and aliases.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento quick-help-fzf",
+        "cento quick-help-fzf --print"
+      ],
+      "outputs": [
+        "selected command execution"
+      ],
+      "notes": [
+        "Use this on macOS; quick-help remains the Linux rofi palette."
+      ]
+    },
+    {
+      "id": "install-macos",
+      "name": "macOS Installer",
+      "lane": "setup",
+      "kind": "shell",
+      "entrypoint": "./scripts/install_macos.sh",
+      "description": "Install local macOS dependencies, wrappers, PATH block, and Zsh integration for cento.",
+      "platforms": [
+        "macos"
+      ],
+      "commands": [
+        "./scripts/install_macos.sh"
+      ],
+      "outputs": [
+        "~/bin/cento",
+        "~/bin/codex-bt-audio-doctor",
+        "~/bin/codex-kitty-theme",
+        "~/.config/cento/init.zsh"
+      ]
+    },
+    {
+      "id": "install-linux",
+      "name": "Linux Installer",
+      "lane": "setup",
+      "kind": "shell",
+      "entrypoint": "./scripts/install_linux.sh",
+      "description": "Install local Linux dependencies, wrappers, PATH block, and Zsh integration for cento.",
+      "platforms": [
+        "linux"
+      ],
+      "commands": [
+        "./scripts/install_linux.sh"
+      ],
+      "outputs": [
+        "~/bin/cento",
+        "~/bin/codex-bt-audio-doctor",
+        "~/bin/codex-kitty-theme",
+        "~/.config/cento/init.zsh"
+      ]
+    },
+    {
+      "id": "gather-context",
+      "name": "Gather Context",
+      "lane": "agent ops",
+      "kind": "python",
+      "entrypoint": "./scripts/gather_context.py",
+      "description": "Gather AI-ready local and remote Cento context including platform support, repo state, command paths, MCP hints, and SSH connectivity.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento gather-context",
+        "cento gather-context --no-remote",
+        "cento gather-context --json",
+        "cento gather-context --output workspace/runs/cento-context.md"
+      ],
+      "outputs": [
+        "stdout Markdown or JSON",
+        "workspace/runs/cento-context.md"
+      ],
+      "notes": [
+        "Use this before cross-node work so agents can reason from current platform, repo, SSH, and tool availability facts."
+      ]
+    },
+    {
+      "id": "network-tui",
+      "name": "Cento Network Monitor",
+      "lane": "agent ops",
+      "kind": "shell",
+      "entrypoint": "./scripts/network_tui.sh",
+      "description": "Platform-agnostic Bubble Tea monitor for local and remote Cento node health, platform support, command paths, repo status, and bridge connectivity.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento network-tui",
+        "cento network-tui --no-remote",
+        "./scripts/network_tui.sh"
+      ],
+      "outputs": [
+        "interactive terminal dashboard",
+        "plain health summary when stdout is not a TTY"
+      ],
+      "notes": [
+        "Uses gather-context as the data source.",
+        "Auto-refreshes every 30 seconds; press r to refresh manually."
       ]
     }
   ]

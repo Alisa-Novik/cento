@@ -9,6 +9,7 @@ ROOT_DIR=$(cd -- "$SCRIPT_DIR/.." && pwd)
 TOOLS_JSON="$ROOT_DIR/data/tools.json"
 CLI_DOCS="$ROOT_DIR/scripts/cento_interactive.py"
 CLI_INTERACTIVE="$ROOT_DIR/scripts/cento_interactive.sh"
+PLATFORM_REPORT="$ROOT_DIR/scripts/platform_report.py"
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/cento"
 CONFIG_FILE="$CONFIG_DIR/aliases.sh"
 CONFIG_TEMPLATE="$ROOT_DIR/templates/cento/aliases.sh"
@@ -32,6 +33,7 @@ Built-ins:
   interactive          Open Bubble Tea docs and command browser
   docs [ENTRY]         Print CLI docs from the canonical JSON source
   tools                List registered cento tools
+  platforms [PLATFORM] List tool platform support
   aliases              List configured user aliases
   conf [--path]        Open or print the cento config file
   completion zsh       Print Zsh completion for cento
@@ -47,6 +49,8 @@ Examples:
   cento docs
   cento docs conf
   cento tools
+  cento platforms
+  cento platforms macos
   cento aliases
   cento conf
   cento conf --path
@@ -159,6 +163,25 @@ data = json.loads(path.read_text())
 for tool in sorted(data["tools"], key=lambda item: item["id"]):
     print(f"{tool['id']:<22}  {tool['name']:<24}  {tool.get('description', '')}")
 PY
+}
+
+list_platforms() {
+    [[ -f "$PLATFORM_REPORT" ]] || cento_die "Platform report tool missing: $PLATFORM_REPORT"
+    local platform=${1:-}
+    case "$platform" in
+        "")
+            exec python3 "$PLATFORM_REPORT" --registry "$TOOLS_JSON"
+            ;;
+        linux|macos)
+            exec python3 "$PLATFORM_REPORT" --registry "$TOOLS_JSON" --platform "$platform"
+            ;;
+        --markdown)
+            exec python3 "$PLATFORM_REPORT" --registry "$TOOLS_JSON" --markdown
+            ;;
+        *)
+            cento_die "Usage: cento platforms [linux|macos|--markdown]"
+            ;;
+    esac
 }
 
 print_zsh_completion() {
@@ -411,6 +434,9 @@ main() {
             ;;
         tools)
             list_tools
+            ;;
+        platforms)
+            list_platforms "$@"
             ;;
         aliases)
             list_aliases

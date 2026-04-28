@@ -13,6 +13,7 @@ _cento_first_level() {
   builtins=(
     'help:Show cento help'
     'tools:List registered cento tools'
+    'platforms:List tool platform support'
     'aliases:List configured cento aliases'
     'conf:Open or print cento config'
     'completion:Print shell completion'
@@ -48,6 +49,9 @@ _cento() {
           ;;
         completion)
           _values 'shell' zsh
+          ;;
+        platforms)
+          _values 'platform' linux macos --markdown
           ;;
         install)
           _values 'target' zsh
@@ -104,6 +108,8 @@ _cento() {
               'stop[Stop background tunnel]' \
               'restart[Restart background tunnel]' \
               'status[Show bridge status]' \
+              'check[Validate local and remote bridge context]' \
+              'from-mac[Run a command on the Linux node through the VM]' \
               'command[Print local tunnel command]' \
               'mac-command[Print Mac connection command]' \
               'docs[Print bridge notes]'

@@ -91,7 +91,8 @@ init_logging() {
 }
 
 list_custom_themes() {
-    find "$THEME_SOURCE_DIR" -maxdepth 1 -type f -name '*.conf' -printf '%f\n' \
+    find "$THEME_SOURCE_DIR" -maxdepth 1 -type f -name '*.conf' \
+        | while IFS= read -r theme_file; do basename "$theme_file"; done \
         | sed 's/\.conf$//' \
         | sort
 }

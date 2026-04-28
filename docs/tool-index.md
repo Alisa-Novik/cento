@@ -22,6 +22,10 @@
   - `cento completion zsh`
   - `cento install zsh`
   - `cento run scan --query "mcp"`
+  - `cento platforms`
+  - `cento platforms macos`
+  - `cento platforms linux`
+  - `cento platforms --markdown`
 
 ## OCI SSH Bridge
 
@@ -39,6 +43,10 @@
   - `cento bridge command`
   - `cento bridge mac-command`
   - `cento bridge docs`
+  - `cento bridge check`
+  - `cento bridge from-mac`
+  - `cento bridge --from-mac`
+  - `cento bridge from-mac -- 'cd "$HOME/projects/cento" && ./scripts/cento.sh platforms linux'`
 
 ## Daily Execution Support
 
@@ -304,3 +312,71 @@
 - description: Generate a Markdown tool index from the central registry.
 - commands:
   - `python3 ./scripts/tool_index.py --registry data/tools.json --output docs/tool-index.md`
+
+## Platform Report
+
+- `id`: `platform-report`
+- `lane`: `general ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/platform_report.py`
+- description: Report declared macOS and Linux support for registered cento tools and generate docs/platform-support.md.
+- commands:
+  - `cento platforms`
+  - `cento platforms macos`
+  - `python3 ./scripts/platform_report.py --markdown --output docs/platform-support.md`
+
+## Quick Help FZF
+
+- `id`: `quick-help-fzf`
+- `lane`: `general ops`
+- `kind`: `shell`
+- `entrypoint`: `./scripts/quick_help_fzf.sh`
+- description: Cross-platform fzf command palette for cento built-ins, tools, and aliases.
+- commands:
+  - `cento quick-help-fzf`
+  - `cento quick-help-fzf --print`
+
+## macOS Installer
+
+- `id`: `install-macos`
+- `lane`: `setup`
+- `kind`: `shell`
+- `entrypoint`: `./scripts/install_macos.sh`
+- description: Install local macOS dependencies, wrappers, PATH block, and Zsh integration for cento.
+- commands:
+  - `./scripts/install_macos.sh`
+
+## Linux Installer
+
+- `id`: `install-linux`
+- `lane`: `setup`
+- `kind`: `shell`
+- `entrypoint`: `./scripts/install_linux.sh`
+- description: Install local Linux dependencies, wrappers, PATH block, and Zsh integration for cento.
+- commands:
+  - `./scripts/install_linux.sh`
+
+## Gather Context
+
+- `id`: `gather-context`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/gather_context.py`
+- description: Gather AI-ready local and remote Cento context including platform support, repo state, command paths, MCP hints, and SSH connectivity.
+- commands:
+  - `cento gather-context`
+  - `cento gather-context --no-remote`
+  - `cento gather-context --json`
+  - `cento gather-context --output workspace/runs/cento-context.md`
+
+## Cento Network Monitor
+
+- `id`: `network-tui`
+- `lane`: `agent ops`
+- `kind`: `shell`
+- `entrypoint`: `./scripts/network_tui.sh`
+- description: Platform-agnostic Bubble Tea monitor for local and remote Cento node health, platform support, command paths, repo status, and bridge connectivity.
+- commands:
+  - `cento network-tui`
+  - `cento network-tui --no-remote`
+  - `./scripts/network_tui.sh`
