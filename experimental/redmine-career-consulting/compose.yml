@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cento-redmine-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${REDMINE_DB:-redmine}
+      POSTGRES_USER: ${REDMINE_DB_USER:-redmine}
+      POSTGRES_PASSWORD: ${REDMINE_DB_PASSWORD:?set REDMINE_DB_PASSWORD in .env}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${REDMINE_DB_USER:-redmine} -d ${REDMINE_DB:-redmine}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redmine:
+    image: redmine:6.0
+    container_name: cento-redmine
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${REDMINE_PORT:-47874}:3000"
+    environment:
+      REDMINE_DB_POSTGRES: postgres
+      REDMINE_DB_DATABASE: ${REDMINE_DB:-redmine}
+      REDMINE_DB_USERNAME: ${REDMINE_DB_USER:-redmine}
+      REDMINE_DB_PASSWORD: ${REDMINE_DB_PASSWORD:?set REDMINE_DB_PASSWORD in .env}
+      REDMINE_SECRET_KEY_BASE: ${REDMINE_SECRET_KEY_BASE:?set REDMINE_SECRET_KEY_BASE in .env}
+    volumes:
+      - ./data/redmine/files:/usr/src/redmine/files
+      - ./plugins:/usr/src/redmine/plugins
+      - ./themes:/usr/src/redmine/public/themes

@@ -1,0 +1,137 @@
+{
+  "name": "cento",
+  "summary": "Unified cento CLI facade for built-ins, tool dispatch, alias dispatch, shell integration, and terminal help browsing.",
+  "usage": "cento <command> [args...]",
+  "notes": [
+    "Registered tools can be invoked directly as `cento TOOL [args...]`.",
+    "Configured aliases can be invoked directly as `cento ALIAS [args...]`.",
+    "Use `cento docs` or `cento interactive` when you need the built-in command surface explained from the canonical JSON source."
+  ],
+  "routing": [
+    {
+      "name": "tool-routing",
+      "usage": "cento TOOL [args...]",
+      "summary": "Run a registered tool directly by id."
+    },
+    {
+      "name": "alias-routing",
+      "usage": "cento ALIAS [args...]",
+      "summary": "Run a configured alias directly from `~/.config/cento/aliases.sh`."
+    }
+  ],
+  "commands": [
+    {
+      "name": "help",
+      "summary": "Show root cento CLI help.",
+      "usage": "cento help",
+      "flags": [
+        {
+          "name": "-h, --help",
+          "summary": "Show root CLI help without naming the `help` subcommand.",
+          "usage": "cento --help"
+        }
+      ],
+      "examples": [
+        "cento help",
+        "cento --help"
+      ]
+    },
+    {
+      "name": "interactive",
+      "summary": "Open the Bubble Tea TUI for built-ins, tools, aliases, and docs.",
+      "usage": "cento interactive",
+      "flags": [],
+      "examples": [
+        "cento interactive",
+        "cento interactive --section builtins",
+        "cento interactive --entry conf"
+      ]
+    },
+    {
+      "name": "docs",
+      "summary": "Print cento CLI docs from the canonical JSON source.",
+      "usage": "cento docs [ENTRY] [--json|--path]",
+      "flags": [
+        {
+          "name": "--json",
+          "summary": "Print the raw JSON document.",
+          "usage": "cento docs --json"
+        },
+        {
+          "name": "--path",
+          "summary": "Print the path to the canonical JSON document.",
+          "usage": "cento docs --path"
+        }
+      ],
+      "examples": [
+        "cento docs",
+        "cento docs conf",
+        "cento docs --json",
+        "cento docs --path"
+      ]
+    },
+    {
+      "name": "tools",
+      "summary": "List registered cento tools from the tool registry.",
+      "usage": "cento tools",
+      "flags": [],
+      "examples": [
+        "cento tools"
+      ]
+    },
+    {
+      "name": "aliases",
+      "summary": "List configured user aliases.",
+      "usage": "cento aliases",
+      "flags": [],
+      "examples": [
+        "cento aliases"
+      ]
+    },
+    {
+      "name": "conf",
+      "summary": "Open or print the cento alias config file.",
+      "usage": "cento conf [--path]",
+      "flags": [
+        {
+          "name": "--path",
+          "summary": "Print the config path instead of opening it in an editor.",
+          "usage": "cento conf --path"
+        }
+      ],
+      "examples": [
+        "cento conf",
+        "cento conf --path"
+      ]
+    },
+    {
+      "name": "completion",
+      "summary": "Print shell completion for a supported shell.",
+      "usage": "cento completion zsh",
+      "flags": [],
+      "examples": [
+        "cento completion zsh"
+      ]
+    },
+    {
+      "name": "install",
+      "summary": "Install cento shell integration for a supported shell.",
+      "usage": "cento install [zsh]",
+      "flags": [],
+      "examples": [
+        "cento install",
+        "cento install zsh"
+      ]
+    },
+    {
+      "name": "run",
+      "summary": "Run a registered tool by id.",
+      "usage": "cento run TOOL [args...]",
+      "flags": [],
+      "examples": [
+        "cento run scan --query \"mcp\"",
+        "cento run crm docs"
+      ]
+    }
+  ]
+}

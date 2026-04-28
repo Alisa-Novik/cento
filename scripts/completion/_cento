@@ -1,0 +1,128 @@
+#compdef cento
+
+_cento_tool_ids() {
+  command cento tools 2>/dev/null | awk '{print $1}'
+}
+
+_cento_alias_ids() {
+  command cento aliases 2>/dev/null | awk '{print $1}'
+}
+
+_cento_first_level() {
+  local -a builtins tools aliases
+  builtins=(
+    'help:Show cento help'
+    'tools:List registered cento tools'
+    'aliases:List configured cento aliases'
+    'conf:Open or print cento config'
+    'completion:Print shell completion'
+    'install:Install shell integration'
+    'run:Run a registered tool by id'
+  )
+  tools=(${(@f)$(_cento_tool_ids)})
+  aliases=(${(@f)$(_cento_alias_ids)})
+
+  _describe -t cento-builtins 'cento built-ins' builtins
+  (( ${#tools[@]} )) && _describe -t cento-tools 'cento tools' tools
+  (( ${#aliases[@]} )) && _describe -t cento-aliases 'cento aliases' aliases
+}
+
+_cento() {
+  local curcontext="$curcontext" state
+  typeset -A opt_args
+
+  _arguments -C \
+    '1:command:->command' \
+    '*::arg:->args'
+
+  case $state in
+    command)
+      _cento_first_level
+      return
+      ;;
+    args)
+      local subcmd=${words[2]:-}
+      case "$subcmd" in
+        conf)
+          _arguments '--path[Print the cento config path]'
+          ;;
+        completion)
+          _values 'shell' zsh
+          ;;
+        install)
+          _values 'target' zsh
+          ;;
+        run)
+          if (( CURRENT == 3 )); then
+            local -a tools
+            tools=(${(@f)$(_cento_tool_ids)})
+            _describe -t cento-tools 'cento tools' tools
+          fi
+          ;;
+        burp)
+          if (( CURRENT == 3 )); then
+            _values 'burp command' \
+              'download[Download latest official artifact]' \
+              'setup[Install JAR launcher]' \
+              'controller[Control background Burp process]' \
+              'start[Start Burp in background]' \
+              'run[Run Burp in foreground]' \
+              'stop[Stop background Burp process]' \
+              'restart[Restart background Burp process]' \
+              'status[Show setup and process status]' \
+              'logs[Print or follow controller log]' \
+              'paths[Print managed paths]' \
+              'docs[Print Burp wrapper docs]'
+          else
+            case "${words[3]:-}" in
+              download|setup)
+                _arguments \
+                  '--type[Artifact type]:type:(jar linux)' \
+                  '--force[Replace existing local files]' \
+                  '--output-dir[Download directory]:directory:_files -/' \
+                  '--install-dir[Install directory]:directory:_files -/' \
+                  '--bin-dir[Launcher directory]:directory:_files -/'
+                ;;
+              controller|start|run|restart)
+                _arguments \
+                  '--project-file[Burp project file]:file:_files' \
+                  '--config-file[Burp config file]:file:_files' \
+                  '--use-defaults[Skip initial prompts where supported]' \
+                  '--java-opts[Extra JVM options]:options:'
+                ;;
+              logs)
+                _arguments '(-f --follow)'{-f,--follow}'[Follow log output]'
+                ;;
+            esac
+          fi
+          ;;
+        bridge)
+          if (( CURRENT == 3 )); then
+            _values 'bridge command' \
+              'start[Start background reverse SSH tunnel]' \
+              'foreground[Run reverse SSH tunnel in foreground]' \
+              'stop[Stop background tunnel]' \
+              'restart[Restart background tunnel]' \
+              'status[Show bridge status]' \
+              'command[Print local tunnel command]' \
+              'mac-command[Print Mac connection command]' \
+              'docs[Print bridge notes]'
+          else
+            _arguments \
+              '--vm-host[OCI VM public IP or hostname]:host:' \
+              '--vm-user[OCI VM SSH user]:user:' \
+              '--identity[OCI VM private key]:file:_files' \
+              '--remote-port[VM-side tunnel port]:port:' \
+              '--remote-bind[VM-side bind address]:address:' \
+              '--local-host[Local target address]:address:' \
+              '--local-port[Local target port]:port:' \
+              '--local-user[Local SSH user for Mac command]:user:' \
+              '--public[Bind the VM-side tunnel to 0.0.0.0]'
+          fi
+          ;;
+      esac
+      ;;
+  esac
+}
+
+compdef _cento cento

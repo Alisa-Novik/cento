@@ -7,25 +7,370 @@
       "kind": "shell",
       "entrypoint": "./scripts/cento.sh",
       "wrapper": "~/bin/cento",
-      "description": "Unified cento facade for built-ins, tool dispatch, and user-defined aliases.",
+      "description": "Unified cento facade for built-ins, terminal docs browsing, tool dispatch, and user-defined aliases.",
       "platforms": [
         "linux",
         "macos"
       ],
       "commands": [
-        "./scripts/cento.sh tools",
-        "./scripts/cento.sh aliases",
-        "./scripts/cento.sh conf",
-        "./scripts/cento.sh monk",
-        "./scripts/cento.sh cyber"
+        "cento help",
+        "cento interactive",
+        "cento docs",
+        "cento docs conf",
+        "cento docs --json",
+        "cento docs --path",
+        "cento tools",
+        "cento aliases",
+        "cento conf",
+        "cento conf --path",
+        "cento completion zsh",
+        "cento install zsh",
+        "cento run scan --query \"mcp\""
       ],
       "outputs": [
         "~/.config/cento/aliases.sh"
       ],
       "notes": [
-        "User aliases live in ~/.config/cento/aliases.sh.",
-        "Use cento conf to edit aliases and cento aliases to inspect them.",
+        "Canonical built-in docs live in data/cento-cli.json.",
+        "Use cento interactive for the Bubble Tea terminal browser of built-ins, tools, and aliases.",
+        "Use cento docs for the non-interactive JSON-backed docs path.",
         "Combined aliases can chain multiple cento subcommands through bash -lc."
+      ],
+      "doc_json": "data/cento-cli.json",
+      "subcommands": [
+        {
+          "name": "help",
+          "summary": "Show root cento CLI help.",
+          "usage": "cento help",
+          "flags": [
+            {
+              "name": "-h, --help",
+              "summary": "Show root CLI help without naming the `help` subcommand.",
+              "usage": "cento --help"
+            }
+          ],
+          "examples": [
+            "cento help",
+            "cento --help"
+          ]
+        },
+        {
+          "name": "interactive",
+          "summary": "Open the terminal interactive browser for built-ins, tools, aliases, and docs.",
+          "usage": "cento interactive",
+          "flags": [],
+          "examples": [
+            "cento interactive",
+            "cento interactive --section builtins",
+            "cento interactive --entry conf"
+          ]
+        },
+        {
+          "name": "docs",
+          "summary": "Print cento CLI docs from the canonical JSON source.",
+          "usage": "cento docs [ENTRY] [--json|--path]",
+          "flags": [
+            {
+              "name": "--json",
+              "summary": "Print the raw JSON document.",
+              "usage": "cento docs --json"
+            },
+            {
+              "name": "--path",
+              "summary": "Print the path to the canonical JSON document.",
+              "usage": "cento docs --path"
+            }
+          ],
+          "examples": [
+            "cento docs",
+            "cento docs conf",
+            "cento docs --json",
+            "cento docs --path"
+          ]
+        },
+        {
+          "name": "tools",
+          "summary": "List registered cento tools from the tool registry.",
+          "usage": "cento tools",
+          "flags": [],
+          "examples": [
+            "cento tools"
+          ]
+        },
+        {
+          "name": "aliases",
+          "summary": "List configured user aliases.",
+          "usage": "cento aliases",
+          "flags": [],
+          "examples": [
+            "cento aliases"
+          ]
+        },
+        {
+          "name": "conf",
+          "summary": "Open or print the cento alias config file.",
+          "usage": "cento conf [--path]",
+          "flags": [
+            {
+              "name": "--path",
+              "summary": "Print the config path instead of opening it in an editor.",
+              "usage": "cento conf --path"
+            }
+          ],
+          "examples": [
+            "cento conf",
+            "cento conf --path"
+          ]
+        },
+        {
+          "name": "completion",
+          "summary": "Print shell completion for a supported shell.",
+          "usage": "cento completion zsh",
+          "flags": [],
+          "examples": [
+            "cento completion zsh"
+          ]
+        },
+        {
+          "name": "install",
+          "summary": "Install cento shell integration for a supported shell.",
+          "usage": "cento install [zsh]",
+          "flags": [],
+          "examples": [
+            "cento install",
+            "cento install zsh"
+          ]
+        },
+        {
+          "name": "run",
+          "summary": "Run a registered tool by id.",
+          "usage": "cento run TOOL [args...]",
+          "flags": [],
+          "examples": [
+            "cento run scan --query \"mcp\"",
+            "cento run crm docs"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bridge",
+      "name": "OCI SSH Bridge",
+      "lane": "remote access",
+      "kind": "shell",
+      "entrypoint": "./scripts/bridge.sh",
+      "description": "Create a reverse SSH tunnel through the OCI VM so another machine can SSH back into this host through the VM relay.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento bridge start",
+        "cento bridge status",
+        "cento bridge stop",
+        "cento bridge restart",
+        "cento bridge foreground",
+        "cento bridge command",
+        "cento bridge mac-command",
+        "cento bridge docs"
+      ],
+      "outputs": [
+        "~/.local/state/cento/bridge.pid",
+        "~/.local/state/cento/bridge.log"
+      ],
+      "notes": [
+        "Defaults to the OCI instance opc@129.213.17.199 from instance-20250511-1002.",
+        "Uses ~/.ssh/id_ed25519 as the default private key for that VM.",
+        "Requests a localhost reverse tunnel on the VM: 127.0.0.1:2222 -> this machine 127.0.0.1:22.",
+        "Some VM sshd configurations override remote-forward bind addresses; OCI ingress rules still control public reachability.",
+        "The Mac connects with ProxyJump through the VM instead of using a public relay port.",
+        "Use --public only after configuring VM sshd GatewayPorts, VM firewall, and OCI ingress rules."
+      ]
+    },
+    {
+      "id": "daily",
+      "name": "Daily Execution Support",
+      "lane": "execution",
+      "kind": "shell",
+      "entrypoint": "./scripts/daily_tui.sh",
+      "description": "Bubble Tea execution cockpit for morning brief, midday recalibration, evening wrap-up, and local continuity.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento daily"
+      ],
+      "outputs": [
+        "workspace/runs/daily/history.json"
+      ],
+      "notes": [
+        "Mock brief generation is isolated behind a BriefGenerator interface for later LLM replacement.",
+        "The launcher builds a cached Bubble Tea binary from scripts/daily_tui.go."
+      ]
+    },
+    {
+      "id": "tui",
+      "name": "Telegram TUI",
+      "lane": "communications",
+      "kind": "shell",
+      "entrypoint": "./scripts/telegram_tui.sh",
+      "description": "Bubble Tea Telegram TUI with cached Go launcher, local config, and planned CRM hooks.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento tui",
+        "cento tui status",
+        "cento tui config --path",
+        "cento tui docs",
+        "cento crm integration --provider telegram"
+      ],
+      "outputs": [
+        "~/.config/cento/telegram.json",
+        "workspace/runs/telegram-tui/*.md",
+        "workspace/runs/crm-app/<profile>/integration-telegram.md"
+      ],
+      "notes": [
+        "This tool follows the repo TUI standard in standards/tui.md.",
+        "The launcher builds a cached Bubble Tea binary from scripts/telegram_tui.go.",
+        "CRM integration remains a registered placeholder under cento crm integration."
+      ]
+    },
+    {
+      "id": "crm",
+      "name": "CRM Module",
+      "lane": "career consulting",
+      "kind": "python",
+      "entrypoint": "./scripts/crm_module.py",
+      "description": "Embedded cento CRM with questionnaire bootstrap, career-intake dossiers, local JSON persistence, and a self-hosted no-build SPA.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento crm",
+        "cento crm questionnaire",
+        "cento crm init",
+        "cento crm intake init --person \"Ada Lovelace\"",
+        "cento crm intake add --person \"Ada Lovelace\" --kind resume --file ./resume.pdf",
+        "cento crm intake plan --person \"Ada Lovelace\"",
+        "cento crm integration --provider redmine --person \"Ada Lovelace\" --start-workflow --dry-run",
+        "cento crm serve --open",
+        "cento crm show",
+        "cento crm docs"
+      ],
+      "outputs": [
+        "workspace/runs/crm-questionnaire/<profile>/answers.json",
+        "workspace/runs/crm-questionnaire/<profile>/summary.md",
+        "workspace/runs/crm-app/<profile>/state.json",
+        "workspace/runs/crm-app/latest.json",
+        "workspace/runs/career-intake/<person>/manifest.json",
+        "workspace/runs/career-intake/<person>/artifact-plan.md",
+        "workspace/runs/career-intake/<person>/prompts/*.md",
+        "workspace/runs/career-intake/<person>/artifacts/*.md",
+        "Redmine project and issues via REST API"
+      ],
+      "notes": [
+        "Run cento crm serve to host the local SPA through the cento CLI.",
+        "Run cento crm init to bootstrap app state from the saved questionnaire.",
+        "Run cento crm intake to collect raw candidate inputs and generate a Codex-ready artifact plan.",
+        "Run cento crm integration --provider redmine --start-workflow to create a Redmine workflow from generated artifacts.",
+        "The CRM is a no-build local app backed by JSON persistence."
+      ]
+    },
+    {
+      "id": "burp",
+      "name": "Burp Suite Community",
+      "lane": "security testing",
+      "kind": "shell",
+      "entrypoint": "./scripts/burp_suite_community.sh",
+      "description": "Download, set up, and control PortSwigger Burp Suite Community through cento wrappers.",
+      "platforms": [
+        "linux"
+      ],
+      "commands": [
+        "cento burp download",
+        "cento burp download --type linux",
+        "cento burp setup",
+        "cento burp controller start --use-defaults",
+        "cento burp run -- --help",
+        "cento burp status",
+        "cento burp stop",
+        "cento burp docs"
+      ],
+      "outputs": [
+        "~/.local/share/cento/burp/downloads/*",
+        "~/.local/share/cento/burp/current/burpsuite_community.jar",
+        "~/.local/bin/burp-community",
+        "~/.local/share/cento/burp/install.env",
+        "~/.local/share/cento/burp/burp.pid",
+        "~/.local/share/cento/burp/burp.log"
+      ],
+      "notes": [
+        "Downloads use PortSwigger's official latest Community Edition endpoints.",
+        "The default setup path installs the official JAR and generates a local burp-community launcher.",
+        "Use download --type linux to fetch the official Linux installer for later manual or automated installer work.",
+        "Burp Suite is a GUI application; controller start runs it in the background and records a local PID."
+      ]
+    },
+    {
+      "id": "mcp",
+      "name": "MCP Tooling",
+      "lane": "general ops",
+      "kind": "python",
+      "entrypoint": "./scripts/mcp_tooling.py",
+      "description": "Manage repo-root MCP config, env templates, validation, and tool-call docs.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento mcp doctor",
+        "cento mcp init --write-env",
+        "cento mcp docs",
+        "cento mcp paths"
+      ],
+      "outputs": [
+        ".mcp.json",
+        ".env.mcp.example",
+        ".env.mcp",
+        "mcp/*.md"
+      ],
+      "notes": [
+        "The canonical shared config lives at the repo root in .mcp.json.",
+        "Machine-local secrets should live in environment variables or .env.mcp.",
+        "This tool follows standards/mcp.md."
+      ]
+    },
+    {
+      "id": "scan",
+      "name": "Scan One Pager",
+      "lane": "general ops",
+      "kind": "python",
+      "entrypoint": "./scripts/scan_onepager.py",
+      "description": "Scan cento for a topic and generate an archived HTML one-pager with explanation and snippets.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento scan --query \"mcp\"",
+        "cento scan --query \"telegram\" --no-open",
+        "cento scan --query \"crm\" --case-sensitive",
+        "cento scan --query \"mcp\" --port 47890"
+      ],
+      "outputs": [
+        "workspace/runs/scan-onepager/latest/index.html",
+        "workspace/runs/scan-onepager/latest/summary.json",
+        "workspace/runs/scan-onepager/archive/*",
+        "workspace/runs/scan-onepager/server.json"
+      ],
+      "notes": [
+        "Each run archives the previous latest output before writing the new page.",
+        "The tool starts or reuses a local preview server on a high port and opens the browser by default.",
+        "See docs/scan-onepager.md for the command surface and output model."
       ]
     },
     {
@@ -54,6 +399,79 @@
       ]
     },
     {
+      "id": "audio-quick-connect",
+      "name": "Audio Quick Connect",
+      "lane": "general ops",
+      "kind": "shell",
+      "entrypoint": "./scripts/audio_quick_connect.sh",
+      "description": "Quickly connect a paired Bluetooth audio device by name or address with a short retry path and per-run logs.",
+      "platforms": [
+        "linux"
+      ],
+      "commands": [
+        "./scripts/audio_quick_connect.sh \"Black Diamond\"",
+        "./scripts/audio_quick_connect.sh \"Bose\"",
+        "cento audio-quick-connect \"Black Diamond\""
+      ],
+      "outputs": [
+        "logs/audio-quick-connect/*.log"
+      ],
+      "notes": [
+        "Matches paired devices by exact name, substring, or MAC address.",
+        "Verifies the target advertises Bluetooth audio capabilities before connecting.",
+        "Writes the latest run to logs/audio-quick-connect/latest.log."
+      ]
+    },
+    {
+      "id": "dashboard",
+      "name": "Dashboard",
+      "lane": "general ops",
+      "kind": "python",
+      "entrypoint": "./scripts/dashboard_server.py",
+      "description": "Run a localhost web dashboard with current state, recent cento activity, aliases, tools, and repo progress.",
+      "platforms": [
+        "linux"
+      ],
+      "commands": [
+        "./scripts/dashboard_server.py",
+        "./scripts/dashboard_server.py --open",
+        "./scripts/dashboard_server.py --host 127.0.0.1 --port 46268",
+        "cento dashboard"
+      ],
+      "outputs": [
+        "logs/dashboard/*.log"
+      ],
+      "notes": [
+        "Starts a local HTTP server on 127.0.0.1 by default.",
+        "Shows current theme, wallpaper, audio, displays, recent tool runs, aliases, tools, and git progress.",
+        "Use --open to launch it in your default browser."
+      ]
+    },
+    {
+      "id": "quick-help",
+      "name": "Quick Help",
+      "lane": "general ops",
+      "kind": "shell",
+      "entrypoint": "./scripts/quick_help.sh",
+      "description": "Rofi-based searchable help palette for cento built-ins, tools, and aliases.",
+      "platforms": [
+        "linux"
+      ],
+      "commands": [
+        "./scripts/quick_help.sh",
+        "./scripts/quick_help.sh --show",
+        "cento quick-help"
+      ],
+      "outputs": [
+        "logs/quick-help/*.log"
+      ],
+      "notes": [
+        "Uses rofi when available and follows your existing polybar rofi launcher theme when present.",
+        "Lets you search cento built-ins, registered tools, and aliases from one palette.",
+        "Can run the selected command or copy it to the clipboard."
+      ]
+    },
+    {
       "id": "display-layout-fix",
       "name": "Display Layout Fix",
       "lane": "general ops",
@@ -76,6 +494,35 @@
         "Defaults to using the primary connected output as the top monitor.",
         "Reapplies wallpaper and relaunches polybar after xrandr changes.",
         "i3 startup now calls cento display-layout-fix instead of a hardcoded xrandr --right-of line."
+      ]
+    },
+    {
+      "id": "i3reorg",
+      "name": "i3 Reorg",
+      "lane": "desktop ops",
+      "kind": "shell",
+      "entrypoint": "./scripts/i3reorg.sh",
+      "description": "Move numeric i3 workspaces to the bottom monitor, apply the preferred app map, and optionally place the Abao/Tokyo study YouTube window on top workspace L2 fullscreen.",
+      "platforms": [
+        "linux"
+      ],
+      "commands": [
+        "./scripts/i3reorg.sh",
+        "./scripts/i3reorg.sh --dry-run",
+        "./scripts/i3reorg.sh --bottom-output DP-4.8",
+        "./scripts/i3reorg.sh --study",
+        "cento i3reorg",
+        "cento i3reorg --study",
+        "cento i3reorg --focus 2"
+      ],
+      "outputs": [
+        "i3 workspace moves"
+      ],
+      "notes": [
+        "Detects the active output with the largest y-position as the bottom monitor and moves workspaces 1-5 there before moving windows.",
+        "Study mode targets https://www.youtube.com/watch?v=QYpDQxHfTPk and keeps the matching Firefox YouTube window on top workspace L2 fullscreen. In the i3 key layout, L2 is the left/A workspace and R2 is the right/D workspace.",
+        "Uses i3 criteria against common Firefox, terminal, Discord, and Telegram window classes.",
+        "The Linux-only guardrail is declared through this registry entry and enforced centrally by the cento dispatcher."
       ]
     },
     {
@@ -224,6 +671,26 @@
       ],
       "outputs": [
         "workspace/runs/search-report-*.md"
+      ]
+    },
+    {
+      "id": "rd",
+      "name": "Restart Discord",
+      "lane": "desktop ops",
+      "kind": "shell",
+      "entrypoint": "./scripts/restart_discord.sh",
+      "description": "Terminate and relaunch Discord through the available desktop launcher.",
+      "platforms": [
+        "linux"
+      ],
+      "commands": [
+        "cento rd"
+      ],
+      "outputs": [
+        "stderr status messages"
+      ],
+      "notes": [
+        "Launches via discord, Discord, Flatpak com.discordapp.Discord, or Snap discord."
       ]
     },
     {

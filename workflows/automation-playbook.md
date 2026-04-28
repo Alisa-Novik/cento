@@ -8,3 +8,4 @@ Use this repo as a staging ground for automation:
 4. Add a short usage note to `README.md`.
 5. If the tool emits durable output, write it under `workspace/runs/`.
 6. If the tool should be consumed externally, add or update a shell wrapper.
+7. If the tool is intended for MCP-capable agents, update the repo-root `.mcp.json`, `.env.mcp.example`, and MCP docs.

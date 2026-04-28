@@ -8,12 +8,16 @@ DEVICE ?=
 CMD ?= pwd
 ARGS ?=
 
-.PHONY: check tree index inventory snapshot scaffold batch search bt-audio-doctor kitty-theme wallpaper display cento
+.PHONY: check tree index inventory snapshot scaffold batch search bt-audio-doctor audio-quick-connect kitty-theme wallpaper display i3reorg dashboard bridge quick-help tui crm burp mcp scan cento redmine-e2e
 
 check:
-	$(PYTHON) -m py_compile scripts/bluetooth_audio_doctor.py scripts/tool_index.py
-	$(PYTHON) -c 'import json, pathlib; json.loads(pathlib.Path("data/tools.json").read_text())'
-	bash -n scripts/system_inventory.sh scripts/repo_snapshot.sh scripts/project_scaffold.sh scripts/batch_exec.sh scripts/search_report.sh scripts/kitty_theme_manager.sh scripts/wallpaper_manager.sh scripts/display_layout_fix.sh scripts/cento.sh scripts/lib/common.sh
+	$(PYTHON) -m py_compile scripts/bluetooth_audio_doctor.py scripts/cento_interactive.py scripts/crm_module.py scripts/dashboard_server.py scripts/mcp_tooling.py scripts/scan_onepager.py scripts/tool_index.py
+	go build -o workspace/tmp/cento-interactive-check ./scripts/cento_interactive.go
+	go build -o workspace/tmp/cento-daily-check ./scripts/daily_tui.go
+	go build -o workspace/tmp/telegram-tui-check ./scripts/telegram_tui.go
+	$(PYTHON) -c 'import json, pathlib; json.loads(pathlib.Path("data/tools.json").read_text()); json.loads(pathlib.Path(".mcp.json").read_text())'
+	bash -n scripts/system_inventory.sh scripts/repo_snapshot.sh scripts/project_scaffold.sh scripts/batch_exec.sh scripts/search_report.sh scripts/audio_quick_connect.sh scripts/daily_tui.sh scripts/restart_discord.sh scripts/kitty_theme_manager.sh scripts/wallpaper_manager.sh scripts/display_layout_fix.sh scripts/i3reorg.sh scripts/bridge.sh scripts/redmine_workflow_e2e.sh scripts/dashboard.sh scripts/quick_help.sh scripts/burp_suite_community.sh scripts/cento.sh scripts/lib/common.sh
+	zsh -n scripts/completion/_cento
 
 tree:
 	find . -maxdepth 3 -not -path './.git*' | sort
@@ -39,6 +43,9 @@ search:
 bt-audio-doctor:
 	$(PYTHON) scripts/bluetooth_audio_doctor.py "$(DEVICE)" $(ARGS)
 
+audio-quick-connect:
+	./scripts/audio_quick_connect.sh "$(DEVICE)" $(ARGS)
+
 kitty-theme:
 	./scripts/kitty_theme_manager.sh $(ARGS)
 
@@ -50,3 +57,33 @@ wallpaper:
 
 display:
 	./scripts/display_layout_fix.sh $(ARGS)
+
+i3reorg:
+	./scripts/i3reorg.sh $(ARGS)
+
+dashboard:
+	./scripts/dashboard_server.py $(ARGS)
+
+bridge:
+	./scripts/bridge.sh $(ARGS)
+
+tui:
+	./scripts/telegram_tui.sh $(ARGS)
+
+crm:
+	$(PYTHON) scripts/crm_module.py $(ARGS)
+
+burp:
+	./scripts/burp_suite_community.sh $(ARGS)
+
+quick-help:
+	./scripts/quick_help.sh $(ARGS)
+
+mcp:
+	$(PYTHON) scripts/mcp_tooling.py $(ARGS)
+
+scan:
+	$(PYTHON) scripts/scan_onepager.py --query "$(QUERY)" $(ARGS)
+
+redmine-e2e:
+	./scripts/redmine_workflow_e2e.sh $(ARGS)

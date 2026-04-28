@@ -1,0 +1,323 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+source "$SCRIPT_DIR/lib/common.sh"
+
+DEFAULT_VM_USER="opc"
+DEFAULT_VM_HOST="129.213.17.199"
+DEFAULT_VM_IDENTITY="$HOME/.ssh/id_ed25519"
+DEFAULT_REMOTE_BIND="127.0.0.1"
+DEFAULT_REMOTE_PORT="2222"
+DEFAULT_LOCAL_HOST="127.0.0.1"
+DEFAULT_LOCAL_PORT="22"
+DEFAULT_LOCAL_USER="${USER:-alice}"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/cento"
+PID_FILE="$STATE_DIR/bridge.pid"
+LOG_FILE="$STATE_DIR/bridge.log"
+
+usage() {
+    cat <<'USAGE'
+Usage: cento bridge <command> [options]
+
+Commands:
+  start          Start a background reverse SSH tunnel through the OCI VM
+  foreground     Run the reverse SSH tunnel in the foreground
+  stop           Stop the background tunnel started by cento bridge
+  restart        Stop and start the background tunnel
+  status         Show tunnel status and connection commands
+  command        Print the local tunnel command
+  mac-command    Print the Mac command for connecting through the VM
+  docs           Print bridge notes
+
+Options:
+  --vm-host HOST          OCI VM public IP or hostname (default: 129.213.17.199)
+  --vm-user USER          OCI VM SSH user (default: opc)
+  --identity PATH         Private key for the OCI VM (default: ~/.ssh/id_ed25519)
+  --remote-port PORT      Port opened on the VM side (default: 2222)
+  --remote-bind ADDRESS   VM bind address (default: 127.0.0.1)
+  --local-host ADDRESS    Local target address (default: 127.0.0.1)
+  --local-port PORT       Local target port (default: 22)
+  --local-user USER       User Mac should SSH into on this machine (default: current user)
+  --public                Bind remote tunnel to 0.0.0.0; requires VM sshd GatewayPorts/firewall
+  -h, --help              Show this help
+
+Examples:
+  cento bridge start
+  cento bridge status
+  cento bridge mac-command
+  cento bridge foreground
+USAGE
+}
+
+expand_path() {
+    local value=$1
+    if [[ "$value" == ~* ]]; then
+        printf '%s\n' "${value/#\~/$HOME}"
+        return
+    fi
+    printf '%s\n' "$value"
+}
+
+quote_words() {
+    printf '%q ' "$@"
+    printf '\n'
+}
+
+is_running() {
+    [[ -f "$PID_FILE" ]] || return 1
+    local pid
+    pid=$(<"$PID_FILE")
+    [[ -n "$pid" ]] || return 1
+    kill -0 "$pid" >/dev/null 2>&1
+}
+
+build_ssh_command() {
+    local mode=$1
+    shift
+    local vm_user=$1 vm_host=$2 identity=$3 remote_bind=$4 remote_port=$5 local_host=$6 local_port=$7
+    local -a cmd=(
+        ssh
+        -N
+        -T
+        -o ExitOnForwardFailure=yes
+        -o ServerAliveInterval=30
+        -o ServerAliveCountMax=3
+        -i "$identity"
+        -R "${remote_bind}:${remote_port}:${local_host}:${local_port}"
+        "${vm_user}@${vm_host}"
+    )
+    if [[ "$mode" == "background" ]]; then
+        cmd=(
+            ssh
+            -N
+            -T
+            -o BatchMode=yes
+            -o ExitOnForwardFailure=yes
+            -o ServerAliveInterval=30
+            -o ServerAliveCountMax=3
+            -i "$identity"
+            -R "${remote_bind}:${remote_port}:${local_host}:${local_port}"
+            "${vm_user}@${vm_host}"
+        )
+    fi
+    quote_words "${cmd[@]}"
+}
+
+print_mac_command() {
+    local vm_user=$1 vm_host=$2 remote_port=$3 local_user=$4
+    quote_words ssh -J "${vm_user}@${vm_host}" -p "$remote_port" "${local_user}@127.0.0.1"
+}
+
+print_status() {
+    local vm_user=$1 vm_host=$2 remote_bind=$3 remote_port=$4 local_host=$5 local_port=$6 local_user=$7
+    if is_running; then
+        printf 'Bridge: running (pid %s)\n' "$(<"$PID_FILE")"
+    else
+        printf 'Bridge: stopped\n'
+    fi
+    printf 'VM: %s@%s\n' "$vm_user" "$vm_host"
+    printf 'Requested remote tunnel: %s:%s on VM -> this machine %s:%s\n' "$remote_bind" "$remote_port" "$local_host" "$local_port"
+    printf 'Mac command: '
+    print_mac_command "$vm_user" "$vm_host" "$remote_port" "$local_user"
+    printf 'Log: %s\n' "$LOG_FILE"
+}
+
+docs() {
+    cat <<'DOCS'
+cento bridge creates a reverse SSH tunnel from this machine to the OCI VM.
+
+Default relay:
+  VM: opc@129.213.17.199
+  VM-side tunnel: 127.0.0.1:2222
+  Local target: 127.0.0.1:22
+
+Start the bridge on this machine:
+  cento bridge start
+
+Connect from the Mac while the bridge is running:
+  cento bridge mac-command
+
+The default tunnel requests a localhost bind on the VM. Some VM sshd
+configurations override remote-forward binds to all interfaces; OCI ingress rules
+still control whether that VM-side port is reachable from the internet. Your Mac
+can use the ProxyJump command either way.
+
+If you intentionally want a public VM port, use --public, then configure OCI
+security rules, the VM firewall, and sshd GatewayPorts on the VM.
+DOCS
+}
+
+main() {
+    local command=${1:-status}
+    if [[ $# -gt 0 ]]; then
+        shift
+    fi
+
+    local vm_user=$DEFAULT_VM_USER
+    local vm_host=$DEFAULT_VM_HOST
+    local identity=$DEFAULT_VM_IDENTITY
+    local remote_bind=$DEFAULT_REMOTE_BIND
+    local remote_port=$DEFAULT_REMOTE_PORT
+    local local_host=$DEFAULT_LOCAL_HOST
+    local local_port=$DEFAULT_LOCAL_PORT
+    local local_user=$DEFAULT_LOCAL_USER
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --vm-host)
+                vm_host=${2:-}
+                shift 2
+                ;;
+            --vm-user)
+                vm_user=${2:-}
+                shift 2
+                ;;
+            --identity)
+                identity=${2:-}
+                shift 2
+                ;;
+            --remote-port)
+                remote_port=${2:-}
+                shift 2
+                ;;
+            --remote-bind)
+                remote_bind=${2:-}
+                shift 2
+                ;;
+            --local-host)
+                local_host=${2:-}
+                shift 2
+                ;;
+            --local-port)
+                local_port=${2:-}
+                shift 2
+                ;;
+            --local-user)
+                local_user=${2:-}
+                shift 2
+                ;;
+            --public)
+                remote_bind="0.0.0.0"
+                shift
+                ;;
+            -h|--help)
+                usage
+                return 0
+                ;;
+            *)
+                cento_die "Unknown option: $1"
+                ;;
+        esac
+    done
+
+    identity=$(expand_path "$identity")
+
+    case "$command" in
+        help|-h|--help)
+            usage
+            ;;
+        docs)
+            docs
+            ;;
+        command)
+            build_ssh_command foreground "$vm_user" "$vm_host" "$identity" "$remote_bind" "$remote_port" "$local_host" "$local_port"
+            ;;
+        mac-command)
+            print_mac_command "$vm_user" "$vm_host" "$remote_port" "$local_user"
+            ;;
+        status)
+            print_status "$vm_user" "$vm_host" "$remote_bind" "$remote_port" "$local_host" "$local_port" "$local_user"
+            ;;
+        start)
+            cento_require_cmd ssh
+            [[ -f "$identity" ]] || cento_die "Missing OCI private key: $identity"
+            cento_ensure_dir "$STATE_DIR"
+            if is_running; then
+                printf 'Bridge already running (pid %s).\n' "$(<"$PID_FILE")"
+                return 0
+            fi
+            if [[ "$remote_bind" == "0.0.0.0" ]]; then
+                cento_warn "Public mode requires VM sshd GatewayPorts plus OCI/firewall ingress for port $remote_port."
+            fi
+            local -a ssh_command=(
+                ssh
+                -N
+                -T
+                -o BatchMode=yes
+                -o ExitOnForwardFailure=yes
+                -o ServerAliveInterval=30
+                -o ServerAliveCountMax=3
+                -i "$identity"
+                -R "${remote_bind}:${remote_port}:${local_host}:${local_port}"
+                "${vm_user}@${vm_host}"
+            )
+            local pid
+            if cento_have_cmd setsid; then
+                rm -f "$PID_FILE"
+                setsid -f bash -c 'printf "%s\n" "$$" > "$1"; shift; exec "$@"' bridge-launch "$PID_FILE" "${ssh_command[@]}" >"$LOG_FILE" 2>&1 </dev/null
+                sleep 0.2
+                pid=$(<"$PID_FILE")
+            else
+                nohup "${ssh_command[@]}" >"$LOG_FILE" 2>&1 </dev/null &
+                pid=$!
+                printf '%s\n' "$pid" >"$PID_FILE"
+            fi
+            sleep 1
+            if ! kill -0 "$pid" >/dev/null 2>&1; then
+                rm -f "$PID_FILE"
+                cento_die "Bridge failed to start. See $LOG_FILE"
+            fi
+            printf 'Bridge started (pid %s).\n' "$pid"
+            printf 'Mac command: '
+            print_mac_command "$vm_user" "$vm_host" "$remote_port" "$local_user"
+            ;;
+        foreground)
+            cento_require_cmd ssh
+            [[ -f "$identity" ]] || cento_die "Missing OCI private key: $identity"
+            if [[ "$remote_bind" == "0.0.0.0" ]]; then
+                cento_warn "Public mode requires VM sshd GatewayPorts plus OCI/firewall ingress for port $remote_port."
+            fi
+            exec ssh \
+                -N \
+                -T \
+                -o ExitOnForwardFailure=yes \
+                -o ServerAliveInterval=30 \
+                -o ServerAliveCountMax=3 \
+                -i "$identity" \
+                -R "${remote_bind}:${remote_port}:${local_host}:${local_port}" \
+                "${vm_user}@${vm_host}"
+            ;;
+        stop)
+            if ! is_running; then
+                printf 'Bridge is not running.\n'
+                rm -f "$PID_FILE"
+                return 0
+            fi
+            local pid
+            pid=$(<"$PID_FILE")
+            kill "$pid"
+            rm -f "$PID_FILE"
+            printf 'Bridge stopped (pid %s).\n' "$pid"
+            ;;
+        restart)
+            "$0" stop
+            "$0" start \
+                --vm-user "$vm_user" \
+                --vm-host "$vm_host" \
+                --identity "$identity" \
+                --remote-bind "$remote_bind" \
+                --remote-port "$remote_port" \
+                --local-host "$local_host" \
+                --local-port "$local_port" \
+                --local-user "$local_user"
+            ;;
+        *)
+            usage
+            cento_die "Unknown bridge command: $command"
+            ;;
+    esac
+}
+
+main "$@"

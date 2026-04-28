@@ -11,3 +11,5 @@ workspace/tmp/*
 !workspace/tmp/.gitkeep
 
 logs/*
+
+.env.mcp

@@ -18,7 +18,10 @@ The bias is toward low-dependency tooling that works well from a terminal and ca
 - `scripts/` executable tools
 - `scripts/lib/` shared shell helpers
 - `data/tools.json` central registry of available tools
+- `data/cento-cli.json` canonical JSON docs for the root cento CLI built-ins
+- `mcp/` repo-root MCP setup and tool-call guidance
 - `templates/` project and report templates
+- `standards/` repo-wide implementation and UX standards
 - `themes/` curated theme packs for terminal and editor tooling
 - `workflows/` operating playbooks
 - `workspace/` output directories for generated runs and reports
@@ -27,15 +30,47 @@ The bias is toward low-dependency tooling that works well from a terminal and ca
 ## Included tools
 
 - `cento.sh`
-  Unified cento CLI facade for built-ins, tool dispatch, and user-defined aliases.
+  Unified cento CLI facade for built-ins, tool dispatch, user-defined aliases, and shell integration install paths.
 - `bluetooth_audio_doctor.py`
   Diagnose Bluetooth and Bluetooth-audio issues, generate a report, and run safe fixes.
+- `audio_quick_connect.sh`
+  Quickly connect a paired Bluetooth audio device by name or address.
+- `dashboard_server.py`
+  Run a localhost web dashboard for current state, recent activity, aliases, tools, and repo progress.
+- `bridge.sh`
+  Create a reverse SSH tunnel through the OCI VM so another machine can SSH back into this host through the VM relay.
+- `daily_tui.sh`
+  Bubble Tea launcher for Daily Execution Support, backed by a cached Go binary.
+- `daily_tui.go`
+  Local-first execution cockpit for morning brief, midday recalibration, evening wrap-up, history, and settings.
+- `telegram_tui.sh`
+  Bubble Tea launcher for the Telegram TUI, backed by a cached Go binary.
+- `telegram_tui.go`
+  Bubble Tea implementation for the Telegram tool surface.
+- `crm_module.py`
+  Run the embedded CRM module for questionnaire capture, career-intake dossiers, saved profiles, and CRM docs.
+- `burp_suite_community.sh`
+  Download, set up, and control PortSwigger Burp Suite Community through cento wrappers.
+- `mcp_tooling.py`
+  Initialize, validate, and document the repo-root MCP configuration.
+- `cento_interactive.sh`
+  Bubble Tea launcher for `cento interactive`, backed by a cached Go binary.
+- `cento_interactive.go`
+  Bubble Tea implementation for the root cento interactive browser.
+- `cento_interactive.py`
+  Non-interactive docs backend for `cento docs` and scripted lookups.
+- `scan_onepager.py`
+  Scan cento content and generate an archived HTML one-pager.
 - `kitty_theme_manager.sh`
   Sync custom Kitty themes, present theme choices interactively, and reload Kitty plus tmux context.
 - `wallpaper_manager.sh`
   Choose, preview, apply, and persist desktop wallpapers for i3 and feh.
 - `display_layout_fix.sh`
   Detect two monitors, stack them vertically, and repair your xrandr layout.
+- `i3reorg.sh`
+  Keep numeric i3 workspaces on the bottom monitor, move common windows to preferred workspaces, and place the study YouTube window on L2.
+- `quick_help.sh`
+  Open a rofi-style searchable help palette for cento commands, tools, and aliases.
 - `system_inventory.sh`
   Capture a host inventory report for debugging or baseline documentation.
 - `repo_snapshot.sh`
@@ -62,13 +97,44 @@ make batch ROOT="$HOME/projects" PATTERN="*" CMD='git status --short'
 make search QUERY="TODO" ROOT="$HOME/projects/cento"
 make bt-audio-doctor DEVICE='"Black Diamond"'
 make bt-audio-doctor DEVICE='"Black Diamond"' ARGS="--fix"
+make audio-quick-connect DEVICE='"Black Diamond"'
 make kitty-theme
 make kitty-theme ARGS='--theme "Cento Rose Pine"'
 make wallpaper
 make wallpaper ARGS="--choose"
 make display
 make display ARGS="--show"
+make i3reorg
+make i3reorg ARGS="--dry-run"
+make i3reorg ARGS="--study"
+make dashboard
+make dashboard ARGS="--open"
+make bridge ARGS="start"
+make bridge ARGS="mac-command"
+make tui
+make tui ARGS="status"
+make tui ARGS="docs"
+make crm
+make crm ARGS="questionnaire"
+make crm ARGS="init"
+make crm ARGS='intake init --person "Ada Lovelace" --target-role "Product Manager"'
+make crm ARGS='intake plan --person "Ada Lovelace"'
+make crm ARGS="serve --open"
+make burp ARGS="setup"
+make burp ARGS="controller start --use-defaults"
+make burp ARGS="status"
+make redmine-e2e
+make mcp
+make mcp ARGS="doctor"
+make mcp ARGS="init --write-env"
+make scan QUERY="mcp"
+make scan QUERY="telegram" ARGS="--no-open"
+make quick-help
 make cento ARGS="tools"
+make cento ARGS="interactive"
+make cento ARGS="docs conf"
+make cento ARGS="completion zsh"
+make cento ARGS="install zsh"
 make cento ARGS="dark"
 ```
 
@@ -83,10 +149,46 @@ make cento ARGS="dark"
 ./scripts/kitty_theme_manager.sh
 ./scripts/wallpaper_manager.sh --choose
 ./scripts/display_layout_fix.sh --show
+./scripts/i3reorg.sh --dry-run
+./scripts/dashboard_server.py
+./scripts/telegram_tui.sh
+./scripts/telegram_tui.sh status
+go run ./scripts/telegram_tui.go
+./scripts/crm_module.py
+./scripts/crm_module.py questionnaire
+./scripts/crm_module.py init
+./scripts/crm_module.py intake init --person "Ada Lovelace" --target-role "Product Manager"
+./scripts/crm_module.py intake plan --person "Ada Lovelace"
+./scripts/crm_module.py serve --open
+./scripts/crm_module.py show
+./scripts/burp_suite_community.sh setup
+./scripts/burp_suite_community.sh controller start --use-defaults
+./scripts/burp_suite_community.sh status
+./scripts/mcp_tooling.py
+./scripts/mcp_tooling.py doctor
+./scripts/mcp_tooling.py init --write-env
+./scripts/scan_onepager.py --query "mcp"
+./scripts/scan_onepager.py --query "telegram" --no-open
+./scripts/quick_help.sh
+./scripts/cento_interactive.sh
+./scripts/cento_interactive.sh --section builtins
+./scripts/cento_interactive.py --entry conf
 ./scripts/cento.sh tools
+./scripts/cento.sh completion zsh
+./scripts/cento.sh install zsh
 ./scripts/cento.sh dark
 python3 ./scripts/bluetooth_audio_doctor.py "Black Diamond"
+./scripts/audio_quick_connect.sh "Black Diamond"
 ```
+
+## Standards
+
+Repo-wide conventions live under `standards/`.
+
+- `standards/tui.md` defines the default pattern for interactive terminal apps.
+- `standards/tool-registration.md` defines how tools get registered and documented.
+- `standards/mcp.md` defines the repo-root MCP configuration pattern.
+- `data/cento-cli.json` is the canonical JSON source for root cento built-ins, flags, and usage examples.
 
 ## Design principles
 
@@ -107,11 +209,13 @@ python3 ./scripts/bluetooth_audio_doctor.py "Black Diamond"
 
 `cento` is the unified entrypoint for the repo. It provides:
 
-- built-ins such as `cento tools`, `cento aliases`, and `cento conf`
+- built-ins such as `cento tools`, `cento interactive` as the Bubble Tea browser, `cento docs`, `cento aliases`, `cento conf`, `cento completion zsh`, and `cento install zsh`
 - direct routing into registered tools such as `cento kitty-theme-manager --plain-menu`
 - user-defined shortcuts such as `cento dark`, `cento monk`, and `cento cyber` from `~/.config/cento/aliases.sh`
 
 The cento config is a small Bash file. `cento conf` opens it in your editor, and `cento conf --path` prints its path. It defines aliases only.
+
+For shell integration, `cento completion zsh` prints the Zsh completion function and `cento install zsh` installs a managed completion copy under `~/.config/cento/completions/_cento`, writes `~/.config/cento/init.zsh`, and injects one guarded source block into `~/.zshrc`. The install path is idempotent.
 
 Simple aliases use this form:
 
@@ -129,17 +233,258 @@ Useful examples:
 
 ```bash
 cento tools
+cento interactive
+cento docs
+cento docs conf
 cento aliases
 cento conf
 cento conf --path
+cento completion zsh
+cento install zsh
+cento mcp doctor
+cento mcp init --write-env
+cento mcp docs
+cento scan --query "mcp"
+cento scan --query "crm" --no-open
 cento kitty-theme-manager --list-custom
 cento wallpaper-manager --choose
+cento audio-quick-connect "Black Diamond"
+cento audio "Black Diamond"
+cento dashboard
+cento dashboard --open
+cento daily
+cento tui
+cento tui status
+cento crm integration
+cento crm
+cento crm questionnaire
+cento crm init
+cento crm intake init --person "Ada Lovelace"
+cento crm intake plan --person "Ada Lovelace"
+cento crm serve --open
+cento crm integration
+cento crm show
+cento crm docs
+cento burp setup
+cento burp controller start --use-defaults
+cento burp status
+cento burp stop
 cento wallpaper
 cento display-layout-fix
+cento i3reorg
 cento displayfix
+cento quick-help
+cento quickhelp
 cento monk
 cento cyber
 cento dark
+```
+
+## Cento Docs
+
+Root built-ins, flags, and usage examples are now documented in the canonical JSON file `data/cento-cli.json`.
+
+Use these entrypoints:
+
+```bash
+cento docs
+cento docs conf
+cento docs --json
+cento docs --path
+cento interactive
+```
+
+`cento interactive` now opens a Bubble Tea TUI for built-ins, tools, aliases, and their documented usage. `cento docs` remains the non-interactive JSON-backed docs path.
+
+## Burp Suite Community
+
+`cento burp` downloads, sets up, and controls PortSwigger Burp Suite Community.
+The default setup path uses the official Community JAR and creates
+`~/.local/bin/burp-community` for direct launches.
+
+Examples:
+
+```bash
+cento burp download
+cento burp download --type linux
+cento burp setup
+cento burp controller start --use-defaults
+cento burp run
+cento burp status
+cento burp logs --follow
+cento burp stop
+cento burp docs
+```
+
+Managed files live under `~/.local/share/cento/burp/`. See
+`docs/burp-suite-community.md` for the command surface and automation notes.
+
+## MCP Setup
+
+`cento` now carries MCP setup directly in the repo root so an MCP-capable client can attach without extra scavenging.
+
+It includes:
+
+- `.mcp.json` as the canonical repo-root config
+- `.env.mcp.example` for expected environment values
+- `mcp/tool-calls.md` for intent-to-tool guidance
+- `cento mcp` for init, doctor, docs, and path inspection
+
+Examples:
+
+```bash
+cento mcp doctor
+cento mcp init --write-env
+cento mcp docs
+cento mcp paths
+```
+
+## Scan One Pager
+
+`cento scan` generates a polished HTML one-pager for a repo scan topic, serves it on a local high port, and archives the previous output automatically.
+
+It:
+
+- scans cento source and docs for a query
+- writes the current page to `workspace/runs/scan-onepager/latest/index.html`
+- serves the latest page on `http://127.0.0.1:47873/` or the next free high port
+- moves the previous latest output into `workspace/runs/scan-onepager/archive/`
+- includes an explanation layer plus top files and snippets
+
+Examples:
+
+```bash
+cento daily
+cento scan --query "mcp"
+cento scan --query "telegram" --no-open
+cento scan --query "crm" --case-sensitive
+```
+
+## Daily Execution Support
+
+The Daily tool is registered as `cento daily` and opens a Bubble Tea execution cockpit.
+
+It:
+
+- generates a structured morning brief
+- supports accept, adjust, and rewrite decisions
+- captures midday recalibration and evening wrap-up
+- stores local continuity in `workspace/runs/daily/history.json`
+- isolates mock brief generation behind a `BriefGenerator` interface for later LLM replacement
+
+Example:
+
+```bash
+cento daily
+```
+
+## Telegram TUI
+
+The Telegram tool is registered as `cento tui` and is now implemented as a Bubble Tea TUI.
+
+It:
+
+- opens as `cento tui`
+- stores local Telegram config under `~/.config/cento/telegram.json`
+- follows the repo TUI standard in `standards/tui.md`
+- documents deferred Telegram and CRM integration work
+- reserves `cento crm integration` as the CRM-side placeholder path
+
+Examples:
+
+```bash
+cento tui
+cento tui status
+cento tui config --path
+cento tui docs
+cento crm integration
+```
+
+## CRM Module
+
+The CRM module keeps your career-consulting CRM embedded inside `cento` rather than as a disconnected app.
+
+It:
+
+- opens as `cento crm`
+- provides an interactive questionnaire plus a self-hosted local CRM app
+- creates career-intake dossiers for Telegram conversations, LinkedIn profiles, resumes, target companies, and notes
+- generates Codex-ready prompts for resume, LinkedIn, cover-letter, interview, and action-plan artifacts
+- bootstraps operational state under `workspace/runs/crm-app/`
+- serves an instant no-build SPA through `cento crm serve`
+- exposes module documentation through `cento crm docs`
+
+Examples:
+
+```bash
+cento crm
+cento crm questionnaire
+cento crm init
+cento crm intake init --person "Ada Lovelace" --target-role "Product Manager" --target-companies "Stripe,Notion,OpenAI,Linear,Figma"
+cento crm intake add --person "Ada Lovelace" --kind resume --file ./resume.pdf
+cento crm intake add --person "Ada Lovelace" --kind telegram --text "Raw conversation summary..."
+cento crm intake plan --person "Ada Lovelace"
+cento crm integration --provider redmine --person "Ada Lovelace" --start-workflow --dry-run
+cento crm serve --open
+cento crm integration
+cento crm show
+cento crm paths
+cento crm docs
+```
+
+## Quick Help
+
+The quick help tool is a rofi-style command palette for `cento`, closer to a searchable `:help` than a plain README.
+
+It:
+
+- indexes cento built-ins such as `help`, `tools`, `aliases`, and `conf`
+- indexes registered tools from `data/tools.json`
+- indexes your personal aliases from `~/.config/cento/aliases.sh`
+- lets you fuzzy-search everything through `rofi`
+- shows inline details before you run something
+- can run the selected command or copy it to the clipboard
+
+Examples:
+
+```bash
+./scripts/quick_help.sh
+cento quick-help
+cento quickhelp
+```
+
+## Dashboard
+
+The dashboard is the faster launcher-oriented surface for `cento`. It is meant for “just run the thing” workflows rather than searchable documentation.
+
+It:
+
+- opens as `cento dashboard`
+- uses `rofi` when available and falls back to a numbered prompt otherwise
+- shows pinned actions such as config, theme, wallpaper, display fix, and quick help
+- adds paired Bluetooth audio devices as direct connect actions
+- includes your configured aliases and registered tools
+- shows a small live banner with wallpaper, connected audio, and displays
+- writes logs to `logs/dashboard/`
+
+Examples:
+
+```bash
+./scripts/dashboard_server.py
+./scripts/telegram_tui.sh
+./scripts/telegram_tui.sh status
+go run ./scripts/telegram_tui.go
+./scripts/crm_module.py
+./scripts/crm_module.py questionnaire
+./scripts/crm_module.py init
+./scripts/crm_module.py serve --open
+./scripts/crm_module.py show
+./scripts/mcp_tooling.py
+./scripts/mcp_tooling.py doctor
+./scripts/mcp_tooling.py init --write-env
+./scripts/dashboard.sh --plain-menu
+./scripts/dashboard.sh --list
+cento dashboard
 ```
 
 ## Display Layout Fix
@@ -162,6 +507,33 @@ Examples:
 ./scripts/display_layout_fix.sh --save-defaults
 cento display-layout-fix
 cento displayfix
+```
+
+## i3 Reorg
+
+The i3 reorg tool moves common desktop windows onto the preferred workspace map. Study mode keeps the Abao/Tokyo study-with-me YouTube window on the top monitor in workspace `L2`, fullscreen. In the i3 key layout, `L2` is the left/A workspace and `R2` is the right/D workspace.
+
+It:
+
+- moves Firefox to workspace 1
+- moves common terminal windows and tmux/nvim/vim-titled windows to workspace 2
+- moves Discord to workspace 4
+- moves Telegram to workspace 5
+- keeps workspaces 1 through 5 on the bottom monitor
+- moves the Abao/Tokyo study video to workspace L2 on the top monitor with `--study`
+- opens `https://www.youtube.com/watch?v=QYpDQxHfTPk` in Firefox when study mode cannot find an existing study window
+- supports a dry run before applying i3 commands
+
+Examples:
+
+```bash
+./scripts/i3reorg.sh --dry-run
+./scripts/i3reorg.sh --bottom-output DP-4.8
+./scripts/i3reorg.sh --study
+./scripts/i3reorg.sh --focus 2
+cento i3reorg
+cento i3reorg --study
+cento i3reorg --focus 2
 ```
 
 ## Wallpaper Manager
