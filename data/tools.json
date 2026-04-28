@@ -181,7 +181,14 @@
         "cento bridge check",
         "cento bridge from-mac",
         "cento bridge --from-mac",
-        "cento bridge from-mac -- 'cd \"$HOME/projects/cento\" && ./scripts/cento.sh platforms linux'"
+        "cento bridge from-mac -- 'cd \"$HOME/projects/cento\" && ./scripts/cento.sh platforms linux'",
+        "cento bridge expose-linux",
+        "cento bridge expose-mac",
+        "cento bridge to-linux",
+        "cento bridge to-mac",
+        "cento bridge mesh-status",
+        "cento bridge to-linux -- 'cd \"$HOME/projects/cento\" && ./scripts/cento.sh gather-context --no-remote | head -90'",
+        "cento bridge to-mac -- '/Users/anovik-air/bin/cento gather-context --no-remote | head -90'"
       ],
       "outputs": [
         "~/.local/state/cento/bridge.pid",
@@ -195,7 +202,10 @@
         "The Mac connects with ProxyJump through the VM instead of using a public relay port.",
         "Use --public only after configuring VM sshd GatewayPorts, VM firewall, and OCI ingress rules.",
         "Use cento bridge check to validate the local repo and Mac-through-VM SSH path.",
-        "`cento bridge from-mac` runs remote gather-context on the Linux node through the OCI ProxyJump path by default."
+        "`cento bridge from-mac` runs remote gather-context on the Linux node through the OCI ProxyJump path by default.",
+        "Secure mesh mode uses SSH remote Unix sockets on the VM, e.g. /tmp/cento-linux.sock and /tmp/cento-mac.sock, instead of public VM TCP listeners.",
+        "Use expose-linux on the Linux node and expose-mac on the Mac node, then use to-linux/to-mac for node-to-node commands.",
+        "expose-mac starts a user-level localhost sshd on the Mac, avoiding the need to enable system Remote Login."
       ]
     },
     {

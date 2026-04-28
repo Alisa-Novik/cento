@@ -109,6 +109,11 @@ _cento() {
               'restart[Restart background tunnel]' \
               'status[Show bridge status]' \
               'check[Validate local and remote bridge context]' \
+              'expose-linux[Expose this Linux node as a VM Unix socket]' \
+              'expose-mac[Expose this Mac node as a VM Unix socket]' \
+              'to-linux[Run a command on the Linux node via VM Unix socket]' \
+              'to-mac[Run a command on the Mac node via VM Unix socket]' \
+              'mesh-status[Show VM-side Cento Unix sockets]' \
               'from-mac[Run a command on the Linux node through the VM]' \
               'command[Print local tunnel command]' \
               'mac-command[Print Mac connection command]' \
