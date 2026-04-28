@@ -16,6 +16,7 @@ DEFAULT_LOCAL_USER="${CENTO_BRIDGE_TARGET_USER:-alice}"
 DEFAULT_REMOTE_CENTO_ROOT='$HOME/projects/cento'
 DEFAULT_MAC_USER="${CENTO_BRIDGE_MAC_USER:-anovik-air}"
 DEFAULT_MAC_CENTO_ROOT="/Users/anovik-air/cento"
+DEFAULT_MAC_CENTO_BIN="/Users/anovik-air/bin/cento"
 DEFAULT_MAC_SSHD_PORT="22220"
 DEFAULT_LINUX_SOCKET="/tmp/cento-linux.sock"
 DEFAULT_MAC_SOCKET="/tmp/cento-mac.sock"
@@ -484,7 +485,7 @@ main() {
             ;;
         context-mac)
             cento_require_cmd ssh
-            run_via_socket "$vm_user" "$vm_host" "$DEFAULT_MAC_SOCKET" "$mac_user" "cento-mac" "$HOME/bin/cento gather-context --no-remote | head -90"
+            run_via_socket "$vm_user" "$vm_host" "$DEFAULT_MAC_SOCKET" "$mac_user" "cento-mac" "$DEFAULT_MAC_CENTO_BIN gather-context --no-remote | head -90"
             ;;
         mesh-status)
             cento_require_cmd ssh
