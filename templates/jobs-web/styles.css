@@ -1,0 +1,271 @@
+:root {
+  color-scheme: light;
+  --bg: #f7f8fa;
+  --panel: #ffffff;
+  --panel-2: #f0f4f8;
+  --text: #17212b;
+  --muted: #5d6b78;
+  --line: #d8e0e8;
+  --ok: #0f7b55;
+  --warn: #a35b00;
+  --bad: #b42318;
+  --dry: #5165b8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: center;
+  padding: 18px 28px;
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(10px);
+}
+
+h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+p {
+  margin: 0;
+}
+
+#runRoot,
+#updatedAt {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  white-space: nowrap;
+}
+
+button {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  padding: 8px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+
+main {
+  max-width: 1260px;
+  margin: 0 auto;
+  padding: 22px 28px 40px;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.metric,
+.job {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.metric {
+  padding: 14px;
+}
+
+.metric strong {
+  display: block;
+  font-size: 26px;
+}
+
+.metric span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.jobs {
+  display: grid;
+  gap: 14px;
+}
+
+.job {
+  overflow: hidden;
+}
+
+.jobHeader {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  gap: 18px;
+  align-items: start;
+  padding: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.jobTitle {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.jobTitle h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.feature {
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.meta {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.status-succeeded {
+  color: var(--ok);
+  background: #eaf7f0;
+  border-color: #bde7d0;
+}
+
+.status-failed {
+  color: var(--bad);
+  background: #fff0ee;
+  border-color: #f5c3bd;
+}
+
+.status-dry-run,
+.status-planned {
+  color: var(--dry);
+  background: #eef1ff;
+  border-color: #cdd5ff;
+}
+
+.status-running,
+.status-unknown {
+  color: var(--warn);
+  background: #fff6e8;
+  border-color: #f4d4a4;
+}
+
+.tasks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+
+.task {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.taskHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.task h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.node {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.scope {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+.log {
+  min-height: 112px;
+  max-height: 210px;
+  overflow: auto;
+  margin: 0;
+  padding: 10px;
+  background: #111820;
+  color: #dbe7ef;
+  border-radius: 6px;
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+}
+
+.paths {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.empty {
+  padding: 28px;
+  text-align: center;
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+@media (max-width: 760px) {
+  .topbar,
+  .jobHeader {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  main,
+  .topbar {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}

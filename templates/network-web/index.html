@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cento Network</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>Cento Network</h1>
+        <p id="registry"></p>
+      </div>
+      <div class="actions">
+        <button id="refreshButton" type="button">Refresh</button>
+        <span id="updatedAt"></span>
+      </div>
+    </header>
+
+    <main>
+      <section class="summary" id="summary"></section>
+      <section class="panel">
+        <h2>Nodes</h2>
+        <div class="nodes" id="nodes"></div>
+      </section>
+      <section class="grid">
+        <article class="panel">
+          <h2>Cluster Status</h2>
+          <pre id="clusterStatus"></pre>
+        </article>
+        <article class="panel">
+          <h2>Mesh</h2>
+          <pre id="meshStatus"></pre>
+        </article>
+      </section>
+      <section class="panel">
+        <h2>Commands</h2>
+        <div class="commands" id="commands"></div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

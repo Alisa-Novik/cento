@@ -18,6 +18,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
+from jobs_server import load_jobs
+from network_web_server import cluster_snapshot
+
 ROOT_DIR = Path(__file__).resolve().parent.parent
 TOOLS_JSON = ROOT_DIR / 'data' / 'tools.json'
 CONFIG_DIR = Path(os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config')) / 'cento'
@@ -26,11 +29,13 @@ LOG_ROOT = ROOT_DIR / 'logs'
 KITTY_THEME_LOG = LOG_ROOT / 'kitty-theme-manager' / 'latest.log'
 WALLPAPER_ENV = CONFIG_DIR / 'wallpaper.env'
 DISPLAY_ENV = CONFIG_DIR / 'display.env'
+PRESET_ENV = CONFIG_DIR / 'preset.env'
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 46268
 PORT_SPAN = 12
 REQUEST_LOG_LIMIT = 40
 REPO_PATH = ROOT_DIR
+DASHBOARD_THEME = os.environ.get('CENTO_DASHBOARD_THEME', 'default')
 
 REQUEST_LOG: list[dict[str, str]] = []
 REQUEST_LOCK = threading.Lock()
@@ -86,7 +91,12 @@ def parse_env_file(path: Path) -> dict[str, str]:
         if not line or line.startswith('#') or '=' not in line:
             continue
         key, value = line.split('=', 1)
-        data[key.strip()] = value.strip().strip('"')
+        raw_value = value.strip()
+        try:
+            parsed = shlex.split(raw_value)
+        except ValueError:
+            parsed = []
+        data[key.strip()] = parsed[0] if len(parsed) == 1 else raw_value.strip('"')
     return data
 
 
@@ -168,6 +178,11 @@ def current_wallpaper() -> str:
     data = parse_env_file(WALLPAPER_ENV)
     value = data.get('CURRENT_WALLPAPER') or data.get('CENTO_WALLPAPER')
     return Path(value).name if value else 'unknown'
+
+
+def current_preset() -> str:
+    data = parse_env_file(PRESET_ENV)
+    return data.get('CENTO_PRESET_NAME') or data.get('CENTO_PRESET') or 'default'
 
 
 def display_summary() -> dict[str, Any]:
@@ -286,6 +301,46 @@ def latest_runs() -> list[dict[str, str]]:
     return entries
 
 
+def dashboard_links() -> list[dict[str, str]]:
+    return [
+        {
+            'name': 'Overview',
+            'command': 'cento dashboard --open',
+            'href': '#top',
+            'default_url': 'http://127.0.0.1:46268',
+            'description': 'Central launcher and toolkit state dashboard.',
+        },
+        {
+            'name': 'Jobs',
+            'command': 'cento jobs --open',
+            'href': '#jobs-panel',
+            'default_url': 'http://127.0.0.1:47883',
+            'description': 'Cluster job manifests, task state, node assignments, and log tails.',
+        },
+        {
+            'name': 'Network',
+            'command': 'cento network --web --open',
+            'href': '#network-panel',
+            'default_url': 'http://127.0.0.1:47882',
+            'description': 'Cluster node registry, bridge mesh state, and cluster health.',
+        },
+        {
+            'name': 'Idea Board',
+            'command': 'cento idea-board --open',
+            'href': 'http://127.0.0.1:47872',
+            'default_url': 'http://127.0.0.1:47872',
+            'description': 'Editable project idea board and cluster roadmap.',
+        },
+        {
+            'name': 'CRM',
+            'command': 'cento crm serve --open',
+            'href': '#dashboards-panel',
+            'default_url': 'local CRM server',
+            'description': 'Career consulting CRM profiles, intake, and artifacts.',
+        },
+    ]
+
+
 def runs_today() -> int:
     today = datetime.now().date()
     count = 0
@@ -306,6 +361,33 @@ def load_tools() -> list[dict[str, Any]]:
     return sorted(tools, key=lambda item: item.get('id', ''))
 
 
+def safe_jobs_snapshot() -> dict[str, Any]:
+    try:
+        return load_jobs()
+    except Exception as exc:
+        return {
+            'updated_at': datetime.now().astimezone().isoformat(),
+            'run_root': '',
+            'jobs': [],
+            'error': str(exc),
+        }
+
+
+def safe_network_snapshot() -> dict[str, Any]:
+    try:
+        return cluster_snapshot()
+    except Exception as exc:
+        return {
+            'updated_at': datetime.now().astimezone().isoformat(),
+            'nodes': [],
+            'relay': {},
+            'jobs': {'total': 0, 'failed': 0, 'succeeded': 0, 'planned': 0, 'dry_run': 0},
+            'status': {'stdout': '', 'stderr': str(exc), 'ok': False},
+            'mesh': {'stdout': '', 'stderr': '', 'ok': False},
+            'error': str(exc),
+        }
+
+
 def overview_snapshot() -> dict[str, Any]:
     tools = load_tools()
     aliases = parse_aliases(ALIASES_FILE)
@@ -323,6 +405,7 @@ def overview_snapshot() -> dict[str, Any]:
             'repo_dirty': repo['dirty'],
         },
         'state': {
+            'preset': current_preset(),
             'theme': current_theme(),
             'wallpaper': current_wallpaper(),
             'audio_connected': connected_audio,
@@ -342,17 +425,85 @@ def overview_snapshot() -> dict[str, Any]:
         'aliases': aliases,
         'activity': recent_activity(),
         'latest_runs': latest,
+        'dashboards': dashboard_links(),
         'requests': list(REQUEST_LOG),
     }
 
 
 def render_page() -> str:
-    return """<!doctype html>
+    industrial_css = """
+    body.industrial {
+      --bg: #050403;
+      --panel: #0b0705;
+      --panel-2: #130b07;
+      --text: #f4e8dc;
+      --muted: #a88b78;
+      --accent: #ff5a00;
+      --accent-2: #ffb000;
+      --ok: #6be675;
+      --warn: #ff3500;
+      --border: rgba(255,90,0,0.42);
+      --shadow: inset 0 0 0 1px rgba(255,90,0,0.08), 0 18px 48px rgba(0,0,0,0.48);
+      background: #050403;
+    }
+    body.industrial::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(180deg, rgba(255,90,0,0.06), transparent 26%),
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 5px);
+      opacity: 0.8;
+    }
+    body.industrial .shell { max-width: 1540px; padding-top: 18px; }
+    body.industrial .panel {
+      border-radius: 6px;
+      background: linear-gradient(180deg, rgba(17,10,7,0.96), rgba(5,4,3,0.94));
+      border-color: var(--border);
+    }
+    body.industrial .hero h1 {
+      color: var(--accent);
+      text-transform: uppercase;
+      font-size: 24px;
+    }
+    body.industrial h2 {
+      color: var(--accent);
+      font-size: 13px;
+    }
+    body.industrial .chip,
+    body.industrial li.item,
+    body.industrial .dashboard-card,
+    body.industrial pre {
+      border-radius: 4px;
+      border-color: rgba(255,90,0,0.26);
+      background: rgba(255,90,0,0.045);
+    }
+    body.industrial .dashboard-card:hover {
+      border-color: rgba(255,90,0,0.72);
+      background: rgba(255,90,0,0.12);
+    }
+    body.industrial .metric .value,
+    body.industrial .title { color: var(--text); }
+    body.industrial .meta,
+    body.industrial .muted { color: var(--muted); }
+    body.industrial .kv div { border-bottom-color: rgba(255,90,0,0.16); }
+    body.industrial a,
+    body.industrial code { color: var(--accent); }
+    """
+    theme_class = 'industrial' if DASHBOARD_THEME == 'industrial' else ''
+    title = 'industrial os' if DASHBOARD_THEME == 'industrial' else 'cento dashboard'
+    subtitle = (
+        'Engineering dashboard for cluster jobs, system resources, and desktop state.'
+        if DASHBOARD_THEME == 'industrial'
+        else 'Local control surface for your toolkit, recent activity, and repo progress.'
+    )
+    page = """<!doctype html>
 <html lang='en'>
 <head>
   <meta charset='utf-8'>
   <meta name='viewport' content='width=device-width, initial-scale=1'>
-  <title>cento dashboard</title>
+  <title>__DASHBOARD_TITLE__</title>
   <style>
     :root {
       --bg: #101218;
@@ -437,27 +588,69 @@ def render_page() -> str:
       padding: 12px 14px;
       background: rgba(255,255,255,0.02);
     }
+    .dashboard-card {
+      display: block;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: rgba(125,211,252,0.05);
+      color: var(--text);
+    }
+    .dashboard-card:hover {
+      border-color: rgba(125,211,252,0.42);
+      background: rgba(125,211,252,0.1);
+    }
     .title { font-size: 14px; }
     .meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
     .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
     .kv { display: grid; gap: 10px; }
     .kv div { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; }
+    .compact-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .loading {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      min-height: 42px;
+    }
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.16);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    pre {
+      margin: 0;
+      min-height: 120px;
+      max-height: 260px;
+      overflow: auto;
+      white-space: pre-wrap;
+      background: rgba(0,0,0,0.24);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 12px;
+      color: var(--text);
+    }
     .mono { font-family: inherit; }
     .ok { color: var(--ok); }
     .warn { color: var(--warn); }
     a { color: var(--accent); text-decoration: none; }
     code { color: var(--accent-2); }
     @media (max-width: 1100px) {
-      .hero, .grid, .metrics, .two-col { grid-template-columns: 1fr; }
+      .hero, .grid, .metrics, .two-col, .compact-grid { grid-template-columns: 1fr; }
     }
+    __THEME_OVERRIDES__
   </style>
 </head>
-<body>
+<body id='top' class='__BODY_CLASS__'>
   <div class='shell'>
     <section class='hero'>
       <div class='panel'>
-        <h1>cento dashboard</h1>
-        <div class='muted'>Local control surface for your toolkit, recent activity, and repo progress.</div>
+        <h1>__DASHBOARD_TITLE__</h1>
+        <div class='muted'>__DASHBOARD_SUBTITLE__</div>
         <div class='chips' id='hero-chips'></div>
       </div>
       <div class='panel'>
@@ -479,6 +672,25 @@ def render_page() -> str:
 
     <section class='grid'>
       <div class='stack'>
+        <div class='panel' id='network-panel'>
+          <h2>Network</h2>
+          <div class='compact-grid' id='network-metrics'><div class='loading'><span class='spinner'></span><span>Loading network...</span></div></div>
+          <div class='two-col' style='margin-top: 14px;'>
+            <div>
+              <div class='title'>Nodes</div>
+              <ul id='network-nodes'><li class='item'><div class='loading'><span class='spinner'></span><span>Checking nodes...</span></div></li></ul>
+            </div>
+            <div>
+              <div class='title'>Status</div>
+              <pre id='network-status'>Loading cluster status...</pre>
+            </div>
+          </div>
+        </div>
+        <div class='panel' id='jobs-panel'>
+          <h2>Jobs</h2>
+          <div class='compact-grid' id='job-metrics'><div class='loading'><span class='spinner'></span><span>Loading jobs...</span></div></div>
+          <ul id='jobs-list' style='margin-top: 14px;'><li class='item'><div class='loading'><span class='spinner'></span><span>Reading job manifests...</span></div></li></ul>
+        </div>
         <div class='panel'>
           <h2>Progress</h2>
           <div class='two-col'>
@@ -508,6 +720,10 @@ def render_page() -> str:
         </div>
       </div>
       <div class='stack'>
+        <div class='panel' id='dashboards-panel'>
+          <h2>Dashboards</h2>
+          <ul id='dashboards-list'></ul>
+        </div>
         <div class='panel'>
           <h2>Current State</h2>
           <div class='kv' id='state-kv'></div>
@@ -539,9 +755,62 @@ def render_page() -> str:
       return `<li class="item"><div class="title">${escapeHtml(title)}</div><div class="meta">${escapeHtml(meta || '')}</div></li>`;
     }
 
+    function dashboardItem(item) {
+      const href = item.href || item.default_url || '#dashboards-panel';
+      const target = href.startsWith('#') ? '' : ' target="_blank" rel="noreferrer"';
+      const meta = [item.command, item.default_url, item.description].filter(Boolean).join(' | ');
+      return `<li><a class="dashboard-card" href="${escapeHtml(href)}"${target}><div class="title">${escapeHtml(item.name)}</div><div class="meta">${escapeHtml(meta)}</div></a></li>`;
+    }
+
+    function smallMetric(label, value) {
+      return `<div class="item"><div class="title">${escapeHtml(value)}</div><div class="meta">${escapeHtml(label)}</div></div>`;
+    }
+
+    function renderNetwork(network) {
+      network = network || {nodes: [], relay: {}, jobs: {}, status: {}};
+      network.nodes = network.nodes || [];
+      network.relay = network.relay || {};
+      network.jobs = network.jobs || {};
+      network.status = network.status || {};
+      document.getElementById('network-metrics').innerHTML = [
+        smallMetric('nodes', network.nodes.length),
+        smallMetric('relay', network.relay.host || 'unknown'),
+        smallMetric('cluster jobs', network.jobs.total || 0)
+      ].join('');
+      document.getElementById('network-nodes').innerHTML = (network.nodes.length ? network.nodes : [{id:'No nodes configured', platform:'', repo:''}])
+        .map(item => listItem(item.id, [item.platform, item.repo, item.socket].filter(Boolean).join(' | ')))
+        .join('');
+      document.getElementById('network-status').textContent = [network.status.stdout, network.status.stderr].filter(Boolean).join('\\n') || 'No cluster status output.';
+    }
+
+    function renderJobs(jobs) {
+      jobs = jobs || {jobs: []};
+      jobs.jobs = jobs.jobs || [];
+      document.getElementById('job-metrics').innerHTML = [
+        smallMetric('total', jobs.jobs.length),
+        smallMetric('failed', jobs.jobs.filter(item => item.status === 'failed').length),
+        smallMetric('latest', jobs.jobs[0] ? jobs.jobs[0].status : 'none')
+      ].join('');
+      document.getElementById('jobs-list').innerHTML = (jobs.jobs.length ? jobs.jobs.slice(0, 8) : [{id:'No cluster jobs', feature:'', status:''}])
+        .map(item => listItem(`${item.id} ${item.status ? '(' + item.status + ')' : ''}`, item.feature || item.error || item.run_dir || ''))
+        .join('');
+    }
+
+    async function loadNetwork() {
+      const response = await fetch('/api/network');
+      renderNetwork(await response.json());
+    }
+
+    async function loadJobs() {
+      const response = await fetch('/api/jobs');
+      renderJobs(await response.json());
+    }
+
     async function loadState() {
       const response = await fetch('/api/state');
       const data = await response.json();
+
+      data.dashboards = data.dashboards || [];
 
       document.getElementById('tools-count').textContent = data.overview.tools_count;
       document.getElementById('aliases-count').textContent = data.overview.aliases_count;
@@ -552,6 +821,7 @@ def render_page() -> str:
 
       const chips = [
         `generated ${data.generated_at}`,
+        `preset ${data.state.preset}`,
         `theme ${data.state.theme}`,
         `wallpaper ${data.state.wallpaper}`,
         `branch ${data.repo.branch}`
@@ -562,6 +832,7 @@ def render_page() -> str:
         ? data.state.audio_connected.map(item => `${item.name} (${item.battery})`).join(', ')
         : 'none';
       document.getElementById('state-kv').innerHTML = [
+        ['preset', data.state.preset],
         ['theme', data.state.theme],
         ['wallpaper', data.state.wallpaper],
         ['audio connected', audioNames],
@@ -586,6 +857,7 @@ def render_page() -> str:
       document.getElementById('commit-list').innerHTML = data.repo.commits.map(item => listItem(`${item.sha} ${item.subject}`, item.date)).join('');
       document.getElementById('activity-list').innerHTML = data.activity.map(item => listItem(`${item.tool}: ${item.summary}`, item.recorded_at)).join('');
       document.getElementById('latest-runs').innerHTML = data.latest_runs.map(item => listItem(item.tool, `${item.recorded_at} | ${item.summary}`)).join('');
+      document.getElementById('dashboards-list').innerHTML = data.dashboards.map(dashboardItem).join('');
       document.getElementById('aliases-list').innerHTML = data.aliases.map(item => listItem(item.name, item.description || item.command)).join('');
       document.getElementById('tools-list').innerHTML = data.tools.map(item => listItem(item.id, item.description || item.name)).join('');
       document.getElementById('requests-list').innerHTML = (data.requests.length ? data.requests : [{path:'No requests yet', at:'', client:''}])
@@ -594,11 +866,22 @@ def render_page() -> str:
     }
 
     loadState();
+    loadJobs();
+    loadNetwork();
     setInterval(loadState, 15000);
+    setInterval(loadJobs, 5000);
+    setInterval(loadNetwork, 15000);
   </script>
 </body>
 </html>
 """
+    return (
+        page
+        .replace('__DASHBOARD_TITLE__', html.escape(title))
+        .replace('__DASHBOARD_SUBTITLE__', html.escape(subtitle))
+        .replace('__BODY_CLASS__', theme_class)
+        .replace('__THEME_OVERRIDES__', industrial_css if DASHBOARD_THEME == 'industrial' else '')
+    )
 
 
 class DashboardHandler(BaseHTTPRequestHandler):
@@ -629,6 +912,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
             payload = json.dumps(overview_snapshot(), indent=2).encode('utf-8')
             self._send(200, payload, 'application/json; charset=utf-8')
             return
+        if self.path == '/api/jobs':
+            payload = json.dumps(safe_jobs_snapshot(), indent=2).encode('utf-8')
+            self._send(200, payload, 'application/json; charset=utf-8')
+            return
+        if self.path == '/api/network':
+            payload = json.dumps(safe_network_snapshot(), indent=2).encode('utf-8')
+            self._send(200, payload, 'application/json; charset=utf-8')
+            return
         self._send(404, b'not found', 'text/plain; charset=utf-8')
 
 
@@ -645,11 +936,17 @@ def find_port(host: str, preferred: int) -> int:
 
 
 def main() -> None:
+    global DASHBOARD_THEME
+    default_theme = os.environ.get('CENTO_DASHBOARD_THEME', 'default')
+    if default_theme not in {'default', 'industrial'}:
+        default_theme = 'default'
     parser = argparse.ArgumentParser(description='Run the cento localhost dashboard server.')
     parser.add_argument('--host', default=DEFAULT_HOST)
     parser.add_argument('--port', type=int, default=DEFAULT_PORT)
+    parser.add_argument('--theme', choices=['default', 'industrial'], default=default_theme, help='Dashboard visual theme.')
     parser.add_argument('--open', action='store_true', help='Open the dashboard URL in a browser.')
     args = parser.parse_args()
+    DASHBOARD_THEME = args.theme
 
     init_log_file()
     host = args.host
