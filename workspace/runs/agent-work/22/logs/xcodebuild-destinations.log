@@ -1,0 +1,21 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project apps/ios/CentoMobile/CentoMobile.xcodeproj -scheme CentoMobile -showdestinations
+
+
+
+	Available destinations for the "CentoMobile" scheme:
+		{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:00008142-001E24821411401C, name:My Mac }
+		{ platform:iOS, arch:arm64, id:00008130-000E68823E81001C, name:iPhone }
+		{ platform:iOS, id:dvtdevice-DVTiPhonePlaceholder-iphoneos:placeholder, name:Any iOS Device }
+		{ platform:iOS Simulator, id:dvtdevice-DVTiOSDeviceSimulatorPlaceholder-iphonesimulator:placeholder, name:Any iOS Simulator Device }
+		{ platform:iOS Simulator, arch:arm64, id:F79D4599-C2D1-4AC2-BE3E-3E2904027C10, OS:26.4.1, name:iPad (A16) }
+		{ platform:iOS Simulator, arch:arm64, id:620E818F-183B-4100-9E70-6B111D21642B, OS:26.4.1, name:iPad Air 11-inch (M4) }
+		{ platform:iOS Simulator, arch:arm64, id:3286B84B-1B55-4F5D-97DD-418B01BB5A53, OS:26.4.1, name:iPad Air 13-inch (M4) }
+		{ platform:iOS Simulator, arch:arm64, id:EDD814B7-3BBF-4D3A-A174-20B7F45259A2, OS:26.4.1, name:iPad Pro 11-inch (M5) }
+		{ platform:iOS Simulator, arch:arm64, id:75863B73-9E23-4EE5-9C8C-995B52115EA8, OS:26.4.1, name:iPad Pro 13-inch (M5) }
+		{ platform:iOS Simulator, arch:arm64, id:E110659F-ACDC-480C-BF4C-E6A257400E84, OS:26.4.1, name:iPad mini (A17 Pro) }
+		{ platform:iOS Simulator, arch:arm64, id:52721F06-326E-4BB5-AC04-2055C05DA175, OS:26.4.1, name:iPhone 17 }
+		{ platform:iOS Simulator, arch:arm64, id:2319ED25-739F-4DCC-B439-DFECFBEDB8BF, OS:26.4.1, name:iPhone 17 Pro }
+		{ platform:iOS Simulator, arch:arm64, id:913E8183-4F71-47FC-B5C8-06C19AA33DB7, OS:26.4.1, name:iPhone 17 Pro Max }
+		{ platform:iOS Simulator, arch:arm64, id:0E23C0FA-A75C-42B9-8AFE-F0E35BFC98B2, OS:26.4.1, name:iPhone 17e }
+		{ platform:iOS Simulator, arch:arm64, id:5277D369-0A69-4B53-9EFC-6DF60BADB55D, OS:26.4.1, name:iPhone Air }

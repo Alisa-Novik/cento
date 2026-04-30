@@ -1,0 +1,6 @@
+Failed to load provisioning paramter list due to error: Error Domain=com.apple.dt.CoreDeviceError Code=1002 "No provider was found." UserInfo={NSLocalizedDescription=No provider was found.}.
+`devicectl manage create` may support a reduced set of arguments.
+Name                  Hostname                             Identifier                             State                Model                            
+-------------------   ----------------------------------   ------------------------------------   ------------------   ---------------------------------
+Alisa’s Apple Watch   Alisas-AppleWatch.coredevice.local   C9301FAD-4EA6-5A87-B73F-7EBDFD42C21D   unavailable          Apple Watch Series 11 (Watch7,18)
+iPhone                iPhone.coredevice.local              4139AF71-97DD-5C89-8355-997C6959F226   available (paired)   iPhone 15 Pro Max (iPhone16,2)   
