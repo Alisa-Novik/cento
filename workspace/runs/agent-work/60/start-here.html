@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>#60 Agent Platform: Cento MCP server and Codex/Claude skills</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #070809;
+      --panel: #12161a;
+      --line: #29313a;
+      --text: #f4f6f7;
+      --muted: #a9b3bd;
+      --orange: #ff7900;
+      --green: #35d273;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 50% -120px, rgba(255,121,0,.16), transparent 420px), var(--bg);
+      color: var(--text);
+      font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main {
+      width: min(1040px, calc(100vw - 28px));
+      margin: 0 auto;
+      padding: 28px 0 42px;
+    }
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: start;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 16px;
+    }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 34px; line-height: 1.08; }
+    h2 {
+      color: var(--orange);
+      font-size: 13px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    h3 { font-size: 18px; margin-bottom: 4px; }
+    .sub { color: var(--muted); margin-top: 8px; font-size: 17px; }
+    .badge {
+      min-width: 122px;
+      padding: 12px;
+      border: 1px solid rgba(53,210,115,.45);
+      border-radius: 8px;
+      background: rgba(53,210,115,.08);
+      text-align: center;
+      color: var(--green);
+      font-weight: 800;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 12px;
+    }
+    section, .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02));
+    }
+    section {
+      grid-column: span 12;
+      padding: 16px;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .card {
+      display: block;
+      min-height: 126px;
+      padding: 14px;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .card.primary {
+      border-color: rgba(255,121,0,.5);
+      background: linear-gradient(180deg, rgba(255,121,0,.18), rgba(255,121,0,.055));
+    }
+    .card span {
+      display: block;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    .card code, .commands code {
+      display: inline-block;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      padding: 2px 5px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #080a0c;
+      color: #ffd7b0;
+    }
+    .commands {
+      display: grid;
+      gap: 8px;
+    }
+    .commands code {
+      display: block;
+      padding: 10px;
+    }
+    .status-list {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .status-item {
+      min-height: 74px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.025);
+    }
+    .status-item strong { display: block; }
+    .status-item span { display: block; color: var(--muted); font-size: 13px; margin-top: 3px; }
+    ul { margin: 0; padding-left: 20px; }
+    li + li { margin-top: 6px; }
+    a { color: inherit; }
+    footer {
+      color: var(--muted);
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+    }
+    @media (max-width: 780px) {
+      main { width: min(100vw - 22px, 560px); padding-top: 20px; }
+      header, .cards, .status-list { grid-template-columns: 1fr; }
+      h1 { font-size: 29px; }
+      .card { min-height: auto; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>#60 Agent Platform: Cento MCP server and Codex/Claude skills</h1>
+        <p class="sub">Package: agent-platform | Lane: builder on macos | Generated from story.json.</p>
+      </div>
+      <div class="badge">Running</div>
+    </header>
+
+    <div class="grid">
+      <section>
+        <h2>Use First</h2>
+        <div class="cards">
+          <a class="card primary" href="story.json">
+            <h3>Story Contract</h3>
+            <code>workspace/runs/agent-work/60/story.json</code>
+            <span>Shared story.json used by Builder, Validator, Docs/Evidence, and Coordinator lanes.</span>
+          </a>
+          <a class="card" href="#">
+            <h3>Redmine Issue</h3>
+            <code>redmine://issues/60</code>
+            <span>Current status: Running.</span>
+          </a>
+          <a class="card" href="validation.json">
+            <h3>Validation Manifest</h3>
+            <code>workspace/runs/agent-work/60/validation.json</code>
+            <span>Executable checks for validator-run.</span>
+          </a>
+          <a class="card" href="../../../../docs/cento-mcp-server.md">
+            <h3>Cento MCP Docs</h3>
+            <span>Primary setup and tool-surface documentation</span>
+          </a>
+          <a class="card" href="../../../../scripts/cento_mcp_server.py">
+            <h3>Repo-local Cento MCP stdio server</h3>
+            <code>scripts/cento_mcp_server.py</code>
+            <span>Owner: builder. Required: True.</span>
+          </a>
+          <a class="card" href="../../../../docs/cento-mcp-server.md">
+            <h3>Cento MCP setup and operating documentation</h3>
+            <code>docs/cento-mcp-server.md</code>
+            <span>Owner: docs-evidence. Required: True.</span>
+          </a>
+          <a class="card" href="../../../../skills/codex/cento-mcp/SKILL.md">
+            <h3>Codex skill guidance for Cento MCP</h3>
+            <code>skills/codex/cento-mcp/SKILL.md</code>
+            <span>Owner: docs-evidence. Required: True.</span>
+          </a>
+          <a class="card" href="../../../../skills/claude-code/cento-mcp.md">
+            <h3>Claude Code guidance for Cento MCP</h3>
+            <code>skills/claude-code/cento-mcp.md</code>
+            <span>Owner: docs-evidence. Required: True.</span>
+          </a>
+          <a class="card" href="../../../../CLAUDE.md">
+            <h3>Claude Code project entrypoint</h3>
+            <code>CLAUDE.md</code>
+            <span>Owner: docs-evidence. Required: True.</span>
+          </a>
+        </div>
+      </section>
+
+      <section>
+        <h2>Status By Story</h2>
+        <div class="status-list">
+
+          <div class="status-item"><strong>#60</strong><span>Agent Platform: Cento MCP server and Codex/Claude skills</span></div>
+
+          <div class="status-item"><strong>Status</strong><span>Running</span></div>
+
+          <div class="status-item"><strong>Owner</strong><span>anovik-air / builder</span></div>
+
+          <div class="status-item"><strong>Run Dir</strong><span>workspace/runs/agent-work/60</span></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Run / Token</h2>
+        <div class="commands">
+          <code>python3 scripts/story_manifest.py validate workspace/runs/agent-work/60/story.json --check-links</code>
+          <code>python3 scripts/story_manifest.py render-hub workspace/runs/agent-work/60/story.json --check-links</code>
+          <code>python3 scripts/cento_mcp_server.py --list-tools</code>
+          <code>python3 scripts/cento_mcp_server.py --call-tool cento_agent_work_list --arguments &#x27;{}&#x27;</code>
+          <code>cento mcp doctor</code>
+        </div>
+      </section>
+
+      <section>
+        <h2>Screenshots</h2>
+        <div class="cards">
+
+        </div>
+      </section>
+
+      <section>
+        <h2>What To Review</h2>
+        <ul>
+          <li>Acceptance: A developer can install or start the Cento MCP server locally from the repo.</li>
+          <li>Acceptance: Codex has documented skill guidance that prefers Cento MCP tools for board and cluster operations.</li>
+          <li>Acceptance: Claude Code has equivalent project instructions.</li>
+          <li>Acceptance: The MCP exposes common agent-work, story manifest, cluster, bridge, and platform operations.</li>
+          <li>Acceptance: Dangerous actions are intentionally scoped and documented.</li>
+          <li>Acceptance: One validation demo records story, validation, builder, validator, and hub evidence.</li>
+          <li>Evidence: scripts/cento_mcp_server.py</li>
+          <li>Evidence: docs/cento-mcp-server.md</li>
+          <li>Evidence: skills/codex/cento-mcp/SKILL.md</li>
+          <li>Evidence: skills/claude-code/cento-mcp.md</li>
+          <li>Evidence: CLAUDE.md</li>
+          <li>Human handoff: Point MCP-capable clients at the repo-root .mcp.json.</li>
+          <li>Human handoff: Copy .env.mcp.example to .env.mcp on each node and set CENTO_ROOT.</li>
+          <li>Note: The Linux node was used for cross-node context and post-sync validation, but its unrelated dirty industrial-panel work was not modified.</li>
+          <li>Review note must include: Delivered, Validation, Evidence, Residual risk</li>
+          <li>Residual risk must be stated explicitly, even when the risk is none.</li>
+        </ul>
+      </section>
+    </div>
+
+    <footer>
+      Generated from workspace/runs/agent-work/60/story.json. Deliverables manifest: workspace/runs/agent-work/60/deliverables.json.
+    </footer>
+  </main>
+</body>
+</html>

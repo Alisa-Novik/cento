@@ -1,0 +1,50 @@
+{
+  "run_dir": "workspace/runs/agent-work/60",
+  "requires": {
+    "builder_report": "workspace/runs/agent-work/60/builder-report.md",
+    "ui_screenshots": false,
+    "validator_agents": [
+      "anovik-air",
+      "alice-validator"
+    ]
+  },
+  "checks": [
+    {
+      "name": "Python helpers compile",
+      "type": "command",
+      "command": "python3 -m py_compile scripts/cento_mcp_server.py scripts/mcp_tooling.py scripts/story_manifest.py scripts/deliverables_hub.py"
+    },
+    {
+      "name": "MCP config JSON parses",
+      "type": "command",
+      "command": "python3 -c 'import json, pathlib; json.loads(pathlib.Path(\".mcp.json\").read_text()); json.loads(pathlib.Path(\"data/tools.json\").read_text())'"
+    },
+    {
+      "name": "Cento MCP server lists tools",
+      "type": "command",
+      "command": "python3 scripts/cento_mcp_server.py --list-tools"
+    },
+    {
+      "name": "Cento MCP server can inspect board",
+      "type": "command",
+      "command": "python3 scripts/cento_mcp_server.py --call-tool cento_agent_work_list --arguments '{{}}'"
+    },
+    {
+      "name": "Story manifest validates",
+      "type": "command",
+      "command": "python3 scripts/story_manifest.py validate workspace/runs/agent-work/60/story.json --check-links"
+    },
+    {
+      "name": "Story hub renders",
+      "type": "command",
+      "command": "python3 scripts/story_manifest.py render-hub workspace/runs/agent-work/60/story.json --check-links"
+    },
+    {
+      "name": "Generated hub exists",
+      "type": "file",
+      "path": "workspace/runs/agent-work/60/start-here.html",
+      "non_empty": true
+    }
+  ],
+  "report": "workspace/runs/agent-work/60/validation-report.md"
+}

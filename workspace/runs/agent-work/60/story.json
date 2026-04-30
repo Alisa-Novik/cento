@@ -1,0 +1,126 @@
+{
+  "schema_version": "1.0",
+  "issue": {
+    "id": 60,
+    "title": "Agent Platform: Cento MCP server and Codex/Claude skills",
+    "package": "agent-platform",
+    "url": "redmine://issues/60",
+    "status": "Running"
+  },
+  "lane": {
+    "owner": "builder",
+    "role": "builder",
+    "node": "macos",
+    "agent": "anovik-air",
+    "collaborators": [
+      "linux",
+      "validator",
+      "codex",
+      "claude-code"
+    ]
+  },
+  "paths": {
+    "run_dir": "workspace/runs/agent-work/60",
+    "story_manifest": "workspace/runs/agent-work/60/story.json"
+  },
+  "scope": {
+    "goal": "Create a first-class Cento MCP server and companion agent instructions so Codex and Claude Code can operate Cento through safe structured tools.",
+    "acceptance": [
+      "A developer can install or start the Cento MCP server locally from the repo.",
+      "Codex has documented skill guidance that prefers Cento MCP tools for board and cluster operations.",
+      "Claude Code has equivalent project instructions.",
+      "The MCP exposes common agent-work, story manifest, cluster, bridge, and platform operations.",
+      "Dangerous actions are intentionally scoped and documented.",
+      "One validation demo records story, validation, builder, validator, and hub evidence."
+    ]
+  },
+  "routes": [
+    {
+      "name": "Cento MCP Docs",
+      "url": "file:///{root}/docs/cento-mcp-server.md",
+      "purpose": "Primary setup and tool-surface documentation",
+      "auth": "none"
+    }
+  ],
+  "api_endpoints": [],
+  "validation": {
+    "manifest": "workspace/runs/agent-work/60/validation.json",
+    "commands": [
+      {
+        "name": "MCP server lists tools",
+        "command": "python3 scripts/cento_mcp_server.py --list-tools"
+      },
+      {
+        "name": "MCP server can inspect board",
+        "command": "python3 scripts/cento_mcp_server.py --call-tool cento_agent_work_list --arguments '{}'"
+      },
+      {
+        "name": "MCP doctor validates config",
+        "command": "cento mcp doctor"
+      }
+    ],
+    "required_evidence": [
+      "scripts/cento_mcp_server.py",
+      "docs/cento-mcp-server.md",
+      "skills/codex/cento-mcp/SKILL.md",
+      "skills/claude-code/cento-mcp.md",
+      "CLAUDE.md"
+    ]
+  },
+  "deliverables": {
+    "manifest": "workspace/runs/agent-work/60/deliverables.json",
+    "hub": "workspace/runs/agent-work/60/start-here.html"
+  },
+  "screenshots": [],
+  "handoff": {
+    "human_steps": [
+      "Point MCP-capable clients at the repo-root .mcp.json.",
+      "Copy .env.mcp.example to .env.mcp on each node and set CENTO_ROOT."
+    ],
+    "device_access": "none",
+    "notes": [
+      "The Linux node was used for cross-node context and post-sync validation, but its unrelated dirty industrial-panel work was not modified."
+    ]
+  },
+  "expected_outputs": [
+    {
+      "path": "scripts/cento_mcp_server.py",
+      "owner": "builder",
+      "description": "Repo-local Cento MCP stdio server",
+      "required": true
+    },
+    {
+      "path": "docs/cento-mcp-server.md",
+      "owner": "docs-evidence",
+      "description": "Cento MCP setup and operating documentation",
+      "required": true
+    },
+    {
+      "path": "skills/codex/cento-mcp/SKILL.md",
+      "owner": "docs-evidence",
+      "description": "Codex skill guidance for Cento MCP",
+      "required": true
+    },
+    {
+      "path": "skills/claude-code/cento-mcp.md",
+      "owner": "docs-evidence",
+      "description": "Claude Code guidance for Cento MCP",
+      "required": true
+    },
+    {
+      "path": "CLAUDE.md",
+      "owner": "docs-evidence",
+      "description": "Claude Code project entrypoint",
+      "required": true
+    }
+  ],
+  "review_gate": {
+    "required_sections": [
+      "Delivered",
+      "Validation",
+      "Evidence",
+      "Residual risk"
+    ],
+    "residual_risk_required": true
+  }
+}

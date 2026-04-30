@@ -395,6 +395,34 @@
       ]
     },
     {
+      "id": "cento-mcp",
+      "name": "Cento MCP Server",
+      "lane": "agent ops",
+      "kind": "python",
+      "entrypoint": "./scripts/cento_mcp_server.py",
+      "description": "Local MCP stdio server that exposes safe Cento agent-work, story manifest, cluster, bridge, and context tools.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "python3 scripts/cento_mcp_server.py --list-tools",
+        "python3 scripts/cento_mcp_server.py --call-tool cento_agent_work_list --arguments '{}'",
+        "python3 scripts/cento_mcp_server.py --call-tool cento_context --arguments '{\"remote\":false}'",
+        "cento mcp doctor"
+      ],
+      "outputs": [
+        "MCP tools over stdio",
+        "structured JSON command results"
+      ],
+      "notes": [
+        "Configured as the `cento` server in .mcp.json.",
+        "The server exposes explicit write tools for agent-work mutations and story hub generation.",
+        "Set CENTO_MCP_READ_ONLY=1 to disable write tools.",
+        "Local paths are constrained to the Cento repo root."
+      ]
+    },
+    {
       "id": "scan",
       "name": "Scan One Pager",
       "lane": "general ops",

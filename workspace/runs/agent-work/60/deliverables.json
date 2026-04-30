@@ -1,0 +1,106 @@
+{
+  "title": "#60 Agent Platform: Cento MCP server and Codex/Claude skills",
+  "subtitle": "Package: agent-platform | Lane: builder on macos | Generated from story.json.",
+  "badge": "Running",
+  "footer": "Generated from workspace/runs/agent-work/60/story.json. Deliverables manifest: workspace/runs/agent-work/60/deliverables.json.",
+  "use_first": [
+    {
+      "title": "Story Contract",
+      "href": "story.json",
+      "description": "Shared story.json used by Builder, Validator, Docs/Evidence, and Coordinator lanes.",
+      "code": "workspace/runs/agent-work/60/story.json",
+      "primary": true
+    },
+    {
+      "title": "Redmine Issue",
+      "href": "#",
+      "description": "Current status: Running.",
+      "code": "redmine://issues/60"
+    },
+    {
+      "title": "Validation Manifest",
+      "href": "validation.json",
+      "description": "Executable checks for validator-run.",
+      "code": "workspace/runs/agent-work/60/validation.json"
+    },
+    {
+      "title": "Cento MCP Docs",
+      "href": "../../../../docs/cento-mcp-server.md",
+      "description": "Primary setup and tool-surface documentation"
+    },
+    {
+      "title": "Repo-local Cento MCP stdio server",
+      "href": "../../../../scripts/cento_mcp_server.py",
+      "description": "Owner: builder. Required: True.",
+      "code": "scripts/cento_mcp_server.py"
+    },
+    {
+      "title": "Cento MCP setup and operating documentation",
+      "href": "../../../../docs/cento-mcp-server.md",
+      "description": "Owner: docs-evidence. Required: True.",
+      "code": "docs/cento-mcp-server.md"
+    },
+    {
+      "title": "Codex skill guidance for Cento MCP",
+      "href": "../../../../skills/codex/cento-mcp/SKILL.md",
+      "description": "Owner: docs-evidence. Required: True.",
+      "code": "skills/codex/cento-mcp/SKILL.md"
+    },
+    {
+      "title": "Claude Code guidance for Cento MCP",
+      "href": "../../../../skills/claude-code/cento-mcp.md",
+      "description": "Owner: docs-evidence. Required: True.",
+      "code": "skills/claude-code/cento-mcp.md"
+    },
+    {
+      "title": "Claude Code project entrypoint",
+      "href": "../../../../CLAUDE.md",
+      "description": "Owner: docs-evidence. Required: True.",
+      "code": "CLAUDE.md"
+    }
+  ],
+  "stories": [
+    {
+      "label": "#60",
+      "description": "Agent Platform: Cento MCP server and Codex/Claude skills"
+    },
+    {
+      "label": "Status",
+      "description": "Running"
+    },
+    {
+      "label": "Owner",
+      "description": "anovik-air / builder"
+    },
+    {
+      "label": "Run Dir",
+      "description": "workspace/runs/agent-work/60"
+    }
+  ],
+  "commands": [
+    "python3 scripts/story_manifest.py validate workspace/runs/agent-work/60/story.json --check-links",
+    "python3 scripts/story_manifest.py render-hub workspace/runs/agent-work/60/story.json --check-links",
+    "python3 scripts/cento_mcp_server.py --list-tools",
+    "python3 scripts/cento_mcp_server.py --call-tool cento_agent_work_list --arguments '{}'",
+    "cento mcp doctor"
+  ],
+  "screenshots": [],
+  "review": [
+    "Acceptance: A developer can install or start the Cento MCP server locally from the repo.",
+    "Acceptance: Codex has documented skill guidance that prefers Cento MCP tools for board and cluster operations.",
+    "Acceptance: Claude Code has equivalent project instructions.",
+    "Acceptance: The MCP exposes common agent-work, story manifest, cluster, bridge, and platform operations.",
+    "Acceptance: Dangerous actions are intentionally scoped and documented.",
+    "Acceptance: One validation demo records story, validation, builder, validator, and hub evidence.",
+    "Evidence: scripts/cento_mcp_server.py",
+    "Evidence: docs/cento-mcp-server.md",
+    "Evidence: skills/codex/cento-mcp/SKILL.md",
+    "Evidence: skills/claude-code/cento-mcp.md",
+    "Evidence: CLAUDE.md",
+    "Human handoff: Point MCP-capable clients at the repo-root .mcp.json.",
+    "Human handoff: Copy .env.mcp.example to .env.mcp on each node and set CENTO_ROOT.",
+    "Note: The Linux node was used for cross-node context and post-sync validation, but its unrelated dirty industrial-panel work was not modified.",
+    "Review note must include: Delivered, Validation, Evidence, Residual risk",
+    "Residual risk must be stated explicitly, even when the risk is none."
+  ]
+}

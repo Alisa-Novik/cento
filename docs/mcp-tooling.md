@@ -12,6 +12,8 @@
   Root-level setup notes.
 - `mcp/tool-calls.md`
   Tool-call guidance and intent mapping.
+- `scripts/cento_mcp_server.py`
+  Repo-local Cento MCP stdio server for agent-work, story manifests, cluster state, bridge state, and platform lookup.
 
 ## Command surface
 
@@ -26,6 +28,8 @@
 
 ## Default servers
 
+- `cento`
+  Structured Cento operations for local agents. Use it for board, story, cluster, and bridge workflows.
 - `filesystem`
   Local repo access scoped by `CENTO_ROOT`.
 - `fetch`
@@ -42,3 +46,14 @@ cento mcp doctor
 ```
 
 After that, point your MCP-capable client at the repo-root `.mcp.json`.
+
+## Cento Server
+
+Smoke-test the local Cento MCP server:
+
+```bash
+python3 scripts/cento_mcp_server.py --list-tools
+python3 scripts/cento_mcp_server.py --call-tool cento_agent_work_list --arguments '{}'
+```
+
+Detailed usage lives in `docs/cento-mcp-server.md`.

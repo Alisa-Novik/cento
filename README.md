@@ -376,6 +376,7 @@ It includes:
 - `.mcp.json` as the canonical repo-root config
 - `.env.mcp.example` for expected environment values
 - `mcp/tool-calls.md` for intent-to-tool guidance
+- `scripts/cento_mcp_server.py` as the local `cento` MCP server for board, story, cluster, bridge, and platform operations
 - `cento mcp` for init, doctor, docs, and path inspection
 
 Examples:
@@ -385,7 +386,10 @@ cento mcp doctor
 cento mcp init --write-env
 cento mcp docs
 cento mcp paths
+python3 scripts/cento_mcp_server.py --list-tools
 ```
+
+See `docs/cento-mcp-server.md` for the tool surface and Codex/Claude Code workflow.
 
 ## Scan One Pager
 

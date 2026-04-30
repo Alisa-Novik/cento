@@ -1,5 +1,11 @@
 {
   "mcpServers": {
+    "cento": {
+      "command": "python3",
+      "args": [
+        "scripts/cento_mcp_server.py"
+      ]
+    },
     "filesystem": {
       "command": "npx",
       "args": [

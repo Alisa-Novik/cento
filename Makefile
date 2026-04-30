@@ -11,7 +11,7 @@ ARGS ?=
 .PHONY: check tree index platforms inventory snapshot scaffold batch search bt-audio-doctor audio-quick-connect kitty-theme wallpaper display i3reorg dashboard preset bridge quick-help quick-help-fzf network network-tui jobs idea-board tg tui crm funnel funnel-check burp mcp scan cento redmine-e2e terminal-e2e industrial-e2e
 
 check:
-	$(PYTHON) -m py_compile scripts/agent_work.py scripts/bluetooth_audio_doctor.py scripts/cento_interactive.py scripts/cluster_job_runner.py scripts/crm_module.py scripts/dashboard_server.py scripts/funnel_check.py scripts/funnel_module.py scripts/gather_context.py scripts/idea_board_server.py scripts/industrial_focus.py scripts/industrial_panel.py scripts/industrial_status.py scripts/jobs_server.py scripts/mcp_tooling.py scripts/network_web_server.py scripts/platform_report.py scripts/scan_onepager.py scripts/tool_index.py
+	$(PYTHON) -m py_compile scripts/agent_work.py scripts/bluetooth_audio_doctor.py scripts/cento_interactive.py scripts/cluster_job_runner.py scripts/crm_module.py scripts/dashboard_server.py scripts/funnel_check.py scripts/funnel_module.py scripts/gather_context.py scripts/idea_board_server.py scripts/industrial_focus.py scripts/industrial_panel.py scripts/industrial_status.py scripts/jobs_server.py scripts/mcp_tooling.py scripts/cento_mcp_server.py scripts/network_web_server.py scripts/platform_report.py scripts/scan_onepager.py scripts/tool_index.py
 	go build -o workspace/tmp/cento-interactive-check ./scripts/cento_interactive.go
 	go build -o workspace/tmp/cento-daily-check ./scripts/daily_tui.go
 	go build -o workspace/tmp/cento-industrial-aux-tui-check ./scripts/industrial_aux_tui.go

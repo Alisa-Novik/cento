@@ -134,6 +134,19 @@
   - `cento mcp docs`
   - `cento mcp paths`
 
+## Cento MCP Server
+
+- `id`: `cento-mcp`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/cento_mcp_server.py`
+- description: Local MCP stdio server that exposes safe Cento agent-work, story manifest, cluster, bridge, and context tools.
+- commands:
+  - `python3 scripts/cento_mcp_server.py --list-tools`
+  - `python3 scripts/cento_mcp_server.py --call-tool cento_agent_work_list --arguments '{}'`
+  - `python3 scripts/cento_mcp_server.py --call-tool cento_context --arguments '{"remote":false}'`
+  - `cento mcp doctor`
+
 ## Scan One Pager
 
 - `id`: `scan`
@@ -419,6 +432,11 @@
   - `cento cluster heartbeat iphone`
   - `cento cluster metric memory`
   - `cento cluster ask "send me notification with total memory consumption on the cluster"`
+  - `cento cluster activity linux`
+  - `cento cluster activity --json linux`
+  - `cento cluster exec linux -- 'cd /home/alice/projects/cento && pwd'`
+  - `scripts/cluster_health_e2e.sh`
+  - `cento cluster companion-setup iphone`
 
 ## Gather Context
 
@@ -444,3 +462,69 @@
   - `cento network-tui`
   - `cento network-tui --no-remote`
   - `./scripts/network_tui.sh`
+
+## Agent Work Tracker
+
+- `id`: `agent-work`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/agent_work.py`
+- description: Redmine-backed Jira-style work tracker for assigning, splitting, dispatching, and reviewing Cento agent tasks across the Mac/Linux cluster.
+- commands:
+  - `cento agent-work bootstrap`
+  - `cento agent-work create --title "Fix dashboard" --node linux --agent codex`
+  - `cento agent-work split --title "Improve mission control" --nodes linux,macos --task "Backend status" --task "Mac tile view"`
+  - `cento agent-work list`
+  - `cento agent-work show 123`
+  - `cento agent-work claim 123 --node linux --agent codex`
+  - `cento agent-work update 123 --status review --note "implemented and tested"`
+  - `cento agent-work prompt 123`
+  - `cento agent-work dispatch 123 --node linux --dry-run`
+  - `cento agent-work runs`
+  - `cento agent-work runs --json --active`
+  - `cento agent-work run-status RUN_ID --json`
+
+## Cento Incident Response
+
+- `id`: `incident`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/incident_response.py`
+- description: Bounded incident checks for Cento control-plane failures, with guarded SEV2 agent-work escalation for iPhone ce ingress failures.
+- commands:
+  - `cento incident check iphone-ce`
+  - `cento incident check iphone-ce --json --no-create`
+  - `cento incident status`
+  - `cento incident install iphone-ce --interval 300 --dry-run`
+  - `cento incident install iphone-ce --interval 300`
+  - `cento incident uninstall iphone-ce`
+  - `cento incident docs`
+
+## opencode
+
+- `id`: `opencode`
+- `lane`: `ai tools`
+- `kind`: `shell`
+- `entrypoint`: `./scripts/opencode.sh`
+- `wrapper`: `~/bin/opencode`
+- description: Thin wrapper around opencode (Alisa-Novik fork of sst/opencode) — an open-source AI coding agent TUI.
+- commands:
+  - `cento opencode`
+  - `cento opencode --version`
+  - `cento opencode --help`
+  - `cento opencode fork-status`
+
+## Cento Mobile
+
+- `id`: `mobile`
+- `lane`: `mobile ops`
+- `kind`: `shell`
+- `entrypoint`: `./scripts/mobile.sh`
+- description: Native iOS/PWA mobile helper commands, including repeatable iOS e2e validation against the local mobile gateway.
+- commands:
+  - `cento mobile e2e`
+  - `CENTO_IOS_E2E_PHYSICAL=false cento mobile e2e`
+  - `CENTO_MOBILE_TOKEN="$(cento mobile token-from-linux)" cento mobile e2e`
+  - `cento mobile token-from-linux`
+  - `cento mobile watch-status`
+  - `cento mobile docs`

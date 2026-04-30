@@ -1,0 +1,87 @@
+{
+  "issue": 60,
+  "subject": "Agent Platform: Cento MCP server and Codex/Claude skills",
+  "result": "pass",
+  "agent": "anovik-air",
+  "node": "macos",
+  "manifest": "workspace/runs/agent-work/60/validation.json",
+  "evidence": [
+    "workspace/runs/agent-work/60/builder-report.md",
+    "workspace/runs/agent-work/60/start-here.html",
+    "workspace/runs/agent-work/60/validation-report.md",
+    "workspace/runs/agent-work/60/validation-report.json"
+  ],
+  "checks": [
+    {
+      "ok": true,
+      "message": "exists",
+      "path": "workspace/runs/agent-work/60/builder-report.md",
+      "evidence": "workspace/runs/agent-work/60/builder-report.md",
+      "name": "Builder report exists",
+      "type": "file"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "python3 -m py_compile scripts/cento_mcp_server.py scripts/mcp_tooling.py scripts/story_manifest.py scripts/deliverables_hub.py",
+      "stdout": "",
+      "stderr": "",
+      "name": "Python helpers compile",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "python3 -c 'import json, pathlib; json.loads(pathlib.Path(\".mcp.json\").read_text()); json.loads(pathlib.Path(\"data/tools.json\").read_text())'",
+      "stdout": "",
+      "stderr": "",
+      "name": "MCP config JSON parses",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "python3 scripts/cento_mcp_server.py --list-tools",
+      "stdout": "  ],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"cento_agent_work_validate_run\",\n      \"description\": \"Run validation.json checks and record validator result. This is an explicit write tool unless no_update is true. Disabled when CENTO_MCP_READ_ONLY=1.\",\n      \"inputSchema\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"issue\": {\n            \"type\": \"integer\"\n          },\n          \"manifest\": {\n            \"type\": \"string\"\n          },\n          \"note\": {\n            \"type\": \"string\"\n          },\n          \"node\": {\n            \"type\": \"string\"\n          },\n          \"agent\": {\n            \"type\": \"string\"\n          },\n          \"no_update\": {\n            \"type\": \"boolean\"\n          },\n          \"timeout\": {\n            \"type\": \"integer\",\n            \"minimum\": 1\n          }\n        },\n        \"required\": [\n          \"issue\"\n        ],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"cento_bridge_mesh_status\",\n      \"description\": \"Show secure bridge mesh socket status.\",\n      \"inputSchema\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"timeout\": {\n            \"type\": \"integer\",\n            \"minimum\": 1\n          }\n        },\n        \"required\": [],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"cento_cluster_status\",\n      \"description\": \"Show Cento cluster status.\",\n      \"inputSchema\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"timeout\": {\n            \"type\": \"integer\",\n            \"minimum\": 1\n          }\n        },\n        \"required\": [],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"cento_context\",\n      \"description\": \"Gather local or local+remote Cento context.\",\n      \"inputSchema\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"remote\": {\n            \"type\": \"boolean\"\n          },\n          \"json\": {\n            \"type\": \"boolean\"\n          },\n          \"timeout\": {\n            \"type\": \"integer\",\n            \"minimum\": 1\n          }\n        },\n        \"required\": [],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"cento_platforms\",\n      \"description\": \"Report Cento platform support from data/tools.json.\",\n      \"inputSchema\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"platform\": {\n            \"type\": \"string\",\n            \"enum\": [\n              \"linux\",\n              \"macos\"\n            ]\n          },\n          \"markdown\": {\n            \"type\": \"boolean\"\n          }\n        },\n        \"required\": [],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"cento_story_manifest_render_hub\",\n      \"description\": \"Generate deliverables.json and start-here.html from story.json. This is an explicit write tool. Disabled when CENTO_MCP_READ_ONLY=1.\",\n      \"inputSchema\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"manifest\": {\n            \"type\": \"string\"\n          },\n          \"deliverables\": {\n            \"type\": \"string\"\n          },\n          \"output\": {\n            \"type\": \"string\"\n          },\n          \"check_links\": {\n            \"type\": \"boolean\"\n          },\n          \"check_only\": {\n            \"type\": \"boolean\"\n          },\n          \"json\": {\n            \"type\": \"boolean\"\n          }\n        },\n        \"required\": [\n          \"manifest\"\n        ],\n        \"additionalProperties\": false\n      }\n    },\n    {\n      \"name\": \"cento_story_manifest_validate\",\n      \"description\": \"Validate a story.json manifest.\",\n      \"inputSchema\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"manifest\": {\n            \"type\": \"string\"\n          },\n          \"check_links\": {\n            \"type\": \"boolean\"\n          },\n          \"json\": {\n            \"type\": \"boolean\"\n          }\n        },\n        \"required\": [\n          \"manifest\"\n        ],\n        \"additionalProperties\": false\n      }\n    }\n  ],\n  \"read_only\": false,\n  \"root\": \"/Users/anovik-air/cento\"\n}\n",
+      "stderr": "",
+      "name": "Cento MCP server lists tools",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "python3 scripts/cento_mcp_server.py --call-tool cento_agent_work_list --arguments '{}'",
+      "stdout": "perational drilldown and failure visibility\\n   34  Queued     linux   validator  industrial-j industrial-panels- Industrial OS Jobs Dashboard Panel: Validation evidence and terminal snapshots\\n   35  Running    linux   coordinato industrial-p industrial-panels- Industrial OS Cluster Status Panel\\n   36  Validating linux   builder    alice        industrial-panels- Industrial OS Cluster Status Panel: Authoritative node and mesh health model\\n   37  Running    linux   builder    alice        industrial-panels- Industrial OS Cluster Status Panel: Degraded-state guidance and owner hints\\n   38  Queued     linux   validator  industrial-c industrial-panels- Industrial OS Cluster Status Panel: Cluster validation across live and fixture states\\n   39  Running    linux   coordinato industrial-p industrial-panels- Industrial OS Activity Feed Panel\\n   40  Queued     linux   builder    industrial-a industrial-panels- Industrial OS Activity Feed Panel: Structured event ingestion\\n   41  Queued     linux   builder    industrial-a industrial-panels- Industrial OS Activity Feed Panel: Feed filtering, dedupe, and display polish\\n   42  Queued     linux   validator  industrial-a industrial-panels- Industrial OS Activity Feed Panel: Activity parser and visual evidence\\n   43  Running    linux   coordinato industrial-p industrial-panels- Industrial OS Quick Actions Panel\\n   44  Queued     linux   builder    industrial-a industrial-panels- Industrial OS Quick Actions Panel: Action registry and command health\\n   45  Queued     linux   builder    industrial-a industrial-panels- Industrial OS Quick Actions Panel: Selection, execution, and result feedback\\n   46  Queued     linux   validator  industrial-a industrial-panels- Industrial OS Quick Actions Panel: Action safety and e2e validation\\n   48  Queued     linux   coordinato spark-docs-e spark-docs-evidenc Spark Docs/Evidence Agent Lane\\n   49  Review     linux   validator  alice        spark-docs-evidenc Spark Docs/Evidence Agent Lane: Define the Docs/Evidence lane contract, required inputs from story manifests, required outputs, and Redmine review-note sections: Delivered, Validation, Evidence, Residual risk.\\n   50  Review     linux   validator  alice        spark-docs-evidenc Spark Docs/Evidence Agent Lane: Implement or specify the evidence hub workflow: start-here.html, screenshot index, validation log links, Redmine status links, and append-only captain notes.\\n   51  Queued     linux   builder    spark-docs-e spark-docs-evidenc Spark Docs/Evidence Agent Lane: Create validation evidence templates and examples for one existing mobile/PWA story, preserving old artifacts instead of rewriting history.\\n   52  Queued     linux   coordinato spark-coordi spark-coordinator- Spark Coordinator Agent Lane\\n   53  Queued     linux   coordinato spark-coordi spark-coordinator- Spark Coordinator Agent Lane: Define the Coordinator contract: when to split stories, when to combine related work, how to assign builder/validator/docs lanes, and how to keep Redmine statuses accurate.\\n   54  Queued     linux   coordinato spark-coordi spark-coordinator- Spark Coordinator Agent Lane: Implement or specify coordinator operating commands/checklists for story intake, acceptance contracts, shared evidence detection, state-change notifications, and human handoff escalation.\\n   55  Queued     linux   coordinato spark-coordi spark-coordinator- Spark Coordinator Agent Lane: Run one process dry-run over an existing package and produce a coordinator report showing assignments, dependencies, review gates, notification points, and unresolved blockers.\\n   57  Queued     linux   builder    alice        improve-dev-proces Process Scaling: Strict review gate\\n   58  Queued     linux   builder    alice        improve-dev-proces Process Scaling: Screenshot runner from story manifest\\n   60  Validating macos   builder    anovik-air   agent-platform     Agent Platform: Cento MCP server and Codex/Claude skills\\n\",\n  \"stderr\": \"\"\n}\n",
+      "stderr": "",
+      "name": "Cento MCP server can inspect board",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "python3 scripts/story_manifest.py validate workspace/runs/agent-work/60/story.json --check-links",
+      "stdout": "story_manifest: /Users/anovik-air/cento/workspace/runs/agent-work/60/story.json\nissue: #60 Agent Platform: Cento MCP server and Codex/Claude skills\npackage: agent-platform\nlane: builder owner=builder node=macos agent=anovik-air\nrun_dir: workspace/runs/agent-work/60\nroutes: 1\napi_endpoints: 0\nscreenshots: 0\nexpected_outputs: 5\nstatus: ok\n",
+      "stderr": "",
+      "name": "Story manifest validates",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "python3 scripts/story_manifest.py render-hub workspace/runs/agent-work/60/story.json --check-links",
+      "stdout": "deliverables: workspace/runs/agent-work/60/deliverables.json\nhub: workspace/runs/agent-work/60/start-here.html\n",
+      "stderr": "",
+      "name": "Story hub renders",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exists",
+      "path": "workspace/runs/agent-work/60/start-here.html",
+      "evidence": "workspace/runs/agent-work/60/start-here.html",
+      "name": "Generated hub exists",
+      "type": "file"
+    }
+  ],
+  "updated_at": "2026-04-30T05:00:06.446711+00:00"
+}
