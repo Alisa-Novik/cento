@@ -24,6 +24,8 @@ cento agent-work dispatch-pool --limit 3
 
 `dispatch-pool` is the safe way to prepare several cheap Spark/Codex workers. It is plan-only by default, so it does not create run ledger entries until the operator passes `--execute`.
 
+For runs dispatched to another node, Mac-side `runs` and `run-status` perform a bounded remote reconciliation before marking the local ledger stale. A Linux run that is still active remotely reports `remote_running`; a finished remote run reports the remote health such as `remote_ok`. Use `--no-remote-reconcile` when you need a strictly local, no-SSH view.
+
 ## Industrial OS Pane
 
 The main Industrial OS workspace now uses an Agents pane in the old Activity pane slot:

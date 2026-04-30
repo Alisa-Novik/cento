@@ -1,0 +1,69 @@
+{
+  "issue": 82,
+  "subject": "Coordination: Cross-node run ledger reconciliation",
+  "result": "pass",
+  "agent": "anovik-air",
+  "node": "macos",
+  "manifest": "workspace/runs/agent-work/82/validation.json",
+  "evidence": [
+    "workspace/runs/agent-work/82/builder-report.md",
+    "workspace/runs/agent-work/82/start-here.html",
+    "workspace/runs/agent-work/82/validation-report.md",
+    "workspace/runs/agent-work/82/validation-report.json"
+  ],
+  "checks": [
+    {
+      "ok": true,
+      "message": "exists",
+      "path": "workspace/runs/agent-work/82/builder-report.md",
+      "evidence": "workspace/runs/agent-work/82/builder-report.md",
+      "name": "Builder report exists",
+      "type": "file"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "python3 -m py_compile scripts/agent_work.py",
+      "stdout": "",
+      "stderr": "",
+      "name": "Agent work helper compiles",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "python3 scripts/agent_work.py runs --json --active --no-remote-reconcile",
+      "stdout": "{\n  \"runs\": [\n    {\n      \"run_id\": \"untracked-codex-12739\",\n      \"issue_id\": null,\n      \"package\": \"\",\n      \"node\": \"macos\",\n      \"agent\": \"anovik-air\",\n      \"role\": \"interactive\",\n      \"runtime\": \"codex\",\n      \"model\": \"\",\n      \"command\": \"codex\",\n      \"pid\": 12739,\n      \"ppid\": 12577,\n      \"tmux_session\": \"\",\n      \"status\": \"untracked_interactive\",\n      \"health\": \"untracked\",\n      \"started_at\": \"\",\n      \"ended_at\": null,\n      \"exit_code\": null,\n      \"prompt_path\": \"\",\n      \"log_path\": \"\",\n      \"cwd\": \"\",\n      \"git_head\": \"\",\n      \"ledger_path\": \"\",\n      \"source\": \"ps\",\n      \"elapsed\": \"11:48:41\"\n    },\n    {\n      \"run_id\": \"untracked-codex-35401\",\n      \"issue_id\": null,\n      \"package\": \"\",\n      \"node\": \"macos\",\n      \"agent\": \"anovik-air\",\n      \"role\": \"interactive\",\n      \"runtime\": \"codex\",\n      \"model\": \"\",\n      \"command\": \"codex\",\n      \"pid\": 35401,\n      \"ppid\": 35313,\n      \"tmux_session\": \"\",\n      \"status\": \"untracked_interactive\",\n      \"health\": \"untracked\",\n      \"started_at\": \"\",\n      \"ended_at\": null,\n      \"exit_code\": null,\n      \"prompt_path\": \"\",\n      \"log_path\": \"\",\n      \"cwd\": \"\",\n      \"git_head\": \"\",\n      \"ledger_path\": \"\",\n      \"source\": \"ps\",\n      \"elapsed\": \"10:41:07\"\n    }\n  ],\n  \"count\": 2,\n  \"updated_at\": \"2026-04-30T05:27:44.047349+00:00\"\n}\n",
+      "stderr": "",
+      "name": "Local active runs still works without remote reconciliation",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "python3 -c 'import json, pathlib; p=json.loads(pathlib.Path(\"workspace/runs/agent-work/82/remote-run-status.json\").read_text()); assert p.get(\"remote_reconcile\") == \"ok\" and p.get(\"remote_status\")'",
+      "stdout": "",
+      "stderr": "",
+      "name": "Remote reconciliation evidence has remote status",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "python3 scripts/story_manifest.py render-hub workspace/runs/agent-work/82/story.json --check-links",
+      "stdout": "deliverables: workspace/runs/agent-work/82/deliverables.json\nhub: workspace/runs/agent-work/82/start-here.html\n",
+      "stderr": "",
+      "name": "Story hub renders",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exists",
+      "path": "workspace/runs/agent-work/82/start-here.html",
+      "evidence": "workspace/runs/agent-work/82/start-here.html",
+      "name": "Generated hub exists",
+      "type": "file"
+    }
+  ],
+  "updated_at": "2026-04-30T05:27:44.099389+00:00"
+}

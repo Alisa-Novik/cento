@@ -1,0 +1,95 @@
+{
+  "schema_version": "1.0",
+  "issue": {
+    "id": 82,
+    "title": "Coordination: Cross-node run ledger reconciliation",
+    "package": "agent-platform",
+    "url": "redmine://issues/82",
+    "status": "Running"
+  },
+  "lane": {
+    "owner": "builder",
+    "role": "builder",
+    "node": "macos",
+    "agent": "anovik-air",
+    "collaborators": [
+      "linux",
+      "spark-workers"
+    ]
+  },
+  "paths": {
+    "run_dir": "workspace/runs/agent-work/82",
+    "story_manifest": "workspace/runs/agent-work/82/story.json"
+  },
+  "scope": {
+    "goal": "Make Mac-side agent run status reconcile with remote Linux run ledgers before declaring a dispatched worker stale.",
+    "acceptance": [
+      "Remote Linux run-status is queried with a bounded timeout for remote runs.",
+      "Mac-side run-status records remote reconciliation details.",
+      "Operators can disable remote reconciliation with --no-remote-reconcile.",
+      "Documentation explains remote_running/remote health behavior."
+    ]
+  },
+  "routes": [],
+  "api_endpoints": [],
+  "validation": {
+    "manifest": "workspace/runs/agent-work/82/validation.json",
+    "commands": [
+      {
+        "name": "Agent work helper compiles",
+        "command": "python3 -m py_compile scripts/agent_work.py"
+      },
+      {
+        "name": "Run status local mode works",
+        "command": "python3 scripts/agent_work.py runs --json --active --no-remote-reconcile"
+      }
+    ],
+    "required_evidence": [
+      "scripts/agent_work.py",
+      "docs/agent-run-ledger.md",
+      "workspace/runs/agent-work/82/remote-run-status.json"
+    ]
+  },
+  "deliverables": {
+    "manifest": "workspace/runs/agent-work/82/deliverables.json",
+    "hub": "workspace/runs/agent-work/82/start-here.html"
+  },
+  "screenshots": [],
+  "handoff": {
+    "human_steps": [],
+    "device_access": "none",
+    "notes": [
+      "Observed on #34 after dispatch-pool started a Linux Spark validator.",
+      "The fix does not touch the Linux checkout or remote worker files."
+    ]
+  },
+  "expected_outputs": [
+    {
+      "path": "scripts/agent_work.py",
+      "owner": "builder",
+      "description": "Remote run-status reconciliation implementation",
+      "required": true
+    },
+    {
+      "path": "docs/agent-run-ledger.md",
+      "owner": "docs-evidence",
+      "description": "Remote reconciliation documentation",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/82/remote-run-status.json",
+      "owner": "validator",
+      "description": "Evidence from the #34 Linux Spark validator run",
+      "required": true
+    }
+  ],
+  "review_gate": {
+    "required_sections": [
+      "Delivered",
+      "Validation",
+      "Evidence",
+      "Residual risk"
+    ],
+    "residual_risk_required": true
+  }
+}

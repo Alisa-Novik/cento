@@ -1,0 +1,40 @@
+{
+  "run_dir": "workspace/runs/agent-work/82",
+  "requires": {
+    "builder_report": "workspace/runs/agent-work/82/builder-report.md",
+    "ui_screenshots": false,
+    "validator_agents": [
+      "anovik-air",
+      "alice-validator"
+    ]
+  },
+  "checks": [
+    {
+      "name": "Agent work helper compiles",
+      "type": "command",
+      "command": "python3 -m py_compile scripts/agent_work.py"
+    },
+    {
+      "name": "Local active runs still works without remote reconciliation",
+      "type": "command",
+      "command": "python3 scripts/agent_work.py runs --json --active --no-remote-reconcile"
+    },
+    {
+      "name": "Remote reconciliation evidence has remote status",
+      "type": "command",
+      "command": "python3 -c 'import json, pathlib; p=json.loads(pathlib.Path(\"workspace/runs/agent-work/82/remote-run-status.json\").read_text()); assert p.get(\"remote_reconcile\") == \"ok\" and p.get(\"remote_status\")'"
+    },
+    {
+      "name": "Story hub renders",
+      "type": "command",
+      "command": "python3 scripts/story_manifest.py render-hub workspace/runs/agent-work/82/story.json --check-links"
+    },
+    {
+      "name": "Generated hub exists",
+      "type": "file",
+      "path": "workspace/runs/agent-work/82/start-here.html",
+      "non_empty": true
+    }
+  ],
+  "report": "workspace/runs/agent-work/82/validation-report.md"
+}

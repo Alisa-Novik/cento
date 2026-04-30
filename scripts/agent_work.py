@@ -42,6 +42,7 @@ ROLE_CHOICES = ("builder", "validator", "coordinator")
 VALIDATION_RESULT_CHOICES = ("pass", "fail", "blocked")
 ACTIVE_RUN_STATUSES = {"planned", "launching", "running"}
 ENDED_RUN_STATUSES = {"dry_run", "succeeded", "failed", "blocked", "stale", "exited_unknown"}
+REMOTE_RECONCILE_TIMEOUT_SECONDS = int(os.environ.get("CENTO_RUN_REMOTE_RECONCILE_TIMEOUT", "8"))
 DEFAULT_RUNTIME_REGISTRY = {
     "routing": "weighted",
     "runtimes": [
@@ -383,7 +384,57 @@ def tmux_session_alive(session: str | None) -> bool:
     return proc.returncode == 0
 
 
-def reconcile_agent_run(record: dict[str, Any], *, write: bool = False) -> dict[str, Any]:
+def json_from_mixed_stdout(value: str) -> dict[str, Any]:
+    start = value.find("{")
+    end = value.rfind("}")
+    if start < 0 or end < start:
+        return {}
+    try:
+        payload = json.loads(value[start : end + 1])
+    except json.JSONDecodeError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def remote_run_status(record: dict[str, Any]) -> dict[str, Any]:
+    node = str(record.get("node") or "")
+    run_id = str(record.get("run_id") or "")
+    if not node or not run_id or node == current_node():
+        return {}
+    if node != "linux":
+        return {"remote_reconcile": "unsupported_node", "remote_node": node}
+    command = (
+        "cd /home/alice/projects/cento && "
+        f"python3 scripts/agent_work.py run-status {shlex.quote(run_id)} --json --reconcile"
+    )
+    try:
+        proc = subprocess.run(
+            [cento_command(), "bridge", "to-linux", "--", command],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=REMOTE_RECONCILE_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {"remote_reconcile": "unreachable", "remote_node": node, "remote_error": str(exc)}
+    if proc.returncode != 0:
+        return {
+            "remote_reconcile": "failed",
+            "remote_node": node,
+            "remote_exit_code": proc.returncode,
+            "remote_error": (proc.stderr or proc.stdout)[-1000:],
+        }
+    payload = json_from_mixed_stdout(proc.stdout)
+    if not payload:
+        return {"remote_reconcile": "invalid_json", "remote_node": node, "remote_error": proc.stdout[-1000:]}
+    payload["remote_reconcile"] = "ok"
+    payload["remote_node"] = node
+    return payload
+
+
+def reconcile_agent_run(record: dict[str, Any], *, write: bool = False, remote: bool = True) -> dict[str, Any]:
     reconciled = dict(record)
     status = str(reconciled.get("status") or "unknown")
     pid_running = pid_alive(reconciled.get("pid")) or pid_alive(reconciled.get("child_pid"))
@@ -394,6 +445,32 @@ def reconcile_agent_run(record: dict[str, Any], *, write: bool = False) -> dict[
         if pid_running or tmux_running:
             reconciled["status"] = "running"
             reconciled["health"] = "running"
+        elif remote and str(reconciled.get("node") or "") not in {"", current_node()}:
+            remote_status = remote_run_status(reconciled)
+            reconciled["remote_reconcile"] = remote_status.get("remote_reconcile", "")
+            reconciled["remote_node"] = remote_status.get("remote_node", reconciled.get("node", ""))
+            if remote_status.get("remote_reconcile") == "ok":
+                reconciled["remote_status"] = remote_status.get("status", "")
+                reconciled["remote_health"] = remote_status.get("health", "")
+                reconciled["remote_pid"] = remote_status.get("pid") or remote_status.get("child_pid")
+                reconciled["remote_tmux_alive"] = remote_status.get("tmux_alive")
+                if str(remote_status.get("status") or "") in ACTIVE_RUN_STATUSES and (
+                    remote_status.get("pid_alive") or remote_status.get("tmux_alive")
+                ):
+                    reconciled["status"] = "running"
+                    reconciled["health"] = "remote_running"
+                else:
+                    reconciled["status"] = str(remote_status.get("status") or "stale")
+                    reconciled["health"] = f"remote_{remote_status.get('health') or 'unknown'}"
+                    if not reconciled.get("ended_at") and reconciled["status"] in ENDED_RUN_STATUSES:
+                        reconciled["ended_at"] = now_iso()
+            else:
+                reconciled["status"] = "stale"
+                reconciled["health"] = f"stale_remote_{remote_status.get('remote_reconcile') or 'unknown'}"
+                if remote_status.get("remote_error"):
+                    reconciled["remote_error"] = remote_status.get("remote_error")
+                if not reconciled.get("ended_at"):
+                    reconciled["ended_at"] = now_iso()
         else:
             reconciled["status"] = "stale"
             reconciled["health"] = "stale_no_process"
@@ -529,8 +606,8 @@ def print_agent_run_table(records: list[dict[str, Any]]) -> None:
         )
 
 
-def agent_run_records(*, include_untracked: bool = True, reconcile: bool = False) -> list[dict[str, Any]]:
-    records = [reconcile_agent_run(record, write=reconcile) for record in load_agent_runs()]
+def agent_run_records(*, include_untracked: bool = True, reconcile: bool = False, remote: bool = True) -> list[dict[str, Any]]:
+    records = [reconcile_agent_run(record, write=reconcile, remote=remote) for record in load_agent_runs()]
     if include_untracked:
         records.extend(untracked_interactive_runs(records))
     status_rank = {
@@ -1588,7 +1665,7 @@ def command_runtimes(args: argparse.Namespace) -> int:
 
 
 def command_runs(args: argparse.Namespace) -> int:
-    records = agent_run_records(include_untracked=not args.no_untracked, reconcile=args.reconcile)
+    records = agent_run_records(include_untracked=not args.no_untracked, reconcile=args.reconcile, remote=not args.no_remote_reconcile)
     if args.issue is not None:
         records = [item for item in records if item.get("issue_id") == args.issue]
     if args.active:
@@ -1603,7 +1680,7 @@ def command_runs(args: argparse.Namespace) -> int:
 
 def command_run_status(args: argparse.Namespace) -> int:
     record = load_agent_run(args.run_id)
-    record = reconcile_agent_run(record, write=args.reconcile)
+    record = reconcile_agent_run(record, write=args.reconcile, remote=not args.no_remote_reconcile)
     if args.json:
         print(json.dumps(record, indent=2, default=str))
         return 0
@@ -2058,12 +2135,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--active", action="store_true", help="Only show active, stale, or untracked sessions.")
     p.add_argument("--issue", type=int, default=None)
     p.add_argument("--no-untracked", action="store_true", help="Do not scan ps for untracked interactive Codex/Claude sessions.")
+    p.add_argument("--no-remote-reconcile", action="store_true", help="Do not query remote nodes for remote run status.")
     p.add_argument("--reconcile", action="store_true", help="Update stale ledger records based on ps/tmux state.")
     p.set_defaults(func=command_runs)
 
     p = sub.add_parser("run-status", help="Show one agent run ledger entry.")
     p.add_argument("run_id")
     p.add_argument("--reconcile", action="store_true")
+    p.add_argument("--no-remote-reconcile", action="store_true", help="Do not query remote nodes for remote run status.")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=command_run_status)
 
