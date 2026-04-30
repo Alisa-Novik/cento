@@ -39,6 +39,7 @@ Built-ins:
   tools                List registered cento tools
   platforms [PLATFORM] List tool platform support
   aliases              List configured user aliases
+  ask TEXT...          Submit a natural-language cluster request
   conf [--path]        Open or print the cento config file
   completion zsh       Print Zsh completion for cento
   install [all|zsh|tmux]
@@ -57,6 +58,7 @@ Examples:
   cento platforms
   cento platforms macos
   cento aliases
+  cento ask "send me notification with total memory consumption on the cluster"
   cento conf
   cento conf --path
   cento completion zsh
@@ -542,6 +544,10 @@ main() {
             ;;
         aliases)
             list_aliases
+            ;;
+        ask)
+            [[ $# -gt 0 ]] || cento_die "Usage: cento ask TEXT..."
+            run_tool cluster ask "$@"
             ;;
         conf)
             open_config "$@"

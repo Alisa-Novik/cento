@@ -141,14 +141,58 @@ _cento() {
               'init[Write node and cluster config]' \
               'nodes[List cluster nodes]' \
               'status[Show cluster status]' \
+              'activity[Show workstation activity from tmux panes and agents]' \
               'exec[Run a command on a node]' \
               'sync[Show git drift across nodes]' \
               'heal[Repair bridge services]' \
+              'companion-setup[Print companion installer script]' \
               'heartbeat[Show companion heartbeat state]' \
               'metric[Print cluster metrics]' \
               'ask[Execute a small natural-language cluster request]'
-          elif (( CURRENT == 4 )) && [[ "${words[3]:-}" == "exec" || "${words[3]:-}" == "heal" || "${words[3]:-}" == "heartbeat" ]]; then
+          elif (( CURRENT == 4 )) && [[ "${words[3]:-}" == "activity" ]]; then
+            _values 'activity option or node' --json linux macos all
+          elif (( CURRENT == 4 )) && [[ "${words[3]:-}" == "activity" || "${words[3]:-}" == "exec" || "${words[3]:-}" == "heal" || "${words[3]:-}" == "heartbeat" ]]; then
             _values 'node' linux macos iphone all
+          elif (( CURRENT == 4 )) && [[ "${words[3]:-}" == "companion-setup" ]]; then
+            _values 'companion' iphone
+          fi
+          ;;
+        mobile)
+          if (( CURRENT == 3 )); then
+            _values 'mobile command' \
+              'e2e[Run native iOS mobile e2e validation]' \
+              'token-from-linux[Print the Linux mobile gateway token]' \
+              'watch-status[Report Apple Watch physical/simulator readiness]' \
+              'docs[Show mobile command help]'
+          fi
+          ;;
+        incident)
+          if (( CURRENT == 3 )); then
+            _values 'incident command' \
+              'check[Run an incident check]' \
+              'status[Show incident guardrail state]' \
+              'install[Install scheduled incident check]' \
+              'uninstall[Uninstall scheduled incident check]' \
+              'docs[Show incident docs]'
+          elif (( CURRENT == 4 )) && [[ "${words[3]:-}" == "check" || "${words[3]:-}" == "install" || "${words[3]:-}" == "uninstall" ]]; then
+            _values 'incident key' iphone-ce
+          fi
+          ;;
+        agent-work)
+          if (( CURRENT == 3 )); then
+            _values 'agent-work command' \
+              'bootstrap[Create Redmine project/status/tracker fields]' \
+              'create[Create one agent task]' \
+              'split[Create an agent work package]' \
+              'list[List agent work items]' \
+              'show[Show one issue]' \
+              'claim[Claim an issue for an agent]' \
+              'update[Update issue status and notes]' \
+              'validate[Record validator result]' \
+              'handoff[Write builder report and move to Validating]' \
+              'validate-run[Run validation manifest checks]' \
+              'prompt[Print or write an agent prompt]' \
+              'dispatch[Dispatch an issue through the cluster]'
           fi
           ;;
         notify)

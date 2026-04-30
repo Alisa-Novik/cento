@@ -167,6 +167,20 @@ quote_remote_command() {
     printf '%q ' "$@"
 }
 
+remote_shell_command() {
+    if [[ $# -eq 1 ]]; then
+        printf '%s\n' "$1"
+        return
+    fi
+    printf '%q ' "$@"
+    printf '\n'
+}
+
+socket_proxy_command() {
+    local vm_user=$1 vm_host=$2 socket=$3
+    printf 'ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 -o ConnectionAttempts=1 -o ServerAliveInterval=5 -o ServerAliveCountMax=1 %s@%s timeout 6 nc -U %q' "$vm_user" "$vm_host" "$socket"
+}
+
 heading() {
     printf '%s%s%s\n' "$C_BOLD" "$*" "$C_RESET"
 }
@@ -440,21 +454,90 @@ PY
 run_remote_node() {
     local node_id=$1
     shift
-    local socket user host_alias vm_user vm_host remote_command
+    local socket user host_alias vm_user vm_host remote_command remote_invocation proxy_command
     socket=$(node_field "$node_id" socket)
     user=$(node_field "$node_id" user)
     host_alias=$(node_field "$node_id" host_alias)
     vm_user=$(relay_field user)
     vm_host=$(relay_field host)
-    remote_command=$(quote_remote_command "$@")
+    remote_command=$(remote_shell_command "$@")
+    remote_invocation=$(printf 'bash -lc %q' "$remote_command")
+    proxy_command=$(socket_proxy_command "$vm_user" "$vm_host" "$socket")
+    local socket_rc
+    set +e
     ssh \
         -n \
         -o BatchMode=yes \
         -o StrictHostKeyChecking=accept-new \
         -o ConnectTimeout=8 \
-        -o "ProxyCommand=ssh ${vm_user}@${vm_host} nc -U ${socket}" \
+        -o ConnectionAttempts=1 \
+        -o ServerAliveInterval=5 \
+        -o ServerAliveCountMax=1 \
+        -o "ProxyCommand=$proxy_command" \
         "${user}@${host_alias}" \
-        "$remote_command"
+        "$remote_invocation"
+    socket_rc=$?
+    set -e
+    if [[ $socket_rc -eq 0 ]]; then
+        return 0
+    fi
+
+    if [[ "$node_id" == "linux" ]]; then
+        run_direct_node "$node_id" '/home/alice/projects/cento/scripts/cento.sh bridge expose-linux >/dev/null 2>&1 || true' >/dev/null 2>&1 || true
+        set +e
+        ssh \
+            -n \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=8 \
+            -o ConnectionAttempts=1 \
+            -o ServerAliveInterval=5 \
+            -o ServerAliveCountMax=1 \
+            -o "ProxyCommand=$proxy_command" \
+            "${user}@${host_alias}" \
+            "$remote_invocation"
+        socket_rc=$?
+        set -e
+        if [[ $socket_rc -eq 0 ]]; then
+            return 0
+        fi
+    fi
+
+    run_direct_node "$node_id" "$@" && return 0
+    return "$socket_rc"
+}
+
+run_direct_node() {
+    local node_id=$1
+    shift
+    local direct_host=""
+    case "$node_id" in
+        linux)
+            direct_host=${CENTO_LINUX_DIRECT_HOST:-alisapad.local}
+            ;;
+        *)
+            return 127
+            ;;
+    esac
+
+    local user remote_command remote_invocation known_hosts_dir known_hosts_file
+    user=$(node_field "$node_id" user)
+    remote_command=$(remote_shell_command "$@")
+    remote_invocation=$(printf 'bash -lc %q' "$remote_command")
+    known_hosts_dir="${XDG_STATE_HOME:-$HOME/.local/state}/cento"
+    known_hosts_file="$known_hosts_dir/cluster-known-hosts"
+    cento_ensure_dir "$known_hosts_dir"
+    ssh \
+        -n \
+        -o BatchMode=yes \
+        -o StrictHostKeyChecking=accept-new \
+        -o UserKnownHostsFile="$known_hosts_file" \
+        -o ConnectTimeout=5 \
+        -o ConnectionAttempts=1 \
+        -o ServerAliveInterval=5 \
+        -o ServerAliveCountMax=1 \
+        "${user}@${direct_host}" \
+        "$remote_invocation"
 }
 
 cluster_exec() {

@@ -100,6 +100,15 @@ quote_words() {
     printf '\n'
 }
 
+remote_shell_command() {
+    if [[ $# -eq 1 ]]; then
+        printf '%s\n' "$1"
+        return
+    fi
+    printf '%q ' "$@"
+    printf '\n'
+}
+
 is_running() {
     [[ -f "$PID_FILE" ]] || return 1
     local pid
@@ -402,18 +411,19 @@ EOF_PLIST
 run_via_socket() {
     local vm_user=$1 vm_host=$2 socket_path=$3 target_user=$4 host_alias=$5 default_command=$6
     shift 6
-    local remote_command
+    local remote_command remote_invocation
     if [[ $# -gt 0 ]]; then
-        remote_command="$*"
+        remote_command=$(remote_shell_command "$@")
     else
         remote_command="$default_command"
     fi
+    remote_invocation=$(printf 'bash -lc %q' "$remote_command")
     exec ssh \
         -o BatchMode=yes \
         -o StrictHostKeyChecking=accept-new \
         -o ProxyCommand="ssh ${vm_user}@${vm_host} nc -U ${socket_path}" \
         "${target_user}@${host_alias}" \
-        "$remote_command"
+        "$remote_invocation"
 }
 
 open_shell_via_socket() {

@@ -934,18 +934,29 @@
         "cento cluster heal linux",
         "cento cluster heartbeat iphone",
         "cento cluster metric memory",
-        "cento cluster ask \"send me notification with total memory consumption on the cluster\""
+        "cento cluster ask \"send me notification with total memory consumption on the cluster\"",
+        "cento cluster activity linux",
+        "cento cluster activity --json linux",
+        "cento cluster exec linux -- 'cd /home/alice/projects/cento && pwd'",
+        "scripts/cluster_health_e2e.sh",
+        "cento cluster companion-setup iphone"
       ],
       "outputs": [
         "~/.config/cento/node.json",
         "~/.config/cento/cluster.json",
-        "stdout cluster status and command output"
+        "stdout cluster status and command output",
+        "~/.config/cento/companions/iphone-ish-setup.sh",
+        "workspace/runs/agent-work/30/summary.md",
+        "workspace/runs/agent-work/30/logs/*.log"
       ],
       "notes": [
         "status is the health view.",
         "sync is a read-only git drift report; it never writes to either node.",
         "heal is the single repair path for bridge services and sockets.",
-        "Remote execution uses the existing OCI Unix-socket mesh."
+        "Remote execution uses the existing OCI Unix-socket mesh.",
+        "cluster_health_e2e.sh validates Mac-to-Linux execution paths used by agents before relying on the cluster.",
+        "companion-setup prints a POSIX iPhone/iSH installer that preserves natural-language text by shell-quoting each SSH argument.",
+        "Remote execution uses bash -lc on the target node, supports quoted shell commands and argv-style commands, repairs the Linux socket once when stale, and falls back to alice@alisapad.local when the LAN route is available."
       ]
     },
     {
@@ -996,6 +1007,104 @@
       "notes": [
         "Uses gather-context as the data source.",
         "Auto-refreshes every 10 seconds; press r to refresh manually."
+      ]
+    },
+    {
+      "id": "agent-work",
+      "name": "Agent Work Tracker",
+      "lane": "agent ops",
+      "kind": "python",
+      "entrypoint": "./scripts/agent_work.py",
+      "description": "Redmine-backed Jira-style work tracker for assigning, splitting, dispatching, and reviewing Cento agent tasks across the Mac/Linux cluster.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento agent-work bootstrap",
+        "cento agent-work create --title \"Fix dashboard\" --node linux --agent codex",
+        "cento agent-work split --title \"Improve mission control\" --nodes linux,macos --task \"Backend status\" --task \"Mac tile view\"",
+        "cento agent-work list",
+        "cento agent-work show 123",
+        "cento agent-work claim 123 --node linux --agent codex",
+        "cento agent-work update 123 --status review --note \"implemented and tested\"",
+        "cento agent-work prompt 123",
+        "cento agent-work dispatch 123 --node linux --dry-run"
+      ],
+      "outputs": [
+        "docs/agent-work.html",
+        "Redmine project cento-agent-work",
+        "workspace/runs/agent-work/<run-id>/prompt.md",
+        "workspace/runs/agent-work/<run-id>/dispatch.json",
+        "workspace/runs/agent-work/<run-id>/codex.log"
+      ],
+      "notes": [
+        "The MVP uses the trusted local Redmine Postgres container over direct LAN SSH or cento cluster exec linux, so no Redmine API key is required.",
+        "Use split to create one package with node-assigned work items, then dispatch or hand the generated prompt to an agent.",
+        "Statuses are Queued, Running, Review, Blocked, and Done."
+      ]
+    },
+    {
+      "id": "incident",
+      "name": "Cento Incident Response",
+      "lane": "agent ops",
+      "kind": "python",
+      "entrypoint": "./scripts/incident_response.py",
+      "description": "Bounded incident checks for Cento control-plane failures, with guarded SEV2 agent-work escalation for iPhone ce ingress failures.",
+      "platforms": [
+        "macos"
+      ],
+      "commands": [
+        "cento incident check iphone-ce",
+        "cento incident check iphone-ce --json --no-create",
+        "cento incident status",
+        "cento incident install iphone-ce --interval 300 --dry-run",
+        "cento incident install iphone-ce --interval 300",
+        "cento incident uninstall iphone-ce",
+        "cento incident docs"
+      ],
+      "outputs": [
+        "~/.local/state/cento/incidents.json",
+        "~/.local/state/cento/incident-response.log",
+        "~/Library/LaunchAgents/com.cento.incident.iphone-ce.plist",
+        "Redmine SEV2 agent-work issue"
+      ],
+      "notes": [
+        "The iphone-ce check is bounded to local heartbeat/request-spool reads plus timed agent-work calls; it should not hang.",
+        "Guardrails: one active issue per incident key, six-hour cooldown, one create per day by default, and a lock file for concurrent checks.",
+        "Use --no-create for dashboards or dry probes; use --force only for manual operator override."
+      ]
+    },
+    {
+      "id": "mobile",
+      "name": "Cento Mobile",
+      "lane": "mobile ops",
+      "kind": "shell",
+      "entrypoint": "./scripts/mobile.sh",
+      "description": "Native iOS/PWA mobile helper commands, including repeatable iOS e2e validation against the local mobile gateway.",
+      "platforms": [
+        "macos"
+      ],
+      "commands": [
+        "cento mobile e2e",
+        "CENTO_IOS_E2E_PHYSICAL=false cento mobile e2e",
+        "CENTO_MOBILE_TOKEN=\"$(cento mobile token-from-linux)\" cento mobile e2e",
+        "cento mobile token-from-linux",
+        "cento mobile watch-status",
+        "cento mobile docs"
+      ],
+      "outputs": [
+        "workspace/runs/agent-work/26/summary.md",
+        "workspace/runs/agent-work/26/screenshots/native-dashboard-simulator-e2e.png",
+        "workspace/runs/agent-work/26/logs/device-launch.json",
+        "workspace/runs/agent-work/22/devices/devicectl-list.json",
+        "workspace/runs/agent-work/22/devices/xctrace-devices.txt"
+      ],
+      "notes": [
+        "The e2e harness validates gateway health, authenticated dashboard decoding, simulator build/install/launch/screenshot, and optional physical iPhone build/install/launch.",
+        "watch-status reports physical Apple Watch visibility, Developer Mode/DDI readiness, watch simulator inventory, and active simulator pairing.",
+        "token-from-linux reads the existing Linux gateway token over the Cento bridge; do not paste the token into tracked files.",
+        "devicectl launch JSON is redacted after physical launches because it records launch environment."
       ]
     }
   ]

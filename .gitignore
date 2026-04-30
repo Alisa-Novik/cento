@@ -1,5 +1,9 @@
 scripts/__pycache__/
 *.pyc
+.DS_Store
+._*
+**/._*
+*.xcuserstate
 
 workspace/inbox/*
 !workspace/inbox/.gitkeep

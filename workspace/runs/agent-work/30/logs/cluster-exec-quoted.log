@@ -1,0 +1,2 @@
+exec linux cd /home/alice/projects/cento && printf "remote:%s:%s\n" "$(hostname)" "$(pwd)"
+remote:alisapad:/home/alice/projects/cento

@@ -1,0 +1,1019 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cento Agent Work</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f1e8;
+      --paper: #fffdf8;
+      --paper-2: #f8f3e9;
+      --ink: #1f2320;
+      --muted: #62685f;
+      --line: #d8d0c1;
+      --green: #147a68;
+      --green-soft: #dff0ea;
+      --red: #b54432;
+      --red-soft: #f3ddd8;
+      --amber: #a96905;
+      --amber-soft: #f4e5c8;
+      --blue: #315f9f;
+      --blue-soft: #dfe7f4;
+      --violet: #6d4ca1;
+      --code-bg: #171914;
+      --code-line: #2b3027;
+      --code-text: #f4f0e6;
+      --shadow: 0 16px 40px rgba(31, 35, 32, 0.10);
+      --radius: 8px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background:
+        linear-gradient(180deg, rgba(20, 122, 104, 0.08), transparent 340px),
+        var(--bg);
+      color: var(--ink);
+      font-family: var(--sans);
+      line-height: 1.55;
+    }
+
+    a {
+      color: var(--green);
+      text-decoration-color: rgba(20, 122, 104, 0.35);
+      text-underline-offset: 3px;
+    }
+
+    a:hover {
+      text-decoration-color: currentColor;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    aside {
+      position: sticky;
+      top: 0;
+      align-self: start;
+      height: 100vh;
+      padding: 28px 20px;
+      border-right: 1px solid var(--line);
+      background: rgba(255, 253, 248, 0.86);
+      backdrop-filter: blur(14px);
+      overflow: auto;
+    }
+
+    .brand {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 26px;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius);
+      background: var(--green);
+      color: white;
+      font-family: var(--mono);
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 17px;
+      line-height: 1.2;
+    }
+
+    .brand span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    nav {
+      display: grid;
+      gap: 4px;
+      margin-bottom: 26px;
+    }
+
+    nav a {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      border-radius: var(--radius);
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    nav a:hover,
+    nav a.active {
+      background: var(--green-soft);
+      color: #0d5549;
+    }
+
+    .aside-note {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    main {
+      min-width: 0;
+    }
+
+    .hero {
+      padding: 56px clamp(22px, 5vw, 76px) 34px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(135deg, rgba(255, 253, 248, 0.92), rgba(223, 240, 234, 0.64));
+    }
+
+    .eyebrow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 28px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 253, 248, 0.78);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    h1 {
+      max-width: 880px;
+      margin: 0 0 14px;
+      font-size: clamp(36px, 5vw, 64px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 820px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 26px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .button.primary {
+      border-color: var(--green);
+      background: var(--green);
+      color: white;
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(31, 35, 32, 0.10);
+    }
+
+    .content {
+      padding: 28px clamp(22px, 5vw, 76px) 64px;
+    }
+
+    section {
+      padding: 24px 0 38px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    section:last-child {
+      border-bottom: 0;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 28px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+
+    .section-lead {
+      max-width: 820px;
+      margin: 0 0 18px;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid.four {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-body {
+      padding: 18px;
+    }
+
+    .metric {
+      display: grid;
+      gap: 8px;
+      min-height: 136px;
+      border-top: 4px solid var(--green);
+    }
+
+    .metric:nth-child(2) {
+      border-top-color: var(--blue);
+    }
+
+    .metric:nth-child(3) {
+      border-top-color: var(--amber);
+    }
+
+    .metric:nth-child(4) {
+      border-top-color: var(--red);
+    }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .metric-value {
+      font-family: var(--mono);
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .metric p,
+    .card p,
+    .callout p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(130px, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .step {
+      position: relative;
+      padding: 14px;
+      min-height: 116px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+    }
+
+    .step strong {
+      display: block;
+      margin-bottom: 6px;
+      font-family: var(--mono);
+      font-size: 14px;
+    }
+
+    .step p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-bottom: 12px;
+      background: var(--green);
+    }
+
+    .step:nth-child(1) .status-dot {
+      background: var(--amber);
+    }
+
+    .step:nth-child(3) .status-dot {
+      background: var(--blue);
+    }
+
+    .step:nth-child(4) .status-dot {
+      background: var(--red);
+    }
+
+    .step:nth-child(5) .status-dot {
+      background: var(--green);
+    }
+
+    .command-block {
+      position: relative;
+      margin: 14px 0 0;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid #30352d;
+      background: var(--code-bg);
+    }
+
+    .command-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 38px;
+      padding: 0 10px 0 14px;
+      border-bottom: 1px solid var(--code-line);
+      color: #beb8aa;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .copy {
+      min-height: 28px;
+      padding: 0 10px;
+      border: 1px solid #4b5347;
+      border-radius: 6px;
+      background: #22261f;
+      color: #f4f0e6;
+      font: 700 12px var(--sans);
+      cursor: pointer;
+    }
+
+    .copy:hover {
+      background: #2d342a;
+    }
+
+    pre {
+      margin: 0;
+      padding: 16px;
+      overflow: auto;
+      color: var(--code-text);
+      font: 13px/1.55 var(--mono);
+      tab-size: 2;
+    }
+
+    code {
+      font-family: var(--mono);
+      font-size: 0.94em;
+    }
+
+    p code,
+    li code,
+    td code {
+      padding: 2px 5px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: rgba(255, 253, 248, 0.74);
+      color: #164f44;
+    }
+
+    .tok-comment {
+      color: #89917f;
+    }
+
+    .tok-string {
+      color: #ffd37a;
+    }
+
+    .tok-option {
+      color: #80d9ff;
+    }
+
+    .tok-command {
+      color: #a9f3c8;
+      font-weight: 750;
+    }
+
+    .tok-env {
+      color: #ffb0a4;
+    }
+
+    .tok-path {
+      color: #d7c6ff;
+    }
+
+    .tabs {
+      margin-top: 14px;
+    }
+
+    .tab-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper-2);
+      width: fit-content;
+    }
+
+    .tab {
+      min-height: 34px;
+      padding: 0 12px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      background: var(--paper);
+      color: var(--ink);
+      box-shadow: 0 2px 10px rgba(31, 35, 32, 0.08);
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .callout {
+      margin: 16px 0;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--green);
+      border-radius: var(--radius);
+      background: var(--paper);
+    }
+
+    .callout.warn {
+      border-left-color: var(--amber);
+      background: var(--amber-soft);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: var(--radius);
+      background: var(--paper);
+      border: 1px solid var(--line);
+    }
+
+    th,
+    td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    th {
+      background: var(--paper-2);
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .footer {
+      padding: 18px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 980px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      aside {
+        position: relative;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      nav {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .grid.two,
+      .grid.three,
+      .grid.four,
+      .flow {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .hero,
+      .content {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      nav {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 34px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside>
+      <div class="brand">
+        <div class="brand-mark">cw</div>
+        <div>
+          <strong>Cento Agent Work</strong>
+          <span>Redmine-backed agent tracking</span>
+        </div>
+      </div>
+
+      <nav aria-label="Page sections">
+        <a href="#overview">Overview <span>01</span></a>
+        <a href="#bootstrap">Bootstrap <span>02</span></a>
+        <a href="#create">Create <span>03</span></a>
+        <a href="#split">Split <span>04</span></a>
+        <a href="#lifecycle">Lifecycle <span>05</span></a>
+        <a href="#prompt">Prompt <span>06</span></a>
+        <a href="#dispatch">Dispatch <span>07</span></a>
+        <a href="#redmine">Redmine <span>08</span></a>
+        <a href="#limits">Limits <span>09</span></a>
+      </nav>
+
+      <div class="aside-note">
+        The canonical Markdown source remains <a href="./agent-work.md">agent-work.md</a>. This page is a readable operator guide for daily use.
+      </div>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <div class="eyebrow">
+          <span class="pill">MVP ready</span>
+          <span class="pill">Mac + Linux</span>
+          <span class="pill">Redmine board</span>
+          <span class="pill">Cluster dispatch</span>
+        </div>
+        <h1>Give work to agents and track it like a board.</h1>
+        <p>
+          <code>cento agent-work</code> creates Redmine issues for agent tasks, splits packages across Cento nodes,
+          tracks lifecycle state, generates agent prompts, and dispatches work through the cluster.
+        </p>
+        <div class="hero-actions">
+          <a class="button primary" href="#bootstrap">Start with bootstrap</a>
+          <a class="button" href="#split">Split a package</a>
+          <a class="button" href="#dispatch">Dispatch an agent</a>
+        </div>
+      </header>
+
+      <div class="content">
+        <section id="overview">
+          <h2>Overview</h2>
+          <p class="section-lead">
+            The tracker is a thin Cento layer over your Linux Redmine stack. Redmine stores the board;
+            Cento provides the command line workflow that agents can follow.
+          </p>
+
+          <div class="grid four">
+            <article class="card metric card-body">
+              <span class="metric-label">Project</span>
+              <span class="metric-value">cento-agent-work</span>
+              <p>A dedicated Redmine project for agent issues.</p>
+            </article>
+            <article class="card metric card-body">
+              <span class="metric-label">Trackers</span>
+              <span class="metric-value">Epic / Task</span>
+              <p>Use epics for packages and tasks for agent-sized work.</p>
+            </article>
+            <article class="card metric card-body">
+              <span class="metric-label">Status flow</span>
+              <span class="metric-value">Queued -> Done</span>
+              <p>Every agent should keep the Redmine issue current.</p>
+            </article>
+            <article class="card metric card-body">
+              <span class="metric-label">Run bundles</span>
+              <span class="metric-value">workspace/runs</span>
+              <p>Prompts, dispatch metadata, and Codex logs live in repo-local run folders.</p>
+            </article>
+          </div>
+
+          <div class="callout">
+            <p>
+              Operating model: create or split work, assign nodes, let agents claim tasks, keep notes in Redmine,
+              and inspect <code>cento cluster activity</code> for the live machine state.
+            </p>
+          </div>
+        </section>
+
+        <section id="bootstrap">
+          <h2>Bootstrap</h2>
+          <p class="section-lead">
+            Run this once from either node. It creates the Redmine project, statuses, trackers, and fields.
+            It is idempotent, so re-running it is safe.
+          </p>
+
+          <div class="command-block">
+            <div class="command-head"><span>bootstrap</span><button class="copy" type="button">Copy</button></div>
+            <pre><code class="language-bash">cento agent-work bootstrap</code></pre>
+          </div>
+
+          <div class="grid two">
+            <article class="card card-body">
+              <h3>Default transport</h3>
+              <p>On macOS, Cento uses <code>alice@alisapad.local</code> when available, then falls back to the cluster SSH mesh.</p>
+              <div class="command-block">
+                <div class="command-head"><span>force cluster mesh</span><button class="copy" type="button">Copy</button></div>
+                <pre><code class="language-bash">CENTO_REDMINE_TRANSPORT=cluster cento agent-work list</code></pre>
+              </div>
+            </article>
+            <article class="card card-body">
+              <h3>Override the host</h3>
+              <p>Use this when the Linux host name changes or you want a different SSH route.</p>
+              <div class="command-block">
+                <div class="command-head"><span>custom ssh target</span><button class="copy" type="button">Copy</button></div>
+                <pre><code class="language-bash">CENTO_REDMINE_SSH=alice@alisapad.local cento agent-work list</code></pre>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="create">
+          <h2>Create One Task</h2>
+          <p class="section-lead">
+            Use <code>create</code> for one focused task. It writes the Redmine issue, stores node/owner/package fields,
+            and adds a starting journal note.
+          </p>
+
+          <div class="command-block">
+            <div class="command-head"><span>create task</span><button class="copy" type="button">Copy</button></div>
+            <pre><code class="language-bash">cento agent-work create \
+  --title "Improve mission control pane" \
+  --description "Add a compact running-agent summary and link it to cluster activity." \
+  --node linux \
+  --agent codex \
+  --package mission-control</code></pre>
+          </div>
+
+          <div class="grid two">
+            <article class="card card-body">
+              <h3>List active work</h3>
+              <div class="command-block">
+                <div class="command-head"><span>active board</span><button class="copy" type="button">Copy</button></div>
+                <pre><code class="language-bash">cento agent-work list</code></pre>
+              </div>
+            </article>
+            <article class="card card-body">
+              <h3>Inspect a task</h3>
+              <div class="command-block">
+                <div class="command-head"><span>issue details</span><button class="copy" type="button">Copy</button></div>
+                <pre><code class="language-bash">cento agent-work show 123</code></pre>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="split">
+          <h2>Split Work Across The Cluster</h2>
+          <p class="section-lead">
+            Use <code>split</code> when one larger request should become a package of agent-sized issues. Node assignment rotates
+            through the list passed to <code>--nodes</code>.
+          </p>
+
+          <div class="command-block">
+            <div class="command-head"><span>split package</span><button class="copy" type="button">Copy</button></div>
+            <pre><code class="language-bash">cento agent-work split \
+  --title "Mission control MVP" \
+  --goal "Track what agents are doing as first-class Redmine work." \
+  --nodes linux,macos \
+  --task "Create Redmine-backed task model and CLI" \
+  --task "Add Mac mission-control tile view" \
+  --task "Document agent operating procedure"</code></pre>
+          </div>
+
+          <table aria-label="Split output">
+            <thead>
+              <tr>
+                <th>Created item</th>
+                <th>Purpose</th>
+                <th>How it is tracked</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>Agent Epic</code></td>
+                <td>Represents the package.</td>
+                <td>Grouped by <code>Cento Work Package</code>.</td>
+              </tr>
+              <tr>
+                <td><code>Agent Task</code></td>
+                <td>Represents one agent-sized unit.</td>
+                <td>Assigned to <code>linux</code>, <code>macos</code>, or another node.</td>
+              </tr>
+              <tr>
+                <td><code>Custom fields</code></td>
+                <td>Make Redmine useful as a board.</td>
+                <td>Node, owner, state, package, and dispatch metadata.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="lifecycle">
+          <h2>Agent Lifecycle</h2>
+          <p class="section-lead">
+            Agents should move issues through a short explicit state machine. <code>Review</code> means code is ready for human
+            inspection. <code>Done</code> means verification passed.
+          </p>
+
+          <div class="flow" aria-label="Agent work status flow">
+            <div class="step"><div class="status-dot"></div><strong>Queued</strong><p>Created, assigned, and waiting for an agent.</p></div>
+            <div class="step"><div class="status-dot"></div><strong>Running</strong><p>Claimed by an agent and actively being worked.</p></div>
+            <div class="step"><div class="status-dot"></div><strong>Review</strong><p>Implementation is ready to inspect.</p></div>
+            <div class="step"><div class="status-dot"></div><strong>Blocked</strong><p>Needs a decision, access, or repair.</p></div>
+            <div class="step"><div class="status-dot"></div><strong>Done</strong><p>Verified and closed.</p></div>
+          </div>
+
+          <div class="command-block">
+            <div class="command-head"><span>lifecycle commands</span><button class="copy" type="button">Copy</button></div>
+            <pre><code class="language-bash">cento agent-work claim 123 --node linux --agent codex
+cento agent-work update 123 --status running --note "Found the dashboard entry point."
+cento agent-work update 123 --status review --note "Implemented; make check passes."
+cento agent-work update 123 --status blocked --note "Blocked waiting for Redmine access."
+cento agent-work update 123 --status done --note "Verified and closed."</code></pre>
+          </div>
+        </section>
+
+        <section id="prompt">
+          <h2>Give An Agent The Prompt</h2>
+          <p class="section-lead">
+            <code>prompt</code> prints the work packet for an issue: subject, node, owner, package, description, and update protocol.
+          </p>
+
+          <div class="grid two">
+            <article class="card card-body">
+              <h3>Print prompt</h3>
+              <div class="command-block">
+                <div class="command-head"><span>stdout</span><button class="copy" type="button">Copy</button></div>
+                <pre><code class="language-bash">cento agent-work prompt 123</code></pre>
+              </div>
+            </article>
+            <article class="card card-body">
+              <h3>Write prompt file</h3>
+              <div class="command-block">
+                <div class="command-head"><span>file output</span><button class="copy" type="button">Copy</button></div>
+                <pre><code class="language-bash">cento agent-work prompt 123 --output workspace/runs/agent-work/issue-123-prompt.md</code></pre>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="dispatch">
+          <h2>Dispatch Through Cento Cluster</h2>
+          <p class="section-lead">
+            Dispatch starts a detached tmux session on the target node through <code>cento cluster exec</code>. Dry-run first when
+            you want to verify the node, model, session name, and prompt path.
+          </p>
+
+          <div class="tabs" data-tabs>
+            <div class="tab-list" role="tablist" aria-label="Dispatch examples">
+              <button class="tab active" type="button" data-tab="dry">Dry-run</button>
+              <button class="tab" type="button" data-tab="run">Run</button>
+              <button class="tab" type="button" data-tab="activity">Activity</button>
+            </div>
+
+            <div class="tab-panel active" data-panel="dry">
+              <div class="command-block">
+                <div class="command-head"><span>inspect dispatch</span><button class="copy" type="button">Copy</button></div>
+                <pre><code class="language-bash">cento agent-work dispatch 123 --node linux --agent codex --dry-run</code></pre>
+              </div>
+            </div>
+
+            <div class="tab-panel" data-panel="run">
+              <div class="command-block">
+                <div class="command-head"><span>start agent session</span><button class="copy" type="button">Copy</button></div>
+                <pre><code class="language-bash">cento agent-work dispatch 123 --node linux --agent codex --model gpt-5.3-codex-spark</code></pre>
+              </div>
+            </div>
+
+            <div class="tab-panel" data-panel="activity">
+              <div class="command-block">
+                <div class="command-head"><span>live node state</span><button class="copy" type="button">Copy</button></div>
+                <pre><code class="language-bash">cento cluster activity linux
+cento cluster activity --json linux</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <div class="callout">
+            <p>
+              Redmine is the assignment and lifecycle record. <code>cluster activity</code> is the live execution view:
+              tmux sessions, Codex processes, and recent pane text.
+            </p>
+          </div>
+        </section>
+
+        <section id="redmine">
+          <h2>Redmine UI</h2>
+          <p class="section-lead">
+            Use the existing Linux Redmine stack as the board view. The Cento CLI writes the fields and journal notes
+            that make the project readable.
+          </p>
+
+          <div class="grid three">
+            <article class="card card-body">
+              <h3>Container</h3>
+              <p><code>cento-redmine</code></p>
+            </article>
+            <article class="card card-body">
+              <h3>Project</h3>
+              <p><code>cento-agent-work</code></p>
+            </article>
+            <article class="card card-body">
+              <h3>Linux URL</h3>
+              <p><code>http://127.0.0.1:47874</code></p>
+            </article>
+          </div>
+        </section>
+
+        <section id="limits">
+          <h2>MVP Limits And Verification</h2>
+          <p class="section-lead">
+            The MVP is deliberately practical and local-first. It is intended for this trusted self-hosted Redmine stack.
+          </p>
+
+          <div class="grid two">
+            <article class="card card-body">
+              <h3>Limits</h3>
+              <p>
+                Direct database writes are used for now. Dispatch expects <code>codex</code>, <code>tmux</code>, and a Cento checkout on the
+                target node. Package hierarchy is represented by the <code>Cento Work Package</code> field.
+              </p>
+            </article>
+            <article class="card card-body">
+              <h3>Verification</h3>
+              <p>Run the E2E probe after changes to the tracker.</p>
+              <div class="command-block">
+                <div class="command-head"><span>e2e</span><button class="copy" type="button">Copy</button></div>
+                <pre><code class="language-bash">make agent-work-e2e</code></pre>
+              </div>
+            </article>
+          </div>
+
+          <div class="footer">
+            Generated for local use in the Cento repo. Source: <a href="./agent-work.md">docs/agent-work.md</a>.
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const escapeHtml = (value) => value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+    function highlightBash(source) {
+      let text = escapeHtml(source);
+      text = text.replace(/("[^"\\]*(?:\\.[^"\\]*)*"|'[^'\\]*(?:\\.[^'\\]*)*')/g, '<span class="tok-string">$1</span>');
+      text = text.replace(/(^|\s)(--?[a-zA-Z0-9][a-zA-Z0-9-]*)/g, '$1<span class="tok-option">$2</span>');
+      text = text.replace(/\b(CENTO_[A-Z0-9_]+)(?==)/g, '<span class="tok-env">$1</span>');
+      text = text.replace(/\b(cento|make|codex|tmux|ssh|python3)\b/g, '<span class="tok-command">$1</span>');
+      text = text.replace(/(workspace\/[a-zA-Z0-9_./<-]+|docs\/[a-zA-Z0-9_.\/-]+)/g, '<span class="tok-path">$1</span>');
+      text = text.replace(/(^|\n)(\s*#.*)/g, '$1<span class="tok-comment">$2</span>');
+      return text;
+    }
+
+    document.querySelectorAll('code.language-bash').forEach((code) => {
+      code.dataset.raw = code.textContent;
+      code.innerHTML = highlightBash(code.textContent);
+    });
+
+    document.querySelectorAll('.copy').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const block = button.closest('.command-block');
+        const code = block.querySelector('code');
+        const raw = code.dataset.raw || code.textContent;
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(raw);
+        } else {
+          const textarea = document.createElement('textarea');
+          textarea.value = raw;
+          textarea.setAttribute('readonly', '');
+          textarea.style.position = 'fixed';
+          textarea.style.left = '-9999px';
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand('copy');
+          textarea.remove();
+        }
+        const previous = button.textContent;
+        button.textContent = 'Copied';
+        setTimeout(() => {
+          button.textContent = previous;
+        }, 1100);
+      });
+    });
+
+    document.querySelectorAll('[data-tabs]').forEach((tabs) => {
+      tabs.querySelectorAll('[data-tab]').forEach((tab) => {
+        tab.addEventListener('click', () => {
+          const name = tab.dataset.tab;
+          tabs.querySelectorAll('[data-tab]').forEach((item) => item.classList.toggle('active', item === tab));
+          tabs.querySelectorAll('[data-panel]').forEach((panel) => panel.classList.toggle('active', panel.dataset.panel === name));
+        });
+      });
+    });
+
+    const navLinks = [...document.querySelectorAll('nav a')];
+    const sections = navLinks
+      .map((link) => document.querySelector(link.getAttribute('href')))
+      .filter(Boolean);
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        navLinks.forEach((link) => {
+          link.classList.toggle('active', link.getAttribute('href') === `#${entry.target.id}`);
+        });
+      });
+    }, { rootMargin: '-35% 0px -55% 0px', threshold: 0 });
+
+    sections.forEach((section) => observer.observe(section));
+  </script>
+</body>
+</html>

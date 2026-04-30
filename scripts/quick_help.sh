@@ -27,7 +27,9 @@ Built-ins:
   cento conf
   cento conf --path
   cento completion zsh
+  cento install all
   cento install zsh
+  cento install tmux
 USAGE
 )
 
@@ -196,9 +198,9 @@ build_entries() {
         "builtin:install" \
         "builtin" \
         "install" \
-        "Install cento shell integration" \
-        "$HOME/bin/cento install zsh" \
-        "cento built-in: install\n\nRun:\n  cento install zsh\n\nWhat it does:\n  Writes managed init and completion files under ~/.config/cento and injects one guarded source block into ~/.zshrc"
+        "Install cento shell and tmux integration" \
+        "$HOME/bin/cento install all" \
+        "cento built-in: install\n\nRun:\n  cento install all\n\nWhat it does:\n  Writes managed zsh completion/prompt files and a tmux status marker under ~/.config/cento, then sources them from ~/.zshrc and ~/.tmux.conf"
 
     while IFS=$'\t' read -r tool_id tool_name tool_desc tool_cmds; do
         [[ -n "$tool_id" ]] || continue

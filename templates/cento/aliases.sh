@@ -25,3 +25,4 @@ cento_alias cyber --description "New York + Rose Pine" -- bash -lc '"$HOME/bin/c
 cento_alias displayfix --description "Fix stacked monitor layout" -- "$HOME/bin/cento" display-layout-fix --save-defaults
 
 cento_alias quickhelp --description "Open cento quick help" -- "$HOME/bin/cento" quick-help
+cento_alias ask --description "Submit a natural-language cluster request" -- "$HOME/bin/cento" cluster ask
