@@ -1,0 +1,14 @@
+routing: weighted
+- codex: Codex model=gpt-5.3-codex-spark weight=75 preferred
+- claude-code: Claude Code model=claude-sonnet-4-6 weight=25
+sample: 1000 issues
+- claude-code: 260 (26.0%)
+- codex: 740 (74.0%)
+
+--- claude dry-run ---
+runtime=claude-code node=linux model=claude-sonnet-4-6 session=cento-agent-29-222847 local_prompt=/home/alice/projects/cento/workspace/runs/agent-work/issue-29-20260429-222847-ccc815/prompt.md
+/home/alice/projects/cento/workspace/runs/agent-work/issue-29-20260429-222847-ccc815/prompt.md
+
+--- codex dry-run ---
+runtime=codex node=linux model=gpt-5.3-codex-spark session=cento-agent-29-222848 local_prompt=/home/alice/projects/cento/workspace/runs/agent-work/issue-29-20260429-222848-af6999/prompt.md
+/home/alice/projects/cento/workspace/runs/agent-work/issue-29-20260429-222848-af6999/prompt.md

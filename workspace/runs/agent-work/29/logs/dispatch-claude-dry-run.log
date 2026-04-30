@@ -1,0 +1,2 @@
+runtime=claude-code node=linux model=claude-sonnet-4-6 session=cento-agent-29-222827 local_prompt=/Users/anovik-air/cento/workspace/runs/agent-work/issue-29-20260429-222827-a17ab5/prompt.md
+/Users/anovik-air/cento/workspace/runs/agent-work/issue-29-20260429-222827-a17ab5/prompt.md
