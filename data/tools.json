@@ -1029,11 +1029,16 @@
         "cento agent-work claim 123 --node linux --agent codex",
         "cento agent-work update 123 --status review --note \"implemented and tested\"",
         "cento agent-work prompt 123",
-        "cento agent-work dispatch 123 --node linux --dry-run"
+        "cento agent-work dispatch 123 --node linux --dry-run",
+        "cento agent-work runs",
+        "cento agent-work runs --json --active",
+        "cento agent-work run-status RUN_ID --json"
       ],
       "outputs": [
         "docs/agent-work.html",
+        "docs/agent-run-ledger.md",
         "Redmine project cento-agent-work",
+        "workspace/runs/agent-runs/<run-id>/run.json",
         "workspace/runs/agent-work/<run-id>/prompt.md",
         "workspace/runs/agent-work/<run-id>/dispatch.json",
         "workspace/runs/agent-work/<run-id>/codex.log"
@@ -1073,6 +1078,31 @@
         "The iphone-ce check is bounded to local heartbeat/request-spool reads plus timed agent-work calls; it should not hang.",
         "Guardrails: one active issue per incident key, six-hour cooldown, one create per day by default, and a lock file for concurrent checks.",
         "Use --no-create for dashboards or dry probes; use --force only for manual operator override."
+      ]
+    },
+    {
+      "id": "opencode",
+      "name": "opencode",
+      "lane": "ai tools",
+      "kind": "shell",
+      "entrypoint": "./scripts/opencode.sh",
+      "wrapper": "~/bin/opencode",
+      "description": "Thin wrapper around opencode (Alisa-Novik fork of sst/opencode) — an open-source AI coding agent TUI.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento opencode",
+        "cento opencode --version",
+        "cento opencode --help",
+        "cento opencode fork-status"
+      ],
+      "notes": [
+        "Binary installed via npm (opencode-ai). Fork source lives at ~/projects/opencode.",
+        "Fork: https://github.com/Alisa-Novik/opencode — based on sst/opencode.",
+        "Set OPENCODE_FORK_DIR to override the default fork path (~/projects/opencode).",
+        "All arguments after 'cento opencode' are forwarded to the opencode binary unchanged."
       ]
     },
     {

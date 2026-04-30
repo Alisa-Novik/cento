@@ -129,6 +129,16 @@ cento cluster activity --json linux
 
 The Redmine issue tracks assignment and lifecycle. `cluster activity` tracks the live node state: tmux sessions, Codex processes, and recent pane text.
 
+Dispatch also writes a durable run ledger under `workspace/runs/agent-runs/<run-id>/run.json`:
+
+```bash
+cento agent-work runs
+cento agent-work runs --json --active
+cento agent-work run-status RUN_ID --json
+```
+
+`runs` reconciles ledger entries with `ps`/tmux health and reports interactive Codex or Claude Code sessions without a ledger as `untracked_interactive`. The Industrial OS pane labels those as `MANUAL`: real local agent shells that cannot yet be attached to an issue, prompt, or log. The pane also shows tracked Redmine work first so the manager view remains useful before every agent launch flows through the ledger wrapper.
+
 The cluster command path still prefers the OCI Unix-socket mesh. If that socket is stale, `cento cluster exec linux` now falls back to direct LAN SSH at `alice@alisapad.local`, which keeps dispatch and activity usable while the relay repairs itself.
 
 ## Redmine UI

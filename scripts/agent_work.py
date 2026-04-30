@@ -24,6 +24,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 STATE_DIR = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state")) / "cento"
+AGENT_RUN_ROOT = ROOT / "workspace" / "runs" / "agent-runs"
 DEFAULT_PROJECT_IDENTIFIER = "cento-agent-work"
 DEFAULT_PROJECT_NAME = "Cento Agent Work"
 RUNTIME_REGISTRY_PATH = ROOT / "data" / "agent-runtimes.json"
@@ -39,6 +40,8 @@ STATUS_MAP = {
 }
 ROLE_CHOICES = ("builder", "validator", "coordinator")
 VALIDATION_RESULT_CHOICES = ("pass", "fail", "blocked")
+ACTIVE_RUN_STATUSES = {"planned", "launching", "running"}
+ENDED_RUN_STATUSES = {"dry_run", "succeeded", "failed", "blocked", "stale", "exited_unknown"}
 DEFAULT_RUNTIME_REGISTRY = {
     "routing": "weighted",
     "runtimes": [
@@ -228,6 +231,329 @@ def select_runtime(issue: dict[str, Any], role: str, requested: str = "auto") ->
     if runtime_id and runtime_id != "auto":
         return runtime_by_id(runtime_id)
     return weighted_runtime(int(issue["id"]), role, str(issue.get("package") or ""))
+
+
+def git_head() -> str:
+    try:
+        proc = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, timeout=5, check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    return proc.stdout.strip() if proc.returncode == 0 else ""
+
+
+def agent_run_dir(run_id: str) -> Path:
+    return AGENT_RUN_ROOT / run_id
+
+
+def agent_run_path(run_id: str) -> Path:
+    return agent_run_dir(run_id) / "run.json"
+
+
+def read_json_file(path: Path) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {}
+    except json.JSONDecodeError as exc:
+        raise AgentWorkError(f"Invalid JSON in {path}: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise AgentWorkError(f"Expected JSON object in {path}")
+    return payload
+
+
+def write_agent_run(record: dict[str, Any]) -> dict[str, Any]:
+    run_id = str(record.get("run_id") or "").strip()
+    if not run_id:
+        raise AgentWorkError("agent run record is missing run_id")
+    run_dir = agent_run_dir(run_id)
+    run_dir.mkdir(parents=True, exist_ok=True)
+    path = agent_run_path(run_id)
+    payload = dict(record)
+    payload["run_id"] = run_id
+    payload["ledger_path"] = display_path(path)
+    payload["updated_at"] = now_iso()
+    tmp_path = path.with_suffix(".json.tmp")
+    tmp_path.write_text(json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
+    tmp_path.replace(path)
+    return payload
+
+
+def update_agent_run(run_id: str, updates: dict[str, Any]) -> dict[str, Any]:
+    record = read_json_file(agent_run_path(run_id))
+    if not record:
+        record = {"run_id": run_id, "created_at": now_iso()}
+    for key, value in updates.items():
+        if value is not None:
+            record[key] = value
+    return write_agent_run(record)
+
+
+def create_agent_run(
+    *,
+    run_id: str,
+    issue: dict[str, Any],
+    node: str,
+    agent: str,
+    role: str,
+    runtime: dict[str, Any],
+    model: str,
+    command: str,
+    prompt_path: str,
+    log_path: str,
+    tmux_session: str,
+    status: str,
+    dispatch_path: str,
+) -> dict[str, Any]:
+    package = str(issue.get("package") or "")
+    record = {
+        "run_id": run_id,
+        "issue_id": int(issue["id"]),
+        "issue_subject": issue.get("subject") or "",
+        "package": package,
+        "node": node,
+        "agent": agent,
+        "role": role,
+        "runtime": str(runtime.get("id") or ""),
+        "runtime_display_name": runtime.get("display_name", runtime.get("id", "")),
+        "provider": runtime.get("provider", ""),
+        "model": model,
+        "command": command,
+        "pid": None,
+        "child_pid": None,
+        "tmux_session": tmux_session,
+        "status": status,
+        "started_at": now_iso(),
+        "ended_at": now_iso() if status in ENDED_RUN_STATUSES else None,
+        "exit_code": 0 if status == "dry_run" else None,
+        "prompt_path": prompt_path,
+        "log_path": log_path,
+        "cwd": str(ROOT),
+        "git_head": git_head(),
+        "dispatch_path": dispatch_path,
+        "source": "agent-work-dispatch",
+    }
+    return write_agent_run(record)
+
+
+def load_agent_run(run_id: str) -> dict[str, Any]:
+    record = read_json_file(agent_run_path(run_id))
+    if not record:
+        raise AgentWorkError(f"Agent run not found: {run_id}")
+    return record
+
+
+def load_agent_runs() -> list[dict[str, Any]]:
+    if not AGENT_RUN_ROOT.exists():
+        return []
+    records: list[dict[str, Any]] = []
+    for path in sorted(AGENT_RUN_ROOT.glob("*/run.json")):
+        try:
+            record = read_json_file(path)
+        except AgentWorkError as exc:
+            records.append({"run_id": path.parent.name, "status": "invalid", "health": "invalid_json", "error": str(exc), "ledger_path": display_path(path)})
+            continue
+        if record:
+            records.append(record)
+    return records
+
+
+def pid_alive(value: Any) -> bool:
+    try:
+        pid = int(value)
+    except (TypeError, ValueError):
+        return False
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def tmux_session_alive(session: str | None) -> bool:
+    if not session:
+        return False
+    try:
+        proc = subprocess.run(["tmux", "has-session", "-t", session], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=3, check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return proc.returncode == 0
+
+
+def reconcile_agent_run(record: dict[str, Any], *, write: bool = False) -> dict[str, Any]:
+    reconciled = dict(record)
+    status = str(reconciled.get("status") or "unknown")
+    pid_running = pid_alive(reconciled.get("pid")) or pid_alive(reconciled.get("child_pid"))
+    tmux_running = tmux_session_alive(str(reconciled.get("tmux_session") or ""))
+    reconciled["pid_alive"] = pid_running
+    reconciled["tmux_alive"] = tmux_running
+    if status in ACTIVE_RUN_STATUSES:
+        if pid_running or tmux_running:
+            reconciled["status"] = "running"
+            reconciled["health"] = "running"
+        else:
+            reconciled["status"] = "stale"
+            reconciled["health"] = "stale_no_process"
+            if not reconciled.get("ended_at"):
+                reconciled["ended_at"] = now_iso()
+    elif status in {"succeeded", "dry_run"}:
+        reconciled["health"] = "ok"
+    elif status in {"failed", "blocked", "stale", "exited_unknown", "invalid"}:
+        reconciled["health"] = reconciled.get("health") or status
+    else:
+        reconciled["health"] = "unknown"
+    if write and reconciled != record and reconciled.get("source") != "ps":
+        reconciled = write_agent_run(reconciled)
+    return reconciled
+
+
+def command_runtime(command: str) -> str:
+    value = command.lower()
+    try:
+        tokens = shlex.split(command)
+    except ValueError:
+        tokens = command.split()
+    first = Path(tokens[0]).name.lower() if tokens else ""
+    if first in {"rg", "grep", "ps", "bash", "sh", "zsh", "python", "python3"}:
+        return ""
+    if first == "claude" or "/claude" in value or "anthropic-ai/claude-code" in value:
+        return "claude-code"
+    if first == "codex" or "/codex" in value or "@openai/codex" in value:
+        return "codex"
+    if first == "node" and "codex" in value:
+        return "codex"
+    return ""
+
+
+def read_agent_processes() -> list[dict[str, Any]]:
+    try:
+        proc = subprocess.run(["ps", "-eo", "pid=,ppid=,stat=,etime=,command="], text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, timeout=5, check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    if proc.returncode != 0:
+        return []
+    processes: list[dict[str, Any]] = []
+    for raw in proc.stdout.splitlines():
+        parts = raw.strip().split(None, 4)
+        if len(parts) < 5:
+            continue
+        pid, ppid, stat, elapsed, command = parts
+        runtime = command_runtime(command)
+        if not runtime:
+            continue
+        if "agent_work.py runs" in command or "agent_work.py run-status" in command:
+            continue
+        processes.append(
+            {
+                "pid": int(pid),
+                "ppid": int(ppid),
+                "stat": stat,
+                "elapsed": elapsed,
+                "command": command,
+                "runtime": runtime,
+            }
+        )
+    return processes
+
+
+def untracked_interactive_runs(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    tracked_pids: set[int] = set()
+    for record in records:
+        for key in ("pid", "child_pid"):
+            try:
+                pid = int(record.get(key) or 0)
+            except (TypeError, ValueError):
+                pid = 0
+            if pid > 0:
+                tracked_pids.add(pid)
+    processes = read_agent_processes()
+    agent_process_pids = {int(proc["pid"]) for proc in processes}
+    synthetic: list[dict[str, Any]] = []
+    for proc in processes:
+        if proc["pid"] in tracked_pids or proc["ppid"] in tracked_pids:
+            continue
+        if proc["ppid"] in agent_process_pids:
+            continue
+        run_id = f"untracked-{proc['runtime']}-{proc['pid']}"
+        synthetic.append(
+            {
+                "run_id": run_id,
+                "issue_id": None,
+                "package": "",
+                "node": current_node(),
+                "agent": os.environ.get("USER") or "",
+                "role": "interactive",
+                "runtime": proc["runtime"],
+                "model": "",
+                "command": proc["command"],
+                "pid": proc["pid"],
+                "ppid": proc["ppid"],
+                "tmux_session": "",
+                "status": "untracked_interactive",
+                "health": "untracked",
+                "started_at": "",
+                "ended_at": None,
+                "exit_code": None,
+                "prompt_path": "",
+                "log_path": "",
+                "cwd": "",
+                "git_head": "",
+                "ledger_path": "",
+                "source": "ps",
+                "elapsed": proc["elapsed"],
+            }
+        )
+    return synthetic
+
+
+def print_agent_run_table(records: list[dict[str, Any]]) -> None:
+    if not records:
+        print("No agent runs.")
+        return
+    print(f"{'RUN ID':<34} {'STATUS':<22} {'ISSUE':<7} {'RUNTIME':<12} {'NODE':<7} {'PID':<8} {'HEALTH':<18} LOG")
+    for record in records:
+        issue = str(record.get("issue_id") or "-")
+        pid = str(record.get("child_pid") or record.get("pid") or "-")
+        print(
+            f"{str(record.get('run_id') or '')[:34]:<34} "
+            f"{str(record.get('status') or '')[:22]:<22} "
+            f"{issue[:7]:<7} "
+            f"{str(record.get('runtime') or '-')[:12]:<12} "
+            f"{str(record.get('node') or '-')[:7]:<7} "
+            f"{pid[:8]:<8} "
+            f"{str(record.get('health') or '-')[:18]:<18} "
+            f"{record.get('log_path') or ''}"
+        )
+
+
+def agent_run_records(*, include_untracked: bool = True, reconcile: bool = False) -> list[dict[str, Any]]:
+    records = [reconcile_agent_run(record, write=reconcile) for record in load_agent_runs()]
+    if include_untracked:
+        records.extend(untracked_interactive_runs(records))
+    status_rank = {
+        "running": 0,
+        "launching": 1,
+        "planned": 2,
+        "untracked_interactive": 3,
+        "stale": 4,
+        "failed": 5,
+        "blocked": 6,
+        "exited_unknown": 7,
+        "succeeded": 8,
+        "dry_run": 9,
+    }
+    records.sort(
+        key=lambda item: (
+            status_rank.get(str(item.get("status") or ""), 20),
+            str(item.get("updated_at") or item.get("started_at") or ""),
+            str(item.get("run_id") or ""),
+        ),
+        reverse=False,
+    )
+    return records
 
 
 def docker_psql_args(sql: str) -> list[str]:
@@ -1261,6 +1587,90 @@ def command_runtimes(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_runs(args: argparse.Namespace) -> int:
+    records = agent_run_records(include_untracked=not args.no_untracked, reconcile=args.reconcile)
+    if args.issue is not None:
+        records = [item for item in records if item.get("issue_id") == args.issue]
+    if args.active:
+        active_statuses = ACTIVE_RUN_STATUSES | {"untracked_interactive", "stale"}
+        records = [item for item in records if str(item.get("status") or "") in active_statuses]
+    if args.json:
+        print(json.dumps({"runs": records, "count": len(records), "updated_at": now_iso()}, indent=2, default=str))
+    else:
+        print_agent_run_table(records)
+    return 0
+
+
+def command_run_status(args: argparse.Namespace) -> int:
+    record = load_agent_run(args.run_id)
+    record = reconcile_agent_run(record, write=args.reconcile)
+    if args.json:
+        print(json.dumps(record, indent=2, default=str))
+        return 0
+    print_agent_run_table([record])
+    return 0
+
+
+def command_run_update(args: argparse.Namespace) -> int:
+    updates: dict[str, Any] = {}
+    if args.status:
+        updates["status"] = args.status
+    if args.health:
+        updates["health"] = args.health
+    if args.pid is not None:
+        updates["pid"] = args.pid
+    if args.child_pid is not None:
+        updates["child_pid"] = args.child_pid
+    if args.tmux_session:
+        updates["tmux_session"] = args.tmux_session
+    if args.log_path:
+        updates["log_path"] = args.log_path
+    if args.exit_code is not None:
+        updates["exit_code"] = args.exit_code
+    if args.ended_now or args.status in ENDED_RUN_STATUSES:
+        updates["ended_at"] = now_iso()
+    if args.note:
+        updates["note"] = args.note
+    record = update_agent_run(args.run_id, updates)
+    if args.json:
+        print(json.dumps(record, indent=2, default=str))
+    else:
+        print(f"updated run {record['run_id']}: {record.get('status')}")
+    return 0
+
+
+def command_run_wrap(args: argparse.Namespace) -> int:
+    if not args.command:
+        raise AgentWorkError("run-wrap requires a command after --")
+    command = args.command
+    if command and command[0] == "--":
+        command = command[1:]
+    if not command:
+        raise AgentWorkError("run-wrap requires a command after --")
+    record = update_agent_run(args.run_id, {"status": "running", "pid": os.getpid(), "command": shlex.join(command), "started_at": now_iso()})
+    log_path = record.get("log_path") or ""
+    stdout_target = subprocess.PIPE
+    stderr_target = subprocess.STDOUT
+    log_handle = None
+    if log_path:
+        resolved = resolve_root_path(str(log_path))
+        resolved.parent.mkdir(parents=True, exist_ok=True)
+        log_handle = resolved.open("ab")
+        stdout_target = log_handle
+    try:
+        proc = subprocess.Popen(command, cwd=ROOT, stdout=stdout_target, stderr=stderr_target)
+        update_agent_run(args.run_id, {"child_pid": proc.pid, "status": "running"})
+        stdout, _stderr = proc.communicate()
+    finally:
+        if log_handle:
+            log_handle.close()
+    if not log_path and stdout:
+        sys.stdout.buffer.write(stdout)
+    status = "succeeded" if proc.returncode == 0 else "failed"
+    update_agent_run(args.run_id, {"status": status, "exit_code": proc.returncode, "ended_at": now_iso()})
+    return int(proc.returncode)
+
+
 def command_dispatch(args: argparse.Namespace) -> int:
     issue = show_issue(args.issue)
     role = normalize_role(args.role)
@@ -1278,8 +1688,29 @@ def command_dispatch(args: argparse.Namespace) -> int:
     session = f"cento-agent-{issue['id']}-{datetime.now().strftime('%H%M%S')}"
     log_name = "codex.log" if runtime_id == "codex" else f"{runtime_id}.log"
     log_path = f"workspace/runs/agent-work/{run_id}/{log_name}"
-    dispatch = f"runtime={runtime_id} node={node} model={model} session={session} local_prompt={prompt_path}"
+    runtime_command = (
+        f"claude --print --model {shlex.quote(model)} --permission-mode bypassPermissions --add-dir . < prompt"
+        if runtime_id == "claude-code"
+        else f"codex exec --model {shlex.quote(model)} --dangerously-bypass-approvals-and-sandbox -C . <prompt>"
+    )
+    ledger_record = create_agent_run(
+        run_id=run_id,
+        issue=issue,
+        node=node,
+        agent=agent,
+        role=role,
+        runtime=runtime,
+        model=model,
+        command=runtime_command,
+        prompt_path=display_path(prompt_path),
+        log_path=log_path,
+        tmux_session=session,
+        status="dry_run" if args.dry_run else "launching",
+        dispatch_path=f"workspace/runs/agent-work/{run_id}/dispatch.json",
+    )
+    dispatch = f"run_id={run_id} runtime={runtime_id} node={node} model={model} session={session} ledger={ledger_record['ledger_path']} local_prompt={prompt_path}"
     metadata = {
+        "run_id": run_id,
         "issue": issue["id"],
         "node": node,
         "agent": agent,
@@ -1290,6 +1721,7 @@ def command_dispatch(args: argparse.Namespace) -> int:
         "model": model,
         "role": role,
         "session": session,
+        "ledger": ledger_record["ledger_path"],
         "local_prompt": str(prompt_path),
         "log": log_path,
         "created_at": now_iso(),
@@ -1298,6 +1730,7 @@ def command_dispatch(args: argparse.Namespace) -> int:
     if args.dry_run:
         print(dispatch)
         print(prompt_path)
+        print(ledger_record["ledger_path"])
         return 0
     update_issue(args.issue, "running", f"Dispatched {role} to {node} with {runtime_id} {model}. Prompt: {prompt_path}", node, agent, dispatch, role=role)
     encoded_prompt = base64.b64encode(prompt_text.encode("utf-8")).decode("ascii")
@@ -1338,6 +1771,7 @@ def command_dispatch(args: argparse.Namespace) -> int:
         else
           agent_work_cmd=(cento agent-work)
         fi
+        "${{agent_work_cmd[@]}}" run-update {shlex.quote(run_id)} --status running --pid $$ --tmux-session {shlex.quote(session)} --log-path {shlex.quote(log_path)} || true
         "${{agent_work_cmd[@]}}" claim {issue['id']} --node {shlex.quote(node)} --agent {shlex.quote(agent)} --role {shlex.quote(role)} --note {shlex.quote(f"tmux session {session} started")} || true
         set +e
         if [[ "$runtime" == "claude-code" ]]; then
@@ -1345,7 +1779,7 @@ def command_dispatch(args: argparse.Namespace) -> int:
           if [[ -x "$HOME/.npm-global/bin/claude" ]]; then
             claude_bin="$HOME/.npm-global/bin/claude"
           fi
-          "$claude_bin" --print --model {shlex.quote(model)} --permission-mode bypassPermissions --add-dir "$PWD" "$(cat "$prompt_file")" > "$log_file" 2>&1
+          "$claude_bin" --print --model {shlex.quote(model)} --permission-mode bypassPermissions --add-dir "$PWD" < "$prompt_file" > "$log_file" 2>&1
         else
           codex_bin="${{CENTO_CODEX_BIN:-codex}}"
           if [[ -x "$HOME/.npm-global/bin/codex" ]]; then
@@ -1356,12 +1790,14 @@ def command_dispatch(args: argparse.Namespace) -> int:
         status=$?
         set -e
         if [[ $status -eq 0 ]]; then
+          "${{agent_work_cmd[@]}}" run-update {shlex.quote(run_id)} --status succeeded --exit-code 0 --ended-now || true
           if [[ {shlex.quote(role)} == "validator" ]]; then
             "${{agent_work_cmd[@]}}" validate {issue['id']} --result pass --evidence {shlex.quote(log_path)} --note {shlex.quote(f"Validator session {session} passed with {runtime_id}; log: {log_path}")} || true
           else
             "${{agent_work_cmd[@]}}" update {issue['id']} --status validating --role builder --note {shlex.quote(f"Builder session {session} finished with {runtime_id}; ready for validator; log: {log_path}")} || true
           fi
         else
+          "${{agent_work_cmd[@]}}" run-update {shlex.quote(run_id)} --status failed --exit-code "$status" --ended-now || true
           "${{agent_work_cmd[@]}}" update {issue['id']} --status blocked --role {shlex.quote(role)} --note {shlex.quote(f"Agent session {session} failed with {runtime_id}; log: {log_path}")} || true
         fi
         exit "$status"
@@ -1501,6 +1937,39 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--package", default="sample")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=command_runtimes)
+
+    p = sub.add_parser("runs", help="List observed agent runtime ledger entries and untracked sessions.")
+    p.add_argument("--json", action="store_true")
+    p.add_argument("--active", action="store_true", help="Only show active, stale, or untracked sessions.")
+    p.add_argument("--issue", type=int, default=None)
+    p.add_argument("--no-untracked", action="store_true", help="Do not scan ps for untracked interactive Codex/Claude sessions.")
+    p.add_argument("--reconcile", action="store_true", help="Update stale ledger records based on ps/tmux state.")
+    p.set_defaults(func=command_runs)
+
+    p = sub.add_parser("run-status", help="Show one agent run ledger entry.")
+    p.add_argument("run_id")
+    p.add_argument("--reconcile", action="store_true")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=command_run_status)
+
+    p = sub.add_parser("run-update", help="Update one agent run ledger entry.")
+    p.add_argument("run_id")
+    p.add_argument("--status", choices=sorted(ACTIVE_RUN_STATUSES | ENDED_RUN_STATUSES | {"untracked_interactive"}), default="")
+    p.add_argument("--health", default="")
+    p.add_argument("--pid", type=int, default=None)
+    p.add_argument("--child-pid", type=int, default=None)
+    p.add_argument("--tmux-session", default="")
+    p.add_argument("--log-path", default="")
+    p.add_argument("--exit-code", type=int, default=None)
+    p.add_argument("--ended-now", action="store_true")
+    p.add_argument("--note", default="")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=command_run_update)
+
+    p = sub.add_parser("run-wrap", help="Run a command while updating an agent run ledger entry.")
+    p.add_argument("run_id")
+    p.add_argument("command", nargs=argparse.REMAINDER)
+    p.set_defaults(func=command_run_wrap)
 
     p = sub.add_parser("dispatch", help="Mark an issue dispatched and optionally run a cluster agent runtime.")
     p.add_argument("issue", type=int)

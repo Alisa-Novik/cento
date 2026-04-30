@@ -17,6 +17,7 @@ TERMINAL_ART="${CENTO_INDUSTRIAL_TERMINAL_ART:-$ROOT_DIR/assets/industrial-os/ac
 JOBS_ART="${CENTO_INDUSTRIAL_JOBS_ART:-$ROOT_DIR/assets/industrial-os/jobs-pane.png}"
 CLUSTER_ART="${CENTO_INDUSTRIAL_CLUSTER_ART:-$ROOT_DIR/assets/industrial-os/cluster-pane.png}"
 ACTIVITY_ART="${CENTO_INDUSTRIAL_ACTIVITY_ART:-$ROOT_DIR/assets/industrial-os/activity-pane.png}"
+AGENTS_ART="${CENTO_INDUSTRIAL_AGENTS_ART:-$ACTIVITY_ART}"
 ACTIONS_ART="${CENTO_INDUSTRIAL_ACTIONS_ART:-$ROOT_DIR/assets/industrial-os/actions-pane.png}"
 BACKGROUND_MODE="${CENTO_INDUSTRIAL_BACKGROUND_MODE:-images}"
 BLACK_ONLY="${CENTO_INDUSTRIAL_BLACK_ONLY:-0}"
@@ -27,6 +28,7 @@ TERMINAL_FONT_SIZE="${CENTO_INDUSTRIAL_TERMINAL_FONT_SIZE:-12.0}"
 KITTY_PANEL_OPTIONS=(
     -o "font_size=$PANEL_FONT_SIZE"
     -o "window_padding_width=5"
+    -o "disable_ligatures=always"
     -o "background_opacity=0.90"
     -o "cursor_blink_interval=0"
     -o "confirm_os_window_close=0"
@@ -67,7 +69,7 @@ GENERATED_CLASSES=(
     "cento-industrial-terminal"
     "cento-industrial-jobs"
     "cento-industrial-cluster"
-    "cento-industrial-activity"
+    "cento-industrial-agents"
     "cento-industrial-actions"
 )
 
@@ -223,6 +225,7 @@ placeholder_names = {
     "cluster status",
     "system resources",
     "activity feed",
+    "agent runs",
     "quick actions",
 }
 
@@ -307,6 +310,7 @@ panel_art() {
         jobs) printf '%s\n' "$JOBS_ART" ;;
         cluster) printf '%s\n' "$CLUSTER_ART" ;;
         activity) printf '%s\n' "$ACTIVITY_ART" ;;
+        agents) printf '%s\n' "$AGENTS_ART" ;;
         actions) printf '%s\n' "$ACTIONS_ART" ;;
         *) return 1 ;;
     esac
@@ -333,6 +337,14 @@ append_background_options() {
             -o "background_image=none"
         )
     fi
+}
+
+append_solid_background_options() {
+    options+=(
+        -o "background_opacity=1.0"
+        -o "background=#050403"
+        -o "background_image=none"
+    )
 }
 
 launch_panel() {
@@ -362,6 +374,9 @@ launch_panel() {
     elif [[ "$panel" == "cluster" ]]; then
         append_background_options "$panel" "0.90"
         command=("$ROOT_DIR/scripts/industrial_cluster_tui.sh")
+    elif [[ "$panel" == "agents" ]]; then
+        append_solid_background_options
+        command=("$ROOT_DIR/scripts/industrial_aux_tui.sh" "$panel")
     elif [[ "$panel" == "activity" || "$panel" == "actions" ]]; then
         append_background_options "$panel" "0.92"
         command=("$ROOT_DIR/scripts/industrial_aux_tui.sh" "$panel")
@@ -405,7 +420,7 @@ ensure_all_windows() {
     launch_terminal
     launch_panel "cento-industrial-jobs" "jobs dashboard" "jobs"
     launch_panel "cento-industrial-cluster" "cluster status" "cluster"
-    launch_panel "cento-industrial-activity" "activity feed" "activity"
+    launch_panel "cento-industrial-agents" "agent runs" "agents"
     launch_panel "cento-industrial-actions" "quick actions" "actions"
 
     local klass
@@ -485,7 +500,7 @@ row(
     [
         "cento-industrial-jobs",
         "cento-industrial-cluster",
-        "cento-industrial-activity",
+        "cento-industrial-agents",
         "cento-industrial-actions",
     ],
     [0.34, 0.22, 0.22, 0.22],
@@ -587,7 +602,7 @@ row(
     [
         "cento-industrial-jobs",
         "cento-industrial-cluster",
-        "cento-industrial-activity",
+        "cento-industrial-agents",
         "cento-industrial-actions",
     ],
     [0.34, 0.22, 0.22, 0.22],
