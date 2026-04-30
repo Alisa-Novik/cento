@@ -434,6 +434,42 @@ def remote_run_status(record: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
+def remote_agent_run_records(*, active: bool = False) -> list[dict[str, Any]]:
+    if current_node() == "linux":
+        return []
+    command_parts = ["python3", "scripts/agent_work.py", "runs", "--json"]
+    if active:
+        command_parts.append("--active")
+    command = "cd /home/alice/projects/cento && " + shlex.join(command_parts)
+    try:
+        proc = subprocess.run(
+            [cento_command(), "bridge", "to-linux", "--", command],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=REMOTE_RECONCILE_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    if proc.returncode != 0:
+        return []
+    payload = json_from_mixed_stdout(proc.stdout)
+    runs = payload.get("runs") if isinstance(payload, dict) else []
+    if not isinstance(runs, list):
+        return []
+    records: list[dict[str, Any]] = []
+    for item in runs:
+        if isinstance(item, dict):
+            record = dict(item)
+            if str(record.get("node") or "").lower() == "linux":
+                record["node"] = "linux"
+            record["listed_from_remote_node"] = "linux"
+            records.append(record)
+    return records
+
+
 def reconcile_agent_run(record: dict[str, Any], *, write: bool = False, remote: bool = True) -> dict[str, Any]:
     reconciled = dict(record)
     status = str(reconciled.get("status") or "unknown")
@@ -610,6 +646,17 @@ def agent_run_records(*, include_untracked: bool = True, reconcile: bool = False
     records = [reconcile_agent_run(record, write=reconcile, remote=remote) for record in load_agent_runs()]
     if include_untracked:
         records.extend(untracked_interactive_runs(records))
+    if remote:
+        by_id = {str(record.get("run_id") or ""): index for index, record in enumerate(records) if record.get("run_id")}
+        for remote_record in remote_agent_run_records():
+            run_id = str(remote_record.get("run_id") or "")
+            if not run_id:
+                continue
+            if run_id in by_id:
+                records[by_id[run_id]].update({"remote_listing": remote_record})
+            else:
+                by_id[run_id] = len(records)
+                records.append(remote_record)
     status_rank = {
         "running": 0,
         "launching": 1,
