@@ -609,10 +609,11 @@
         <a href="#create">Create <span>03</span></a>
         <a href="#split">Split <span>04</span></a>
         <a href="#lifecycle">Lifecycle <span>05</span></a>
-        <a href="#prompt">Prompt <span>06</span></a>
-        <a href="#dispatch">Dispatch <span>07</span></a>
-        <a href="#redmine">Redmine <span>08</span></a>
-        <a href="#limits">Limits <span>09</span></a>
+        <a href="#lanes">Lanes <span>06</span></a>
+        <a href="#prompt">Prompt <span>07</span></a>
+        <a href="#dispatch">Dispatch <span>08</span></a>
+        <a href="#redmine">Redmine <span>09</span></a>
+        <a href="#limits">Limits <span>10</span></a>
       </nav>
 
       <div class="aside-note">
@@ -814,6 +815,36 @@ cento agent-work update 123 --status running --note "Found the dashboard entry p
 cento agent-work update 123 --status review --note "Implemented; make check passes."
 cento agent-work update 123 --status blocked --note "Blocked waiting for Redmine access."
 cento agent-work update 123 --status done --note "Verified and closed."</code></pre>
+          </div>
+        </section>
+
+        <section id="lanes">
+          <h2>Agent Lanes</h2>
+          <p class="section-lead">
+            Scaling works when ownership stays separate. Builders implement, Validators verify, Docs/Evidence preserves proof,
+            and Coordinators keep routing, status hygiene, and escalation current.
+          </p>
+
+          <div class="grid four">
+            <article class="card card-body">
+              <h3>Builder</h3>
+              <p>Implements the smallest coherent code or content change and hands off with focused evidence.</p>
+            </article>
+            <article class="card card-body">
+              <h3>Validator</h3>
+              <p>Runs independent checks and moves work to Review only after required evidence passes.</p>
+              <p><a href="./agent-work-validator-lane.md">Validator contract</a></p>
+            </article>
+            <article class="card card-body">
+              <h3>Docs/Evidence</h3>
+              <p>Maintains hubs, screenshots, validation logs, and manager-facing review notes.</p>
+              <p><a href="./agent-work-docs-evidence-lane.md">Docs/Evidence contract</a></p>
+            </article>
+            <article class="card card-body">
+              <h3>Coordinator</h3>
+              <p>Splits stories, routes workers, plans pools, keeps statuses honest, and escalates blockers early.</p>
+              <p><a href="./agent-work-coordinator-lane.md">Coordinator contract</a></p>
+            </article>
           </div>
         </section>
 

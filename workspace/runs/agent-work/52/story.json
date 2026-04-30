@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.0",
+  "issue": {
+    "id": 52,
+    "title": "Spark Coordinator Agent Lane",
+    "package": "spark-coordinator-lane",
+    "status": "Running",
+    "url": "redmine://issues/52"
+  },
+  "lane": {
+    "owner": "coordinator",
+    "role": "coordinator",
+    "node": "macos",
+    "agent": "anovik-air"
+  },
+  "paths": {
+    "run_dir": "workspace/runs/agent-work/52"
+  },
+  "scope": {
+    "goal": "Define the Coordinator lane contract for Cento agent work scaling.",
+    "acceptance": [
+      "Coordinator lane documentation exists and covers routing, status hygiene, dispatch guardrails, notification discipline, and escalation.",
+      "Agent work documentation links Builder, Validator, Docs/Evidence, and Coordinator lane responsibilities.",
+      "The story has a valid story.json and generated manager-facing hub.",
+      "Validation commands and evidence paths are recorded in a builder report."
+    ]
+  },
+  "expected_outputs": [
+    {
+      "path": "docs/agent-work-coordinator-lane.md",
+      "owner": "coordinator",
+      "description": "Coordinator lane operating contract",
+      "required": true
+    },
+    {
+      "path": "docs/agent-work.md",
+      "owner": "coordinator",
+      "description": "Agent work guide linking the lane contracts",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/52/builder-report.md",
+      "owner": "coordinator",
+      "description": "Builder/coordinator report for issue 52",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/52/validation.md",
+      "owner": "validator",
+      "description": "Validation log for issue 52",
+      "required": true
+    }
+  ],
+  "validation": {
+    "commands": [
+      "python3 scripts/story_manifest.py validate workspace/runs/agent-work/52/story.json --check-links",
+      "python3 scripts/story_manifest.py render-hub workspace/runs/agent-work/52/story.json --check-links"
+    ],
+    "required_evidence": [
+      "docs/agent-work-coordinator-lane.md",
+      "workspace/runs/agent-work/52/builder-report.md",
+      "workspace/runs/agent-work/52/validation.md",
+      "workspace/runs/agent-work/52/start-here.html"
+    ]
+  },
+  "deliverables": {
+    "manifest": "workspace/runs/agent-work/52/deliverables.json",
+    "hub": "workspace/runs/agent-work/52/start-here.html"
+  },
+  "routes": [
+    {
+      "name": "Process scaling source",
+      "url": "workspace/runs/agent-work/18/process-scaling.html",
+      "purpose": "Original process-scaling report that defined the Coordinator lane need."
+    }
+  ],
+  "review_gate": {
+    "required_sections": [
+      "Delivered",
+      "Validation",
+      "Evidence",
+      "Residual risk"
+    ],
+    "residual_risk_required": true
+  },
+  "handoff": {
+    "notes": [
+      "Spark dispatch was quota-blocked, so the Coordinator lane deliverable was completed locally from the Mac operator session.",
+      "Future automated coordinator workers should use this contract and avoid unbounded dispatch retries."
+    ]
+  }
+}

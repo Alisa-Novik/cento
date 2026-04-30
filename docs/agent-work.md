@@ -89,6 +89,15 @@ cento agent-work update 123 --status done --note "Verified and closed."
 
 Use `Review` for code that is ready for human inspection. Use `Done` only after verification.
 
+## Agent Lanes
+
+Cento work scales by separating ownership:
+
+- Builder lane: implements the smallest coherent code or content change.
+- Validator lane: independently validates and moves work to Review only after evidence passes. See [`docs/agent-work-validator-lane.md`](./agent-work-validator-lane.md).
+- Docs/Evidence lane: preserves manager-facing hubs, screenshots, validation logs, and review notes. See [`docs/agent-work-docs-evidence-lane.md`](./agent-work-docs-evidence-lane.md).
+- Coordinator lane: splits stories, routes work, manages status hygiene, plans worker pools, and escalates blockers. See [`docs/agent-work-coordinator-lane.md`](./agent-work-coordinator-lane.md).
+
 ## Give An Agent The Prompt
 
 Generate the exact prompt for a task:
