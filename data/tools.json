@@ -1058,6 +1058,8 @@
         "cento agent-work update 123 --status review --note \"implemented and tested\"",
         "cento agent-work prompt 123",
         "cento agent-work dispatch 123 --node linux --dry-run",
+        "cento agent-work dispatch-pool --limit 3",
+        "cento agent-work dispatch-pool --limit 2 --runtime codex --model gpt-5.3-codex-spark --execute",
         "cento agent-work runs",
         "cento agent-work runs --json --active",
         "cento agent-work run-status RUN_ID --json"
@@ -1074,6 +1076,7 @@
       "notes": [
         "The MVP uses the trusted local Redmine Postgres container over direct LAN SSH or cento cluster exec linux, so no Redmine API key is required.",
         "Use split to create one package with node-assigned work items, then dispatch or hand the generated prompt to an agent.",
+        "Use dispatch-pool to keep cheap Spark/Codex workers busy; it is plan-only unless --execute is passed.",
         "Statuses are Queued, Running, Review, Blocked, and Done."
       ]
     },

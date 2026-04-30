@@ -1,0 +1,114 @@
+{
+  "schema_version": "1.0",
+  "issue": {
+    "id": 61,
+    "title": "Coordination: Spark worker dispatch pool planner",
+    "package": "agent-platform",
+    "url": "redmine://issues/61",
+    "status": "Running"
+  },
+  "lane": {
+    "owner": "builder",
+    "role": "builder",
+    "node": "macos",
+    "agent": "anovik-air",
+    "collaborators": [
+      "linux",
+      "claude-code",
+      "spark-workers"
+    ]
+  },
+  "paths": {
+    "run_dir": "workspace/runs/agent-work/61",
+    "story_manifest": "workspace/runs/agent-work/61/story.json"
+  },
+  "scope": {
+    "goal": "Add a safe coordination primitive that lets an operator plan or explicitly launch a pool of cheap Spark/Codex workers for queued agent-work.",
+    "acceptance": [
+      "dispatch-pool plans queued work without mutating issues by default.",
+      "dispatch-pool requires --execute before live dispatch.",
+      "The default runtime/model targets cheap Spark/Codex workers.",
+      "The selector skips non-dispatchable nodes and non-Agent Task issues by default.",
+      "E2E validates dispatch-pool planning against a temporary Redmine issue."
+    ]
+  },
+  "routes": [],
+  "api_endpoints": [],
+  "validation": {
+    "manifest": "workspace/runs/agent-work/61/validation.json",
+    "commands": [
+      {
+        "name": "Dispatch pool JSON smoke",
+        "command": "python3 scripts/agent_work.py dispatch-pool --limit 2 --json"
+      },
+      {
+        "name": "Agent work e2e",
+        "command": "./scripts/agent_work_e2e.sh"
+      }
+    ],
+    "required_evidence": [
+      "scripts/agent_work.py",
+      "scripts/agent_work_e2e.sh",
+      "docs/agent-work.md",
+      "docs/agent-work-runtimes.md",
+      "docs/agent-run-ledger.md",
+      "workspace/runs/agent-work/61/claude-review.md"
+    ]
+  },
+  "deliverables": {
+    "manifest": "workspace/runs/agent-work/61/deliverables.json",
+    "hub": "workspace/runs/agent-work/61/start-here.html"
+  },
+  "screenshots": [],
+  "handoff": {
+    "human_steps": [
+      "Review a plan with `cento agent-work dispatch-pool --limit 3` before using `--execute`."
+    ],
+    "device_access": "none",
+    "notes": [
+      "Claude was consulted from Linux in read-only mode.",
+      "No live pool dispatch was started automatically."
+    ]
+  },
+  "expected_outputs": [
+    {
+      "path": "scripts/agent_work.py",
+      "owner": "builder",
+      "description": "dispatch-pool command implementation",
+      "required": true
+    },
+    {
+      "path": "scripts/agent_work_e2e.sh",
+      "owner": "validator",
+      "description": "E2E coverage for dispatch-pool planning",
+      "required": true
+    },
+    {
+      "path": "docs/agent-work.md",
+      "owner": "docs-evidence",
+      "description": "Spark worker pool usage documentation",
+      "required": true
+    },
+    {
+      "path": "docs/agent-work-runtimes.md",
+      "owner": "docs-evidence",
+      "description": "Runtime docs for dispatch-pool defaults",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/61/claude-review.md",
+      "owner": "coordinator",
+      "description": "Read-only Claude coordination review notes",
+      "required": true
+    }
+  ],
+  "review_gate": {
+    "required_sections": [
+      "Delivered",
+      "Validation",
+      "Evidence",
+      "Residual risk"
+    ],
+    "residual_risk_required": true
+  }
+}

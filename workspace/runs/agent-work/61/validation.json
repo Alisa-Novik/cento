@@ -1,0 +1,46 @@
+{
+  "run_dir": "workspace/runs/agent-work/61",
+  "requires": {
+    "builder_report": "workspace/runs/agent-work/61/builder-report.md",
+    "ui_screenshots": false,
+    "validator_agents": [
+      "anovik-air",
+      "alice-validator"
+    ]
+  },
+  "checks": [
+    {
+      "name": "Agent work helper compiles",
+      "type": "command",
+      "command": "python3 -m py_compile scripts/agent_work.py"
+    },
+    {
+      "name": "dispatch-pool JSON smoke",
+      "type": "command",
+      "command": "python3 scripts/agent_work.py dispatch-pool --limit 2 --json"
+    },
+    {
+      "name": "Story manifest validates",
+      "type": "command",
+      "command": "python3 scripts/story_manifest.py validate workspace/runs/agent-work/61/story.json --check-links"
+    },
+    {
+      "name": "Story hub renders",
+      "type": "command",
+      "command": "python3 scripts/story_manifest.py render-hub workspace/runs/agent-work/61/story.json --check-links"
+    },
+    {
+      "name": "Agent-work e2e validates dispatch-pool",
+      "type": "command",
+      "command": "./scripts/agent_work_e2e.sh",
+      "timeout_seconds": 120
+    },
+    {
+      "name": "Generated hub exists",
+      "type": "file",
+      "path": "workspace/runs/agent-work/61/start-here.html",
+      "non_empty": true
+    }
+  ],
+  "report": "workspace/runs/agent-work/61/validation-report.md"
+}

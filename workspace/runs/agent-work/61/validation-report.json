@@ -1,0 +1,78 @@
+{
+  "issue": 61,
+  "subject": "Coordination: Spark worker dispatch pool planner",
+  "result": "pass",
+  "agent": "anovik-air",
+  "node": "macos",
+  "manifest": "workspace/runs/agent-work/61/validation.json",
+  "evidence": [
+    "workspace/runs/agent-work/61/builder-report.md",
+    "workspace/runs/agent-work/61/start-here.html",
+    "workspace/runs/agent-work/61/validation-report.md",
+    "workspace/runs/agent-work/61/validation-report.json"
+  ],
+  "checks": [
+    {
+      "ok": true,
+      "message": "exists",
+      "path": "workspace/runs/agent-work/61/builder-report.md",
+      "evidence": "workspace/runs/agent-work/61/builder-report.md",
+      "name": "Builder report exists",
+      "type": "file"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "python3 -m py_compile scripts/agent_work.py",
+      "stdout": "",
+      "stderr": "",
+      "name": "Agent work helper compiles",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "python3 scripts/agent_work.py dispatch-pool --limit 2 --json",
+      "stdout": "{\n  \"execute\": false,\n  \"count\": 2,\n  \"limit\": 2,\n  \"status\": \"queued\",\n  \"package\": \"\",\n  \"node\": \"\",\n  \"role\": \"\",\n  \"runtime\": \"codex\",\n  \"model\": \"gpt-5.3-codex-spark\",\n  \"planned\": [\n    {\n      \"issue\": 34,\n      \"title\": \"Industrial OS Jobs Dashboard Panel: Validation evidence and terminal snapshots\",\n      \"status\": \"Queued\",\n      \"package\": \"industrial-panels-v1\",\n      \"node\": \"linux\",\n      \"agent\": \"industrial-jobs-validator\",\n      \"role\": \"validator\",\n      \"runtime\": \"codex\",\n      \"model\": \"gpt-5.3-codex-spark\",\n      \"command\": \"cento agent-work dispatch 34 --node linux --agent industrial-jobs-validator --role validator --runtime codex --model gpt-5.3-codex-spark\"\n    },\n    {\n      \"issue\": 38,\n      \"title\": \"Industrial OS Cluster Status Panel: Cluster validation across live and fixture states\",\n      \"status\": \"Queued\",\n      \"package\": \"industrial-panels-v1\",\n      \"node\": \"linux\",\n      \"agent\": \"industrial-cluster-validator\",\n      \"role\": \"validator\",\n      \"runtime\": \"codex\",\n      \"model\": \"gpt-5.3-codex-spark\",\n      \"command\": \"cento agent-work dispatch 38 --node linux --agent industrial-cluster-validator --role validator --runtime codex --model gpt-5.3-codex-spark\"\n    }\n  ]\n}\n",
+      "stderr": "",
+      "name": "dispatch-pool JSON smoke",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "python3 scripts/story_manifest.py validate workspace/runs/agent-work/61/story.json --check-links",
+      "stdout": "story_manifest: /Users/anovik-air/cento/workspace/runs/agent-work/61/story.json\nissue: #61 Coordination: Spark worker dispatch pool planner\npackage: agent-platform\nlane: builder owner=builder node=macos agent=anovik-air\nrun_dir: workspace/runs/agent-work/61\nroutes: 0\napi_endpoints: 0\nscreenshots: 0\nexpected_outputs: 5\nstatus: ok\n",
+      "stderr": "",
+      "name": "Story manifest validates",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "python3 scripts/story_manifest.py render-hub workspace/runs/agent-work/61/story.json --check-links",
+      "stdout": "deliverables: workspace/runs/agent-work/61/deliverables.json\nhub: workspace/runs/agent-work/61/start-here.html\n",
+      "stderr": "",
+      "name": "Story hub renders",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "./scripts/agent_work_e2e.sh",
+      "stdout": "agent-work e2e ok: #64 Cento Agent Work E2E 20260430-011819\n",
+      "stderr": "",
+      "name": "Agent-work e2e validates dispatch-pool",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exists",
+      "path": "workspace/runs/agent-work/61/start-here.html",
+      "evidence": "workspace/runs/agent-work/61/start-here.html",
+      "name": "Generated hub exists",
+      "type": "file"
+    }
+  ],
+  "updated_at": "2026-04-30T05:19:57.619452+00:00"
+}

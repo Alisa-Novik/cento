@@ -17,9 +17,12 @@ cento agent-work runs
 cento agent-work runs --json --active
 cento agent-work run-status RUN_ID --json
 cento agent-work dispatch ISSUE --runtime claude-code --dry-run
+cento agent-work dispatch-pool --limit 3
 ```
 
 `runs` also scans `ps` for interactive Codex and Claude Code sessions that do not have a ledger record. In JSON those are `untracked_interactive`; in the Industrial OS pane they are shown as `MANUAL` because they are real local agent shells, but Cento cannot attach them to an issue, prompt, or log path.
+
+`dispatch-pool` is the safe way to prepare several cheap Spark/Codex workers. It is plan-only by default, so it does not create run ledger entries until the operator passes `--execute`.
 
 ## Industrial OS Pane
 

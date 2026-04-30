@@ -120,6 +120,34 @@ The dispatch writes a local bundle under `workspace/runs/agent-work/<run-id>/` a
 cento agent-work dispatch 123 --node linux --agent codex --model gpt-5.3-codex-spark
 ```
 
+## Spark Worker Pool
+
+Use `dispatch-pool` to keep cheap Spark/Codex workers busy without interrupting the main operator session. It is plan-only by default and does not start agents unless `--execute` is passed.
+
+Plan the next three queued items:
+
+```bash
+cento agent-work dispatch-pool --limit 3
+```
+
+Plan queued work for one package:
+
+```bash
+cento agent-work dispatch-pool --package spark-docs-evidence-lane --limit 2
+```
+
+Start the planned Spark workers explicitly:
+
+```bash
+cento agent-work dispatch-pool --limit 2 --runtime codex --model gpt-5.3-codex-spark --execute
+```
+
+For automation and dashboards:
+
+```bash
+cento agent-work dispatch-pool --limit 5 --json
+```
+
 Check what is actually running:
 
 ```bash

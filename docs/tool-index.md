@@ -480,6 +480,8 @@
   - `cento agent-work update 123 --status review --note "implemented and tested"`
   - `cento agent-work prompt 123`
   - `cento agent-work dispatch 123 --node linux --dry-run`
+  - `cento agent-work dispatch-pool --limit 3`
+  - `cento agent-work dispatch-pool --limit 2 --runtime codex --model gpt-5.3-codex-spark --execute`
   - `cento agent-work runs`
   - `cento agent-work runs --json --active`
   - `cento agent-work run-status RUN_ID --json`

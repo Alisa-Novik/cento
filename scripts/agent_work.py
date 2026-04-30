@@ -1819,6 +1819,121 @@ def command_dispatch(args: argparse.Namespace) -> int:
     return 0
 
 
+def dispatch_pool_candidates(args: argparse.Namespace) -> list[dict[str, Any]]:
+    wanted_status = str(args.status or "queued").lower()
+    items = list_issues(include_closed=False)
+    candidates: list[dict[str, Any]] = []
+    for issue in items:
+        if str(issue.get("status") or "").lower() != wanted_status:
+            continue
+        node = str(issue.get("node") or "")
+        if not args.node and node and node not in {"linux", "macos"}:
+            continue
+        if not args.include_epics and str(issue.get("tracker") or "") != "Agent Task":
+            continue
+        if args.package and str(issue.get("package") or "") != args.package:
+            continue
+        if args.node and str(issue.get("node") or "") != args.node:
+            continue
+        if args.role and str(issue.get("role") or "") != args.role:
+            continue
+        candidates.append(issue)
+    candidates.sort(key=lambda item: int(item["id"]))
+    return candidates[: max(int(args.limit or 1), 0)]
+
+
+def dispatch_pool_plan(args: argparse.Namespace) -> list[dict[str, Any]]:
+    runtime = args.runtime or "codex"
+    model = args.model or "gpt-5.3-codex-spark"
+    role_override = args.role or ""
+    planned = []
+    for issue in dispatch_pool_candidates(args):
+        node = args.node or str(issue.get("node") or "linux")
+        role = role_override or str(issue.get("role") or "builder") or "builder"
+        agent = args.agent or str(issue.get("agent") or "spark-worker")
+        command = [
+            "cento",
+            "agent-work",
+            "dispatch",
+            str(issue["id"]),
+            "--node",
+            node,
+            "--agent",
+            agent,
+            "--role",
+            role,
+            "--runtime",
+            runtime,
+            "--model",
+            model,
+        ]
+        planned.append(
+            {
+                "issue": issue["id"],
+                "title": issue["subject"],
+                "status": issue["status"],
+                "package": issue.get("package") or "",
+                "node": node,
+                "agent": agent,
+                "role": role,
+                "runtime": runtime,
+                "model": model,
+                "command": shlex.join(command),
+            }
+        )
+    return planned
+
+
+def command_dispatch_pool(args: argparse.Namespace) -> int:
+    plan = dispatch_pool_plan(args)
+    payload = {
+        "execute": bool(args.execute),
+        "count": len(plan),
+        "limit": int(args.limit or 1),
+        "status": args.status,
+        "package": args.package,
+        "node": args.node,
+        "role": args.role,
+        "runtime": args.runtime or "codex",
+        "model": args.model or "gpt-5.3-codex-spark",
+        "planned": plan,
+    }
+    if args.json and not args.execute:
+        print(json.dumps(payload, indent=2, default=str))
+        return 0
+    if not plan:
+        if args.json:
+            print(json.dumps(payload, indent=2, default=str))
+        else:
+            print("No dispatch-pool candidates.")
+        return 0
+    if not args.execute:
+        print(f"dispatch-pool plan: {len(plan)} candidate(s). Re-run with --execute to start agents.")
+        for item in plan:
+            print(f"- #{item['issue']} {item['runtime']} {item['model']} on {item['node']}: {item['command']}")
+        return 0
+
+    results = []
+    for item in plan:
+        dispatch_args = argparse.Namespace(
+            issue=int(item["issue"]),
+            node=item["node"],
+            agent=item["agent"],
+            role=item["role"],
+            runtime=item["runtime"],
+            model=item["model"],
+            dry_run=False,
+        )
+        rc = command_dispatch(dispatch_args)
+        results.append({"issue": item["issue"], "returncode": rc})
+        if rc != 0 and not args.keep_going:
+            break
+    if args.json:
+        payload["results"] = results
+        print(json.dumps(payload, indent=2, default=str))
+    return 0 if all(item["returncode"] == 0 for item in results) else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Manage Redmine-backed Cento agent work.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1980,6 +2095,21 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--model", default="")
     p.add_argument("--dry-run", action="store_true")
     p.set_defaults(func=command_dispatch)
+
+    p = sub.add_parser("dispatch-pool", help="Plan or execute cheap Spark/Codex dispatches for queued work.")
+    p.add_argument("--limit", type=int, default=2)
+    p.add_argument("--status", choices=sorted(STATUS_MAP), default="queued")
+    p.add_argument("--package", default="")
+    p.add_argument("--node", default="")
+    p.add_argument("--agent", default="")
+    p.add_argument("--role", choices=ROLE_CHOICES, default="")
+    p.add_argument("--runtime", default="codex")
+    p.add_argument("--model", default="gpt-5.3-codex-spark")
+    p.add_argument("--include-epics", action="store_true", help="Include non-Agent Task issues such as epics.")
+    p.add_argument("--execute", action="store_true", help="Actually dispatch planned issues. Default is plan-only.")
+    p.add_argument("--keep-going", action="store_true", help="Continue dispatching after one issue fails.")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=command_dispatch_pool)
 
     return parser
 

@@ -52,6 +52,14 @@ Forced Codex:
 python3 scripts/agent_work.py dispatch ISSUE_ID --runtime codex --dry-run
 ```
 
+Spark worker pool planning:
+
+```bash
+python3 scripts/agent_work.py dispatch-pool --limit 3
+```
+
+`dispatch-pool` defaults to `runtime=codex` and `model=gpt-5.3-codex-spark`. It prints planned dispatch commands without mutating issues. Add `--execute` only when the operator wants those cheap workers started.
+
 ## Overrides
 
 - `CENTO_AGENT_RUNTIME=claude-code` forces the runtime when dispatch uses `--runtime auto`.
