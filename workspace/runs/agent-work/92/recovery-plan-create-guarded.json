@@ -1,0 +1,245 @@
+{
+  "generated_at": "2026-04-30T06:57:15.211640+00:00",
+  "counts": {
+    "total_open": 48,
+    "queued": 0,
+    "blocked": 26,
+    "review": 10,
+    "running": 11,
+    "validating": 1,
+    "tracked_active_runs": 1,
+    "stale_runs": 10
+  },
+  "blocked_by_package": {
+    "e2e": 1,
+    "improve-dev-process": 6,
+    "industrial-panels-v1": 10,
+    "iphone-cento-app-ios-creation": 1,
+    "redmine-replacement-v1": 2,
+    "spark-coordinator-lane": 4,
+    "spark-docs-evidence-lane": 2
+  },
+  "blocked_by_role": {
+    "builder": 3,
+    "coordinator": 5,
+    "validator": 18
+  },
+  "top_blocked": [
+    {
+      "id": 15,
+      "status": "Blocked",
+      "node": "linux",
+      "role": "validator",
+      "agent": "validator-pool",
+      "package": "iphone-cento-app-ios-creation",
+      "title": "iPhone Cento App iOS Creation"
+    },
+    {
+      "id": 24,
+      "status": "Blocked",
+      "node": "linux",
+      "role": "validator",
+      "agent": "validator-pool",
+      "package": "improve-dev-process",
+      "title": "Improve Dev Process"
+    },
+    {
+      "id": 33,
+      "status": "Blocked",
+      "node": "linux",
+      "role": "validator",
+      "agent": "validator-pool",
+      "package": "industrial-panels-v1",
+      "title": "Industrial OS Jobs Dashboard Panel: Operational drilldown and failure visibility"
+    },
+    {
+      "id": 36,
+      "status": "Blocked",
+      "node": "linux",
+      "role": "validator",
+      "agent": "validator-pool",
+      "package": "industrial-panels-v1",
+      "title": "Industrial OS Cluster Status Panel: Authoritative node and mesh health model"
+    },
+    {
+      "id": 37,
+      "status": "Blocked",
+      "node": "linux",
+      "role": "validator",
+      "agent": "validator-pool",
+      "package": "industrial-panels-v1",
+      "title": "Industrial OS Cluster Status Panel: Degraded-state guidance and owner hints"
+    },
+    {
+      "id": 38,
+      "status": "Blocked",
+      "node": "linux",
+      "role": "validator",
+      "agent": "validator-pool",
+      "package": "industrial-panels-v1",
+      "title": "Industrial OS Cluster Status Panel: Cluster validation across live and fixture states"
+    },
+    {
+      "id": 40,
+      "status": "Blocked",
+      "node": "linux",
+      "role": "validator",
+      "agent": "validator-pool",
+      "package": "industrial-panels-v1",
+      "title": "Industrial OS Activity Feed Panel: Structured event ingestion"
+    },
+    {
+      "id": 41,
+      "status": "Blocked",
+      "node": "linux",
+      "role": "validator",
+      "agent": "validator-pool",
+      "package": "industrial-panels-v1",
+      "title": "Industrial OS Activity Feed Panel: Feed filtering, dedupe, and display polish"
+    }
+  ],
+  "top_review": [
+    {
+      "id": 13,
+      "status": "Review",
+      "node": "Linux",
+      "role": "",
+      "agent": "alice",
+      "package": "mission-control",
+      "title": "Test task"
+    },
+    {
+      "id": 16,
+      "status": "Review",
+      "node": "linux",
+      "role": "",
+      "agent": "alice",
+      "package": "iphone-cento-app-ios-creation",
+      "title": "iPhone Cento App iOS Creation: Define product requirements, architecture, and delivery roadmap for the iPhone app."
+    },
+    {
+      "id": 17,
+      "status": "Review",
+      "node": "macos",
+      "role": "",
+      "agent": "anovik-air",
+      "package": "iphone-cento-app-ios-creation",
+      "title": "iPhone Cento App: Mac Xcode signing and physical-device setup"
+    },
+    {
+      "id": 29,
+      "status": "Review",
+      "node": "macos",
+      "role": "validator",
+      "agent": "anovik-air",
+      "package": "improve-dev-process",
+      "title": "Improve Dev Process: Register Claude Code weighted agent runtime"
+    },
+    {
+      "id": 32,
+      "status": "Review",
+      "node": "linux",
+      "role": "validator",
+      "agent": "alice",
+      "package": "industrial-panels-v1",
+      "title": "Industrial OS Jobs Dashboard Panel: Data contract and job summary model"
+    },
+    {
+      "id": 34,
+      "status": "Review",
+      "node": "linux",
+      "role": "validator",
+      "agent": "alice",
+      "package": "industrial-panels-v1",
+      "title": "Industrial OS Jobs Dashboard Panel: Validation evidence and terminal snapshots"
+    },
+    {
+      "id": 49,
+      "status": "Review",
+      "node": "linux",
+      "role": "validator",
+      "agent": "alice",
+      "package": "spark-docs-evidence-lane",
+      "title": "Spark Docs/Evidence Agent Lane: Define the Docs/Evidence lane contract, required inputs from story manifests, required outputs, and Redmine review-note sections: Delivered, Validation, Evidence, Residual risk."
+    },
+    {
+      "id": 50,
+      "status": "Review",
+      "node": "linux",
+      "role": "validator",
+      "agent": "alice",
+      "package": "spark-docs-evidence-lane",
+      "title": "Spark Docs/Evidence Agent Lane: Implement or specify the evidence hub workflow: start-here.html, screenshot index, validation log links, Redmine status links, and append-only captain notes."
+    }
+  ],
+  "stale_runs": [
+    {
+      "run_id": "issue-65-20260430-022535-3a5b55",
+      "issue_id": 65,
+      "node": "linux",
+      "runtime": "claude-code",
+      "health": "stale_no_process"
+    },
+    {
+      "run_id": "issue-65-20260430-022535-8ef57b",
+      "issue_id": 65,
+      "node": "linux",
+      "runtime": "codex",
+      "health": "stale_no_process"
+    },
+    {
+      "run_id": "issue-65-20260430-022615-83bdcc",
+      "issue_id": 65,
+      "node": "linux",
+      "runtime": "codex",
+      "health": "stale_no_process"
+    },
+    {
+      "run_id": "issue-77-20260430-021906-6e5d8c",
+      "issue_id": 77,
+      "node": "linux",
+      "runtime": "codex",
+      "health": "stale_no_process"
+    },
+    {
+      "run_id": "issue-77-20260430-021912-084490",
+      "issue_id": 77,
+      "node": "linux",
+      "runtime": "codex",
+      "health": "stale_no_process"
+    },
+    {
+      "run_id": "issue-77-20260430-021927-d59fb8",
+      "issue_id": 77,
+      "node": "linux",
+      "runtime": "claude-code",
+      "health": "stale_no_process"
+    },
+    {
+      "run_id": "issue-77-20260430-022002-8cb9c0",
+      "issue_id": 77,
+      "node": "linux",
+      "runtime": "codex",
+      "health": "stale_no_process"
+    },
+    {
+      "run_id": "issue-80-20260430-021150-ff9e4d",
+      "issue_id": 80,
+      "node": "linux",
+      "runtime": "codex",
+      "health": "stale_no_process"
+    }
+  ],
+  "suggestions": [
+    "No queued work exists. Triage blocked issues first; create a small self-improvement follow-up only if no existing recovery task is open.",
+    "Group blocked work by package/role and unblock the largest cluster before launching more workers.",
+    "Run validators or close approved Review items to reduce board noise.",
+    "Run ledger hygiene before dispatching more workers; stale entries can make pool capacity look occupied or failed."
+  ],
+  "create_followup": {
+    "requested": true,
+    "created": true,
+    "issue": 96,
+    "title": "Self-Improvement: Board Recovery Follow-up 20260430-065701"
+  }
+}

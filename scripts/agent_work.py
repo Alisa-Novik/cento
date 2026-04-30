@@ -2058,6 +2058,146 @@ def command_dispatch_pool(args: argparse.Namespace) -> int:
     return 0 if all(item["returncode"] == 0 for item in results) else 1
 
 
+def group_counts(items: list[dict[str, Any]], key: str) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for item in items:
+        value = str(item.get(key) or "")
+        counts[value] = counts.get(value, 0) + 1
+    return dict(sorted(counts.items(), key=lambda pair: pair[0].lower()))
+
+
+def recovery_item(issue: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": issue.get("id"),
+        "status": issue.get("status") or "",
+        "node": issue.get("node") or "",
+        "role": issue.get("role") or "",
+        "agent": issue.get("agent") or "",
+        "package": issue.get("package") or "",
+        "title": issue.get("subject") or "",
+    }
+
+
+def command_recovery_plan(args: argparse.Namespace) -> int:
+    issues = list_issues(include_closed=False)
+    queued = [issue for issue in issues if str(issue.get("status") or "").lower() == "queued"]
+    blocked = [issue for issue in issues if str(issue.get("status") or "").lower() == "blocked"]
+    review = [issue for issue in issues if str(issue.get("status") or "").lower() == "review"]
+    running = [issue for issue in issues if str(issue.get("status") or "").lower() == "running"]
+    validating = [issue for issue in issues if str(issue.get("status") or "").lower() == "validating"]
+    runs = agent_run_records(include_untracked=True, reconcile=False, remote=not args.no_remote_reconcile)
+    tracked_active = [run for run in runs if str(run.get("status") or "") in ACTIVE_RUN_STATUSES]
+    stale_runs = [run for run in runs if str(run.get("status") or "") == "stale"]
+    suggestions: list[str] = []
+    if not queued and blocked:
+        suggestions.append("No queued work exists. Triage blocked issues first; create a small self-improvement follow-up only if no existing recovery task is open.")
+    if blocked:
+        suggestions.append("Group blocked work by package/role and unblock the largest cluster before launching more workers.")
+    if review:
+        suggestions.append("Run validators or close approved Review items to reduce board noise.")
+    if stale_runs:
+        suggestions.append("Run ledger hygiene before dispatching more workers; stale entries can make pool capacity look occupied or failed.")
+    if not tracked_active and queued:
+        suggestions.append("There is queued work but no tracked active workers. Use dispatch-pool plan mode first, then execute a small capped batch.")
+    if not suggestions:
+        suggestions.append("Board has an active path. Continue current Running/Validating work before creating more tasks.")
+
+    create_result: dict[str, Any] = {"requested": bool(args.create_followup), "created": False}
+    if args.create_followup:
+        state_path = STATE_DIR / "agent-work-recovery-plan.json"
+        STATE_DIR.mkdir(parents=True, exist_ok=True)
+        state = read_json_file(state_path)
+        now = datetime.now(timezone.utc)
+        cooldown_seconds = max(float(args.cooldown_hours or 0), 0.0) * 3600
+        last_created = str(state.get("last_created_at") or "")
+        cooldown_active = False
+        if last_created and not args.force_create:
+            try:
+                previous = datetime.fromisoformat(last_created)
+                cooldown_active = (now - previous).total_seconds() < cooldown_seconds
+            except ValueError:
+                cooldown_active = False
+        existing = [
+            issue
+            for issue in issues
+            if str(issue.get("subject") or "").startswith("Self-Improvement: Board Recovery Follow-up")
+            and str(issue.get("status") or "").lower() not in {"done"}
+        ]
+        if existing and not args.force_create:
+            create_result.update({"skipped": "existing_recovery_followup", "existing": [recovery_item(issue) for issue in existing[:3]]})
+        elif cooldown_active:
+            create_result.update({"skipped": "cooldown_active", "last_created_at": last_created, "cooldown_hours": args.cooldown_hours})
+        else:
+            title = f"Self-Improvement: Board Recovery Follow-up {now.strftime('%Y%m%d-%H%M%S')}"
+            description = textwrap.dedent(
+                f"""\
+                Goal: resolve a stalled board state identified by `cento agent-work recovery-plan`.
+
+                Snapshot:
+                - queued: {len(queued)}
+                - blocked: {len(blocked)}
+                - review: {len(review)}
+                - running: {len(running)}
+                - validating: {len(validating)}
+                - tracked active runs: {len(tracked_active)}
+                - stale runs: {len(stale_runs)}
+
+                Start by inspecting the recovery plan JSON/plain output. Do not create duplicate tasks. Prefer unblocking existing work over launching more workers.
+                """
+            )
+            issue_id = create_issue(title, description, "macos", "anovik-air", "improve-dev-process", role="builder")
+            state_path.write_text(json.dumps({"last_created_at": now.isoformat(), "last_issue_id": issue_id}, indent=2) + "\n", encoding="utf-8")
+            create_result.update({"created": True, "issue": issue_id, "title": title})
+
+    payload = {
+        "generated_at": now_iso(),
+        "counts": {
+            "total_open": len(issues),
+            "queued": len(queued),
+            "blocked": len(blocked),
+            "review": len(review),
+            "running": len(running),
+            "validating": len(validating),
+            "tracked_active_runs": len(tracked_active),
+            "stale_runs": len(stale_runs),
+        },
+        "blocked_by_package": group_counts(blocked, "package"),
+        "blocked_by_role": group_counts(blocked, "role"),
+        "top_blocked": [recovery_item(issue) for issue in blocked[: max(int(args.limit or 0), 0)]],
+        "top_review": [recovery_item(issue) for issue in review[: max(int(args.limit or 0), 0)]],
+        "stale_runs": [
+            {
+                "run_id": run.get("run_id"),
+                "issue_id": run.get("issue_id"),
+                "node": run.get("node"),
+                "runtime": run.get("runtime"),
+                "health": run.get("health"),
+            }
+            for run in stale_runs[: max(int(args.limit or 0), 0)]
+        ],
+        "suggestions": suggestions,
+        "create_followup": create_result,
+    }
+    if args.json:
+        print(json.dumps(payload, indent=2, default=str))
+        return 0
+    print("agent-work recovery plan")
+    for key, value in payload["counts"].items():
+        print(f"{key}: {value}")
+    print("suggestions:")
+    for suggestion in suggestions:
+        print(f"- {suggestion}")
+    if payload["top_blocked"]:
+        print("top blocked:")
+        for item in payload["top_blocked"]:
+            print(f"- #{item['id']} {item['package']} {item['role']}: {item['title']}")
+    if create_result.get("created"):
+        print(f"created follow-up #{create_result['issue']}: {create_result['title']}")
+    elif create_result.get("skipped"):
+        print(f"create-followup skipped: {create_result['skipped']}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Manage Redmine-backed Cento agent work.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -2236,6 +2376,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--keep-going", action="store_true", help="Continue dispatching after one issue fails.")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=command_dispatch_pool)
+
+    p = sub.add_parser("recovery-plan", help="Summarize stalled board state and suggest bounded unblock actions.")
+    p.add_argument("--limit", type=int, default=8)
+    p.add_argument("--json", action="store_true")
+    p.add_argument("--create-followup", action="store_true", help="Create at most one guarded self-improvement follow-up.")
+    p.add_argument("--force-create", action="store_true", help="Bypass existing-task and cooldown guards for --create-followup.")
+    p.add_argument("--cooldown-hours", type=float, default=6.0)
+    p.add_argument("--no-remote-reconcile", action="store_true", help="Do not query remote nodes while counting runs.")
+    p.set_defaults(func=command_recovery_plan)
 
     return parser
 

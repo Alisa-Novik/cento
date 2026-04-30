@@ -169,6 +169,25 @@ cento agent-work run-status RUN_ID --json
 
 The cluster command path still prefers the OCI Unix-socket mesh. If that socket is stale, `cento cluster exec linux` now falls back to direct LAN SSH at `alice@alisapad.local`, which keeps dispatch and activity usable while the relay repairs itself.
 
+## Recovery Plan
+
+When the board has no queued work, many blocked items, or confusing run state, use the recovery planner before creating more issues:
+
+```bash
+cento agent-work recovery-plan
+cento agent-work recovery-plan --json
+```
+
+It summarizes queued, blocked, review, running, validating, active-run, and stale-run counts, then suggests bounded unblock actions. The command is read-only by default.
+
+If the board is genuinely stalled, it can create one guarded self-improvement follow-up:
+
+```bash
+cento agent-work recovery-plan --create-followup
+```
+
+The create path has duplicate-task and cooldown guards. Use `--force-create` only when intentionally bypassing those guards.
+
 ## Redmine UI
 
 The existing Linux Redmine stack is the visual board:

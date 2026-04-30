@@ -1,0 +1,20 @@
+agent-work recovery plan
+total_open: 48
+queued: 0
+blocked: 26
+review: 10
+running: 11
+validating: 1
+tracked_active_runs: 2
+stale_runs: 10
+suggestions:
+- No queued work exists. Triage blocked issues first; create a small self-improvement follow-up only if no existing recovery task is open.
+- Group blocked work by package/role and unblock the largest cluster before launching more workers.
+- Run validators or close approved Review items to reduce board noise.
+- Run ledger hygiene before dispatching more workers; stale entries can make pool capacity look occupied or failed.
+top blocked:
+- #15 iphone-cento-app-ios-creation validator: iPhone Cento App iOS Creation
+- #24 improve-dev-process validator: Improve Dev Process
+- #33 industrial-panels-v1 validator: Industrial OS Jobs Dashboard Panel: Operational drilldown and failure visibility
+- #36 industrial-panels-v1 validator: Industrial OS Cluster Status Panel: Authoritative node and mesh health model
+- #37 industrial-panels-v1 validator: Industrial OS Cluster Status Panel: Degraded-state guidance and owner hints
