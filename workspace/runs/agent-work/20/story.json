@@ -1,0 +1,226 @@
+{
+  "schema_version": "1.0",
+  "issue": {
+    "id": 20,
+    "title": "iPhone Cento App: Add install polish and manager docs for PWA",
+    "package": "iphone-cento-app-ios-creation",
+    "url": "redmine://issues/20",
+    "status": "Done"
+  },
+  "lane": {
+    "owner": "builder",
+    "role": "builder",
+    "node": "linux",
+    "agent": "alice",
+    "collaborators": [
+      "builder",
+      "validator",
+      "docs-evidence",
+      "coordinator"
+    ]
+  },
+  "paths": {
+    "run_dir": "workspace/runs/agent-work/20",
+    "story_manifest": "workspace/runs/agent-work/20/story.json"
+  },
+  "scope": {
+    "goal": "iPhone Cento App: Add install polish and manager docs for PWA",
+    "acceptance": [
+      "Past work reconciled into story.json.",
+      "Actual deliverable and evidence paths are linked from this manifest."
+    ]
+  },
+  "routes": [
+    {
+      "name": "mobile deliverables hub",
+      "url": "file:///{root}/workspace/runs/agent-work/18/start-here.html",
+      "purpose": "Shared PWA/mobile evidence hub for #18-21 and process scaling artifacts",
+      "auth": "none"
+    }
+  ],
+  "api_endpoints": [],
+  "validation": {
+    "manifest": "",
+    "commands": [],
+    "required_evidence": [
+      "workspace/runs/agent-work/18/start-here.html",
+      "workspace/runs/agent-work/18/deliverables.json",
+      "workspace/runs/agent-work/18/validation.md",
+      "workspace/runs/agent-work/18/process-scaling.html",
+      "workspace/runs/agent-work/18/docs/index.html",
+      "workspace/runs/agent-work/18/docs/install.html",
+      "workspace/runs/agent-work/18/screenshots/mobile-dashboard.png",
+      "workspace/runs/agent-work/18/screenshots/mobile-issue-detail.png",
+      "workspace/runs/agent-work/18/screenshots/mobile-issue-activity.png",
+      "workspace/runs/agent-work/18/screenshots/mobile-jobs.png",
+      "workspace/runs/agent-work/18/screenshots/mobile-job-detail.png",
+      "workspace/runs/agent-work/18/screenshots/mobile-job-logs.png",
+      "workspace/runs/agent-work/18/screenshots/mobile-job-artifacts.png",
+      "workspace/runs/agent-work/18/screenshots/start-here.png"
+    ]
+  },
+  "deliverables": {
+    "manifest": "workspace/runs/agent-work/18/deliverables.json",
+    "hub": "workspace/runs/agent-work/18/start-here.html"
+  },
+  "screenshots": [
+    {
+      "name": "mobile-dashboard",
+      "url": "",
+      "viewport": "",
+      "output": "workspace/runs/agent-work/18/screenshots/mobile-dashboard.png",
+      "description": "PWA dashboard mobile viewport"
+    },
+    {
+      "name": "mobile-issue-detail",
+      "url": "",
+      "viewport": "",
+      "output": "workspace/runs/agent-work/18/screenshots/mobile-issue-detail.png",
+      "description": "Issue detail view"
+    },
+    {
+      "name": "mobile-issue-activity",
+      "url": "",
+      "viewport": "",
+      "output": "workspace/runs/agent-work/18/screenshots/mobile-issue-activity.png",
+      "description": "Issue activity workflow"
+    },
+    {
+      "name": "mobile-jobs",
+      "url": "",
+      "viewport": "",
+      "output": "workspace/runs/agent-work/18/screenshots/mobile-jobs.png",
+      "description": "Jobs list"
+    },
+    {
+      "name": "mobile-job-detail",
+      "url": "",
+      "viewport": "",
+      "output": "workspace/runs/agent-work/18/screenshots/mobile-job-detail.png",
+      "description": "Job detail"
+    },
+    {
+      "name": "mobile-job-logs",
+      "url": "",
+      "viewport": "",
+      "output": "workspace/runs/agent-work/18/screenshots/mobile-job-logs.png",
+      "description": "Job logs"
+    },
+    {
+      "name": "mobile-job-artifacts",
+      "url": "",
+      "viewport": "",
+      "output": "workspace/runs/agent-work/18/screenshots/mobile-job-artifacts.png",
+      "description": "Job artifacts"
+    },
+    {
+      "name": "start-here",
+      "url": "",
+      "viewport": "",
+      "output": "workspace/runs/agent-work/18/screenshots/start-here.png",
+      "description": "Desktop start-here hub"
+    }
+  ],
+  "handoff": {
+    "human_steps": [],
+    "device_access": "none",
+    "notes": [
+      "Retrospective manifest created from existing Redmine state and repo evidence."
+    ]
+  },
+  "expected_outputs": [
+    {
+      "path": "workspace/runs/agent-work/18/start-here.html",
+      "owner": "docs-evidence",
+      "description": "Generated mobile deliverables hub",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/18/deliverables.json",
+      "owner": "docs-evidence",
+      "description": "Hub source manifest",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/18/validation.md",
+      "owner": "validator",
+      "description": "Mobile/PWA validation evidence",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/18/process-scaling.html",
+      "owner": "docs-evidence",
+      "description": "Process scaling report",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/18/docs/index.html",
+      "owner": "docs-evidence",
+      "description": "Project documentation page",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/18/docs/install.html",
+      "owner": "docs-evidence",
+      "description": "iPhone install checklist",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/18/screenshots/mobile-dashboard.png",
+      "owner": "validator",
+      "description": "PWA dashboard mobile viewport",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/18/screenshots/mobile-issue-detail.png",
+      "owner": "validator",
+      "description": "Issue detail view",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/18/screenshots/mobile-issue-activity.png",
+      "owner": "validator",
+      "description": "Issue activity workflow",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/18/screenshots/mobile-jobs.png",
+      "owner": "validator",
+      "description": "Jobs list",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/18/screenshots/mobile-job-detail.png",
+      "owner": "validator",
+      "description": "Job detail",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/18/screenshots/mobile-job-logs.png",
+      "owner": "validator",
+      "description": "Job logs",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/18/screenshots/mobile-job-artifacts.png",
+      "owner": "validator",
+      "description": "Job artifacts",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/18/screenshots/start-here.png",
+      "owner": "validator",
+      "description": "Desktop start-here hub",
+      "required": true
+    }
+  ],
+  "review_gate": {
+    "required_sections": [
+      "Delivered",
+      "Validation",
+      "Evidence",
+      "Residual risk"
+    ],
+    "residual_risk_required": true
+  }
+}

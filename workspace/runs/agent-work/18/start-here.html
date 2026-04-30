@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cento Mobile Deliverables</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #070809;
+      --panel: #12161a;
+      --line: #29313a;
+      --text: #f4f6f7;
+      --muted: #a9b3bd;
+      --orange: #ff7900;
+      --green: #35d273;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 50% -120px, rgba(255,121,0,.16), transparent 420px), var(--bg);
+      color: var(--text);
+      font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main {
+      width: min(1040px, calc(100vw - 28px));
+      margin: 0 auto;
+      padding: 28px 0 42px;
+    }
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: start;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 16px;
+    }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 34px; line-height: 1.08; }
+    h2 {
+      color: var(--orange);
+      font-size: 13px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    h3 { font-size: 18px; margin-bottom: 4px; }
+    .sub { color: var(--muted); margin-top: 8px; font-size: 17px; }
+    .badge {
+      min-width: 122px;
+      padding: 12px;
+      border: 1px solid rgba(53,210,115,.45);
+      border-radius: 8px;
+      background: rgba(53,210,115,.08);
+      text-align: center;
+      color: var(--green);
+      font-weight: 800;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 12px;
+    }
+    section, .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02));
+    }
+    section {
+      grid-column: span 12;
+      padding: 16px;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .card {
+      display: block;
+      min-height: 126px;
+      padding: 14px;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .card.primary {
+      border-color: rgba(255,121,0,.5);
+      background: linear-gradient(180deg, rgba(255,121,0,.18), rgba(255,121,0,.055));
+    }
+    .card span {
+      display: block;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    .card code, .commands code {
+      display: inline-block;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      padding: 2px 5px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #080a0c;
+      color: #ffd7b0;
+    }
+    .commands {
+      display: grid;
+      gap: 8px;
+    }
+    .commands code {
+      display: block;
+      padding: 10px;
+    }
+    .status-list {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .status-item {
+      min-height: 74px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.025);
+    }
+    .status-item strong { display: block; }
+    .status-item span { display: block; color: var(--muted); font-size: 13px; margin-top: 3px; }
+    ul { margin: 0; padding-left: 20px; }
+    li + li { margin-top: 6px; }
+    a { color: inherit; }
+    footer {
+      color: var(--muted);
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+    }
+    @media (max-width: 780px) {
+      main { width: min(100vw - 22px, 560px); padding-top: 20px; }
+      header, .cards, .status-list { grid-template-columns: 1fr; }
+      h1 { font-size: 29px; }
+      .card { min-height: auto; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Cento Mobile Deliverables</h1>
+        <p class="sub">Start here. This page points to the PWA, install instructions, screenshots, docs, and Redmine story evidence.</p>
+      </div>
+      <div class="badge">Ready</div>
+    </header>
+
+    <div class="grid">
+      <section>
+        <h2>Use First</h2>
+        <div class="cards">
+
+          <a class="card primary" href="http://10.0.0.56:47918/">
+            <h3>Open PWA</h3>
+            <code>http://10.0.0.56:47918/</code>
+            <span>Phone-visible Cento app. Requires the gateway to be running.</span>
+          </a>
+
+          <a class="card" href="docs/install.html">
+            <h3>Install Checklist</h3>
+            
+            <span>Exact iPhone Safari steps, token file, Add to Home Screen checklist, and smoke test.</span>
+          </a>
+
+          <a class="card" href="docs/index.html">
+            <h3>Project Docs</h3>
+            
+            <span>Manager-facing summary, delivered scope, original request summary, and screenshot gallery.</span>
+          </a>
+
+          <a class="card" href="process-scaling.html">
+            <h3>Process Scaling</h3>
+            
+            <span>Inefficiencies, agent lanes, validation split, and next sprint process steps.</span>
+          </a>
+
+          <a class="card" href="../../../../docs/agent-work-deliverables-hub.md">
+            <h3>Hub Standard</h3>
+            
+            <span>Reusable process rule for generated start pages and review evidence.</span>
+          </a>
+
+          <a class="card" href="../../../../docs/agent-work-validator-lane.md">
+            <h3>Validator Lane</h3>
+            
+            <span>Builder/Validator split, Validating status, and validator-gated Review.</span>
+          </a>
+
+          <a class="card" href="../../../../docs/agent-work-runtimes.md">
+            <h3>Agent Runtimes</h3>
+            
+            <span>Codex majority routing plus Claude Code Sonnet 4.6 at 25%.</span>
+          </a>
+        </div>
+      </section>
+
+      <section>
+        <h2>Status By Story</h2>
+        <div class="status-list">
+
+          <div class="status-item"><strong>#18 Review</strong><span>First PWA/mobile gateway delivery.</span></div>
+
+          <div class="status-item"><strong>#19 Review</strong><span>Issue detail and Activity pending-message workflow.</span></div>
+
+          <div class="status-item"><strong>#20 Review</strong><span>Install polish and documentation.</span></div>
+
+          <div class="status-item"><strong>#21 Review</strong><span>Job detail, logs, and artifacts workflow.</span></div>
+
+          <div class="status-item"><strong>#25 Review</strong><span>Generated deliverables hub standard.</span></div>
+
+          <div class="status-item"><strong>#27 Review</strong><span>Separate Validator agent review gate.</span></div>
+
+          <div class="status-item"><strong>#28 Review</strong><span>Manifest-driven validator-run workflow.</span></div>
+
+          <div class="status-item"><strong>#29 Review</strong><span>Claude Code weighted runtime registration.</span></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Run / Token</h2>
+        <div class="commands">
+          <code>python3 workspace/runs/agent-work/18/server.py --host 0.0.0.0 --port 47918</code>
+          <code>workspace/runs/agent-work/18/state/token.txt</code>
+          <code>workspace/runs/agent-work/18/validation.md</code>
+          <code>python3 scripts/deliverables_hub.py workspace/runs/agent-work/18/deliverables.json --check-links</code>
+        </div>
+      </section>
+
+      <section>
+        <h2>Screenshots</h2>
+        <div class="cards">
+
+          <a class="card" href="screenshots/mobile-dashboard.png">
+            <h3>Dashboard</h3>
+            
+            <span>Health, queue, metrics, bottom tabs.</span>
+          </a>
+
+          <a class="card" href="screenshots/mobile-issue-detail.png">
+            <h3>Issue Detail</h3>
+            
+            <span>Live issue fields near top of screen.</span>
+          </a>
+
+          <a class="card" href="screenshots/mobile-issue-activity.png">
+            <h3>Issue Activity</h3>
+            
+            <span>Explicit Redmine journal endpoint pending message.</span>
+          </a>
+
+          <a class="card" href="screenshots/mobile-jobs.png">
+            <h3>Jobs</h3>
+            
+            <span>Job cards and status pills.</span>
+          </a>
+
+          <a class="card" href="screenshots/mobile-job-detail.png">
+            <h3>Job Detail</h3>
+            
+            <span>Selected job metadata and execution steps.</span>
+          </a>
+
+          <a class="card" href="screenshots/mobile-job-logs.png">
+            <h3>Job Logs</h3>
+            
+            <span>Task log tails rendered for phone review.</span>
+          </a>
+
+          <a class="card" href="screenshots/mobile-job-artifacts.png">
+            <h3>Job Artifacts</h3>
+            
+            <span>Summary, manifests, logs, and scripts.</span>
+          </a>
+
+          <a class="card" href="screenshots/mobile-agents.png">
+            <h3>Agents</h3>
+            
+            <span>Linux/macOS online, iPhone offline.</span>
+          </a>
+
+          <a class="card" href="screenshots/mobile-actions.png">
+            <h3>Actions</h3>
+            
+            <span>Allowlisted actions only.</span>
+          </a>
+
+          <a class="card" href="screenshots/process-scaling.png">
+            <h3>Process Scaling</h3>
+            
+            <span>Manager-facing process improvement report.</span>
+          </a>
+        </div>
+      </section>
+
+      <section>
+        <h2>What To Review</h2>
+        <ul>
+          <li>Open the PWA first and paste the token if prompted.</li>
+          <li>Use the install checklist if you are testing on iPhone Safari.</li>
+          <li>Review #18, #19, #20, #21, and #25 evidence before approving implementation quality.</li>
+          <li>For #21, open Jobs, tap a job card, then check Steps, Logs, and Artifacts tabs.</li>
+          <li>For #25, verify this hub is generated from deliverables.json and local links pass the generator check.</li>
+          <li>For #27, verify builders stop at Validating and validators move passing work to Review.</li>
+          <li>For #28, verify validation.json, builder-report.md, validation-report.md, and validator-run evidence.</li>
+          <li>For #29, verify Claude Code is registered at 25% and forced Claude dispatch uses Sonnet 4.6.</li>
+        </ul>
+      </section>
+    </div>
+
+    </div><!-- end existing grid -->
+
+    <div class="grid" style="margin-top:28px">
+      <section style="grid-column:span 12; border-color: rgba(255,121,0,.35);">
+        <h2>Cento Improvement Recommendations</h2>
+        <p style="color:var(--muted); margin-bottom:16px;">Full codebase review · 2026-04-29 · 10 prioritised findings</p>
+        <div class="cards">
+
+          <div class="card primary" style="grid-column: span 3; min-height:auto; border-color: rgba(255,80,80,.6); background: linear-gradient(180deg, rgba(255,80,80,.15), rgba(255,80,80,.05));">
+            <h3>TOP PRIORITY — Breadcrumb navigation across all agent-work HTML</h3>
+            <span>Every HTML page in <code>workspace/runs/agent-work/</code> is a dead end — no nav back to <code>start-here.html</code> or any parent. Agents generate these pages independently and none add breadcrumbs. Needs a shared standard: at minimum a one-line <code>&lt;nav class="breadcrumb"&gt;</code> in every generated HTML that links back to the run's <code>start-here.html</code>. Should be enforced via a template or generator rule so future agents can't skip it. Also affects runs with no <code>start-here.html</code> at all (e.g. run #16, industrial-panels-v1) — those runs need a hub page too.</span>
+          </div>
+
+          <div class="card">
+            <h3>1. Wire BriefGenerator to Claude</h3>
+            <span><code>daily_tui.go</code> — The <code>BriefGenerator</code> interface is a stub. Pipe <code>gather_context.py</code> output into a Claude API call. Scaffolding is complete; only the real implementation is missing.</span>
+          </div>
+
+          <div class="card">
+            <h3>2. Bridge failures are silent</h3>
+            <span><code>bridge.sh</code> — <code>run_remote_node</code> swallows SSH errors; the cluster TUI shows "online" on stale state. Add reachability timestamps to heartbeats so the TUI can show "online (last seen 12m ago)" vs "unreachable".</span>
+          </div>
+
+          <div class="card">
+            <h3>3. agent_work needs a no-Redmine fallback</h3>
+            <span><code>agent_work.py</code> — 1,815 lines requiring a live Redmine Postgres container over SSH. Add a flat-file JSON backend in <code>workspace/runs/agent-work/</code>. The status flow (Queued → Running → Review → Done) maps cleanly to local JSON.</span>
+          </div>
+
+          <div class="card">
+            <h3>4. Workspace cleanup command</h3>
+            <span><code>workspace/runs/</code> has no rotation policy — logs grow forever, <code>scan-onepager/</code> archives manually, cluster job dirs pile up. Add <code>cento workspace clean [--older-than 30d] [--dry-run]</code>, registered in <code>data/tools.json</code>.</span>
+          </div>
+
+          <div class="card">
+            <h3>5. Industrial OS needs shared state</h3>
+            <span>7 files (<code>industrial_aux_tui.go</code>, <code>industrial_cluster_tui.go</code>, <code>industrial_jobs_tui.go</code>, <code>industrial_panel.py</code>, etc.) each poll independently. A single <code>~/.local/state/cento/industrial-os/state.json</code> keeps them in sync without extra IPC.</span>
+          </div>
+
+          <div class="card">
+            <h3>6. Live status bar in cento interactive</h3>
+            <span><code>cento_interactive.go</code> is static docs. Embed a compact cluster status bar at the bottom — one line, green/red dots per node, auto-refreshes. Reuse <code>loadSnapshot</code> from <code>industrial_cluster_tui.go</code>.</span>
+          </div>
+
+          <div class="card">
+            <h3>7. Python modules import each other unsafely</h3>
+            <span><code>dashboard_server.py</code> does <code>sys.path.insert</code> hacks to import from <code>network_web_server</code> and <code>jobs_server</code>. Extract shared logic (<code>cluster_snapshot</code>, <code>job_summary</code>, port utilities) into <code>scripts/lib/cluster_data.py</code>.</span>
+          </div>
+
+          <div class="card">
+            <h3>8. make check is syntax-only</h3>
+            <span><code>Makefile</code> runs <code>go build</code>, <code>python -m py_compile</code>, and <code>bash -n</code> — none catch runtime assumptions. Add <code>make smoke</code>: runs <code>cento cluster status</code>, <code>cento network --web --no-open</code>, and <code>cento bridge mesh-status</code> with a 5s timeout each.</span>
+          </div>
+
+          <div class="card">
+            <h3>9. Heartbeat should push, not poll</h3>
+            <span><code>cluster_heartbeat()</code> requires a manual query. A systemd timer (every 5 min) on Mac publishing to the relay would make heartbeat state live in the TUI. Extend <code>cento bridge heal</code> — which already installs services — to install the timer too.</span>
+          </div>
+
+          <div class="card primary">
+            <h3>10. Register agent_work in tools.json</h3>
+            <span><code>agent_work.py</code> is absent from <code>data/tools.json</code>. That means <code>cento interactive</code>, <code>cento docs</code>, and <code>cento tools</code> are blind to the most complex new addition. Free win: add the entry with subcommand examples.</span>
+          </div>
+
+        </div>
+      </section>
+
+      <section style="grid-column:span 12;">
+        <h2>Effort Summary</h2>
+        <div class="status-list" style="grid-template-columns: repeat(5, minmax(0,1fr));">
+          <div class="status-item"><strong>#10 Register agent_work</strong><span>5 min — free win</span></div>
+          <div class="status-item"><strong>#8 make smoke</strong><span>30 min — free win</span></div>
+          <div class="status-item"><strong>#1 BriefGenerator → Claude</strong><span>1–2h — high payoff</span></div>
+          <div class="status-item"><strong>#4 workspace clean</strong><span>1–2h</span></div>
+          <div class="status-item"><strong>#5 Industrial OS state</strong><span>2h</span></div>
+          <div class="status-item"><strong>#6 interactive status bar</strong><span>2–3h</span></div>
+          <div class="status-item"><strong>#7 Python shared lib</strong><span>2h</span></div>
+          <div class="status-item"><strong>#9 heartbeat push</strong><span>2h</span></div>
+          <div class="status-item"><strong>#2 bridge timestamps</strong><span>3h</span></div>
+          <div class="status-item"><strong>#3 agent_work fallback</strong><span>4–6h — high payoff</span></div>
+        </div>
+      </section>
+    </div><!-- end recommendations grid -->
+
+    <footer>
+      File: workspace/runs/agent-work/18/start-here.html. Generated from workspace/runs/agent-work/18/deliverables.json.
+      · Improvement recommendations appended 2026-04-29.
+    </footer>
+  </main>
+</body>
+</html>

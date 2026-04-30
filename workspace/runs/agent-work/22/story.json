@@ -1,0 +1,109 @@
+{
+  "schema_version": "1.0",
+  "issue": {
+    "id": 22,
+    "title": "iPhone Cento App: Apple Watch pairing and watchOS readiness",
+    "package": "iphone-cento-app-ios-creation",
+    "url": "redmine://issues/22",
+    "status": "Running"
+  },
+  "lane": {
+    "owner": "builder",
+    "role": "builder",
+    "node": "macos",
+    "agent": "anovik-air",
+    "collaborators": [
+      "builder",
+      "validator",
+      "docs-evidence",
+      "coordinator"
+    ]
+  },
+  "paths": {
+    "run_dir": "workspace/runs/agent-work/22",
+    "story_manifest": "workspace/runs/agent-work/22/story.json"
+  },
+  "scope": {
+    "goal": "iPhone Cento App: Apple Watch pairing and watchOS readiness",
+    "acceptance": [
+      "Past work reconciled into story.json.",
+      "Actual deliverable and evidence paths are linked from this manifest."
+    ]
+  },
+  "routes": [],
+  "api_endpoints": [],
+  "validation": {
+    "manifest": "",
+    "commands": [],
+    "required_evidence": [
+      "workspace/runs/agent-work/22/watch-readiness.md",
+      "workspace/runs/agent-work/22/validation.md",
+      "workspace/runs/agent-work/22/watch-status.txt",
+      "workspace/runs/agent-work/22/logs/mobile-watch-status.log",
+      "workspace/runs/agent-work/22/logs/xcodebuild-destinations.log",
+      "workspace/runs/agent-work/22/logs/devicectl-devices.log"
+    ]
+  },
+  "deliverables": {
+    "manifest": "",
+    "hub": ""
+  },
+  "screenshots": [],
+  "handoff": {
+    "human_steps": [
+      "Enable Developer Mode/DDI on Apple Watch if still unavailable.",
+      "Rerun cento mobile watch-status."
+    ],
+    "device_access": "physical iPhone and Apple Watch",
+    "notes": [
+      "Running story; manifest records current evidence and blocker."
+    ]
+  },
+  "expected_outputs": [
+    {
+      "path": "workspace/runs/agent-work/22/watch-readiness.md",
+      "owner": "validator",
+      "description": "Watch readiness report",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/22/validation.md",
+      "owner": "validator",
+      "description": "Watch validation notes",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/22/watch-status.txt",
+      "owner": "validator",
+      "description": "Watch status output",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/22/logs/mobile-watch-status.log",
+      "owner": "validator",
+      "description": "Mobile watch status log",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/22/logs/xcodebuild-destinations.log",
+      "owner": "validator",
+      "description": "Xcode destination evidence",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/22/logs/devicectl-devices.log",
+      "owner": "validator",
+      "description": "devicectl device evidence",
+      "required": true
+    }
+  ],
+  "review_gate": {
+    "required_sections": [
+      "Delivered",
+      "Validation",
+      "Evidence",
+      "Residual risk"
+    ],
+    "residual_risk_required": true
+  }
+}

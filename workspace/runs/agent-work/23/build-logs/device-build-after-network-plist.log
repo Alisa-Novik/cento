@@ -1,0 +1,85 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project apps/ios/CentoMobile/CentoMobile.xcodeproj -scheme CentoMobile -destination platform=iOS,id=00008130-000E68823E81001C -derivedDataPath workspace/runs/agent-work/23/DerivedData-device -allowProvisioningUpdates -allowProvisioningDeviceRegistration build
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'CentoMobile' in project 'CentoMobile' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.4.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: 549ba563d624a1db2f0aa8c02bc77a2e
+Build description path: /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Intermediates.noindex/XCBuildData/549ba563d624a1db2f0aa8c02bc77a2e.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.4.sdk /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/SDKStatCaches.noindex/iphoneos26.4-23E252-68a138bb55de9ba35ce6c8c40d12849e.sdkstatcache
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile/CentoMobile.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.4.sdk -o /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/SDKStatCaches.noindex/iphoneos26.4-23E252-68a138bb55de9ba35ce6c8c40d12849e.sdkstatcache
+
+ProcessInfoPlistFile /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app/Info.plist /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Intermediates.noindex/CentoMobile.build/Debug-iphoneos/CentoMobile.build/empty-CentoMobile.plist (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    builtin-infoPlistUtility /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Intermediates.noindex/CentoMobile.build/Debug-iphoneos/CentoMobile.build/empty-CentoMobile.plist -producttype com.apple.product-type.application -genpkginfo /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app/PkgInfo -expandbuildsettings -format binary -platform iphoneos -requiredArchitecture arm64 -o /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app/Info.plist
+
+AppIntentsSSUTraining (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app/Info.plist --temp-dir-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Intermediates.noindex/CentoMobile.build/Debug-iphoneos/CentoMobile.build/ssu --bundle-id com.willingtodev.CentoMobile --product-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app --extracted-metadata-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app/Metadata.appintents --metadata-file-list /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Intermediates.noindex/CentoMobile.build/Debug-iphoneos/CentoMobile.build/CentoMobile.DependencyMetadataFileList --source-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app/Info.plist --archive-ssu-assets
+2026-04-29 20:32:10.702 appintentsnltrainingprocessor[41478:804845] Parsing options for appintentsnltrainingprocessor
+2026-04-29 20:32:10.702 appintentsnltrainingprocessor[41478:804845] Starting AppIntents SSU YAML Generation
+2026-04-29 20:32:10.703 appintentsnltrainingprocessor[41478:804845] No AppShortcuts found - Skipping.
+
+CopySwiftLibs /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    builtin-swiftStdLibTool --copy --verbose --sign 8CD38315B6D313875B4D2AE89D8C1301E4251BCB --scan-executable /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app/CentoMobile.debug.dylib --scan-folder /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app/Frameworks --scan-folder /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app/PlugIns --scan-folder /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app/SystemExtensions --scan-folder /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app/Extensions --platform iphoneos --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Intermediates.noindex/CentoMobile.build/Debug-iphoneos/CentoMobile.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+
+CodeSign /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app/CentoMobile.debug.dylib (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    
+    Signing Identity:     "Apple Development: willingtodev@gmail.com (MXM23F692J)"
+    Provisioning Profile: "iOS Team Provisioning Profile: com.willingtodev.CentoMobile"
+                          (635fcc82-ce3a-486d-b847-87c0e86673a0)
+    
+    /usr/bin/codesign --force --sign 8CD38315B6D313875B4D2AE89D8C1301E4251BCB --timestamp\=none --generate-entitlement-der /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app/CentoMobile.debug.dylib
+/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app/CentoMobile.debug.dylib: replacing existing signature
+
+CodeSign /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app/__preview.dylib (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    
+    Signing Identity:     "Apple Development: willingtodev@gmail.com (MXM23F692J)"
+    Provisioning Profile: "iOS Team Provisioning Profile: com.willingtodev.CentoMobile"
+                          (635fcc82-ce3a-486d-b847-87c0e86673a0)
+    
+    /usr/bin/codesign --force --sign 8CD38315B6D313875B4D2AE89D8C1301E4251BCB --timestamp\=none --generate-entitlement-der /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app/__preview.dylib
+/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app/__preview.dylib: replacing existing signature
+
+CodeSign /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    
+    Signing Identity:     "Apple Development: willingtodev@gmail.com (MXM23F692J)"
+    Provisioning Profile: "iOS Team Provisioning Profile: com.willingtodev.CentoMobile"
+                          (635fcc82-ce3a-486d-b847-87c0e86673a0)
+    
+    /usr/bin/codesign --force --sign 8CD38315B6D313875B4D2AE89D8C1301E4251BCB --entitlements /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Intermediates.noindex/CentoMobile.build/Debug-iphoneos/CentoMobile.build/CentoMobile.app.xcent --timestamp\=none --generate-entitlement-der /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app
+/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app: replacing existing signature
+
+Validate /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    builtin-validationUtility /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData-device/Build/Products/Debug-iphoneos/CentoMobile.app -shallow-bundle -infoplist-subpath Info.plist
+
+** BUILD SUCCEEDED **
+

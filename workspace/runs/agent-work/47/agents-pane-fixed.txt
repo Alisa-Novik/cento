@@ -1,0 +1,21 @@
+AGENT RUNS                                
+                                          
+work 6 active  22 queued  ·  2 manual     
+                                          
+Tracked Redmine work                      
+  ● #22 iPhone: Apple Watch…  RUN         
+    Running · anovik-air · macos · iphone…
+  ● #47 Agent Usage Trackin…  REVIEW      
+    Review · alice-validator · linux · im…
+  ● #29 Dev: Register Claud…  REVIEW      
+    Review · anovik-air · macos · improve…
+  ● #17 iPhone: Mac Xcode s…  REVIEW      
+    Review · anovik-air · macos · iphone-…
+                                          
+Manual sessions (no ledger yet)           
+  ● claude-code manual shell  MANUAL      
+    no issue/log ledger · pid 3414936 · 0…
+  ● codex manual shell        MANUAL      
+    no issue/log ledger · pid 1799099 · 0…
+                                          
+manual = process without issue/log ledger 

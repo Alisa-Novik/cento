@@ -1,0 +1,128 @@
+{
+  "schema_version": "1.0",
+  "issue": {
+    "id": 28,
+    "title": "Improve Dev Process: Add validation manifest and validator runner",
+    "package": "improve-dev-process",
+    "url": "redmine://issues/28",
+    "status": "Done"
+  },
+  "lane": {
+    "owner": "validator",
+    "role": "validator",
+    "node": "linux",
+    "agent": "alice-validator",
+    "collaborators": [
+      "builder",
+      "validator",
+      "docs-evidence",
+      "coordinator"
+    ]
+  },
+  "paths": {
+    "run_dir": "workspace/runs/agent-work/28",
+    "story_manifest": "workspace/runs/agent-work/28/story.json"
+  },
+  "scope": {
+    "goal": "Improve Dev Process: Add validation manifest and validator runner",
+    "acceptance": [
+      "Past work reconciled into story.json.",
+      "Actual deliverable and evidence paths are linked from this manifest."
+    ]
+  },
+  "routes": [],
+  "api_endpoints": [],
+  "validation": {
+    "manifest": "workspace/runs/agent-work/28/validation.json",
+    "commands": [],
+    "required_evidence": [
+      "docs/agent-work-validator-lane.md",
+      "workspace/runs/agent-work/28/builder-report.md",
+      "workspace/runs/agent-work/28/validation.json",
+      "workspace/runs/agent-work/28/validation-report.md",
+      "workspace/runs/agent-work/28/screenshots/start-here.png",
+      "workspace/runs/agent-work/28/screenshots/mobile-start-here.png",
+      "scripts/agent_work.py"
+    ]
+  },
+  "deliverables": {
+    "manifest": "",
+    "hub": ""
+  },
+  "screenshots": [
+    {
+      "name": "start-here",
+      "url": "",
+      "viewport": "",
+      "output": "workspace/runs/agent-work/28/screenshots/start-here.png",
+      "description": "Desktop hub screenshot"
+    },
+    {
+      "name": "mobile-start-here",
+      "url": "",
+      "viewport": "",
+      "output": "workspace/runs/agent-work/28/screenshots/mobile-start-here.png",
+      "description": "Mobile hub screenshot"
+    }
+  ],
+  "handoff": {
+    "human_steps": [],
+    "device_access": "none",
+    "notes": [
+      "Retrospective manifest created from existing Redmine state and repo evidence."
+    ]
+  },
+  "expected_outputs": [
+    {
+      "path": "docs/agent-work-validator-lane.md",
+      "owner": "docs-evidence",
+      "description": "Validator lane docs",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/28/builder-report.md",
+      "owner": "builder",
+      "description": "Builder handoff report",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/28/validation.json",
+      "owner": "validator",
+      "description": "Validation manifest",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/28/validation-report.md",
+      "owner": "validator",
+      "description": "Validation report",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/28/screenshots/start-here.png",
+      "owner": "validator",
+      "description": "Desktop hub screenshot",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/28/screenshots/mobile-start-here.png",
+      "owner": "validator",
+      "description": "Mobile hub screenshot",
+      "required": true
+    },
+    {
+      "path": "scripts/agent_work.py",
+      "owner": "builder",
+      "description": "Agent work validate-run implementation",
+      "required": true
+    }
+  ],
+  "review_gate": {
+    "required_sections": [
+      "Delivered",
+      "Validation",
+      "Evidence",
+      "Residual risk"
+    ],
+    "residual_risk_required": true
+  }
+}

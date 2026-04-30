@@ -1,0 +1,85 @@
+{
+  "run_dir": "workspace/runs/agent-work/29",
+  "report": "workspace/runs/agent-work/29/validation-report.md",
+  "requires": {
+    "builder_report": "workspace/runs/agent-work/29/builder-report.md",
+    "ui_screenshots": true,
+    "validator_agents": [
+      "alice-validator"
+    ]
+  },
+  "checks": [
+    {
+      "name": "agent_work syntax",
+      "type": "command",
+      "command": "python3 -m py_compile scripts/agent_work.py scripts/deliverables_hub.py",
+      "timeout_seconds": 30
+    },
+    {
+      "name": "runtime registry JSON parses",
+      "type": "command",
+      "command": "python3 -m json.tool data/agent-runtimes.json >/dev/null",
+      "timeout_seconds": 30
+    },
+    {
+      "name": "runtime sample keeps Claude around 25 percent",
+      "type": "command",
+      "command": "python3 scripts/agent_work.py runtimes --sample 1000 --json | python3 -c 'import json,sys; p=json.load(sys.stdin)[\"sample\"][\"percentages\"][\"claude-code\"]; print(p); raise SystemExit(0 if 20 <= p <= 30 else 1)'",
+      "timeout_seconds": 30
+    },
+    {
+      "name": "forced Claude dispatch dry-run",
+      "type": "command",
+      "command": "python3 scripts/agent_work.py dispatch 29 --runtime claude-code --dry-run | rg 'runtime=claude-code .*model=claude-sonnet-4-6'",
+      "timeout_seconds": 30
+    },
+    {
+      "name": "Claude Code binary exists",
+      "type": "command",
+      "command": "command -v claude && claude --version",
+      "timeout_seconds": 30
+    },
+    {
+      "name": "Claude Code Sonnet 4.6 smoke",
+      "type": "command",
+      "command": "claude --print --model claude-sonnet-4-6 'Reply exactly: ok' | rg '^ok$'",
+      "timeout_seconds": 60
+    },
+    {
+      "name": "runtime documentation exists",
+      "type": "file",
+      "path": "docs/agent-work-runtimes.md",
+      "non_empty": true
+    },
+    {
+      "name": "runtime registry exists",
+      "type": "file",
+      "path": "data/agent-runtimes.json",
+      "non_empty": true
+    },
+    {
+      "name": "deliverables hub link validation",
+      "type": "command",
+      "command": "python3 scripts/deliverables_hub.py workspace/runs/agent-work/18/deliverables.json --check-links --check-only",
+      "timeout_seconds": 30
+    },
+    {
+      "name": "desktop deliverables hub screenshot",
+      "type": "screenshot",
+      "url": "file:///{root}/workspace/runs/agent-work/18/start-here.html",
+      "output": "workspace/runs/agent-work/29/screenshots/start-here.png",
+      "viewport": "1280,1200",
+      "wait_ms": 1000,
+      "timeout_seconds": 60
+    },
+    {
+      "name": "mobile deliverables hub screenshot",
+      "type": "screenshot",
+      "url": "file:///{root}/workspace/runs/agent-work/18/start-here.html",
+      "output": "workspace/runs/agent-work/29/screenshots/mobile-start-here.png",
+      "viewport": "390,844",
+      "wait_ms": 1000,
+      "timeout_seconds": 60
+    }
+  ]
+}

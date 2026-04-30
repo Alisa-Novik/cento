@@ -1,0 +1,106 @@
+{
+  "schema_version": "1.0",
+  "issue": {
+    "id": 23,
+    "title": "iPhone Cento App: Native SwiftUI shell for simulator and device",
+    "package": "iphone-cento-app-ios-creation",
+    "url": "redmine://issues/23",
+    "status": "Done"
+  },
+  "lane": {
+    "owner": "builder",
+    "role": "builder",
+    "node": "macos",
+    "agent": "anovik-air",
+    "collaborators": [
+      "builder",
+      "validator",
+      "docs-evidence",
+      "coordinator"
+    ]
+  },
+  "paths": {
+    "run_dir": "workspace/runs/agent-work/23",
+    "story_manifest": "workspace/runs/agent-work/23/story.json"
+  },
+  "scope": {
+    "goal": "iPhone Cento App: Native SwiftUI shell for simulator and device",
+    "acceptance": [
+      "Past work reconciled into story.json.",
+      "Actual deliverable and evidence paths are linked from this manifest."
+    ]
+  },
+  "routes": [],
+  "api_endpoints": [],
+  "validation": {
+    "manifest": "",
+    "commands": [],
+    "required_evidence": [
+      "workspace/runs/agent-work/23/validation.md",
+      "workspace/runs/agent-work/23/screenshots/native-dashboard-simulator.png",
+      "workspace/runs/agent-work/23/build-logs/simulator-build.log",
+      "workspace/runs/agent-work/23/build-logs/device-build-after-network-plist.log",
+      "apps/ios/CentoMobile/CentoMobile.xcodeproj/project.pbxproj",
+      "apps/ios/CentoMobile/CentoMobile/ContentView.swift"
+    ]
+  },
+  "deliverables": {
+    "manifest": "",
+    "hub": ""
+  },
+  "screenshots": [],
+  "handoff": {
+    "human_steps": [],
+    "device_access": "none",
+    "notes": [
+      "Retrospective manifest created from existing Redmine state and repo evidence."
+    ]
+  },
+  "expected_outputs": [
+    {
+      "path": "workspace/runs/agent-work/23/validation.md",
+      "owner": "validator",
+      "description": "Native SwiftUI validation notes",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/23/screenshots/native-dashboard-simulator.png",
+      "owner": "validator",
+      "description": "Native dashboard simulator screenshot",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/23/build-logs/simulator-build.log",
+      "owner": "validator",
+      "description": "Simulator build log",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/23/build-logs/device-build-after-network-plist.log",
+      "owner": "validator",
+      "description": "Device build log",
+      "required": true
+    },
+    {
+      "path": "apps/ios/CentoMobile/CentoMobile.xcodeproj/project.pbxproj",
+      "owner": "builder",
+      "description": "Native iOS Xcode project",
+      "required": true
+    },
+    {
+      "path": "apps/ios/CentoMobile/CentoMobile/ContentView.swift",
+      "owner": "builder",
+      "description": "SwiftUI app shell",
+      "required": true
+    }
+  ],
+  "review_gate": {
+    "required_sections": [
+      "Delivered",
+      "Validation",
+      "Evidence",
+      "Residual risk"
+    ],
+    "residual_risk_required": true
+  }
+}

@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cento Dev Process Scaling</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #070809;
+      --panel: #12161a;
+      --line: #29313a;
+      --text: #f4f6f7;
+      --muted: #a9b3bd;
+      --orange: #ff7900;
+      --green: #35d273;
+      --blue: #54a9ff;
+      --red: #ff5c5c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 50% -120px, rgba(255,121,0,.16), transparent 420px), var(--bg);
+      color: var(--text);
+      font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main {
+      width: min(1080px, calc(100vw - 28px));
+      margin: 0 auto;
+      padding: 28px 0 42px;
+    }
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: start;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 16px;
+    }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 34px; line-height: 1.08; }
+    h2 {
+      color: var(--orange);
+      font-size: 13px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    h3 { font-size: 18px; margin-bottom: 4px; }
+    .sub { color: var(--muted); margin-top: 8px; font-size: 17px; }
+    .badge {
+      min-width: 132px;
+      padding: 12px;
+      border: 1px solid rgba(84,169,255,.45);
+      border-radius: 8px;
+      background: rgba(84,169,255,.08);
+      text-align: center;
+      color: var(--blue);
+      font-weight: 800;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 12px;
+    }
+    section, .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02));
+    }
+    section {
+      grid-column: span 12;
+      padding: 16px;
+    }
+    .half { grid-column: span 6; }
+    .third { grid-column: span 4; }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .card {
+      min-height: 136px;
+      padding: 14px;
+    }
+    .card strong {
+      display: inline-block;
+      color: var(--orange);
+      font-size: 12px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .card span, li, .note { color: var(--muted); }
+    .metric {
+      display: grid;
+      gap: 8px;
+      min-height: 112px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.025);
+    }
+    .metric b {
+      color: var(--text);
+      font-size: 22px;
+      line-height: 1.1;
+    }
+    .priority {
+      border-color: rgba(255,121,0,.5);
+      background: linear-gradient(180deg, rgba(255,121,0,.18), rgba(255,121,0,.055));
+    }
+    ol, ul { margin: 0; padding-left: 20px; }
+    li + li { margin-top: 7px; }
+    .lane {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 10px;
+      padding: 10px 0;
+      border-top: 1px solid var(--line);
+    }
+    .lane:first-child { border-top: 0; padding-top: 0; }
+    .lane b { color: var(--text); }
+    .lane span { color: var(--muted); }
+    .tag {
+      display: inline-block;
+      width: fit-content;
+      padding: 2px 7px;
+      border: 1px solid rgba(53,210,115,.45);
+      border-radius: 999px;
+      color: var(--green);
+      background: rgba(53,210,115,.08);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    a { color: inherit; }
+    footer {
+      color: var(--muted);
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+    }
+    code {
+      display: inline-block;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      padding: 2px 5px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #080a0c;
+      color: #ffd7b0;
+    }
+    @media (max-width: 820px) {
+      main { width: min(100vw - 22px, 560px); padding-top: 20px; }
+      header, .cards, .lane { grid-template-columns: 1fr; }
+      .half, .third { grid-column: span 12; }
+      h1 { font-size: 29px; }
+      .card { min-height: auto; }
+    }
+    .breadcrumb {
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .breadcrumb a { color: var(--orange); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <main>
+    <nav class="breadcrumb">
+      <a href="start-here.html">← #18 start-here</a>
+      <span>›</span>
+      <span>Process Scaling</span>
+    </nav>
+    <header>
+      <div>
+        <h1>Cento Dev Process Scaling</h1>
+        <p class="sub">Short operating report from the iPhone Cento PWA work. Focus: remove coordination drag, make validation independent, and keep review evidence easy to find.</p>
+      </div>
+      <div class="badge">Next Steps</div>
+    </header>
+
+    <div class="grid">
+      <section>
+        <h2>Executive Take</h2>
+        <div class="cards">
+          <div class="metric priority">
+            <b>Split validation from implementation</b>
+            <span>Implementation should not own final screenshots, API evidence, and Redmine proof. A dedicated validation agent should run in parallel and block review if evidence is missing.</span>
+          </div>
+          <div class="metric">
+            <b>Promote deliverables hub to standard</b>
+            <span>Every story should output one start page with links to the app, docs, screenshots, validation log, and Redmine status.</span>
+          </div>
+          <div class="metric">
+            <b>Make story contracts smaller</b>
+            <span>Bundle related UX work, but require a one-line acceptance contract and exact evidence paths before work starts.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="half">
+        <h2>Inefficiencies Seen</h2>
+        <ol>
+          <li>Validation, screenshots, Redmine updates, and implementation are currently handled by one worker, which creates serial waiting and easy context drift.</li>
+          <li>Deliverables exist, but discovery depends on chat memory unless the navigation hub is updated every time.</li>
+          <li>Screenshot capture is manual and repeated; viewport, URL, token, and output paths should be generated from a story manifest.</li>
+          <li>Redmine comments can become dense. Review notes need the same fixed structure every time: Delivered, Validation, Evidence, Residual risk.</li>
+          <li>Physical iPhone testing is still not truly automated from this Linux context, so LAN/PWA validation needs a clear human handoff checklist.</li>
+        </ol>
+      </section>
+
+      <section class="half">
+        <h2>Recommended Agent Lanes</h2>
+        <div class="lane">
+          <b>Builder</b>
+          <span>Owns code changes only. Produces implementation notes and does focused local tests.</span>
+        </div>
+        <div class="lane">
+          <b>Validator</b>
+          <span>Runs API checks, browser screenshots, mobile viewport review, and reports defects back before Redmine review.</span>
+        </div>
+        <div class="lane">
+          <b>Docs/Evidence</b>
+          <span>Maintains <code>start-here.html</code>, validation logs, screenshots index, and manager-facing summaries.</span>
+        </div>
+        <div class="lane">
+          <b>Coordinator</b>
+          <span>Splits Redmine stories, keeps statuses current, sends notifications, and decides when to combine small items.</span>
+        </div>
+      </section>
+
+      <section>
+        <h2>Immediate Changes To Make</h2>
+        <div class="cards">
+          <div class="card">
+            <strong>1. Story manifest</strong>
+            <h3>One file per story</h3>
+            <span>Create <code>story.json</code> with routes, API endpoints, screenshots, validation commands, and Redmine id. Agents read the same contract.</span>
+          </div>
+          <div class="card">
+            <strong>2. Screenshot runner</strong>
+            <h3>Automate evidence</h3>
+            <span>Add a script that takes the manifest and captures desktop/mobile screenshots with consistent names and viewport sizes.</span>
+          </div>
+          <div class="card">
+            <strong>3. Review gate</strong>
+            <h3>Block weak review notes</h3>
+            <span>Do not move a story to Review unless syntax checks, API checks, screenshot paths, and visual inspection notes are present.</span>
+          </div>
+          <div class="card">
+            <strong>4. Hub updater</strong>
+            <h3>Keep navigation current</h3>
+            <span>Generate or patch the deliverables hub from story manifests so the manager does not need to ask where files are.</span>
+          </div>
+          <div class="card">
+            <strong>5. iPhone handoff</strong>
+            <h3>Make device testing explicit</h3>
+            <span>Each mobile story should include LAN URL, token path, exact taps, expected result, and one screenshot slot for physical device evidence.</span>
+          </div>
+          <div class="card">
+            <strong>6. Notification rule</strong>
+            <h3>Notify only on state changes</h3>
+            <span>Send notifications when work starts, needs human input, reaches Review, or fails validation. Avoid noisy progress pings.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="third">
+        <h2>Validation Agent Contract</h2>
+        <ul>
+          <li>Start from the story manifest, not chat history.</li>
+          <li>Run API checks before opening the UI.</li>
+          <li>Capture required screenshots.</li>
+          <li>Inspect screenshots manually and note defects.</li>
+          <li>Return pass/fail plus exact artifact paths.</li>
+        </ul>
+      </section>
+
+      <section class="third">
+        <h2>Docs Agent Contract</h2>
+        <ul>
+          <li>Update the hub on every story transition.</li>
+          <li>Keep manager pages short and action-first.</li>
+          <li>Link screenshots directly.</li>
+          <li>Keep captain's notes append-only.</li>
+          <li>Preserve old evidence instead of rewriting history.</li>
+        </ul>
+      </section>
+
+      <section class="third">
+        <h2>Coordinator Contract</h2>
+        <ul>
+          <li>Combine stories when validation evidence is shared.</li>
+          <li>Split stories when screenshots or APIs differ.</li>
+          <li>Keep Redmine statuses accurate.</li>
+          <li>Assign validation before implementation finishes.</li>
+          <li>Escalate missing device access early.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Suggested Next Sprint Shape</h2>
+        <ol>
+          <li><span class="tag">Day 1</span> Add story manifest format and screenshot runner for the PWA gateway.</li>
+          <li><span class="tag">Day 1</span> Create a reusable Redmine review-note template with required evidence sections.</li>
+          <li><span class="tag">Day 2</span> Add hub generation or a strict hub update command.</li>
+          <li><span class="tag">Day 2</span> Run one story with Builder, Validator, and Docs/Evidence lanes separated.</li>
+          <li><span class="tag">Day 3</span> Decide whether physical iPhone validation stays manual or needs a Mac/iPhone automation lane.</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>Resource Ask</h2>
+        <p class="note">Minimum useful upgrade: one validation agent lane plus a screenshot runner. Best upgrade: one always-on Mac/iPhone lane for native install, Safari PWA behavior, and device screenshots. That removes the current Linux-to-iPhone blind spot.</p>
+      </section>
+    </div>
+
+    <footer>
+      File: <code>workspace/runs/agent-work/18/process-scaling.html</code>
+    </footer>
+  </main>
+</body>
+</html>

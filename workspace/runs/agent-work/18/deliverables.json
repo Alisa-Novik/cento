@@ -1,0 +1,147 @@
+{
+  "title": "Cento Mobile Deliverables",
+  "subtitle": "Start here. This page points to the PWA, install instructions, screenshots, docs, and Redmine story evidence.",
+  "badge": "Ready",
+  "footer": "File: workspace/runs/agent-work/18/start-here.html. Generated from workspace/runs/agent-work/18/deliverables.json.",
+  "use_first": [
+    {
+      "title": "Open PWA",
+      "href": "http://10.0.0.56:47918/",
+      "code": "http://10.0.0.56:47918/",
+      "description": "Phone-visible Cento app. Requires the gateway to be running.",
+      "primary": true
+    },
+    {
+      "title": "Install Checklist",
+      "href": "docs/install.html",
+      "description": "Exact iPhone Safari steps, token file, Add to Home Screen checklist, and smoke test."
+    },
+    {
+      "title": "Project Docs",
+      "href": "docs/index.html",
+      "description": "Manager-facing summary, delivered scope, original request summary, and screenshot gallery."
+    },
+    {
+      "title": "Process Scaling",
+      "href": "process-scaling.html",
+      "description": "Inefficiencies, agent lanes, validation split, and next sprint process steps."
+    },
+    {
+      "title": "Hub Standard",
+      "href": "../../../../docs/agent-work-deliverables-hub.md",
+      "description": "Reusable process rule for generated start pages and review evidence."
+    },
+    {
+      "title": "Validator Lane",
+      "href": "../../../../docs/agent-work-validator-lane.md",
+      "description": "Builder/Validator split, Validating status, and validator-gated Review."
+    },
+    {
+      "title": "Agent Runtimes",
+      "href": "../../../../docs/agent-work-runtimes.md",
+      "description": "Codex majority routing plus Claude Code Sonnet 4.6 at 25%."
+    }
+  ],
+  "stories": [
+    {
+      "label": "#18 Review",
+      "description": "First PWA/mobile gateway delivery."
+    },
+    {
+      "label": "#19 Review",
+      "description": "Issue detail and Activity pending-message workflow."
+    },
+    {
+      "label": "#20 Review",
+      "description": "Install polish and documentation."
+    },
+    {
+      "label": "#21 Review",
+      "description": "Job detail, logs, and artifacts workflow."
+    },
+    {
+      "label": "#25 Review",
+      "description": "Generated deliverables hub standard."
+    },
+    {
+      "label": "#27 Review",
+      "description": "Separate Validator agent review gate."
+    },
+    {
+      "label": "#28 Review",
+      "description": "Manifest-driven validator-run workflow."
+    },
+    {
+      "label": "#29 Review",
+      "description": "Claude Code weighted runtime registration."
+    }
+  ],
+  "commands": [
+    "python3 workspace/runs/agent-work/18/server.py --host 0.0.0.0 --port 47918",
+    "workspace/runs/agent-work/18/state/token.txt",
+    "workspace/runs/agent-work/18/validation.md",
+    "python3 scripts/deliverables_hub.py workspace/runs/agent-work/18/deliverables.json --check-links"
+  ],
+  "screenshots": [
+    {
+      "title": "Dashboard",
+      "href": "screenshots/mobile-dashboard.png",
+      "description": "Health, queue, metrics, bottom tabs."
+    },
+    {
+      "title": "Issue Detail",
+      "href": "screenshots/mobile-issue-detail.png",
+      "description": "Live issue fields near top of screen."
+    },
+    {
+      "title": "Issue Activity",
+      "href": "screenshots/mobile-issue-activity.png",
+      "description": "Explicit Redmine journal endpoint pending message."
+    },
+    {
+      "title": "Jobs",
+      "href": "screenshots/mobile-jobs.png",
+      "description": "Job cards and status pills."
+    },
+    {
+      "title": "Job Detail",
+      "href": "screenshots/mobile-job-detail.png",
+      "description": "Selected job metadata and execution steps."
+    },
+    {
+      "title": "Job Logs",
+      "href": "screenshots/mobile-job-logs.png",
+      "description": "Task log tails rendered for phone review."
+    },
+    {
+      "title": "Job Artifacts",
+      "href": "screenshots/mobile-job-artifacts.png",
+      "description": "Summary, manifests, logs, and scripts."
+    },
+    {
+      "title": "Agents",
+      "href": "screenshots/mobile-agents.png",
+      "description": "Linux/macOS online, iPhone offline."
+    },
+    {
+      "title": "Actions",
+      "href": "screenshots/mobile-actions.png",
+      "description": "Allowlisted actions only."
+    },
+    {
+      "title": "Process Scaling",
+      "href": "screenshots/process-scaling.png",
+      "description": "Manager-facing process improvement report."
+    }
+  ],
+  "review": [
+    "Open the PWA first and paste the token if prompted.",
+    "Use the install checklist if you are testing on iPhone Safari.",
+    "Review #18, #19, #20, #21, and #25 evidence before approving implementation quality.",
+    "For #21, open Jobs, tap a job card, then check Steps, Logs, and Artifacts tabs.",
+    "For #25, verify this hub is generated from deliverables.json and local links pass the generator check.",
+    "For #27, verify builders stop at Validating and validators move passing work to Review.",
+    "For #28, verify validation.json, builder-report.md, validation-report.md, and validator-run evidence.",
+    "For #29, verify Claude Code is registered at 25% and forced Claude dispatch uses Sonnet 4.6."
+  ]
+}

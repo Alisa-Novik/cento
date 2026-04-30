@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0",
+  "issue": {
+    "id": 29,
+    "title": "Improve Dev Process: Register Claude Code weighted agent runtime",
+    "package": "improve-dev-process",
+    "url": "redmine://issues/29",
+    "status": "Review"
+  },
+  "lane": {
+    "owner": "validator",
+    "role": "validator",
+    "node": "macos",
+    "agent": "anovik-air",
+    "collaborators": [
+      "builder",
+      "validator",
+      "docs-evidence",
+      "coordinator"
+    ]
+  },
+  "paths": {
+    "run_dir": "workspace/runs/agent-work/29",
+    "story_manifest": "workspace/runs/agent-work/29/story.json"
+  },
+  "scope": {
+    "goal": "Improve Dev Process: Register Claude Code weighted agent runtime",
+    "acceptance": [
+      "Past work reconciled into story.json.",
+      "Actual deliverable and evidence paths are linked from this manifest."
+    ]
+  },
+  "routes": [],
+  "api_endpoints": [],
+  "validation": {
+    "manifest": "workspace/runs/agent-work/29/validation.json",
+    "commands": [],
+    "required_evidence": [
+      "docs/agent-work-runtimes.md",
+      "workspace/runs/agent-work/29/validation-report.md",
+      "workspace/runs/agent-work/29/logs/runtimes-sample.json",
+      "workspace/runs/agent-work/29/logs/linux-validation.log",
+      "data/agent-runtimes.json"
+    ]
+  },
+  "deliverables": {
+    "manifest": "",
+    "hub": ""
+  },
+  "screenshots": [],
+  "handoff": {
+    "human_steps": [],
+    "device_access": "none",
+    "notes": [
+      "Retrospective manifest created from existing Redmine state and repo evidence."
+    ]
+  },
+  "expected_outputs": [
+    {
+      "path": "docs/agent-work-runtimes.md",
+      "owner": "docs-evidence",
+      "description": "Agent runtime docs",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/29/validation-report.md",
+      "owner": "validator",
+      "description": "Runtime validation report",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/29/logs/runtimes-sample.json",
+      "owner": "validator",
+      "description": "Weighted routing sample",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/29/logs/linux-validation.log",
+      "owner": "validator",
+      "description": "Linux validation log",
+      "required": true
+    },
+    {
+      "path": "data/agent-runtimes.json",
+      "owner": "builder",
+      "description": "Runtime registry",
+      "required": true
+    }
+  ],
+  "review_gate": {
+    "required_sections": [
+      "Delivered",
+      "Validation",
+      "Evidence",
+      "Residual risk"
+    ],
+    "residual_risk_required": true
+  }
+}

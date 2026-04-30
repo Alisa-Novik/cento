@@ -1,0 +1,57 @@
+{
+  "run_dir": "workspace/runs/agent-work/47",
+  "requires": {
+    "builder_report": "workspace/runs/agent-work/47/builder-report.md"
+  },
+  "report": "workspace/runs/agent-work/47/validation-report.md",
+  "checks": [
+    {
+      "name": "agent_work.py compiles",
+      "type": "command",
+      "command": "python3 -m py_compile scripts/agent_work.py"
+    },
+    {
+      "name": "Industrial aux TUI builds",
+      "type": "command",
+      "command": "go build -o workspace/tmp/cento-industrial-aux-tui-check ./scripts/industrial_aux_tui.go"
+    },
+    {
+      "name": "Industrial workspace shell syntax",
+      "type": "command",
+      "command": "bash -n scripts/industrial_workspace.sh scripts/industrial_aux_tui.sh"
+    },
+    {
+      "name": "Agent runs JSON detects untracked sessions",
+      "type": "command",
+      "command": "python3 scripts/agent_work.py runs --json --active | tee workspace/runs/agent-work/47/validation-runs-active.json | grep -q 'untracked_interactive'"
+    },
+    {
+      "name": "Agents pane renders manager view",
+      "type": "command",
+      "command": "./scripts/industrial_aux_tui.sh agents --once | tee workspace/runs/agent-work/47/validation-agents-pane.ansi | python3 -c 'import re,sys,pathlib; text=sys.stdin.read(); text=re.sub(\"\\x1b\\\\[[0-9;?]*[ -/]*[@-~]\", \"\", text); pathlib.Path(\"workspace/runs/agent-work/47/validation-agents-pane.txt\").write_text(text); assert \"AGENT RUNS\" in text and \"Redmine work\" in text and \"MANUAL\" in text and \"Claude\" in text and \"Codex\" in text'"
+    },
+    {
+      "name": "Dry-run dispatch creates ledger",
+      "type": "command",
+      "command": "python3 scripts/agent_work.py dispatch 47 --runtime codex --dry-run | tee workspace/runs/agent-work/47/validation-dispatch-dry-run.txt | grep -q 'workspace/runs/agent-runs/.*/run.json'"
+    },
+    {
+      "name": "Repo check",
+      "type": "command",
+      "command": "make check",
+      "timeout_seconds": 120
+    },
+    {
+      "name": "Pane evidence exists",
+      "type": "file",
+      "path": "workspace/runs/agent-work/47/agents-pane.txt",
+      "non_empty": true
+    },
+    {
+      "name": "Run evidence exists",
+      "type": "file",
+      "path": "workspace/runs/agent-work/47/runs-active.json",
+      "non_empty": true
+    }
+  ]
+}

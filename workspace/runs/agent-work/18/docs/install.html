@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cento Mobile - iPhone Install</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <nav class="breadcrumb">
+      <a href="../start-here.html">← #18 start-here</a>
+      <span>›</span>
+      <span>iPhone Install</span>
+    </nav>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Install polish · Agent-work #20</p>
+        <h1>Cento Mobile iPhone Install</h1>
+        <p class="summary">Use this page as the short checklist for opening the PWA on iPhone and adding it to the Home Screen.</p>
+      </div>
+      <aside class="status">
+        <span>Path</span>
+        <strong>PWA</strong>
+      </aside>
+    </header>
+
+    <section class="panel">
+      <h2>Current LAN Link</h2>
+      <div class="commands">
+        <code>http://10.0.0.56:47918/</code>
+        <code>workspace/runs/agent-work/18/state/token.txt</code>
+      </div>
+      <p class="note">The gateway must be running on Linux with <code>--host 0.0.0.0</code>. The iPhone must be on a network path that can reach <code>10.0.0.56</code>.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Start Gateway</h2>
+      <ol class="steps">
+        <li>From the Cento repo, run <code>python3 workspace/runs/agent-work/18/server.py --host 0.0.0.0 --port 47918</code>.</li>
+        <li>Keep the terminal session open while using the iPhone PWA.</li>
+        <li>Copy the printed gateway token, or read it from <code>workspace/runs/agent-work/18/state/token.txt</code>.</li>
+      </ol>
+    </section>
+
+    <section class="panel">
+      <h2>Install On iPhone</h2>
+      <ol class="steps">
+        <li>Open Safari on the iPhone.</li>
+        <li>Go to <code>http://10.0.0.56:47918/</code>.</li>
+        <li>Paste the gateway token into the setup panel and tap Save.</li>
+        <li>Confirm Dashboard shows queue, jobs, agents, and activity.</li>
+        <li>Tap Share, then Add to Home Screen.</li>
+        <li>Launch Cento from the Home Screen icon.</li>
+      </ol>
+    </section>
+
+    <section class="panel">
+      <h2>Smoke Test</h2>
+      <ul class="checks">
+        <li>Dashboard loads without token prompt after first setup.</li>
+        <li>Tap an issue card from Dashboard queue or Issues list.</li>
+        <li>Issue detail opens near the top.</li>
+        <li>Activity tab says Redmine journal endpoint is pending.</li>
+        <li>Actions screen exposes only allowlisted live actions.</li>
+      </ul>
+    </section>
+
+    <section class="gallery">
+      <div class="section-title">
+        <h2>Install Evidence</h2>
+        <p>Reference screenshots from the validated PWA flow.</p>
+      </div>
+      <article class="shot">
+        <img src="../screenshots/mobile-dashboard.png" alt="Dashboard screenshot">
+        <div><h3>Dashboard</h3><p>First screen after token setup.</p></div>
+      </article>
+      <article class="shot">
+        <img src="../screenshots/mobile-issue-activity.png" alt="Issue activity screenshot">
+        <div><h3>Issue Activity</h3><p>Confirms journal endpoint pending message.</p></div>
+      </article>
+      <article class="shot">
+        <img src="../screenshots/mobile-actions.png" alt="Actions screenshot">
+        <div><h3>Actions</h3><p>Only allowlisted live actions are enabled.</p></div>
+      </article>
+      <article class="shot">
+        <img src="../screenshots/project-docs.png" alt="Project docs screenshot">
+        <div><h3>Project Docs</h3><p>Manager-facing evidence page.</p></div>
+      </article>
+    </section>
+
+    <section class="panel">
+      <h2>Useful Links</h2>
+      <div class="commands">
+        <code><a href="index.html">Project documentation</a></code>
+        <code><a href="../README.md">Delivery README</a></code>
+        <code><a href="../validation.md">Validation log</a></code>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

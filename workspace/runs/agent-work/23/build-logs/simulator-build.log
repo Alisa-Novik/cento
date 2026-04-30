@@ -1,0 +1,405 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project apps/ios/CentoMobile/CentoMobile.xcodeproj -scheme CentoMobile -destination "platform=iOS Simulator,name=iPhone 17" -derivedDataPath workspace/runs/agent-work/23/DerivedData build
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'CentoMobile' in project 'CentoMobile' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.4.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: 4e2bcfd474589675a22ad39253bb5a59
+Build description path: /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/XCBuildData/4e2bcfd474589675a22ad39253bb5a59.xcbuilddata
+CreateBuildDirectory /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile/CentoMobile.xcodeproj
+    builtin-create-build-directory /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products
+
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.4.sdk /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/SDKStatCaches.noindex/iphonesimulator26.4-23E252-686eebb5dc1d8ecb277353a59184f4aa.sdkstatcache
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile/CentoMobile.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.4.sdk -o /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/SDKStatCaches.noindex/iphonesimulator26.4-23E252-686eebb5dc1d8ecb277353a59184f4aa.sdkstatcache
+
+CreateBuildDirectory /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile/CentoMobile.xcodeproj
+    builtin-create-build-directory /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex
+
+CreateBuildDirectory /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile/CentoMobile.xcodeproj
+    builtin-create-build-directory /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator
+
+CreateBuildDirectory /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile/CentoMobile.xcodeproj
+    builtin-create-build-directory /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/ExplicitPrecompiledModules
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile/CentoMobile.xcodeproj
+    builtin-create-build-directory /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/ExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile/CentoMobile.xcodeproj
+    builtin-create-build-directory /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+
+WriteAuxiliaryFile /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile-2160b085f98c42664982776bda394cdb-VFS-iphonesimulator/all-product-headers.yaml
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile/CentoMobile.xcodeproj
+    write-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile-2160b085f98c42664982776bda394cdb-VFS-iphonesimulator/all-product-headers.yaml
+
+WriteAuxiliaryFile /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/empty-CentoMobile.plist (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    write-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/empty-CentoMobile.plist
+
+WriteAuxiliaryFile /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.LinkFileList (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    write-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.LinkFileList
+
+WriteAuxiliaryFile /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.SwiftConstValuesFileList (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    write-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile-OutputFileMap.json (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    write-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile-OutputFileMap.json
+
+WriteAuxiliaryFile /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile.hmap (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    write-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile.hmap
+
+WriteAuxiliaryFile /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile.DependencyStaticMetadataFileList (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    write-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.SwiftFileList (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    write-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.SwiftFileList
+
+WriteAuxiliaryFile /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile_const_extract_protocols.json (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    write-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/DerivedSources/Entitlements-Simulated.plist (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    write-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/DerivedSources/Entitlements-Simulated.plist
+
+WriteAuxiliaryFile /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile.DependencyMetadataFileList (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    write-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-project-headers.hmap (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    write-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-project-headers.hmap
+
+WriteAuxiliaryFile /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-own-target-headers.hmap (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    write-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-own-target-headers.hmap
+
+WriteAuxiliaryFile /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-generated-files.hmap (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    write-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-generated-files.hmap
+
+WriteAuxiliaryFile /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-all-target-headers.hmap (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    write-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-all-target-headers.hmap
+
+WriteAuxiliaryFile /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-all-non-framework-target-headers.hmap (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    write-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-DebugDylibPath-normal-arm64.txt (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    write-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-DebugDylibPath-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-DebugDylibInstallName-normal-arm64.txt (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    write-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-DebugDylibInstallName-normal-arm64.txt
+
+MkDir /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    /bin/mkdir -p /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app
+
+ProcessProductPackaging "" /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile.app-Simulated.xcent (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    
+    Entitlements:
+    
+    {
+    "application-identifier" = "MXM23F692J.com.willingtodev.CentoMobile";
+}
+    
+    builtin-productPackagingUtility -entitlements -format xml -o /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile.app-Simulated.xcent
+
+ProcessProductPackagingDER /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile.app-Simulated.xcent /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile.app-Simulated.xcent.der (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    /usr/bin/derq query -f xml -i /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile.app-Simulated.xcent -o /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile.app-Simulated.xcent.der --raw
+
+Ld /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/__preview.dylib normal (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.4.sdk -O0 -L/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator -F/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator -install_name @rpath/CentoMobile.debug.dylib -Xlinker -dead_strip -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile_dependency_info.dat -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __entitlements -Xlinker /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile.app-Simulated.xcent -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __ents_der -Xlinker /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile.app-Simulated.xcent.der -Xlinker -no_adhoc_codesign -o /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/__preview.dylib
+
+ProcessInfoPlistFile /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/Info.plist /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/empty-CentoMobile.plist (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    builtin-infoPlistUtility /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/empty-CentoMobile.plist -producttype com.apple.product-type.application -genpkginfo /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -o /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/Info.plist
+
+SwiftDriver CentoMobile normal arm64 com.apple.xcode.tools.swift.compiler (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name CentoMobile -Onone @/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.4.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator -F /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/SDKStatCaches.noindex/iphonesimulator26.4-23E252-686eebb5dc1d8ecb277353a59184f4aa.sdkstatcache -output-file-map /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile_const_extract_protocols.json -Xcc -iquote -Xcc /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-generated-files.hmap -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-own-target-headers.hmap -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-all-target-headers.hmap -Xcc -iquote -Xcc /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-project-headers.hmap -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/DerivedSources-normal/arm64 -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/DerivedSources/arm64 -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile-Swift.h -working-directory /Users/anovik-air/cento/apps/ios/CentoMobile -experimental-emit-module-separately -disable-cmo
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/_AvailabilityInternal-2OHPOFJEOP0FC1RKXBPL8I8H3.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/_Builtin_float-3W2YFOPYSEJILAYB3U8TV0LNN.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/_Builtin_stdarg-ESR3KA0QYF32B8RVRDYCO5RQA.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/ptrauth-BZJP0DHB60IWZC9YGXGYYP3YQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/_SwiftConcurrencyShims-4GG1GPJMHF43T18ZYA54XQT1P.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/SwiftShims-6PHANLOIHUIC8OAKPVXHEIZWD.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/_Builtin_stddef-4OKUOM3EPLKX61C221TX5A1LQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/ptrcheck-7WWPW2UTD8RCFR5MS5MJCTITK.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/DeveloperToolsSupport-BLUS0O4MAF75HE96OERG1514S.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/_Builtin_stdbool-3M1XTIAH1BRI5IJBR3JPKEQBJ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/_DarwinFoundation1-A9LRM9B1UWO3U3E58EQ261837.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/_DarwinFoundation2-D0M8SC0EWF9U6H2NMHAVJOUK5.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/_Builtin_limits-3QOQMM8LC8284CUE4VY8GKB8M.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/_Builtin_stdint-8GJSCMMHRI3G86PDOZC24RK8E.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/sys_types-5QSZBMANFAAVZTHIADI3IBNI1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/_Builtin_tgmath-62X2MAVV7R7SP9J4MVU7PT0QS.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/_DarwinFoundation3-CWJ5IS15BKJZSXZBKX9XQA504.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/_Builtin_stdatomic-323489B76LHQLW5F5TUKYP1XV.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/_Builtin_intrinsics-BN6FP8JF1SBB371VETHWHIJDT.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/_Builtin_inttypes-L5EVOQYEURER8ONWQECR2U8O.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/Darwin-AAM89TTFNDFF8RZJMJK5I0T0A.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/simd-6NUR55H7PGJNMFI48JM4BR793.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/MachO-EDGRVVQ308HNG4FVBXI64MI92.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/ObjectiveC-493ZTFMMALROP01U5Z8UTDI7N.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/os_object-2G8LV6D77PI6RZB0LBE5BP154.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/os_workgroup-77NY4BRL1PI19W0ELIU9DD5FF.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/Spatial-JFB2LIMMQ31628ET0ILEE7G4.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/Dispatch-E4WFOCB7INU0DUAQTP4KNBODT.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/XPC-2TJXXZR53K5460XB168QHL8SG.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/CoreFoundation-B2Q959MBYCKCH6SRNH4M7S422.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/os-31BDZ07JAUB6J6ZPV1VVH3VED.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/Security-9ZYSL3XWQYKFSGHAJ521WYQV.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/CFNetwork-29W59B34CVIZM59QXR54J7G8G.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/CoreGraphics-1ZLGZ7QIFWAACRR3KWXKUZG79.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/Foundation-5OS7H0VXZBARFFVSD2Q7SAF3P.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/CoreText-6IOCANTX0T1D3I8BPFOY3RZL5.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/ImageIO-A6TF9OCSFCKE3FOB74YGG4DM2.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/OSLog-3ADBQ9UMBQG7P7T02JX3U8R9Z.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/IOSurface-5XSWULS7XDTO98TCUFE8FY0Z2.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/FileProvider-1ZIKRSO3ZL106GRCO37YUUI4N.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/UserNotifications-5011ENXWNLJB4SP7RLDU8DR3Y.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/UIUtilities-E88YAPV2211XY2TK5FMMBFYLA.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/DataDetection-6Q461A3SI4FV7G5NW70S3OMZ6.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/OpenGLES-C35MU8TMBFE5TCEQKBFCV3IH3.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/CoreTransferable-9DU4WBWCA257YQXFA8SRRK0GP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/Accessibility-64N38ZSBQDU1JTKTKRF03RUY0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/UniformTypeIdentifiers-E541G8JXLO1OVPH3KXKCXXSKX.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/CoreData-DSVBU37JMV6Y3KNPU700E5AWO.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/Symbols-95D0R80O9MWBVVE0PQGVY3YLM.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/Metal-2CL6R5L0ES91CYJJZ34AJBX4B.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/CoreVideo-B3B1SMTTEHFPIG0W8ISQKJR5S.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/QuartzCore-9AH4YIQHLJCV6JLJ4191O5QPQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/CoreImage-DIHDFPJ2CL7F42ROMK23YKLO5.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/SwiftUICore-CWLXUY4YA546KD9LAZXRA9MS2.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/UIKit-8A0EUE39NWTLZUJHKHC9FJYOP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/SwiftUI-DUNE6L3WEAPDE9JUE28JPPOI5.pcm
+
+SwiftCompile normal arm64 Compiling\ CentoMobileApp.swift /Users/anovik-air/cento/apps/ios/CentoMobile/CentoMobile/CentoMobileApp.swift (in target 'CentoMobile' from project 'CentoMobile')
+
+SwiftCompile normal arm64 /Users/anovik-air/cento/apps/ios/CentoMobile/CentoMobile/CentoMobileApp.swift (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ CentoMobile (in target 'CentoMobile' from project 'CentoMobile')
+
+EmitSwiftModule normal arm64 (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    
+
+SwiftCompile normal arm64 Compiling\ Models.swift /Users/anovik-air/cento/apps/ios/CentoMobile/CentoMobile/Models.swift (in target 'CentoMobile' from project 'CentoMobile')
+
+SwiftCompile normal arm64 /Users/anovik-air/cento/apps/ios/CentoMobile/CentoMobile/Models.swift (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    
+
+SwiftCompile normal arm64 Compiling\ ContentView.swift /Users/anovik-air/cento/apps/ios/CentoMobile/CentoMobile/ContentView.swift (in target 'CentoMobile' from project 'CentoMobile')
+SwiftCompile normal arm64 /Users/anovik-air/cento/apps/ios/CentoMobile/CentoMobile/ContentView.swift (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    
+
+SwiftCompile normal arm64 Compiling\ MobileAPI.swift /Users/anovik-air/cento/apps/ios/CentoMobile/CentoMobile/MobileAPI.swift (in target 'CentoMobile' from project 'CentoMobile')
+
+SwiftCompile normal arm64 /Users/anovik-air/cento/apps/ios/CentoMobile/CentoMobile/MobileAPI.swift (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for CentoMobile (in target 'CentoMobile' from project 'CentoMobile')
+
+SwiftDriver\ Compilation\ Requirements CentoMobile normal arm64 com.apple.xcode.tools.swift.compiler (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name CentoMobile -Onone @/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.4.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator -F /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/SDKStatCaches.noindex/iphonesimulator26.4-23E252-686eebb5dc1d8ecb277353a59184f4aa.sdkstatcache -output-file-map /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile_const_extract_protocols.json -Xcc -iquote -Xcc /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-generated-files.hmap -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-own-target-headers.hmap -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-all-target-headers.hmap -Xcc -iquote -Xcc /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-project-headers.hmap -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/DerivedSources-normal/arm64 -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/DerivedSources/arm64 -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile-Swift.h -working-directory /Users/anovik-air/cento/apps/ios/CentoMobile -experimental-emit-module-separately -disable-cmo
+
+SwiftMergeGeneratedHeaders /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/DerivedSources/CentoMobile-Swift.h /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile-Swift.h (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    builtin-swiftHeaderTool -arch arm64 /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile-Swift.h -o /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/DerivedSources/CentoMobile-Swift.h
+
+Copy /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.swiftmodule/arm64-apple-ios-simulator.abi.json /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.abi.json (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.abi.json /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.swiftmodule (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.swiftmodule /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.swiftmodule/arm64-apple-ios-simulator.swiftdoc /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.swiftdoc (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.swiftdoc /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.swiftsourceinfo (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.swiftsourceinfo /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+SwiftDriverJobDiscovery normal arm64 Compiling MobileAPI.swift (in target 'CentoMobile' from project 'CentoMobile')
+
+SwiftDriverJobDiscovery normal arm64 Compiling Models.swift (in target 'CentoMobile' from project 'CentoMobile')
+
+SwiftDriverJobDiscovery normal arm64 Compiling CentoMobileApp.swift (in target 'CentoMobile' from project 'CentoMobile')
+
+SwiftDriverJobDiscovery normal arm64 Compiling ContentView.swift (in target 'CentoMobile' from project 'CentoMobile')
+
+SwiftDriver\ Compilation CentoMobile normal arm64 com.apple.xcode.tools.swift.compiler (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name CentoMobile -Onone @/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.4.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator -F /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/SDKStatCaches.noindex/iphonesimulator26.4-23E252-686eebb5dc1d8ecb277353a59184f4aa.sdkstatcache -output-file-map /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile_const_extract_protocols.json -Xcc -iquote -Xcc /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-generated-files.hmap -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-own-target-headers.hmap -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-all-target-headers.hmap -Xcc -iquote -Xcc /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-project-headers.hmap -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/DerivedSources-normal/arm64 -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/DerivedSources/arm64 -Xcc -I/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile-Swift.h -working-directory /Users/anovik-air/cento/apps/ios/CentoMobile -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/CentoMobile.debug.dylib normal (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.4.sdk -O0 -L/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator -F/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator -filelist /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.LinkFileList -install_name @rpath/CentoMobile.debug.dylib -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.swiftmodule @/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile-linker-args.resp -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -Xlinker -no_adhoc_codesign -o /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/CentoMobile.debug.dylib
+
+ConstructStubExecutorLinkFileList /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-ExecutorLinkFileList-normal-arm64.txt (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    construct-stub-executor-link-file-list /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/CentoMobile.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'CentoMobile' from project 'CentoMobile')
+
+Ld /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/CentoMobile normal (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.4.sdk -O0 -L/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator -F/Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator -Xlinker -rpath -Xlinker @executable_path -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile-ExecutorLinkFileList-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __entitlements -Xlinker /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile.app-Simulated.xcent -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __ents_der -Xlinker /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile.app-Simulated.xcent.der /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/CentoMobile.debug.dylib -Xlinker -no_adhoc_codesign -o /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/CentoMobile
+
+CopySwiftLibs /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    builtin-swiftStdLibTool --copy --verbose --sign - --scan-executable /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/CentoMobile.debug.dylib --scan-folder /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/Frameworks --scan-folder /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/PlugIns --scan-folder /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/SystemExtensions --scan-folder /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/Extensions --platform iphonesimulator --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+
+ExtractAppIntentsMetadata (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name CentoMobile --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.4.sdk --xcode-version 17E202 --platform-family iOS --deployment-target 17.0 --bundle-identifier com.willingtodev.CentoMobile --output /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app --target-triple arm64-apple-ios17.0-simulator --binary-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/CentoMobile --dependency-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile_dependency_info.dat --stringsdata-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.SwiftFileList --metadata-file-list /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile.DependencyMetadataFileList --static-metadata-file-list /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile.DependencyStaticMetadataFileList --swift-const-vals-list /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/Objects-normal/arm64/CentoMobile.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-04-29 20:13:57.775 appintentsmetadataprocessor[36544:757695] Starting appintentsmetadataprocessor export
+2026-04-29 20:13:57.779 appintentsmetadataprocessor[36544:757695] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+AppIntentsSSUTraining (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/Info.plist --temp-dir-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/ssu --bundle-id com.willingtodev.CentoMobile --product-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app --extracted-metadata-path /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/Metadata.appintents --metadata-file-list /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Intermediates.noindex/CentoMobile.build/Debug-iphonesimulator/CentoMobile.build/CentoMobile.DependencyMetadataFileList --source-file /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/Info.plist --archive-ssu-assets
+2026-04-29 20:13:57.792 appintentsnltrainingprocessor[36545:757698] Parsing options for appintentsnltrainingprocessor
+2026-04-29 20:13:57.792 appintentsnltrainingprocessor[36545:757698] Starting AppIntents SSU YAML Generation
+2026-04-29 20:13:57.795 appintentsnltrainingprocessor[36545:757698] No AppShortcuts found - Skipping.
+
+CodeSign /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/CentoMobile.debug.dylib (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --timestamp\=none --generate-entitlement-der /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/CentoMobile.debug.dylib
+
+CodeSign /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/__preview.dylib (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --timestamp\=none --generate-entitlement-der /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app/__preview.dylib
+
+CodeSign /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --timestamp\=none --generate-entitlement-der /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app
+
+RegisterExecutionPolicyException /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    builtin-RegisterExecutionPolicyException /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app
+
+Validate /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    builtin-validationUtility /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app -shallow-bundle -infoplist-subpath Info.plist
+
+Touch /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app (in target 'CentoMobile' from project 'CentoMobile')
+    cd /Users/anovik-air/cento/apps/ios/CentoMobile
+    /usr/bin/touch -c /Users/anovik-air/cento/workspace/runs/agent-work/23/DerivedData/Build/Products/Debug-iphonesimulator/CentoMobile.app
+
+** BUILD SUCCEEDED **
+

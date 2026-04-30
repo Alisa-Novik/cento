@@ -1,0 +1,121 @@
+{
+  "schema_version": "1.0",
+  "issue": {
+    "id": 26,
+    "title": "iPhone Cento App: Native iOS e2e harness",
+    "package": "iphone-cento-app-ios-creation",
+    "url": "redmine://issues/26",
+    "status": "Done"
+  },
+  "lane": {
+    "owner": "builder",
+    "role": "builder",
+    "node": "macos",
+    "agent": "anovik-air",
+    "collaborators": [
+      "builder",
+      "validator",
+      "docs-evidence",
+      "coordinator"
+    ]
+  },
+  "paths": {
+    "run_dir": "workspace/runs/agent-work/26",
+    "story_manifest": "workspace/runs/agent-work/26/story.json"
+  },
+  "scope": {
+    "goal": "iPhone Cento App: Native iOS e2e harness",
+    "acceptance": [
+      "Past work reconciled into story.json.",
+      "Actual deliverable and evidence paths are linked from this manifest."
+    ]
+  },
+  "routes": [],
+  "api_endpoints": [],
+  "validation": {
+    "manifest": "",
+    "commands": [],
+    "required_evidence": [
+      "workspace/runs/agent-work/26/summary.md",
+      "workspace/runs/agent-work/26/validation.md",
+      "workspace/runs/agent-work/26/screenshots/native-dashboard-simulator-e2e.png",
+      "workspace/runs/agent-work/26/logs/gateway-health.pretty.json",
+      "workspace/runs/agent-work/26/logs/gateway-dashboard-token.pretty.json",
+      "scripts/ios_mobile_e2e.sh",
+      "scripts/mobile.sh"
+    ]
+  },
+  "deliverables": {
+    "manifest": "",
+    "hub": ""
+  },
+  "screenshots": [
+    {
+      "name": "native-dashboard-simulator-e2e",
+      "url": "",
+      "viewport": "",
+      "output": "workspace/runs/agent-work/26/screenshots/native-dashboard-simulator-e2e.png",
+      "description": "Native simulator e2e screenshot"
+    }
+  ],
+  "handoff": {
+    "human_steps": [],
+    "device_access": "none",
+    "notes": [
+      "Retrospective manifest created from existing Redmine state and repo evidence."
+    ]
+  },
+  "expected_outputs": [
+    {
+      "path": "workspace/runs/agent-work/26/summary.md",
+      "owner": "docs-evidence",
+      "description": "Native iOS e2e summary",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/26/validation.md",
+      "owner": "validator",
+      "description": "Native iOS e2e validation",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/26/screenshots/native-dashboard-simulator-e2e.png",
+      "owner": "validator",
+      "description": "Simulator e2e screenshot",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/26/logs/gateway-health.pretty.json",
+      "owner": "validator",
+      "description": "Gateway health response",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/26/logs/gateway-dashboard-token.pretty.json",
+      "owner": "validator",
+      "description": "Gateway dashboard response",
+      "required": true
+    },
+    {
+      "path": "scripts/ios_mobile_e2e.sh",
+      "owner": "builder",
+      "description": "Native iOS e2e harness",
+      "required": true
+    },
+    {
+      "path": "scripts/mobile.sh",
+      "owner": "builder",
+      "description": "Mobile command wrapper",
+      "required": true
+    }
+  ],
+  "review_gate": {
+    "required_sections": [
+      "Delivered",
+      "Validation",
+      "Evidence",
+      "Residual risk"
+    ],
+    "residual_risk_required": true
+  }
+}

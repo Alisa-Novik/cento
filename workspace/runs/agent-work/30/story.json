@@ -1,0 +1,127 @@
+{
+  "schema_version": "1.0",
+  "issue": {
+    "id": 30,
+    "title": "Cluster Health: harden Mac/Linux execution and bridge socket reliability",
+    "package": "cluster-health",
+    "url": "redmine://issues/30",
+    "status": "Done"
+  },
+  "lane": {
+    "owner": "builder",
+    "role": "builder",
+    "node": "macos",
+    "agent": "anovik-air",
+    "collaborators": [
+      "builder",
+      "validator",
+      "docs-evidence",
+      "coordinator"
+    ]
+  },
+  "paths": {
+    "run_dir": "workspace/runs/agent-work/30",
+    "story_manifest": "workspace/runs/agent-work/30/story.json"
+  },
+  "scope": {
+    "goal": "Cluster Health: harden Mac/Linux execution and bridge socket reliability",
+    "acceptance": [
+      "Past work reconciled into story.json.",
+      "Actual deliverable and evidence paths are linked from this manifest."
+    ]
+  },
+  "routes": [],
+  "api_endpoints": [],
+  "validation": {
+    "manifest": "",
+    "commands": [],
+    "required_evidence": [
+      "workspace/runs/agent-work/30/summary.md",
+      "workspace/runs/agent-work/30/validation.md",
+      "workspace/runs/agent-work/30/logs/cluster-status.log",
+      "workspace/runs/agent-work/30/logs/cluster-exec-quoted.log",
+      "workspace/runs/agent-work/30/logs/cluster-exec-argv.log",
+      "workspace/runs/agent-work/30/logs/bridge-to-linux-quoted.log",
+      "scripts/cluster_health_e2e.sh",
+      "scripts/bridge.sh",
+      "scripts/cluster.sh"
+    ]
+  },
+  "deliverables": {
+    "manifest": "",
+    "hub": ""
+  },
+  "screenshots": [],
+  "handoff": {
+    "human_steps": [],
+    "device_access": "none",
+    "notes": [
+      "Retrospective manifest created from existing Redmine state and repo evidence."
+    ]
+  },
+  "expected_outputs": [
+    {
+      "path": "workspace/runs/agent-work/30/summary.md",
+      "owner": "docs-evidence",
+      "description": "Cluster health summary",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/30/validation.md",
+      "owner": "validator",
+      "description": "Cluster health validation",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/30/logs/cluster-status.log",
+      "owner": "validator",
+      "description": "Cluster status evidence",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/30/logs/cluster-exec-quoted.log",
+      "owner": "validator",
+      "description": "Quoted remote exec log",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/30/logs/cluster-exec-argv.log",
+      "owner": "validator",
+      "description": "Argv remote exec log",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/30/logs/bridge-to-linux-quoted.log",
+      "owner": "validator",
+      "description": "Bridge quoted command log",
+      "required": true
+    },
+    {
+      "path": "scripts/cluster_health_e2e.sh",
+      "owner": "builder",
+      "description": "Cluster health e2e harness",
+      "required": true
+    },
+    {
+      "path": "scripts/bridge.sh",
+      "owner": "builder",
+      "description": "Bridge reliability implementation",
+      "required": true
+    },
+    {
+      "path": "scripts/cluster.sh",
+      "owner": "builder",
+      "description": "Cluster execution implementation",
+      "required": true
+    }
+  ],
+  "review_gate": {
+    "required_sections": [
+      "Delivered",
+      "Validation",
+      "Evidence",
+      "Residual risk"
+    ],
+    "residual_risk_required": true
+  }
+}

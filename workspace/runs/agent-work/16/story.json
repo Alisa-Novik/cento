@@ -1,0 +1,113 @@
+{
+  "schema_version": "1.0",
+  "issue": {
+    "id": 16,
+    "title": "iPhone Cento App iOS Creation: Define product requirements, architecture, and delivery roadmap for the iPhone app.",
+    "package": "iphone-cento-app-ios-creation",
+    "url": "redmine://issues/16",
+    "status": "Review"
+  },
+  "lane": {
+    "owner": "builder",
+    "role": "builder",
+    "node": "linux",
+    "agent": "alice",
+    "collaborators": [
+      "builder",
+      "validator",
+      "docs-evidence",
+      "coordinator"
+    ]
+  },
+  "paths": {
+    "run_dir": "workspace/runs/agent-work/16",
+    "story_manifest": "workspace/runs/agent-work/16/story.json"
+  },
+  "scope": {
+    "goal": "iPhone Cento App iOS Creation: Define product requirements, architecture, and delivery roadmap for the iPhone app.",
+    "acceptance": [
+      "Past work reconciled into story.json.",
+      "Actual deliverable and evidence paths are linked from this manifest."
+    ]
+  },
+  "routes": [],
+  "api_endpoints": [],
+  "validation": {
+    "manifest": "",
+    "commands": [],
+    "required_evidence": [
+      "workspace/runs/agent-work/16/README.md",
+      "workspace/runs/agent-work/16/requirements.md",
+      "workspace/runs/agent-work/16/architecture.md",
+      "workspace/runs/agent-work/16/delivery-roadmap.md",
+      "workspace/runs/agent-work/16/one-pager.md",
+      "workspace/runs/agent-work/16/report.html",
+      "workspace/runs/agent-work/16/validation.md"
+    ]
+  },
+  "deliverables": {
+    "manifest": "",
+    "hub": ""
+  },
+  "screenshots": [],
+  "handoff": {
+    "human_steps": [],
+    "device_access": "none",
+    "notes": [
+      "Retrospective manifest created from existing Redmine state and repo evidence."
+    ]
+  },
+  "expected_outputs": [
+    {
+      "path": "workspace/runs/agent-work/16/README.md",
+      "owner": "docs-evidence",
+      "description": "Roadmap dossier README",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/16/requirements.md",
+      "owner": "docs-evidence",
+      "description": "Product requirements",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/16/architecture.md",
+      "owner": "docs-evidence",
+      "description": "Architecture notes",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/16/delivery-roadmap.md",
+      "owner": "docs-evidence",
+      "description": "Delivery roadmap",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/16/one-pager.md",
+      "owner": "docs-evidence",
+      "description": "Manager one-pager",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/16/report.html",
+      "owner": "docs-evidence",
+      "description": "HTML roadmap report",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/16/validation.md",
+      "owner": "validator",
+      "description": "Validation notes",
+      "required": true
+    }
+  ],
+  "review_gate": {
+    "required_sections": [
+      "Delivered",
+      "Validation",
+      "Evidence",
+      "Residual risk"
+    ],
+    "residual_risk_required": true
+  }
+}

@@ -1,0 +1,851 @@
+{
+    "updated_at": "2026-04-29T21:17:27-04:00",
+    "health": {
+        "label": "All Systems",
+        "state": "degraded",
+        "agents_online": 2,
+        "agents_total": 3,
+        "jobs_running": 6,
+        "issues_open": 14,
+        "tasks_pending": 2
+    },
+    "queue": [
+        {
+            "id": 13,
+            "title": "Test task",
+            "status": "Review",
+            "node": "Linux",
+            "package": "mission-control"
+        },
+        {
+            "id": 14,
+            "title": "[SEV2][iphone-ce-ingress] iPhone ce inbound command path not working",
+            "status": "Review",
+            "node": "macos",
+            "package": "incident-response"
+        },
+        {
+            "id": 15,
+            "title": "iPhone Cento App iOS Creation",
+            "status": "Queued",
+            "node": "iphone",
+            "package": "iphone-cento-app-ios-creation"
+        },
+        {
+            "id": 16,
+            "title": "iPhone Cento App iOS Creation: Define product requirements, architecture, and delivery roadmap for the iPhone app.",
+            "status": "Review",
+            "node": "linux",
+            "package": "iphone-cento-app-ios-creation"
+        },
+        {
+            "id": 17,
+            "title": "iPhone Cento App: Mac Xcode signing and physical-device setup",
+            "status": "Review",
+            "node": "macos",
+            "package": "iphone-cento-app-ios-creation"
+        },
+        {
+            "id": 18,
+            "title": "iPhone Cento App: Build first PWA/mobile gateway delivery",
+            "status": "Review",
+            "node": "linux",
+            "package": "iphone-cento-app-ios-creation"
+        },
+        {
+            "id": 19,
+            "title": "iPhone Cento App: Add issue detail and activity workflow to PWA",
+            "status": "Review",
+            "node": "linux",
+            "package": "iphone-cento-app-ios-creation"
+        },
+        {
+            "id": 20,
+            "title": "iPhone Cento App: Add install polish and manager docs for PWA",
+            "status": "Review",
+            "node": "linux",
+            "package": "iphone-cento-app-ios-creation"
+        }
+    ],
+    "jobs": [
+        {
+            "id": "20260428-193548-build-the-first-version-of-cento-funnel-inside-t",
+            "title": "Build the first version of Cento Funnel inside the existing cento toolkit. Goal: Cento Funnel is the business layer b...",
+            "status": "dry-run",
+            "created_at": "2026-04-28T19:35:48-04:00",
+            "finished_at": "2026-04-28T19:35:48-04:00",
+            "summary": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-193548-build-the-first-version-of-cento-funnel-inside-t/summary.md",
+            "task_count": 2,
+            "current_step": "Tests, edge cases, and integration slice",
+            "tasks": [
+                {
+                    "id": "agent-1-core",
+                    "node": "linux",
+                    "title": "Core implementation slice",
+                    "scope": "Find the primary command, API, or module surface for the feature and implement the core behavior with focused validation.",
+                    "ownership": [
+                        "core/runtime code",
+                        "command surface",
+                        "minimal docs for the command or API"
+                    ],
+                    "returncode": 0,
+                    "elapsed_seconds": 0.0,
+                    "log": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-193548-build-the-first-version-of-cento-funnel-inside-t/logs/agent-1-core.log",
+                    "log_exists": true,
+                    "log_tail": [
+                        "- produce weekly source ROI reports",
+                        "- add export adapters for dashboards, Redmine, or a future CRM backend",
+                        "",
+                        "  Also produce a clear summary of what was built, where data is stored, and what the next high-leverage funnel automations should be.",
+                        "",
+                        "Your task:",
+                        "Core implementation slice",
+                        "",
+                        "Scope:",
+                        "Find the primary command, API, or module surface for the feature and implement the core behavior with focused validation.",
+                        "",
+                        "Ownership:",
+                        "- core/runtime code",
+                        "- command surface",
+                        "- minimal docs for the command or API",
+                        "",
+                        "Parallel sibling tasks:",
+                        "- agent-2-verification on macos: Tests, edge cases, and integration slice",
+                        "",
+                        "Work rules:",
+                        "- You are not alone in the codebase; do not revert unrelated edits or work from other agents.",
+                        "- Keep your changes within your ownership where practical.",
+                        "- If a needed change crosses ownership, document it in your final message instead of making a broad refactor.",
+                        "- Run focused validation when feasible.",
+                        "- Leave the worktree on the task branch with your edits, and include changed files plus verification results in the final answer.",
+                        "CENTO_PROMPT_EOF",
+                        "codex exec --full-auto --sandbox workspace-write - < \"$prompt_file\" | tee \"$summary_file\"",
+                        "git status --short > .cento-task-status.txt",
+                        "git diff --stat > .cento-task-diffstat.txt || true",
+                        "git diff > .cento-task.patch || true"
+                    ],
+                    "script": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-193548-build-the-first-version-of-cento-funnel-inside-t/tasks/agent-1-core.sh",
+                    "script_exists": true,
+                    "manifest": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-193548-build-the-first-version-of-cento-funnel-inside-t/tasks/agent-1-core.json"
+                },
+                {
+                    "id": "agent-2-verification",
+                    "node": "macos",
+                    "title": "Tests, edge cases, and integration slice",
+                    "scope": "Work in parallel on tests, edge cases, docs, and integration checks. Add implementation only where required by that ownership.",
+                    "ownership": [
+                        "tests and fixtures",
+                        "docs/examples",
+                        "edge-case fixes discovered during validation"
+                    ],
+                    "returncode": 0,
+                    "elapsed_seconds": 0.0,
+                    "log": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-193548-build-the-first-version-of-cento-funnel-inside-t/logs/agent-2-verification.log",
+                    "log_exists": true,
+                    "log_tail": [
+                        "- produce weekly source ROI reports",
+                        "- add export adapters for dashboards, Redmine, or a future CRM backend",
+                        "",
+                        "  Also produce a clear summary of what was built, where data is stored, and what the next high-leverage funnel automations should be.",
+                        "",
+                        "Your task:",
+                        "Tests, edge cases, and integration slice",
+                        "",
+                        "Scope:",
+                        "Work in parallel on tests, edge cases, docs, and integration checks. Add implementation only where required by that ownership.",
+                        "",
+                        "Ownership:",
+                        "- tests and fixtures",
+                        "- docs/examples",
+                        "- edge-case fixes discovered during validation",
+                        "",
+                        "Parallel sibling tasks:",
+                        "- agent-1-core on linux: Core implementation slice",
+                        "",
+                        "Work rules:",
+                        "- You are not alone in the codebase; do not revert unrelated edits or work from other agents.",
+                        "- Keep your changes within your ownership where practical.",
+                        "- If a needed change crosses ownership, document it in your final message instead of making a broad refactor.",
+                        "- Run focused validation when feasible.",
+                        "- Leave the worktree on the task branch with your edits, and include changed files plus verification results in the final answer.",
+                        "CENTO_PROMPT_EOF",
+                        "codex exec --full-auto --sandbox workspace-write - < \"$prompt_file\" | tee \"$summary_file\"",
+                        "git status --short > .cento-task-status.txt",
+                        "git diff --stat > .cento-task-diffstat.txt || true",
+                        "git diff > .cento-task.patch || true"
+                    ],
+                    "script": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-193548-build-the-first-version-of-cento-funnel-inside-t/tasks/agent-2-verification.sh",
+                    "script_exists": true,
+                    "manifest": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-193548-build-the-first-version-of-cento-funnel-inside-t/tasks/agent-2-verification.json"
+                }
+            ]
+        },
+        {
+            "id": "20260428-191948-smoke-test-cluster-planner",
+            "title": "smoke test cluster planner",
+            "status": "dry-run",
+            "created_at": "2026-04-28T19:19:48-04:00",
+            "finished_at": "2026-04-28T19:19:53-04:00",
+            "summary": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-191948-smoke-test-cluster-planner/summary.md",
+            "task_count": 1,
+            "current_step": "Implement the feature end to end",
+            "tasks": [
+                {
+                    "id": "agent-1-implementation",
+                    "node": "linux",
+                    "title": "Implement the feature end to end",
+                    "scope": "Inspect the codebase, make the smallest coherent implementation, update docs or tests as needed, and validate it.",
+                    "ownership": [
+                        "primary implementation",
+                        "focused tests",
+                        "docs touched by the feature"
+                    ],
+                    "returncode": 0,
+                    "elapsed_seconds": 0.0,
+                    "log": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-191948-smoke-test-cluster-planner/logs/agent-1-implementation.log",
+                    "log_exists": true,
+                    "log_tail": [
+                        "You are one agent in a Cento cluster job.",
+                        "",
+                        "Feature request:",
+                        "smoke test cluster planner",
+                        "",
+                        "Your task:",
+                        "Implement the feature end to end",
+                        "",
+                        "Scope:",
+                        "Inspect the codebase, make the smallest coherent implementation, update docs or tests as needed, and validate it.",
+                        "",
+                        "Ownership:",
+                        "- primary implementation",
+                        "- focused tests",
+                        "- docs touched by the feature",
+                        "",
+                        "Parallel sibling tasks:",
+                        "- none",
+                        "",
+                        "Work rules:",
+                        "- You are not alone in the codebase; do not revert unrelated edits or work from other agents.",
+                        "- Keep your changes within your ownership where practical.",
+                        "- If a needed change crosses ownership, document it in your final message instead of making a broad refactor.",
+                        "- Run focused validation when feasible.",
+                        "- Leave the worktree on the task branch with your edits, and include changed files plus verification results in the final answer.",
+                        "CENTO_PROMPT_EOF",
+                        "codex exec --full-auto --sandbox workspace-write - < \"$prompt_file\" | tee \"$summary_file\"",
+                        "git status --short > .cento-task-status.txt",
+                        "git diff --stat > .cento-task-diffstat.txt || true",
+                        "git diff > .cento-task.patch || true"
+                    ],
+                    "script": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-191948-smoke-test-cluster-planner/tasks/agent-1-implementation.sh",
+                    "script_exists": true,
+                    "manifest": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-191948-smoke-test-cluster-planner/tasks/agent-1-implementation.json"
+                }
+            ]
+        },
+        {
+            "id": "20260428-190248-build-the-first-version-of-cento-funnel-inside-t",
+            "title": "Build the first version of Cento Funnel inside the existing cento toolkit. Goal: Cento Funnel is the business layer b...",
+            "status": "succeeded",
+            "created_at": "2026-04-28T19:02:48-04:00",
+            "finished_at": "2026-04-28T19:13:45-04:00",
+            "summary": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-190248-build-the-first-version-of-cento-funnel-inside-t/summary.md",
+            "task_count": 2,
+            "current_step": "Tests, edge cases, and integration slice",
+            "tasks": [
+                {
+                    "id": "agent-1-core",
+                    "node": "linux",
+                    "title": "Core implementation slice",
+                    "scope": "Find the primary command, API, or module surface for the feature and implement the core behavior with focused validation.",
+                    "ownership": [
+                        "core/runtime code",
+                        "command surface",
+                        "minimal docs for the command or API"
+                    ],
+                    "returncode": 0,
+                    "elapsed_seconds": 245.24,
+                    "log": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-190248-build-the-first-version-of-cento-funnel-inside-t/logs/agent-1-core.log",
+                    "log_exists": true,
+                    "log_tail": [
+                        "- route via existing `cento TOOL [args...]`",
+                        "- store local funnel state/reports under `workspace/runs/funnel/`",
+                        "- add minimal docs at `docs/funnel.md`",
+                        "- include `scripts/funnel_module.py` in `Makefile check`",
+                        "",
+                        "No files were changed locally because both command execution and patch writing are blocked at the environment layer.",
+                        "2026-04-28T23:12:45.054203Z ERROR codex_core::session: failed to record rollout items: thread 019dd65a-1129-7ee2-bb9b-1746c1341055 not found",
+                        "tokens used",
+                        "68,095",
+                        "Blocked by the workspace sandbox before I could make local edits.",
+                        "",
+                        "What failed:",
+                        "- Any shell command, even `true`, fails with:",
+                        "  `bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted`",
+                        "- `apply_patch` also cannot write files under the declared writable workspace, even a root-level probe file:",
+                        "  `Failed to write file .../agent-1-core/codex-write-probe.txt`",
+                        "",
+                        "I used the GitHub connector to inspect current Cento conventions and confirmed the right implementation path:",
+                        "- add `scripts/funnel_module.py`",
+                        "- register it as `funnel` in `data/tools.json`",
+                        "- route via existing `cento TOOL [args...]`",
+                        "- store local funnel state/reports under `workspace/runs/funnel/`",
+                        "- add minimal docs at `docs/funnel.md`",
+                        "- include `scripts/funnel_module.py` in `Makefile check`",
+                        "",
+                        "No files were changed locally because both command execution and patch writing are blocked at the environment layer.",
+                        "$ /home/alice/projects/cento/scripts/cluster.sh exec linux -- bash <script>",
+                        "# task: agent-1-core on linux",
+                        "# script: /home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-190248-build-the-first-version-of-cento-funnel-inside-t/tasks/agent-1-core.sh",
+                        ""
+                    ],
+                    "script": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-190248-build-the-first-version-of-cento-funnel-inside-t/tasks/agent-1-core.sh",
+                    "script_exists": true,
+                    "manifest": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-190248-build-the-first-version-of-cento-funnel-inside-t/tasks/agent-1-core.json"
+                },
+                {
+                    "id": "agent-2-verification",
+                    "node": "macos",
+                    "title": "Tests, edge cases, and integration slice",
+                    "scope": "Work in parallel on tests, edge cases, docs, and integration checks. Add implementation only where required by that ownership.",
+                    "ownership": [
+                        "tests and fixtures",
+                        "docs/examples",
+                        "edge-case fixes discovered during validation"
+                    ],
+                    "returncode": 0,
+                    "elapsed_seconds": 305.36,
+                    "log": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-190248-build-the-first-version-of-cento-funnel-inside-t/logs/agent-2-verification.log",
+                    "log_exists": true,
+                    "log_tail": [
+                        "+    report.add_argument(\"--output\", help=\"Explicit output path.\")",
+                        "+    report.add_argument(\"--quiet\", action=\"store_true\", help=\"Only print the report path.\")",
+                        "+    report.set_defaults(func=command_report)",
+                        "+",
+                        "+    return parser",
+                        "+",
+                        "+",
+                        "+def main(argv: list[str] | None = None) -> int:",
+                        "+    parser = build_parser()",
+                        "+    args = parser.parse_args(argv)",
+                        "+    if not hasattr(args, \"func\"):",
+                        "+        parser.print_help()",
+                        "+        return 0",
+                        "+    try:",
+                        "+        return args.func(args)",
+                        "+    except FunnelError as exc:",
+                        "+        print(f\"ERROR: {exc}\", file=sys.stderr)",
+                        "+        return 2",
+                        "+",
+                        "+",
+                        "+if __name__ == \"__main__\":",
+                        "+    raise SystemExit(main())",
+                        "",
+                        "2026-04-28T23:13:45.204076Z ERROR codex_core::session: failed to record rollout items: thread 019dd65a-1819-7c43-8776-e4a4bd68196f not found",
+                        "tokens used",
+                        "59,541",
+                        "$ /home/alice/projects/cento/scripts/cluster.sh exec macos -- bash <script>",
+                        "# task: agent-2-verification on macos",
+                        "# script: /home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-190248-build-the-first-version-of-cento-funnel-inside-t/tasks/agent-2-verification.sh",
+                        ""
+                    ],
+                    "script": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-190248-build-the-first-version-of-cento-funnel-inside-t/tasks/agent-2-verification.sh",
+                    "script_exists": true,
+                    "manifest": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-190248-build-the-first-version-of-cento-funnel-inside-t/tasks/agent-2-verification.json"
+                }
+            ]
+        },
+        {
+            "id": "20260428-175529-add-sample-feature",
+            "title": "add sample feature",
+            "status": "dry-run",
+            "created_at": "2026-04-28T17:55:29-04:00",
+            "finished_at": "2026-04-28T17:55:29-04:00",
+            "summary": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175529-add-sample-feature/summary.md",
+            "task_count": 2,
+            "current_step": "Tests, edge cases, and integration slice",
+            "tasks": [
+                {
+                    "id": "agent-1-core",
+                    "node": "linux",
+                    "title": "Core implementation slice",
+                    "scope": "Find the primary command, API, or module surface for the feature and implement the core behavior with focused validation.",
+                    "ownership": [
+                        "core/runtime code",
+                        "command surface",
+                        "minimal docs for the command or API"
+                    ],
+                    "returncode": 0,
+                    "elapsed_seconds": 0.0,
+                    "log": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175529-add-sample-feature/logs/agent-1-core.log",
+                    "log_exists": true,
+                    "log_tail": [
+                        "You are one agent in a Cento cluster job.",
+                        "",
+                        "Feature request:",
+                        "add sample feature",
+                        "",
+                        "Your task:",
+                        "Core implementation slice",
+                        "",
+                        "Scope:",
+                        "Find the primary command, API, or module surface for the feature and implement the core behavior with focused validation.",
+                        "",
+                        "Ownership:",
+                        "- core/runtime code",
+                        "- command surface",
+                        "- minimal docs for the command or API",
+                        "",
+                        "Parallel sibling tasks:",
+                        "- agent-2-verification on macos: Tests, edge cases, and integration slice",
+                        "",
+                        "Work rules:",
+                        "- You are not alone in the codebase; do not revert unrelated edits or work from other agents.",
+                        "- Keep your changes within your ownership where practical.",
+                        "- If a needed change crosses ownership, document it in your final message instead of making a broad refactor.",
+                        "- Run focused validation when feasible.",
+                        "- Leave the worktree on the task branch with your edits, and include changed files plus verification results in the final answer.",
+                        "CENTO_PROMPT_EOF",
+                        "codex exec --full-auto --ask-for-approval never --sandbox workspace-write - < \"$prompt_file\" | tee \"$summary_file\"",
+                        "git status --short > .cento-task-status.txt",
+                        "git diff --stat > .cento-task-diffstat.txt || true",
+                        "git diff > .cento-task.patch || true"
+                    ],
+                    "script": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175529-add-sample-feature/tasks/agent-1-core.sh",
+                    "script_exists": true,
+                    "manifest": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175529-add-sample-feature/tasks/agent-1-core.json"
+                },
+                {
+                    "id": "agent-2-verification",
+                    "node": "macos",
+                    "title": "Tests, edge cases, and integration slice",
+                    "scope": "Work in parallel on tests, edge cases, docs, and integration checks. Add implementation only where required by that ownership.",
+                    "ownership": [
+                        "tests and fixtures",
+                        "docs/examples",
+                        "edge-case fixes discovered during validation"
+                    ],
+                    "returncode": 0,
+                    "elapsed_seconds": 0.0,
+                    "log": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175529-add-sample-feature/logs/agent-2-verification.log",
+                    "log_exists": true,
+                    "log_tail": [
+                        "You are one agent in a Cento cluster job.",
+                        "",
+                        "Feature request:",
+                        "add sample feature",
+                        "",
+                        "Your task:",
+                        "Tests, edge cases, and integration slice",
+                        "",
+                        "Scope:",
+                        "Work in parallel on tests, edge cases, docs, and integration checks. Add implementation only where required by that ownership.",
+                        "",
+                        "Ownership:",
+                        "- tests and fixtures",
+                        "- docs/examples",
+                        "- edge-case fixes discovered during validation",
+                        "",
+                        "Parallel sibling tasks:",
+                        "- agent-1-core on linux: Core implementation slice",
+                        "",
+                        "Work rules:",
+                        "- You are not alone in the codebase; do not revert unrelated edits or work from other agents.",
+                        "- Keep your changes within your ownership where practical.",
+                        "- If a needed change crosses ownership, document it in your final message instead of making a broad refactor.",
+                        "- Run focused validation when feasible.",
+                        "- Leave the worktree on the task branch with your edits, and include changed files plus verification results in the final answer.",
+                        "CENTO_PROMPT_EOF",
+                        "codex exec --full-auto --ask-for-approval never --sandbox workspace-write - < \"$prompt_file\" | tee \"$summary_file\"",
+                        "git status --short > .cento-task-status.txt",
+                        "git diff --stat > .cento-task-diffstat.txt || true",
+                        "git diff > .cento-task.patch || true"
+                    ],
+                    "script": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175529-add-sample-feature/tasks/agent-2-verification.sh",
+                    "script_exists": true,
+                    "manifest": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175529-add-sample-feature/tasks/agent-2-verification.json"
+                }
+            ]
+        },
+        {
+            "id": "20260428-175421-add-sample-feature",
+            "title": "add sample feature",
+            "status": "planned",
+            "created_at": "2026-04-28T17:54:21-04:00",
+            "finished_at": "",
+            "summary": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175421-add-sample-feature/summary.md",
+            "task_count": 2,
+            "current_step": "Tests, edge cases, and integration slice",
+            "tasks": [
+                {
+                    "id": "agent-1-core",
+                    "node": "linux",
+                    "title": "Core implementation slice",
+                    "scope": "Find the primary command, API, or module surface for the feature and implement the core behavior with focused validation.",
+                    "ownership": [
+                        "core/runtime code",
+                        "command surface",
+                        "minimal docs for the command or API"
+                    ],
+                    "returncode": null,
+                    "elapsed_seconds": null,
+                    "log": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175421-add-sample-feature/logs/agent-1-core.log",
+                    "log_exists": false,
+                    "log_tail": [],
+                    "script": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175421-add-sample-feature/tasks/agent-1-core.sh",
+                    "script_exists": false,
+                    "manifest": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175421-add-sample-feature/tasks/agent-1-core.json"
+                },
+                {
+                    "id": "agent-2-verification",
+                    "node": "macos",
+                    "title": "Tests, edge cases, and integration slice",
+                    "scope": "Work in parallel on tests, edge cases, docs, and integration checks. Add implementation only where required by that ownership.",
+                    "ownership": [
+                        "tests and fixtures",
+                        "docs/examples",
+                        "edge-case fixes discovered during validation"
+                    ],
+                    "returncode": null,
+                    "elapsed_seconds": null,
+                    "log": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175421-add-sample-feature/logs/agent-2-verification.log",
+                    "log_exists": false,
+                    "log_tail": [],
+                    "script": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175421-add-sample-feature/tasks/agent-2-verification.sh",
+                    "script_exists": false,
+                    "manifest": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175421-add-sample-feature/tasks/agent-2-verification.json"
+                }
+            ]
+        },
+        {
+            "id": "20260428-175400-add-sample-feature",
+            "title": "add sample feature",
+            "status": "dry-run",
+            "created_at": "2026-04-28T17:54:00-04:00",
+            "finished_at": "2026-04-28T17:54:00-04:00",
+            "summary": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175400-add-sample-feature/summary.md",
+            "task_count": 2,
+            "current_step": "Tests, edge cases, and integration slice",
+            "tasks": [
+                {
+                    "id": "agent-1-core",
+                    "node": "linux",
+                    "title": "Core implementation slice",
+                    "scope": "Find the primary command, API, or module surface for the feature and implement the core behavior with focused validation.",
+                    "ownership": [
+                        "core/runtime code",
+                        "command surface",
+                        "minimal docs for the command or API"
+                    ],
+                    "returncode": 0,
+                    "elapsed_seconds": 0.0,
+                    "log": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175400-add-sample-feature/logs/agent-1-core.log",
+                    "log_exists": true,
+                    "log_tail": [
+                        "You are one agent in a Cento cluster job.",
+                        "",
+                        "        Feature request:",
+                        "        add sample feature",
+                        "",
+                        "        Your task:",
+                        "        Core implementation slice",
+                        "",
+                        "        Scope:",
+                        "        Find the primary command, API, or module surface for the feature and implement the core behavior with focused validation.",
+                        "",
+                        "        Ownership:",
+                        "        - core/runtime code",
+                        "- command surface",
+                        "- minimal docs for the command or API",
+                        "",
+                        "        Parallel sibling tasks:",
+                        "        - agent-2-verification on macos: Tests, edge cases, and integration slice",
+                        "",
+                        "        Work rules:",
+                        "        - You are not alone in the codebase; do not revert unrelated edits or work from other agents.",
+                        "        - Keep your changes within your ownership where practical.",
+                        "        - If a needed change crosses ownership, document it in your final message instead of making a broad refactor.",
+                        "        - Run focused validation when feasible.",
+                        "        - Leave the worktree on the task branch with your edits, and include changed files plus verification results in the final answer.",
+                        "CENTO_PROMPT_EOF",
+                        "codex exec --full-auto --ask-for-approval never --sandbox workspace-write - < \"$prompt_file\" | tee \"$summary_file\"",
+                        "git status --short > .cento-task-status.txt",
+                        "git diff --stat > .cento-task-diffstat.txt || true",
+                        "git diff > .cento-task.patch || true"
+                    ],
+                    "script": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175400-add-sample-feature/tasks/agent-1-core.sh",
+                    "script_exists": true,
+                    "manifest": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175400-add-sample-feature/tasks/agent-1-core.json"
+                },
+                {
+                    "id": "agent-2-verification",
+                    "node": "macos",
+                    "title": "Tests, edge cases, and integration slice",
+                    "scope": "Work in parallel on tests, edge cases, docs, and integration checks. Add implementation only where required by that ownership.",
+                    "ownership": [
+                        "tests and fixtures",
+                        "docs/examples",
+                        "edge-case fixes discovered during validation"
+                    ],
+                    "returncode": 0,
+                    "elapsed_seconds": 0.0,
+                    "log": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175400-add-sample-feature/logs/agent-2-verification.log",
+                    "log_exists": true,
+                    "log_tail": [
+                        "You are one agent in a Cento cluster job.",
+                        "",
+                        "        Feature request:",
+                        "        add sample feature",
+                        "",
+                        "        Your task:",
+                        "        Tests, edge cases, and integration slice",
+                        "",
+                        "        Scope:",
+                        "        Work in parallel on tests, edge cases, docs, and integration checks. Add implementation only where required by that ownership.",
+                        "",
+                        "        Ownership:",
+                        "        - tests and fixtures",
+                        "- docs/examples",
+                        "- edge-case fixes discovered during validation",
+                        "",
+                        "        Parallel sibling tasks:",
+                        "        - agent-1-core on linux: Core implementation slice",
+                        "",
+                        "        Work rules:",
+                        "        - You are not alone in the codebase; do not revert unrelated edits or work from other agents.",
+                        "        - Keep your changes within your ownership where practical.",
+                        "        - If a needed change crosses ownership, document it in your final message instead of making a broad refactor.",
+                        "        - Run focused validation when feasible.",
+                        "        - Leave the worktree on the task branch with your edits, and include changed files plus verification results in the final answer.",
+                        "CENTO_PROMPT_EOF",
+                        "codex exec --full-auto --ask-for-approval never --sandbox workspace-write - < \"$prompt_file\" | tee \"$summary_file\"",
+                        "git status --short > .cento-task-status.txt",
+                        "git diff --stat > .cento-task-diffstat.txt || true",
+                        "git diff > .cento-task.patch || true"
+                    ],
+                    "script": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175400-add-sample-feature/tasks/agent-2-verification.sh",
+                    "script_exists": true,
+                    "manifest": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175400-add-sample-feature/tasks/agent-2-verification.json"
+                }
+            ]
+        },
+        {
+            "id": "20260428-175331-add-sample-feature",
+            "title": "add sample feature",
+            "status": "dry-run",
+            "created_at": "2026-04-28T17:53:31-04:00",
+            "finished_at": "2026-04-28T17:53:31-04:00",
+            "summary": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175331-add-sample-feature/summary.md",
+            "task_count": 2,
+            "current_step": "Tests, edge cases, and integration slice",
+            "tasks": [
+                {
+                    "id": "agent-1-core",
+                    "node": "linux",
+                    "title": "Core implementation slice",
+                    "scope": "Find the primary command, API, or module surface for the feature and implement the core behavior with focused validation.",
+                    "ownership": [
+                        "core/runtime code",
+                        "command surface",
+                        "minimal docs for the command or API"
+                    ],
+                    "returncode": 0,
+                    "elapsed_seconds": 0.0,
+                    "log": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175331-add-sample-feature/logs/agent-1-core.log",
+                    "log_exists": true,
+                    "log_tail": [
+                        "        You are one agent in a Cento cluster job.",
+                        "",
+                        "        Feature request:",
+                        "        add sample feature",
+                        "",
+                        "        Your task:",
+                        "        Core implementation slice",
+                        "",
+                        "        Scope:",
+                        "        Find the primary command, API, or module surface for the feature and implement the core behavior with focused validation.",
+                        "",
+                        "        Ownership:",
+                        "        - core/runtime code",
+                        "- command surface",
+                        "- minimal docs for the command or API",
+                        "",
+                        "        Parallel sibling tasks:",
+                        "        - agent-2-verification on macos: Tests, edge cases, and integration slice",
+                        "",
+                        "        Work rules:",
+                        "        - You are not alone in the codebase; do not revert unrelated edits or work from other agents.",
+                        "        - Keep your changes within your ownership where practical.",
+                        "        - If a needed change crosses ownership, document it in your final message instead of making a broad refactor.",
+                        "        - Run focused validation when feasible.",
+                        "        - Leave the worktree on the task branch with your edits, and include changed files plus verification results in the final answer.",
+                        "        CENTO_PROMPT_EOF",
+                        "        codex exec --full-auto --ask-for-approval never --sandbox workspace-write - < \"$prompt_file\" | tee \"$summary_file\"",
+                        "        git status --short > .cento-task-status.txt",
+                        "        git diff --stat > .cento-task-diffstat.txt || true",
+                        "        git diff > .cento-task.patch || true"
+                    ],
+                    "script": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175331-add-sample-feature/tasks/agent-1-core.sh",
+                    "script_exists": true,
+                    "manifest": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175331-add-sample-feature/tasks/agent-1-core.json"
+                },
+                {
+                    "id": "agent-2-verification",
+                    "node": "macos",
+                    "title": "Tests, edge cases, and integration slice",
+                    "scope": "Work in parallel on tests, edge cases, docs, and integration checks. Add implementation only where required by that ownership.",
+                    "ownership": [
+                        "tests and fixtures",
+                        "docs/examples",
+                        "edge-case fixes discovered during validation"
+                    ],
+                    "returncode": 0,
+                    "elapsed_seconds": 0.0,
+                    "log": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175331-add-sample-feature/logs/agent-2-verification.log",
+                    "log_exists": true,
+                    "log_tail": [
+                        "        You are one agent in a Cento cluster job.",
+                        "",
+                        "        Feature request:",
+                        "        add sample feature",
+                        "",
+                        "        Your task:",
+                        "        Tests, edge cases, and integration slice",
+                        "",
+                        "        Scope:",
+                        "        Work in parallel on tests, edge cases, docs, and integration checks. Add implementation only where required by that ownership.",
+                        "",
+                        "        Ownership:",
+                        "        - tests and fixtures",
+                        "- docs/examples",
+                        "- edge-case fixes discovered during validation",
+                        "",
+                        "        Parallel sibling tasks:",
+                        "        - agent-1-core on linux: Core implementation slice",
+                        "",
+                        "        Work rules:",
+                        "        - You are not alone in the codebase; do not revert unrelated edits or work from other agents.",
+                        "        - Keep your changes within your ownership where practical.",
+                        "        - If a needed change crosses ownership, document it in your final message instead of making a broad refactor.",
+                        "        - Run focused validation when feasible.",
+                        "        - Leave the worktree on the task branch with your edits, and include changed files plus verification results in the final answer.",
+                        "        CENTO_PROMPT_EOF",
+                        "        codex exec --full-auto --ask-for-approval never --sandbox workspace-write - < \"$prompt_file\" | tee \"$summary_file\"",
+                        "        git status --short > .cento-task-status.txt",
+                        "        git diff --stat > .cento-task-diffstat.txt || true",
+                        "        git diff > .cento-task.patch || true"
+                    ],
+                    "script": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175331-add-sample-feature/tasks/agent-2-verification.sh",
+                    "script_exists": true,
+                    "manifest": "/home/alice/projects/cento/workspace/runs/cluster-jobs/20260428-175331-add-sample-feature/tasks/agent-2-verification.json"
+                }
+            ]
+        }
+    ],
+    "agents": [
+        {
+            "id": "linux",
+            "name": "cento-linux",
+            "role": "linux",
+            "platform": "linux",
+            "state": "online",
+            "capabilities": [
+                "shell",
+                "tmux",
+                "git",
+                "cento"
+            ]
+        },
+        {
+            "id": "macos",
+            "name": "cento-macos",
+            "role": "macos",
+            "platform": "macos",
+            "state": "online",
+            "capabilities": [
+                "shell",
+                "tmux",
+                "git",
+                "cento"
+            ]
+        },
+        {
+            "id": "iphone",
+            "name": "cento-iphone",
+            "role": "companion",
+            "platform": "ios-ish",
+            "state": "offline",
+            "capabilities": [
+                "ssh-client",
+                "status",
+                "trigger",
+                "logs"
+            ]
+        }
+    ],
+    "activity": [
+        {
+            "source": "mobile-gateway",
+            "summary": "http",
+            "recorded_at": "2026-04-29T21:17:26-04:00"
+        },
+        {
+            "source": "mobile-gateway",
+            "summary": "http",
+            "recorded_at": "2026-04-29T21:17:26-04:00"
+        },
+        {
+            "source": "mobile-gateway",
+            "summary": "http",
+            "recorded_at": "2026-04-29T21:14:22-04:00"
+        },
+        {
+            "source": "mobile-gateway",
+            "summary": "http",
+            "recorded_at": "2026-04-29T21:14:19-04:00"
+        },
+        {
+            "source": "mobile-gateway",
+            "summary": "http",
+            "recorded_at": "2026-04-29T21:14:19-04:00"
+        },
+        {
+            "source": "mobile-gateway",
+            "summary": "http",
+            "recorded_at": "2026-04-29T21:12:47-04:00"
+        },
+        {
+            "source": "mobile-gateway",
+            "summary": "http",
+            "recorded_at": "2026-04-29T21:12:45-04:00"
+        },
+        {
+            "source": "mobile-gateway",
+            "summary": "http",
+            "recorded_at": "2026-04-29T21:12:45-04:00"
+        },
+        {
+            "source": "mobile-gateway",
+            "summary": "http",
+            "recorded_at": "2026-04-29T21:12:31-04:00"
+        },
+        {
+            "source": "mobile-gateway",
+            "summary": "http",
+            "recorded_at": "2026-04-29T21:12:28-04:00"
+        }
+    ],
+    "quick_actions": [
+        {
+            "id": "cluster.status",
+            "title": "System Status",
+            "description": "Read cluster status",
+            "method": "POST"
+        },
+        {
+            "id": "notify.test",
+            "title": "Test Notification",
+            "description": "Send iPhone notification",
+            "method": "POST"
+        }
+    ]
+}

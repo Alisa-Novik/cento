@@ -4,7 +4,8 @@
     "id": 56,
     "title": "Process Scaling: Story manifest format",
     "package": "improve-dev-process",
-    "url": "redmine://issues/56"
+    "url": "redmine://issues/56",
+    "status": "Done"
   },
   "lane": {
     "owner": "builder",
@@ -12,6 +13,7 @@
     "node": "linux",
     "agent": "alice",
     "collaborators": [
+      "builder",
       "validator",
       "docs-evidence",
       "coordinator"
@@ -19,43 +21,27 @@
   },
   "paths": {
     "run_dir": "workspace/runs/agent-work/56",
-    "story_manifest": "workspace/runs/agent-work/56/story.json",
-    "validation_manifest": "workspace/runs/agent-work/56/validation.json",
-    "builder_report": "workspace/runs/agent-work/56/builder-report.md"
+    "story_manifest": "workspace/runs/agent-work/56/story.json"
   },
   "scope": {
-    "goal": "Create a standard story.json format for one Redmine-backed Cento story.",
+    "goal": "Process Scaling: Story manifest format",
     "acceptance": [
-      "A manifest example exists in a durable path.",
-      "Docs explain required and optional fields.",
-      "Existing validation and review commands can reference the story manifest path."
+      "Past work reconciled into story.json.",
+      "Actual deliverable and evidence paths are linked from this manifest."
     ]
   },
-  "routes": [
-    {
-      "name": "process scaling source",
-      "url": "file:///{root}/workspace/runs/agent-work/18/process-scaling.html",
-      "purpose": "Source report for the process-scaling stories",
-      "auth": "none"
-    }
-  ],
+  "routes": [],
   "api_endpoints": [],
   "validation": {
     "manifest": "workspace/runs/agent-work/56/validation.json",
-    "commands": [
-      {
-        "name": "story manifest validates",
-        "command": "python3 scripts/story_manifest.py validate workspace/runs/agent-work/56/story.json --check-links"
-      },
-      {
-        "name": "story manifest docs exist",
-        "command": "test -s docs/agent-work-story-manifest.md"
-      }
-    ],
+    "commands": [],
     "required_evidence": [
-      "workspace/runs/agent-work/56/story.json",
+      "scripts/story_manifest.py",
       "docs/agent-work-story-manifest.md",
-      "scripts/story_manifest.py"
+      "workspace/runs/agent-work/56/story.json",
+      "workspace/runs/agent-work/56/builder-report.md",
+      "workspace/runs/agent-work/56/validation-report.md",
+      "workspace/runs/agent-work/56/validation.json"
     ]
   },
   "deliverables": {
@@ -67,26 +53,44 @@
     "human_steps": [],
     "device_access": "none",
     "notes": [
-      "This story defines the shared contract used by later screenshot runner, review gate, and hub updater stories."
+      "Retrospective manifest created from existing Redmine state and repo evidence."
     ]
   },
   "expected_outputs": [
     {
       "path": "scripts/story_manifest.py",
       "owner": "builder",
-      "description": "Manifest validation helper",
+      "description": "Story manifest validation helper",
       "required": true
     },
     {
       "path": "docs/agent-work-story-manifest.md",
       "owner": "docs-evidence",
-      "description": "Story manifest contract documentation",
+      "description": "Story manifest docs",
       "required": true
     },
     {
       "path": "workspace/runs/agent-work/56/story.json",
       "owner": "coordinator",
       "description": "Example story manifest",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/56/builder-report.md",
+      "owner": "builder",
+      "description": "Builder report",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/56/validation-report.md",
+      "owner": "validator",
+      "description": "Validation report",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/56/validation.json",
+      "owner": "validator",
+      "description": "Validation manifest",
       "required": true
     }
   ],
