@@ -19,4 +19,7 @@ workspace/tmp/*
 
 logs/*
 
+experimental/redmine-career-consulting/data/postgres/
+experimental/redmine-career-consulting/themes/
+
 .env.mcp
