@@ -411,19 +411,49 @@ EOF_PLIST
 run_via_socket() {
     local vm_user=$1 vm_host=$2 socket_path=$3 target_user=$4 host_alias=$5 default_command=$6
     shift 6
-    local remote_command remote_invocation
+    local remote_command remote_invocation proxy_command rc
     if [[ $# -gt 0 ]]; then
         remote_command=$(remote_shell_command "$@")
     else
         remote_command="$default_command"
     fi
     remote_invocation=$(printf 'bash -lc %q' "$remote_command")
-    exec ssh \
+    proxy_command=$(printf 'ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 -o ConnectionAttempts=1 -o ServerAliveInterval=5 -o ServerAliveCountMax=1 %s@%s timeout 6 nc -U %q' "$vm_user" "$vm_host" "$socket_path")
+    set +e
+    ssh \
+        -n \
         -o BatchMode=yes \
         -o StrictHostKeyChecking=accept-new \
-        -o ProxyCommand="ssh ${vm_user}@${vm_host} nc -U ${socket_path}" \
+        -o ConnectTimeout=8 \
+        -o ConnectionAttempts=1 \
+        -o ServerAliveInterval=5 \
+        -o ServerAliveCountMax=1 \
+        -o "ProxyCommand=$proxy_command" \
         "${target_user}@${host_alias}" \
         "$remote_invocation"
+    rc=$?
+    set -e
+    if [[ $rc -eq 0 ]]; then
+        return 0
+    fi
+
+    if [[ "$host_alias" == "cento-linux" ]]; then
+        local direct_host=${CENTO_LINUX_DIRECT_HOST:-alisapad.local}
+        cento_warn "linux socket command failed; falling back to direct SSH at ${target_user}@${direct_host}."
+        ssh \
+            -n \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=8 \
+            -o ConnectionAttempts=1 \
+            -o ServerAliveInterval=5 \
+            -o ServerAliveCountMax=1 \
+            "${target_user}@${direct_host}" \
+            "$remote_invocation"
+        return
+    fi
+
+    return "$rc"
 }
 
 open_shell_via_socket() {
