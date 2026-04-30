@@ -1,0 +1,69 @@
+{
+  "issue": 59,
+  "subject": "Process Scaling: Hub updater from story manifest",
+  "result": "pass",
+  "agent": "anovik-air",
+  "node": "macos",
+  "manifest": "workspace/runs/agent-work/59/validation.json",
+  "evidence": [
+    "workspace/runs/agent-work/59/builder-report.md",
+    "workspace/runs/agent-work/56/start-here.html",
+    "workspace/runs/agent-work/59/validation-report.md",
+    "workspace/runs/agent-work/59/validation-report.json"
+  ],
+  "checks": [
+    {
+      "ok": true,
+      "message": "exists",
+      "path": "workspace/runs/agent-work/59/builder-report.md",
+      "evidence": "workspace/runs/agent-work/59/builder-report.md",
+      "name": "Builder report exists",
+      "type": "file"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "python3 -m py_compile scripts/story_manifest.py scripts/deliverables_hub.py",
+      "stdout": "",
+      "stderr": "",
+      "name": "Story manifest helper compiles",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "python3 scripts/story_manifest.py validate workspace/runs/agent-work/59/story.json --check-links",
+      "stdout": "story_manifest: /Users/anovik-air/cento/workspace/runs/agent-work/59/story.json\nissue: #59 Process Scaling: Hub updater from story manifest\npackage: improve-dev-process\nlane: builder owner=builder node=linux agent=alice\nrun_dir: workspace/runs/agent-work/59\nroutes: 1\napi_endpoints: 0\nscreenshots: 0\nexpected_outputs: 5\nstatus: ok\n",
+      "stderr": "",
+      "name": "#59 story manifest validates",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "python3 scripts/story_manifest.py render-hub workspace/runs/agent-work/56/story.json --check-links",
+      "stdout": "deliverables: workspace/runs/agent-work/56/deliverables.json\nhub: workspace/runs/agent-work/56/start-here.html\n",
+      "stderr": "",
+      "name": "Render #56 hub from story manifest",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "python3 scripts/deliverables_hub.py workspace/runs/agent-work/56/deliverables.json --check-links --check-only",
+      "stdout": "",
+      "stderr": "",
+      "name": "Generated #56 deliverables links validate",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exists",
+      "path": "workspace/runs/agent-work/56/start-here.html",
+      "evidence": "workspace/runs/agent-work/56/start-here.html",
+      "name": "Generated #56 hub exists",
+      "type": "file"
+    }
+  ],
+  "updated_at": "2026-04-30T03:58:32.898967+00:00"
+}

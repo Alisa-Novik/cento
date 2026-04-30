@@ -1,0 +1,116 @@
+{
+  "schema_version": "1.0",
+  "issue": {
+    "id": 59,
+    "title": "Process Scaling: Hub updater from story manifest",
+    "package": "improve-dev-process",
+    "url": "redmine://issues/59",
+    "status": "Running"
+  },
+  "lane": {
+    "owner": "builder",
+    "role": "builder",
+    "node": "linux",
+    "agent": "alice",
+    "collaborators": [
+      "builder",
+      "validator",
+      "docs-evidence",
+      "coordinator"
+    ]
+  },
+  "paths": {
+    "run_dir": "workspace/runs/agent-work/59",
+    "story_manifest": "workspace/runs/agent-work/59/story.json"
+  },
+  "scope": {
+    "goal": "Create a repeatable hub updater/generator so each story keeps manager-facing evidence discoverable.",
+    "acceptance": [
+      "One existing story can regenerate a hub/evidence page from manifest data.",
+      "The output is short, manager-facing, and contains direct artifact links.",
+      "The command can be run repeatedly without destroying prior evidence."
+    ]
+  },
+  "routes": [
+    {
+      "name": "Generated #56 hub",
+      "url": "file:///{root}/workspace/runs/agent-work/56/start-here.html",
+      "purpose": "Demo hub generated from an existing story manifest",
+      "auth": "none"
+    }
+  ],
+  "api_endpoints": [],
+  "validation": {
+    "manifest": "workspace/runs/agent-work/59/validation.json",
+    "commands": [
+      {
+        "name": "Render #56 hub from story manifest",
+        "command": "python3 scripts/story_manifest.py render-hub workspace/runs/agent-work/56/story.json --check-links"
+      },
+      {
+        "name": "Validate generated #56 deliverables links",
+        "command": "python3 scripts/deliverables_hub.py workspace/runs/agent-work/56/deliverables.json --check-links --check-only"
+      }
+    ],
+    "required_evidence": [
+      "scripts/story_manifest.py",
+      "docs/agent-work-story-manifest.md",
+      "workspace/runs/agent-work/56/deliverables.json",
+      "workspace/runs/agent-work/56/start-here.html",
+      "workspace/runs/agent-work/59/story.json"
+    ]
+  },
+  "deliverables": {
+    "manifest": "workspace/runs/agent-work/59/deliverables.json",
+    "hub": "workspace/runs/agent-work/59/start-here.html"
+  },
+  "screenshots": [],
+  "handoff": {
+    "human_steps": [],
+    "device_access": "none",
+    "notes": [
+      "This story implements story.json-driven hub generation. #56 is used as the demo story because it already has a complete manifest and validation evidence."
+    ]
+  },
+  "expected_outputs": [
+    {
+      "path": "scripts/story_manifest.py",
+      "owner": "builder",
+      "description": "render-hub implementation",
+      "required": true
+    },
+    {
+      "path": "docs/agent-work-story-manifest.md",
+      "owner": "docs-evidence",
+      "description": "Hub generation documentation",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/56/deliverables.json",
+      "owner": "docs-evidence",
+      "description": "Generated deliverables manifest for #56",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/56/start-here.html",
+      "owner": "docs-evidence",
+      "description": "Generated manager-facing hub for #56",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/59/story.json",
+      "owner": "coordinator",
+      "description": "Story manifest for #59",
+      "required": true
+    }
+  ],
+  "review_gate": {
+    "required_sections": [
+      "Delivered",
+      "Validation",
+      "Evidence",
+      "Residual risk"
+    ],
+    "residual_risk_required": true
+  }
+}

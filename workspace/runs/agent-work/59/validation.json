@@ -1,0 +1,40 @@
+{
+  "run_dir": "workspace/runs/agent-work/59",
+  "requires": {
+    "builder_report": "workspace/runs/agent-work/59/builder-report.md",
+    "ui_screenshots": false,
+    "validator_agents": [
+      "alice-validator",
+      "anovik-air"
+    ]
+  },
+  "checks": [
+    {
+      "name": "Story manifest helper compiles",
+      "type": "command",
+      "command": "python3 -m py_compile scripts/story_manifest.py scripts/deliverables_hub.py"
+    },
+    {
+      "name": "#59 story manifest validates",
+      "type": "command",
+      "command": "python3 scripts/story_manifest.py validate workspace/runs/agent-work/59/story.json --check-links"
+    },
+    {
+      "name": "Render #56 hub from story manifest",
+      "type": "command",
+      "command": "python3 scripts/story_manifest.py render-hub workspace/runs/agent-work/56/story.json --check-links"
+    },
+    {
+      "name": "Generated #56 deliverables links validate",
+      "type": "command",
+      "command": "python3 scripts/deliverables_hub.py workspace/runs/agent-work/56/deliverables.json --check-links --check-only"
+    },
+    {
+      "name": "Generated #56 hub exists",
+      "type": "file",
+      "path": "workspace/runs/agent-work/56/start-here.html",
+      "non_empty": true
+    }
+  ],
+  "report": "workspace/runs/agent-work/59/validation-report.md"
+}

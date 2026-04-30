@@ -1,0 +1,99 @@
+{
+  "title": "#56 Process Scaling: Story manifest format",
+  "subtitle": "Package: improve-dev-process | Lane: builder on linux | Generated from story.json.",
+  "badge": "Done",
+  "footer": "Generated from workspace/runs/agent-work/56/story.json. Deliverables manifest: workspace/runs/agent-work/56/deliverables.json.",
+  "use_first": [
+    {
+      "title": "Story Contract",
+      "href": "story.json",
+      "description": "Shared story.json used by Builder, Validator, Docs/Evidence, and Coordinator lanes.",
+      "code": "workspace/runs/agent-work/56/story.json",
+      "primary": true
+    },
+    {
+      "title": "Redmine Issue",
+      "href": "#",
+      "description": "Current status: Done.",
+      "code": "redmine://issues/56"
+    },
+    {
+      "title": "Validation Manifest",
+      "href": "validation.json",
+      "description": "Executable checks for validator-run.",
+      "code": "workspace/runs/agent-work/56/validation.json"
+    },
+    {
+      "title": "Story manifest validation helper",
+      "href": "../../../../scripts/story_manifest.py",
+      "description": "Owner: builder. Required: True.",
+      "code": "scripts/story_manifest.py"
+    },
+    {
+      "title": "Story manifest docs",
+      "href": "../../../../docs/agent-work-story-manifest.md",
+      "description": "Owner: docs-evidence. Required: True.",
+      "code": "docs/agent-work-story-manifest.md"
+    },
+    {
+      "title": "Example story manifest",
+      "href": "story.json",
+      "description": "Owner: coordinator. Required: True.",
+      "code": "workspace/runs/agent-work/56/story.json"
+    },
+    {
+      "title": "Builder report",
+      "href": "builder-report.md",
+      "description": "Owner: builder. Required: True.",
+      "code": "workspace/runs/agent-work/56/builder-report.md"
+    },
+    {
+      "title": "Validation report",
+      "href": "validation-report.md",
+      "description": "Owner: validator. Required: True.",
+      "code": "workspace/runs/agent-work/56/validation-report.md"
+    },
+    {
+      "title": "Validation manifest",
+      "href": "validation.json",
+      "description": "Owner: validator. Required: True.",
+      "code": "workspace/runs/agent-work/56/validation.json"
+    }
+  ],
+  "stories": [
+    {
+      "label": "#56",
+      "description": "Process Scaling: Story manifest format"
+    },
+    {
+      "label": "Status",
+      "description": "Done"
+    },
+    {
+      "label": "Owner",
+      "description": "alice / builder"
+    },
+    {
+      "label": "Run Dir",
+      "description": "workspace/runs/agent-work/56"
+    }
+  ],
+  "commands": [
+    "python3 scripts/story_manifest.py validate workspace/runs/agent-work/56/story.json --check-links",
+    "python3 scripts/story_manifest.py render-hub workspace/runs/agent-work/56/story.json --check-links"
+  ],
+  "screenshots": [],
+  "review": [
+    "Acceptance: Past work reconciled into story.json.",
+    "Acceptance: Actual deliverable and evidence paths are linked from this manifest.",
+    "Evidence: scripts/story_manifest.py",
+    "Evidence: docs/agent-work-story-manifest.md",
+    "Evidence: workspace/runs/agent-work/56/story.json",
+    "Evidence: workspace/runs/agent-work/56/builder-report.md",
+    "Evidence: workspace/runs/agent-work/56/validation-report.md",
+    "Evidence: workspace/runs/agent-work/56/validation.json",
+    "Note: Retrospective manifest created from existing Redmine state and repo evidence.",
+    "Review note must include: Delivered, Validation, Evidence, Residual risk",
+    "Residual risk must be stated explicitly, even when the risk is none."
+  ]
+}

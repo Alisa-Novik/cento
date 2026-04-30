@@ -37,15 +37,19 @@ def cards(items: list[dict[str, Any]]) -> str:
         title = esc(item.get("title"))
         description = esc(item.get("description"))
         code = item.get("code")
-        code_html = f"<code>{esc(code)}</code>" if code else ""
-        output.append(
-            f"""
-          <a class="{class_name}" href="{href}">
-            <h3>{title}</h3>
-            {code_html}
-            <span>{description}</span>
-          </a>"""
+        lines = [
+            f'          <a class="{class_name}" href="{href}">',
+            f"            <h3>{title}</h3>",
+        ]
+        if code:
+            lines.append(f"            <code>{esc(code)}</code>")
+        lines.extend(
+            [
+                f"            <span>{description}</span>",
+                "          </a>",
+            ]
         )
+        output.append("\n".join(lines))
     return "\n".join(output)
 
 

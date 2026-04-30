@@ -14,6 +14,12 @@ Validate a story manifest:
 python3 scripts/story_manifest.py validate workspace/runs/agent-work/<issue-id>/story.json
 ```
 
+Generate a manager-facing hub from a story manifest:
+
+```bash
+python3 scripts/story_manifest.py render-hub workspace/runs/agent-work/<issue-id>/story.json --check-links
+```
+
 Use it in a Builder handoff:
 
 ```bash
@@ -112,3 +118,16 @@ Coordinator:
 - `validation.json` remains the executable validation contract for `validate-run`.
 - `deliverables.json` remains the source for `start-here.html`.
 - `story.json` links those files and adds ownership, routes, handoff, and review-gate context.
+
+## Hub Generation
+
+`render-hub` derives a `deliverables.json` and `start-here.html` from `story.json`.
+
+Default outputs:
+
+- `workspace/runs/agent-work/<issue-id>/deliverables.json`
+- `workspace/runs/agent-work/<issue-id>/start-here.html`
+
+The command is repeatable and does not delete older evidence. It rewrites only the generated deliverables manifest and HTML hub for the selected story.
+
+Use `--check-links` to fail when local links in the generated hub are missing.
