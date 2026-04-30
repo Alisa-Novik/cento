@@ -9,6 +9,7 @@ Ticket: #22 iPhone Cento App: Apple Watch pairing and watchOS readiness
 The Apple Watch path is no longer invisible to Xcode tooling:
 
 - `xcrun devicectl list devices` sees the physical iPhone as `available (paired)`.
+- `cento mobile watch-status` sees the physical Apple Watch, but Developer Mode/DDI is not ready yet.
 - `xcrun devicectl list devices` sees the physical Apple Watch as an Apple Watch Series 11 CoreDevice, but state is `unavailable`.
 - `xcrun xctrace list devices` sees both physical devices under `Devices Offline`.
 - The simulator watch path is ready: `simctl list pairs` reports an active, connected iPhone 17 + Apple Watch Ultra 3 pair.
@@ -17,13 +18,14 @@ The Apple Watch path is no longer invisible to Xcode tooling:
 ## Evidence
 
 - `logs/devicectl-devices.log`
+- `logs/mobile-watch-status.log`
 - `logs/xctrace-devices.log`
 - `logs/simctl-pairs.log`
 - `logs/xcodebuild-destinations.log`
 
 ## Current Blocker
 
-The physical Apple Watch is discovered but unavailable/offline from Xcode's device stack. The next hands-on step is to make the Watch available to Xcode: keep the Watch unlocked, near the paired iPhone, on charger if needed, and confirm Developer Mode/trust prompts on the Watch and iPhone.
+The physical Apple Watch is discovered but unavailable/offline from Xcode's device stack. `cento mobile watch-status` reports Developer Mode disabled and DDI not ready for the Watch. The next hands-on step is to make the Watch available to Xcode: enable Developer Mode on the Watch, keep the Watch unlocked, near the paired iPhone, on charger if needed, and confirm trust prompts on the Watch and iPhone.
 
 ## Recommended Next Build Step
 
