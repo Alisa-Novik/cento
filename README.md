@@ -39,6 +39,18 @@ The bias is toward low-dependency tooling that works well from a terminal and ca
   Run a localhost web dashboard for current state, recent activity, aliases, tools, and repo progress.
 - `bridge.sh`
   Create a reverse SSH tunnel through the OCI VM so another machine can SSH back into this host through the VM relay.
+- `cluster.sh`
+  Manage Cento nodes, remote execution, bridge healing, git drift checks, and parallel agent jobs.
+- `cluster_job_runner.py`
+  Plan feature requests into node-assigned agent tasks, dispatch them in parallel, and collect logs plus worktree artifacts.
+- `network.sh`
+  Route `cento network --tui` and `cento network --web`.
+- `network_web_server.py`
+  Serve the cluster network dashboard from node registry and bridge state.
+- `jobs.sh`
+  Open the cluster jobs web dashboard.
+- `jobs_server.py`
+  Serve live cluster job manifests, task state, node assignments, and log tails.
 - `daily_tui.sh`
   Bubble Tea launcher for Daily Execution Support, backed by a cached Go binary.
 - `daily_tui.go`
@@ -49,6 +61,8 @@ The bias is toward low-dependency tooling that works well from a terminal and ca
   Bubble Tea implementation for the Telegram tool surface.
 - `crm_module.py`
   Run the embedded CRM module for questionnaire capture, career-intake dossiers, saved profiles, and CRM docs.
+- `funnel_module.py`
+  Track traffic sources, funnels, leads, events, offers, next actions, and Markdown funnel reports.
 - `burp_suite_community.sh`
   Download, set up, and control PortSwigger Burp Suite Community through cento wrappers.
 - `mcp_tooling.py`
@@ -109,17 +123,28 @@ make i3reorg ARGS="--dry-run"
 make i3reorg ARGS="--study"
 make dashboard
 make dashboard ARGS="--open"
+make idea-board
+make idea-board ARGS="--open"
 make bridge ARGS="start"
 make bridge ARGS="mac-command"
-make tui
-make tui ARGS="status"
-make tui ARGS="docs"
+make cento ARGS='cluster plan "implement feature A"'
+make cento ARGS='cluster implement "implement feature A" --dry-run'
+make jobs ARGS="--open"
+make network ARGS="--web"
+make network ARGS="--tui --no-remote"
+make tg
+make tg ARGS="status"
+make tg ARGS="docs"
 make crm
 make crm ARGS="questionnaire"
 make crm ARGS="init"
 make crm ARGS='intake init --person "Ada Lovelace" --target-role "Product Manager"'
 make crm ARGS='intake plan --person "Ada Lovelace"'
 make crm ARGS="serve --open"
+make funnel ARGS="init"
+make funnel ARGS="sources"
+make funnel ARGS="report"
+make funnel-check
 make burp ARGS="setup"
 make burp ARGS="controller start --use-defaults"
 make burp ARGS="status"
@@ -134,7 +159,8 @@ make cento ARGS="tools"
 make cento ARGS="interactive"
 make cento ARGS="docs conf"
 make cento ARGS="completion zsh"
-make cento ARGS="install zsh"
+make cento ARGS="install terminal"
+make terminal-e2e
 make cento ARGS="dark"
 ```
 
@@ -151,6 +177,11 @@ make cento ARGS="dark"
 ./scripts/display_layout_fix.sh --show
 ./scripts/i3reorg.sh --dry-run
 ./scripts/dashboard_server.py
+./scripts/cluster.sh plan "implement feature A"
+./scripts/cluster.sh implement "implement feature A" --dry-run
+./scripts/jobs.sh --open
+./scripts/network.sh --web
+./scripts/network.sh --tui --no-remote
 ./scripts/telegram_tui.sh
 ./scripts/telegram_tui.sh status
 go run ./scripts/telegram_tui.go
@@ -161,6 +192,8 @@ go run ./scripts/telegram_tui.go
 ./scripts/crm_module.py intake plan --person "Ada Lovelace"
 ./scripts/crm_module.py serve --open
 ./scripts/crm_module.py show
+./scripts/funnel_module.py init
+./scripts/funnel_module.py report
 ./scripts/burp_suite_community.sh setup
 ./scripts/burp_suite_community.sh controller start --use-defaults
 ./scripts/burp_suite_community.sh status
@@ -175,8 +208,10 @@ go run ./scripts/telegram_tui.go
 ./scripts/cento_interactive.py --entry conf
 ./scripts/cento.sh tools
 ./scripts/cento.sh completion zsh
-./scripts/cento.sh install zsh
+./scripts/cento.sh install terminal
+./scripts/cento.sh tmux status
 ./scripts/cento.sh dark
+./scripts/terminal_integration_e2e.sh
 python3 ./scripts/bluetooth_audio_doctor.py "Black Diamond"
 ./scripts/audio_quick_connect.sh "Black Diamond"
 ```
@@ -209,13 +244,19 @@ Repo-wide conventions live under `standards/`.
 
 `cento` is the unified entrypoint for the repo. It provides:
 
-- built-ins such as `cento tools`, `cento interactive` as the Bubble Tea browser, `cento docs`, `cento aliases`, `cento conf`, `cento completion zsh`, and `cento install zsh`
+- built-ins such as `cento tools`, `cento interactive` as the Bubble Tea browser, `cento docs`, `cento aliases`, `cento conf`, `cento completion zsh`, `cento install terminal`, and `cento tmux status`
 - direct routing into registered tools such as `cento kitty-theme-manager --plain-menu`
 - user-defined shortcuts such as `cento dark`, `cento monk`, and `cento cyber` from `~/.config/cento/aliases.sh`
 
 The cento config is a small Bash file. `cento conf` opens it in your editor, and `cento conf --path` prints its path. It defines aliases only.
 
-For shell integration, `cento completion zsh` prints the Zsh completion function and `cento install zsh` installs a managed completion copy under `~/.config/cento/completions/_cento`, writes `~/.config/cento/init.zsh`, and injects one guarded source block into `~/.zshrc`. The install path is idempotent.
+For terminal integration, `cento completion zsh` prints the Zsh completion
+function and `cento install terminal` installs Zsh/Oh My Zsh completion plus a
+right-prompt segment such as `[cento:linux:host]`. It writes managed files under
+`~/.config/cento` and injects one guarded source block into `~/.zshrc`. Tmux
+status integration is opt-in with `cento install tmux`. The install paths are
+idempotent. See `docs/terminal-integration.md` and verify changes with `make
+terminal-e2e`.
 
 Simple aliases use this form:
 
@@ -240,7 +281,8 @@ cento aliases
 cento conf
 cento conf --path
 cento completion zsh
-cento install zsh
+cento install terminal
+cento tmux status
 cento mcp doctor
 cento mcp init --write-env
 cento mcp docs
@@ -252,9 +294,15 @@ cento audio-quick-connect "Black Diamond"
 cento audio "Black Diamond"
 cento dashboard
 cento dashboard --open
+cento jobs
+cento jobs --open
+cento idea-board
+cento idea-board --open
+cento network --web
+cento network --tui
 cento daily
-cento tui
-cento tui status
+cento tg
+cento tg status
 cento crm integration
 cento crm
 cento crm questionnaire
@@ -378,13 +426,89 @@ Example:
 cento daily
 ```
 
-## Telegram TUI
+## Cluster Jobs
 
-The Telegram tool is registered as `cento tui` and is now implemented as a Bubble Tea TUI.
+`cento cluster` can now plan and run feature implementation jobs across the configured nodes.
 
 It:
 
-- opens as `cento tui`
+- stores job manifests in `workspace/runs/cluster-jobs/<job-id>/job.json`
+- decomposes a feature request into node-assigned agent tasks
+- runs tasks in parallel by default through the existing cluster execution layer
+- creates isolated git worktrees under `workspace/cluster-worktrees/<job-id>/<task-id>`
+- captures task logs, generated scripts, summaries, status, diffstat, and patches
+- uses `CENTO_CLUSTER_AGENT` or `--agent-command` to override the default `codex exec` command
+
+Examples:
+
+```bash
+cento cluster plan "implement feature A"
+cento cluster run 20260428-120000-feature-a --dry-run
+cento cluster implement "implement feature A"
+cento cluster implement "implement feature A" --nodes linux,macos --dry-run
+```
+
+## Network Dashboard
+
+`cento dashboard` is the combined web dashboard for overview, network, and jobs. `cento network` remains the focused cluster visibility command.
+
+It:
+
+- opens the existing Bubble Tea node monitor with `cento network --tui`
+- serves a cluster web dashboard with `cento network --web`
+- reads the cluster registry from `~/.config/cento/cluster.json`
+- shows relay, nodes, bridge mesh output, cluster status, and job counts
+
+Examples:
+
+```bash
+cento network --web
+cento network --web --open
+cento network --tui --no-remote
+```
+
+## Jobs Dashboard
+
+`cento dashboard` includes live cluster jobs. `cento jobs` remains the focused dashboard for cluster job execution.
+
+It:
+
+- reads cluster job manifests from `workspace/runs/cluster-jobs`
+- refreshes job state and task log tails every two seconds
+- shows feature text, status, node assignment, task scripts, logs, summaries, and work artifact paths
+
+Examples:
+
+```bash
+cento jobs
+cento jobs --open
+cento jobs --port 47883
+```
+
+## Idea Board
+
+The idea board is a local web tool for documenting, categorizing, and scoring future Cento project ideas.
+
+It:
+
+- opens as `cento idea-board --open`
+- stores editable seed data in `data/idea-board.json`
+- tracks category, status, horizon, tags, next step, cluster rationale, and 1-5 scores
+- keeps the first project list focused on cluster-powered Cento ideas
+
+Example:
+
+```bash
+cento idea-board --open
+```
+
+## Telegram TUI
+
+The Telegram tool is registered as `cento tg` and is now implemented as a Bubble Tea TUI.
+
+It:
+
+- opens as `cento tg`
 - stores local Telegram config under `~/.config/cento/telegram.json`
 - follows the repo TUI standard in `standards/tui.md`
 - documents deferred Telegram and CRM integration work
@@ -393,10 +517,12 @@ It:
 Examples:
 
 ```bash
-cento tui
-cento tui status
-cento tui config --path
-cento tui docs
+cento tg
+cento tg status
+cento tg config --path
+cento tg post --text "Hello from cento"
+cento tg history --limit 20
+cento tg docs
 cento crm integration
 ```
 
@@ -432,6 +558,32 @@ cento crm paths
 cento crm docs
 ```
 
+## Cento Funnel
+
+`cento funnel` is the local-first business layer between content, traffic, leads, offers, and follow-up work.
+
+It:
+
+- stores funnel state in `~/.local/share/cento/funnel/state.json`
+- tracks sources, funnel stages, leads, events, offers, and reusable next actions
+- seeds practical LinkedIn, Telegram, GitHub, career-consulting, and automation-advisory examples
+- writes Markdown reports under `workspace/runs/funnel/`
+- supports isolated experiments with `CENTO_FUNNEL_DATA=/tmp/state.json`
+
+Examples:
+
+```bash
+cento funnel init
+cento funnel show
+cento funnel sources
+cento funnel funnels
+cento funnel leads
+cento funnel event conversation_started --source linkedin-posts --funnel career-consulting-discovery --lead ada-lovelace-linkedin --note "Booked async consult"
+cento funnel report
+cento funnel docs
+make funnel-check
+```
+
 ## Quick Help
 
 The quick help tool is a rofi-style command palette for `cento`, closer to a searchable `:help` than a plain README.
@@ -455,22 +607,23 @@ cento quickhelp
 
 ## Dashboard
 
-The dashboard is the faster launcher-oriented surface for `cento`. It is meant for “just run the thing” workflows rather than searchable documentation.
+The dashboard is the combined launcher and status surface for `cento`.
 
 It:
 
 - opens as `cento dashboard`
-- uses `rofi` when available and falls back to a numbered prompt otherwise
-- shows pinned actions such as config, theme, wallpaper, display fix, and quick help
-- adds paired Bluetooth audio devices as direct connect actions
-- includes your configured aliases and registered tools
-- shows a small live banner with wallpaper, connected audio, and displays
+- combines overview, network state, and cluster jobs in one server
+- exposes `/api/state`, `/api/network`, and `/api/jobs`
+- includes your configured aliases, registered tools, recent activity, and repo state
+- shows wallpaper, connected audio, displays, cluster nodes, and current jobs
 - writes logs to `logs/dashboard/`
+- supports the Industrial OS skin with `--theme industrial`
 
 Examples:
 
 ```bash
 ./scripts/dashboard_server.py
+./scripts/dashboard_server.py --theme industrial --open
 ./scripts/telegram_tui.sh
 ./scripts/telegram_tui.sh status
 go run ./scripts/telegram_tui.go
@@ -485,6 +638,34 @@ go run ./scripts/telegram_tui.go
 ./scripts/dashboard.sh --plain-menu
 ./scripts/dashboard.sh --list
 cento dashboard
+cento dashboard --theme industrial --open
+```
+
+## Desktop Presets
+
+`cento preset` applies managed desktop presets for i3-based Linux sessions.
+
+The Industrial OS preset:
+
+- applies the `Cento Industrial OS` Kitty theme
+- generates a black/orange industrial wallpaper under `~/.local/share/cento/industrial-os/`
+- writes managed Polybar, Rofi, and Picom files under `~/.config/cento/industrial-os/`
+- adds a guarded block to `~/.config/i3/config` so i3 reloads start the preset session
+- keeps dashboard startup on the explicit `--dashboard-only --open` path
+- binds `Mod+Shift+I` to compose workspace 1 into the Discord, hero, terminal, jobs, cluster, activity, and quick-actions layout with background images on every generated pane
+- supports `cento preset industrial-os --workspace --black-only` to compose the same workspace with plain black pane backgrounds
+- routes `Mod+h/j/k/l` through a visual focus helper on the Industrial OS cockpit, with normal i3 focus behavior as fallback elsewhere
+- writes preset logs to `logs/industrial-os/` and workspace compose logs to `logs/industrial-workspace/`
+
+Examples:
+
+```bash
+cento preset list
+cento preset industrial-os
+cento preset industrial-os --workspace
+cento preset industrial-os --workspace --black-only
+cento preset industrial-os --session
+cento preset industrial-os --dashboard-only --open
 ```
 
 ## Display Layout Fix

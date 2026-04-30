@@ -5,8 +5,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -34,6 +37,49 @@ type item struct {
 	Run         func() (string, error)
 }
 
+type telegramAPIResponse struct {
+	OK          bool             `json:"ok"`
+	Description string           `json:"description"`
+	Result      []telegramUpdate `json:"result"`
+}
+
+type telegramSendResponse struct {
+	OK          bool            `json:"ok"`
+	Description string          `json:"description"`
+	Result      telegramMessage `json:"result"`
+}
+
+type telegramUpdate struct {
+	UpdateID    int              `json:"update_id"`
+	Message     *telegramMessage `json:"message"`
+	ChannelPost *telegramMessage `json:"channel_post"`
+}
+
+type telegramMessage struct {
+	MessageID int          `json:"message_id"`
+	Date      int64        `json:"date"`
+	Text      string       `json:"text"`
+	Caption   string       `json:"caption"`
+	Chat      telegramChat `json:"chat"`
+	From      telegramUser `json:"from"`
+}
+
+type telegramChat struct {
+	ID       int64  `json:"id"`
+	Type     string `json:"type"`
+	Title    string `json:"title"`
+	Username string `json:"username"`
+	First    string `json:"first_name"`
+	Last     string `json:"last_name"`
+}
+
+type telegramUser struct {
+	ID        int64  `json:"id"`
+	Username  string `json:"username"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+}
+
 type model struct {
 	items        []item
 	cursor       int
@@ -56,13 +102,13 @@ type pathSet struct {
 var (
 	appPaths pathSet
 
-	frameStyle = lipgloss.NewStyle().Padding(1, 2)
-	titleStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#F5E7D0")).Background(lipgloss.Color("#24505A")).Padding(0, 1)
+	frameStyle  = lipgloss.NewStyle().Padding(1, 2)
+	titleStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#F5E7D0")).Background(lipgloss.Color("#24505A")).Padding(0, 1)
 	subtleStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#7F8C89"))
-	menuStyle = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#B88A53")).Padding(1, 1)
-	bodyStyle = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#4C6A5C")).Padding(1, 1)
+	menuStyle   = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#B88A53")).Padding(1, 1)
+	bodyStyle   = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#4C6A5C")).Padding(1, 1)
 	activeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF8ED")).Background(lipgloss.Color("#B86B26")).Padding(0, 1)
-	itemStyle = lipgloss.NewStyle().Padding(0, 1)
+	itemStyle   = lipgloss.NewStyle().Padding(0, 1)
 	statusStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#24505A")).Bold(true)
 )
 
@@ -182,15 +228,16 @@ func writePlanReport() (string, error) {
 		"",
 		"## Registered command surface",
 		"",
-		"- `cento tui` launches the Bubble Tea TUI.",
-		"- `cento tui status` prints scaffold status.",
-		"- `cento tui config` manages local Telegram defaults.",
+		"- `cento tg` launches the Bubble Tea TUI.",
+		"- `cento tg status` prints scaffold status.",
+		"- `cento tg config` manages local Telegram defaults.",
+		"- `cento tg history` reads recent bot-visible conversation updates.",
 		"- `cento crm integration` is the registered CRM placeholder path.",
 		"",
 		"## Deferred implementation items",
 		"",
 		"- Send Telegram messages from a configured bot token.",
-		"- Read and format recent bot updates.",
+		"- Expand history capture beyond bot-visible updates if MTProto/user auth is added later.",
 		"- Bridge CRM events into Telegram notifications.",
 		"- Add richer chat routing and template-based message actions.",
 		"",
@@ -209,8 +256,8 @@ func statusText() string {
 		fmt.Sprintf("bot_token_configured: %s", yesNo(cfg.BotToken != "")),
 		fmt.Sprintf("default_chat_id_configured: %s", yesNo(cfg.DefaultChatID != "")),
 		fmt.Sprintf("default_parse_mode: %s", cfg.DefaultParseMode),
-		"current_scope: Bubble Tea scaffold only",
-		"available_commands: cento tui, cento tui status, cento tui config, cento tui docs, cento tui plan",
+		"current_scope: Bubble Tea UI, bot message posting, and bot-visible history",
+		"available_commands: cento tg, cento tg status, cento tg config, cento tg post, cento tg history, cento tg docs, cento tg plan",
 		"crm_integration_status: placeholder registered under cento crm integration",
 	}, "\n")
 }
@@ -220,6 +267,164 @@ func yesNo(value bool) string {
 		return "yes"
 	}
 	return "no"
+}
+
+func displayName(firstName, lastName, username, fallback string) string {
+	parts := strings.TrimSpace(strings.Join([]string{firstName, lastName}, " "))
+	if parts != "" {
+		return parts
+	}
+	if username != "" {
+		return "@" + username
+	}
+	return fallback
+}
+
+func chatName(chat telegramChat) string {
+	return displayName(chat.First, chat.Last, chat.Username, fmt.Sprintf("%d", chat.ID))
+}
+
+func messageText(message *telegramMessage) string {
+	if message == nil {
+		return ""
+	}
+	if strings.TrimSpace(message.Text) != "" {
+		return strings.TrimSpace(message.Text)
+	}
+	if strings.TrimSpace(message.Caption) != "" {
+		return strings.TrimSpace(message.Caption)
+	}
+	return "[non-text message]"
+}
+
+func updateMessage(update telegramUpdate) *telegramMessage {
+	if update.Message != nil {
+		return update.Message
+	}
+	return update.ChannelPost
+}
+
+func fetchTelegramUpdates(cfg toolConfig, limit int) ([]telegramUpdate, error) {
+	if cfg.BotToken == "" {
+		return nil, fmt.Errorf("bot token is not configured; run `cento tg config --bot-token ...`")
+	}
+	if limit < 1 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	endpoint := fmt.Sprintf("https://api.telegram.org/bot%s/getUpdates", cfg.BotToken)
+	values := url.Values{}
+	values.Set("limit", strconv.Itoa(limit))
+	values.Set("allowed_updates", `["message","channel_post"]`)
+	requestURL := endpoint + "?" + values.Encode()
+	client := http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Get(requestURL)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var payload telegramAPIResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return nil, err
+	}
+	if !payload.OK {
+		if payload.Description == "" {
+			payload.Description = fmt.Sprintf("Telegram API returned HTTP %s", resp.Status)
+		}
+		return nil, errors.New(payload.Description)
+	}
+	return payload.Result, nil
+}
+
+func sendTelegramMessage(cfg toolConfig, chatID string, text string, parseMode string) (telegramMessage, error) {
+	if cfg.BotToken == "" {
+		return telegramMessage{}, fmt.Errorf("bot token is not configured; run `cento tg config --bot-token ...`")
+	}
+	if strings.TrimSpace(chatID) == "" {
+		return telegramMessage{}, fmt.Errorf("chat id is not configured; pass --chat-id or run `cento tg config --chat-id ...`")
+	}
+	if strings.TrimSpace(text) == "" {
+		return telegramMessage{}, fmt.Errorf("message text cannot be empty")
+	}
+	if strings.TrimSpace(parseMode) == "" {
+		parseMode = cfg.DefaultParseMode
+	}
+	endpoint := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", cfg.BotToken)
+	values := url.Values{}
+	values.Set("chat_id", chatID)
+	values.Set("text", text)
+	if strings.TrimSpace(parseMode) != "" {
+		values.Set("parse_mode", parseMode)
+	}
+	client := http.Client{Timeout: 15 * time.Second}
+	resp, err := client.PostForm(endpoint, values)
+	if err != nil {
+		return telegramMessage{}, err
+	}
+	defer resp.Body.Close()
+	var payload telegramSendResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return telegramMessage{}, err
+	}
+	if !payload.OK {
+		if payload.Description == "" {
+			payload.Description = fmt.Sprintf("Telegram API returned HTTP %s", resp.Status)
+		}
+		return telegramMessage{}, errors.New(payload.Description)
+	}
+	return payload.Result, nil
+}
+
+func formatHistory(updates []telegramUpdate, chatID string, limit int, save bool) (string, error) {
+	var lines []string
+	lines = append(lines, "# Telegram Conversation History")
+	lines = append(lines, "")
+	lines = append(lines, fmt.Sprintf("- recorded_at: `%s`", nowISO()))
+	lines = append(lines, fmt.Sprintf("- source: `getUpdates`"))
+	if chatID != "" {
+		lines = append(lines, fmt.Sprintf("- chat_filter: `%s`", chatID))
+	}
+	lines = append(lines, fmt.Sprintf("- requested_limit: `%d`", limit))
+	lines = append(lines, "")
+	lines = append(lines, "## Messages")
+	lines = append(lines, "")
+
+	count := 0
+	for _, update := range updates {
+		message := updateMessage(update)
+		if message == nil {
+			continue
+		}
+		if chatID != "" && strconv.FormatInt(message.Chat.ID, 10) != chatID {
+			continue
+		}
+		count++
+		when := time.Unix(message.Date, 0).Format(time.RFC3339)
+		author := displayName(message.From.FirstName, message.From.LastName, message.From.Username, "unknown")
+		lines = append(lines, fmt.Sprintf("### %s | %s | %s", when, chatName(message.Chat), author))
+		lines = append(lines, "")
+		lines = append(lines, messageText(message))
+		lines = append(lines, "")
+	}
+	if count == 0 {
+		lines = append(lines, "No bot-visible messages matched the current filters.")
+		lines = append(lines, "")
+	}
+	lines = append(lines, "> Telegram bots can only read bot-visible updates, not arbitrary personal account history.")
+	output := strings.Join(lines, "\n")
+	if !save {
+		return output, nil
+	}
+	if err := os.MkdirAll(appPaths.reportDir, 0o755); err != nil {
+		return "", err
+	}
+	path := filepath.Join(appPaths.reportDir, fmt.Sprintf("telegram-history-%s.md", time.Now().Format("20060102-150405")))
+	if err := os.WriteFile(path, []byte(output+"\n"), 0o644); err != nil {
+		return "", err
+	}
+	return output + "\n\nSaved report: " + path, nil
 }
 
 func wrapText(input string, width int) []string {
@@ -284,6 +489,18 @@ func newModel() model {
 					return "", err
 				}
 				return string(data), nil
+			},
+		},
+		{
+			Title:       "Conversation history",
+			Description: "Read recent bot-visible Telegram updates and save a local report.",
+			Run: func() (string, error) {
+				cfg := readConfig()
+				updates, err := fetchTelegramUpdates(cfg, 20)
+				if err != nil {
+					return "", err
+				}
+				return formatHistory(updates, cfg.DefaultChatID, 20, true)
 			},
 		},
 		{
@@ -418,7 +635,7 @@ func (m model) View() tea.View {
 	bodyBlock := bodyStyle.Width(bodyWidth).Render(detailHeader + "\n\n" + visible + "\n\n" + footer)
 
 	header := lipgloss.JoinVertical(lipgloss.Left,
-		titleStyle.Render(" cento tui "),
+		titleStyle.Render(" cento tg "),
 		subtleStyle.Render("Bubble Tea v2 is the standard for interactive terminal apps in cento."),
 		statusStyle.Render(m.status),
 	)
@@ -479,6 +696,71 @@ func runPlan() error {
 		return err
 	}
 	fmt.Println(path)
+	return nil
+}
+
+func runHistory(args []string) error {
+	fs := flag.NewFlagSet("history", flag.ContinueOnError)
+	fs.SetOutput(os.Stderr)
+	limit := fs.Int("limit", 20, "maximum updates to read, 1-100")
+	chatID := fs.String("chat-id", "", "filter to one chat id; defaults to configured chat id")
+	jsonOut := fs.Bool("json", false, "print raw Telegram updates as JSON")
+	noSave := fs.Bool("no-save", false, "do not write a Markdown report")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	cfg := readConfig()
+	filterChatID := *chatID
+	if filterChatID == "" {
+		filterChatID = cfg.DefaultChatID
+	}
+	updates, err := fetchTelegramUpdates(cfg, *limit)
+	if err != nil {
+		return err
+	}
+	if *jsonOut {
+		data, err := json.MarshalIndent(updates, "", "  ")
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(data))
+		return nil
+	}
+	output, err := formatHistory(updates, filterChatID, *limit, !*noSave)
+	if err != nil {
+		return err
+	}
+	fmt.Println(output)
+	return nil
+}
+
+func runPost(args []string) error {
+	fs := flag.NewFlagSet("post", flag.ContinueOnError)
+	fs.SetOutput(os.Stderr)
+	text := fs.String("text", "", "message text to send")
+	chatID := fs.String("chat-id", "", "target chat id; defaults to configured chat id")
+	parseMode := fs.String("parse-mode", "", "Telegram parse mode; defaults to configured parse mode")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	messageText := strings.TrimSpace(*text)
+	if messageText == "" {
+		messageText = strings.TrimSpace(strings.Join(fs.Args(), " "))
+	}
+	cfg := readConfig()
+	targetChatID := *chatID
+	if targetChatID == "" {
+		targetChatID = cfg.DefaultChatID
+	}
+	targetParseMode := *parseMode
+	if targetParseMode == "" {
+		targetParseMode = cfg.DefaultParseMode
+	}
+	message, err := sendTelegramMessage(cfg, targetChatID, messageText, targetParseMode)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("sent chat=%d message_id=%d\n", message.Chat.ID, message.MessageID)
 	return nil
 }
 
@@ -552,6 +834,10 @@ func main() {
 			err = runDocs()
 		case "plan":
 			err = runPlan()
+		case "history":
+			err = runHistory(args[1:])
+		case "post":
+			err = runPost(args[1:])
 		case "config":
 			err = runConfig(args[1:])
 		default:

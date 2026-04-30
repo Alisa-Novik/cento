@@ -15,7 +15,6 @@ TARGET_CLASSES = {
     "cento-industrial-terminal",
     "cento-industrial-jobs",
     "cento-industrial-cluster",
-    "cento-industrial-resources",
     "cento-industrial-activity",
     "cento-industrial-actions",
 }
@@ -25,16 +24,14 @@ VISUAL_GRAPH = {
         "cento-industrial-hero": "discord",
         "cento-industrial-terminal": "cento-industrial-hero",
         "cento-industrial-cluster": "cento-industrial-jobs",
-        "cento-industrial-resources": "cento-industrial-cluster",
-        "cento-industrial-activity": "cento-industrial-resources",
+        "cento-industrial-activity": "cento-industrial-cluster",
         "cento-industrial-actions": "cento-industrial-activity",
     },
     "right": {
         "discord": "cento-industrial-hero",
         "cento-industrial-hero": "cento-industrial-terminal",
         "cento-industrial-jobs": "cento-industrial-cluster",
-        "cento-industrial-cluster": "cento-industrial-resources",
-        "cento-industrial-resources": "cento-industrial-activity",
+        "cento-industrial-cluster": "cento-industrial-activity",
         "cento-industrial-activity": "cento-industrial-actions",
     },
     "down": {
@@ -45,7 +42,6 @@ VISUAL_GRAPH = {
     "up": {
         "cento-industrial-jobs": "discord",
         "cento-industrial-cluster": "cento-industrial-hero",
-        "cento-industrial-resources": "cento-industrial-hero",
         "cento-industrial-activity": "cento-industrial-terminal",
         "cento-industrial-actions": "cento-industrial-terminal",
     },

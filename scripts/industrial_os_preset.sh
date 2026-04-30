@@ -30,10 +30,11 @@ I3_BLOCK_END="# END_CENTO_INDUSTRIAL_OS"
 SESSION_ONLY=0
 DASHBOARD_ONLY=0
 WORKSPACE_ONLY=0
-OPEN_DASHBOARD=1
+OPEN_DASHBOARD=0
 START_DASHBOARD=1
 RELOAD_I3=1
 APPLY_RUNTIME=1
+WORKSPACE_BACKGROUND_ARGS=()
 
 usage() {
     cat <<'USAGE'
@@ -42,6 +43,9 @@ Usage: cento preset industrial-os [options]
 Options:
   --session          Apply runtime pieces only; intended for i3 startup.
   --workspace        Compose workspace 1 into the Industrial OS tiled cockpit.
+  --backgrounds images|black
+                     Use pane images or plain black backgrounds with --workspace.
+  --black-only       Alias for --backgrounds black with --workspace.
   --dashboard-only   Start or reuse the themed dashboard server only.
   --open             Open the themed dashboard after starting it.
   --no-open          Do not open the themed dashboard.
@@ -562,6 +566,14 @@ while [[ $# -gt 0 ]]; do
             RELOAD_I3=0
             shift
             ;;
+        --backgrounds)
+            WORKSPACE_BACKGROUND_ARGS+=(--backgrounds "$2")
+            shift 2
+            ;;
+        --black-only)
+            WORKSPACE_BACKGROUND_ARGS+=(--black-only)
+            shift
+            ;;
         --dashboard-only)
             DASHBOARD_ONLY=1
             APPLY_RUNTIME=0
@@ -603,8 +615,7 @@ init_logging
 if [[ "$WORKSPACE_ONLY" -eq 1 ]]; then
     write_assets
     launch_polybar
-    start_dashboard
-    exec "$ROOT_DIR/scripts/industrial_workspace.sh"
+    exec "$ROOT_DIR/scripts/industrial_workspace.sh" "${WORKSPACE_BACKGROUND_ARGS[@]}"
 fi
 
 if [[ "$DASHBOARD_ONLY" -eq 1 ]]; then

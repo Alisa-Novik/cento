@@ -17,7 +17,7 @@ _cento_first_level() {
     'aliases:List configured cento aliases'
     'conf:Open or print cento config'
     'completion:Print shell completion'
-    'install:Install shell integration'
+    'install:Install shell and tmux integration'
     'run:Run a registered tool by id'
   )
   tools=(${(@f)$(_cento_tool_ids)})
@@ -54,7 +54,7 @@ _cento() {
           _values 'platform' linux macos --markdown
           ;;
         install)
-          _values 'target' zsh
+          _values 'target' all zsh tmux
           ;;
         run)
           if (( CURRENT == 3 )); then
@@ -110,6 +110,8 @@ _cento() {
               'status[Show bridge status]' \
               'check[Validate local and remote bridge context]' \
               'expose-linux[Expose this Linux node as a VM Unix socket]' \
+              'install-linux-service[Keep the Linux bridge socket repaired with a user service]' \
+              'install-mac-service[Keep the Mac bridge socket repaired with launchd]' \
               'expose-mac[Expose this Mac node as a VM Unix socket]' \
               'to-linux[Open a shell on the Linux node via VM Unix socket]' \
               'to-mac[Open a shell on the Mac node via VM Unix socket]' \
@@ -131,6 +133,35 @@ _cento() {
               '--local-port[Local target port]:port:' \
               '--local-user[Local SSH user for Mac command]:user:' \
               '--public[Bind the VM-side tunnel to 0.0.0.0]'
+          fi
+          ;;
+        cluster)
+          if (( CURRENT == 3 )); then
+            _values 'cluster command' \
+              'init[Write node and cluster config]' \
+              'nodes[List cluster nodes]' \
+              'status[Show cluster status]' \
+              'exec[Run a command on a node]' \
+              'sync[Show git drift across nodes]' \
+              'heal[Repair bridge services]' \
+              'heartbeat[Show companion heartbeat state]' \
+              'metric[Print cluster metrics]' \
+              'ask[Execute a small natural-language cluster request]'
+          elif (( CURRENT == 4 )) && [[ "${words[3]:-}" == "exec" || "${words[3]:-}" == "heal" || "${words[3]:-}" == "heartbeat" ]]; then
+            _values 'node' linux macos iphone all
+          fi
+          ;;
+        notify)
+          if (( CURRENT == 3 )); then
+            _values 'notify command or target' \
+              'setup[Save ntfy topic for a target]' \
+              'status[Show configured notification targets]' \
+              'send[Send message to a target]' \
+              'test[Send a test notification]' \
+              'all[Send message to all targets]' \
+              'iphone[Send message to iPhone target]'
+          elif (( CURRENT == 4 )) && [[ "${words[3]:-}" == "send" || "${words[3]:-}" == "test" || "${words[3]:-}" == "setup" ]]; then
+            _values 'target' iphone all
           fi
           ;;
       esac

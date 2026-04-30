@@ -12,3 +12,4 @@ Repo guidance for AI agents working in `cento`:
 - Use `standards/mcp.md` whenever you add or change repo-root MCP config, env templates, or tool-call guidance.
 
 - Keep `data/cento-cli.json` aligned with `scripts/cento.sh` when the root CLI built-ins change.
+- For Zsh, Oh My Zsh, or tmux integration changes, read `docs/terminal-integration.md` and run `make terminal-e2e`.

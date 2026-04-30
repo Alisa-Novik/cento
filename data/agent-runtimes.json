@@ -1,0 +1,29 @@
+{
+  "routing": "weighted",
+  "runtimes": [
+    {
+      "id": "codex",
+      "display_name": "Codex",
+      "provider": "openai",
+      "model": "gpt-5.3-codex-spark",
+      "agent": "codex",
+      "weight": 75,
+      "preferred": true,
+      "command_env": "CENTO_CODEX_BIN",
+      "default_binary": "codex",
+      "budget_note": "Preferred runtime. Majority share because Codex budget is about 100 USD/month."
+    },
+    {
+      "id": "claude-code",
+      "display_name": "Claude Code",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-6",
+      "agent": "claude-code",
+      "weight": 25,
+      "plan": "personal-pro",
+      "command_env": "CENTO_CLAUDE_BIN",
+      "default_binary": "claude",
+      "budget_note": "Personal Pro plan budget is about 20-30 USD/month, so route about 20-30% of tasks here."
+    }
+  ]
+}

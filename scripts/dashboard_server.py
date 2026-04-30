@@ -766,34 +766,49 @@ def render_page() -> str:
       return `<div class="item"><div class="title">${escapeHtml(value)}</div><div class="meta">${escapeHtml(label)}</div></div>`;
     }
 
+    function replaceHTML(id, value) {
+      const element = document.getElementById(id);
+      if (element.innerHTML !== value) {
+        element.innerHTML = value;
+      }
+    }
+
+    function replaceText(id, value) {
+      const element = document.getElementById(id);
+      const text = String(value);
+      if (element.textContent !== text) {
+        element.textContent = text;
+      }
+    }
+
     function renderNetwork(network) {
       network = network || {nodes: [], relay: {}, jobs: {}, status: {}};
       network.nodes = network.nodes || [];
       network.relay = network.relay || {};
       network.jobs = network.jobs || {};
       network.status = network.status || {};
-      document.getElementById('network-metrics').innerHTML = [
+      replaceHTML('network-metrics', [
         smallMetric('nodes', network.nodes.length),
         smallMetric('relay', network.relay.host || 'unknown'),
         smallMetric('cluster jobs', network.jobs.total || 0)
-      ].join('');
-      document.getElementById('network-nodes').innerHTML = (network.nodes.length ? network.nodes : [{id:'No nodes configured', platform:'', repo:''}])
+      ].join(''));
+      replaceHTML('network-nodes', (network.nodes.length ? network.nodes : [{id:'No nodes configured', platform:'', repo:''}])
         .map(item => listItem(item.id, [item.platform, item.repo, item.socket].filter(Boolean).join(' | ')))
-        .join('');
-      document.getElementById('network-status').textContent = [network.status.stdout, network.status.stderr].filter(Boolean).join('\\n') || 'No cluster status output.';
+        .join(''));
+      replaceText('network-status', [network.status.stdout, network.status.stderr].filter(Boolean).join('\\n') || 'No cluster status output.');
     }
 
     function renderJobs(jobs) {
       jobs = jobs || {jobs: []};
       jobs.jobs = jobs.jobs || [];
-      document.getElementById('job-metrics').innerHTML = [
+      replaceHTML('job-metrics', [
         smallMetric('total', jobs.jobs.length),
         smallMetric('failed', jobs.jobs.filter(item => item.status === 'failed').length),
         smallMetric('latest', jobs.jobs[0] ? jobs.jobs[0].status : 'none')
-      ].join('');
-      document.getElementById('jobs-list').innerHTML = (jobs.jobs.length ? jobs.jobs.slice(0, 8) : [{id:'No cluster jobs', feature:'', status:''}])
+      ].join(''));
+      replaceHTML('jobs-list', (jobs.jobs.length ? jobs.jobs.slice(0, 8) : [{id:'No cluster jobs', feature:'', status:''}])
         .map(item => listItem(`${item.id} ${item.status ? '(' + item.status + ')' : ''}`, item.feature || item.error || item.run_dir || ''))
-        .join('');
+        .join(''));
     }
 
     async function loadNetwork() {
@@ -812,11 +827,11 @@ def render_page() -> str:
 
       data.dashboards = data.dashboards || [];
 
-      document.getElementById('tools-count').textContent = data.overview.tools_count;
-      document.getElementById('aliases-count').textContent = data.overview.aliases_count;
-      document.getElementById('runs-today').textContent = data.overview.runs_today;
+      replaceText('tools-count', data.overview.tools_count);
+      replaceText('aliases-count', data.overview.aliases_count);
+      replaceText('runs-today', data.overview.runs_today);
       const repoDirty = document.getElementById('repo-dirty');
-      repoDirty.textContent = data.overview.repo_dirty ? 'dirty' : 'clean';
+      replaceText('repo-dirty', data.overview.repo_dirty ? 'dirty' : 'clean');
       repoDirty.className = data.overview.repo_dirty ? 'value warn' : 'value ok';
 
       const chips = [
@@ -826,12 +841,12 @@ def render_page() -> str:
         `wallpaper ${data.state.wallpaper}`,
         `branch ${data.repo.branch}`
       ];
-      document.getElementById('hero-chips').innerHTML = chips.map(item => `<div class="chip">${escapeHtml(item)}</div>`).join('');
+      replaceHTML('hero-chips', chips.map(item => `<div class="chip">${escapeHtml(item)}</div>`).join(''));
 
       const audioNames = data.state.audio_connected.length
         ? data.state.audio_connected.map(item => `${item.name} (${item.battery})`).join(', ')
         : 'none';
-      document.getElementById('state-kv').innerHTML = [
+      replaceHTML('state-kv', [
         ['preset', data.state.preset],
         ['theme', data.state.theme],
         ['wallpaper', data.state.wallpaper],
@@ -839,30 +854,30 @@ def render_page() -> str:
         ['display top', data.state.displays.top],
         ['display bottom', data.state.displays.bottom],
         ['display outputs', data.state.displays.connected.join(', ') || 'unknown']
-      ].map(([k, v]) => `<div><span>${escapeHtml(k)}</span><span>${escapeHtml(v)}</span></div>`).join('');
+      ].map(([k, v]) => `<div><span>${escapeHtml(k)}</span><span>${escapeHtml(v)}</span></div>`).join(''));
 
-      document.getElementById('audio-list').innerHTML = (data.state.audio_paired.length ? data.state.audio_paired : [{name:'No paired audio devices', address:'', connected:''}])
+      replaceHTML('audio-list', (data.state.audio_paired.length ? data.state.audio_paired : [{name:'No paired audio devices', address:'', connected:''}])
         .map(item => listItem(item.name, [item.address, item.connected ? `connected ${item.connected}` : ''].filter(Boolean).join(' | ')))
-        .join('');
+        .join(''));
 
-      document.getElementById('repo-kv').innerHTML = [
+      replaceHTML('repo-kv', [
         ['branch', data.repo.branch],
         ['modified', String(data.repo.modified)],
         ['added', String(data.repo.added)],
         ['deleted', String(data.repo.deleted)],
         ['renamed', String(data.repo.renamed)],
         ['untracked', String(data.repo.untracked)]
-      ].map(([k, v]) => `<div><span>${escapeHtml(k)}</span><span>${escapeHtml(v)}</span></div>`).join('');
+      ].map(([k, v]) => `<div><span>${escapeHtml(k)}</span><span>${escapeHtml(v)}</span></div>`).join(''));
 
-      document.getElementById('commit-list').innerHTML = data.repo.commits.map(item => listItem(`${item.sha} ${item.subject}`, item.date)).join('');
-      document.getElementById('activity-list').innerHTML = data.activity.map(item => listItem(`${item.tool}: ${item.summary}`, item.recorded_at)).join('');
-      document.getElementById('latest-runs').innerHTML = data.latest_runs.map(item => listItem(item.tool, `${item.recorded_at} | ${item.summary}`)).join('');
-      document.getElementById('dashboards-list').innerHTML = data.dashboards.map(dashboardItem).join('');
-      document.getElementById('aliases-list').innerHTML = data.aliases.map(item => listItem(item.name, item.description || item.command)).join('');
-      document.getElementById('tools-list').innerHTML = data.tools.map(item => listItem(item.id, item.description || item.name)).join('');
-      document.getElementById('requests-list').innerHTML = (data.requests.length ? data.requests : [{path:'No requests yet', at:'', client:''}])
+      replaceHTML('commit-list', data.repo.commits.map(item => listItem(`${item.sha} ${item.subject}`, item.date)).join(''));
+      replaceHTML('activity-list', data.activity.map(item => listItem(`${item.tool}: ${item.summary}`, item.recorded_at)).join(''));
+      replaceHTML('latest-runs', data.latest_runs.map(item => listItem(item.tool, `${item.recorded_at} | ${item.summary}`)).join(''));
+      replaceHTML('dashboards-list', data.dashboards.map(dashboardItem).join(''));
+      replaceHTML('aliases-list', data.aliases.map(item => listItem(item.name, item.description || item.command)).join(''));
+      replaceHTML('tools-list', data.tools.map(item => listItem(item.id, item.description || item.name)).join(''));
+      replaceHTML('requests-list', (data.requests.length ? data.requests : [{path:'No requests yet', at:'', client:''}])
         .map(item => listItem(item.path, [item.at, item.client].filter(Boolean).join(' | ')))
-        .join('');
+        .join(''));
     }
 
     loadState();

@@ -1,0 +1,253 @@
+{
+  "schema_version": "1.0",
+  "updated_at": "2026-04-28T17:44:58-04:00",
+  "scoring_scale": {
+    "min": 1,
+    "max": 5,
+    "criteria": [
+      {
+        "key": "impact",
+        "label": "Impact",
+        "description": "How much value this creates if it works."
+      },
+      {
+        "key": "cluster_leverage",
+        "label": "Cluster Leverage",
+        "description": "How much the idea benefits from multiple Cento nodes."
+      },
+      {
+        "key": "feasibility",
+        "label": "Feasibility",
+        "description": "How practical it is to build with current Cento pieces."
+      },
+      {
+        "key": "momentum",
+        "label": "Momentum",
+        "description": "How much it unlocks follow-on projects."
+      }
+    ]
+  },
+  "categories": [
+    "Cluster Ops",
+    "Automation",
+    "Research",
+    "Knowledge",
+    "CRM",
+    "AI Workbench",
+    "Reliability"
+  ],
+  "ideas": [
+    {
+      "id": "cluster-job-runner",
+      "title": "Cluster Job Runner",
+      "category": "Cluster Ops",
+      "status": "active",
+      "horizon": "near",
+      "summary": "Run feature implementation jobs across Linux, macOS, and VM nodes with manifests, parallel agent dispatch, logs, and artifacts.",
+      "why_cluster": "It turns the cluster into a programmable execution fabric instead of a set of manually accessed machines.",
+      "next_step": "Add richer task decomposition, patch collection, and an explicit integration command after parallel agents finish.",
+      "scores": {
+        "impact": 5,
+        "cluster_leverage": 5,
+        "feasibility": 4,
+        "momentum": 5
+      },
+      "tags": [
+        "dispatch",
+        "logs",
+        "artifacts",
+        "foundation"
+      ]
+    },
+    {
+      "id": "personal-build-farm",
+      "title": "Personal Build Farm",
+      "category": "Automation",
+      "status": "candidate",
+      "horizon": "near",
+      "summary": "Use the cluster for parallel builds, test suites, linting, Docker image builds, and cross-platform checks.",
+      "why_cluster": "Linux and macOS nodes can validate platform differences before changes land.",
+      "next_step": "Build on top of the cluster job runner with named recipes like check, lint, test, and build.",
+      "scores": {
+        "impact": 4,
+        "cluster_leverage": 5,
+        "feasibility": 4,
+        "momentum": 4
+      },
+      "tags": [
+        "ci",
+        "cross-platform",
+        "tests"
+      ]
+    },
+    {
+      "id": "distributed-research-agent",
+      "title": "Distributed Research Agent",
+      "category": "Research",
+      "status": "candidate",
+      "horizon": "mid",
+      "summary": "Assign research subtasks to different nodes and merge findings into a single dossier.",
+      "why_cluster": "One node can search docs, another can inspect repos, another can run experiments, and the main node can synthesize.",
+      "next_step": "Create a research run folder with task manifests, node assignments, and final Markdown output.",
+      "scores": {
+        "impact": 5,
+        "cluster_leverage": 4,
+        "feasibility": 3,
+        "momentum": 4
+      },
+      "tags": [
+        "agents",
+        "research",
+        "dossiers"
+      ]
+    },
+    {
+      "id": "cross-device-continuity-dashboard",
+      "title": "Cross-Device Continuity Dashboard",
+      "category": "Cluster Ops",
+      "status": "candidate",
+      "horizon": "near",
+      "summary": "Show current repo, tmux sessions, active commands, dirty git status, available tools, CPU, memory, SSH path, and recent logs per node.",
+      "why_cluster": "It makes the whole Cento network visible from one browser view.",
+      "next_step": "Extend gather-context with tmux, process, and resource snapshots, then render them in a web dashboard.",
+      "scores": {
+        "impact": 4,
+        "cluster_leverage": 5,
+        "feasibility": 4,
+        "momentum": 4
+      },
+      "tags": [
+        "dashboard",
+        "tmux",
+        "observability"
+      ]
+    },
+    {
+      "id": "cluster-aware-crm-assistant",
+      "title": "Cluster-Aware CRM Assistant",
+      "category": "CRM",
+      "status": "candidate",
+      "horizon": "mid",
+      "summary": "Process client material across nodes: resume parsing, LinkedIn cleanup, artifact generation, and workflow creation.",
+      "why_cluster": "Independent artifact steps can run in parallel while CRM state remains the source of truth.",
+      "next_step": "Add a CRM artifact job plan that can be dispatched by the cluster runner.",
+      "scores": {
+        "impact": 4,
+        "cluster_leverage": 4,
+        "feasibility": 3,
+        "momentum": 4
+      },
+      "tags": [
+        "crm",
+        "career-consulting",
+        "artifacts"
+      ]
+    },
+    {
+      "id": "local-ai-workbench",
+      "title": "Local AI Workbench",
+      "category": "AI Workbench",
+      "status": "candidate",
+      "horizon": "mid",
+      "summary": "Route AI tasks by node capability: local model serving, browser workflows, API jobs, and relay services.",
+      "why_cluster": "Each node can specialize by hardware, operating system, network position, or available credentials.",
+      "next_step": "Inventory per-node capabilities and design a simple task router contract.",
+      "scores": {
+        "impact": 5,
+        "cluster_leverage": 5,
+        "feasibility": 3,
+        "momentum": 4
+      },
+      "tags": [
+        "ai",
+        "routing",
+        "capabilities"
+      ]
+    },
+    {
+      "id": "distributed-artifact-index",
+      "title": "Distributed File and Artifact Index",
+      "category": "Knowledge",
+      "status": "candidate",
+      "horizon": "mid",
+      "summary": "Index projects, docs, notes, logs, screenshots, transcripts, and generated outputs across machines.",
+      "why_cluster": "The value is in finding context regardless of which node generated or stored it.",
+      "next_step": "Start with file metadata and ripgrep summaries under workspace/runs, then add richer extractors.",
+      "scores": {
+        "impact": 4,
+        "cluster_leverage": 4,
+        "feasibility": 4,
+        "momentum": 5
+      },
+      "tags": [
+        "search",
+        "memory",
+        "artifacts"
+      ]
+    },
+    {
+      "id": "remote-pairing-cockpit",
+      "title": "Remote Pairing Cockpit",
+      "category": "Cluster Ops",
+      "status": "candidate",
+      "horizon": "near",
+      "summary": "Pick a node, open tmux, run a command, tail logs, sync repo, start bridge, or open a service tunnel.",
+      "why_cluster": "It reduces the friction of moving work to the right machine.",
+      "next_step": "Prototype a terminal-first cockpit that wraps existing cluster, bridge, and network commands.",
+      "scores": {
+        "impact": 4,
+        "cluster_leverage": 5,
+        "feasibility": 4,
+        "momentum": 4
+      },
+      "tags": [
+        "tmux",
+        "ssh",
+        "tunnels"
+      ]
+    },
+    {
+      "id": "cluster-morning-brief",
+      "title": "Cluster Morning Brief",
+      "category": "Automation",
+      "status": "candidate",
+      "horizon": "near",
+      "summary": "Gather state from all nodes: repo changes, generated artifacts, failing checks, active CRM clients, and suggested next actions.",
+      "why_cluster": "It turns distributed machine state into a single daily operating note.",
+      "next_step": "Extend the existing daily tool with a cluster context section.",
+      "scores": {
+        "impact": 4,
+        "cluster_leverage": 4,
+        "feasibility": 4,
+        "momentum": 3
+      },
+      "tags": [
+        "daily",
+        "brief",
+        "continuity"
+      ]
+    },
+    {
+      "id": "self-healing-network-layer",
+      "title": "Self-Healing Network Layer",
+      "category": "Reliability",
+      "status": "candidate",
+      "horizon": "near",
+      "summary": "Detect broken SSH, stale bridge, missing socket, dead tunnel, or wrong known-host state, then offer repair commands.",
+      "why_cluster": "The cluster only feels powerful when the connection layer is boring and reliable.",
+      "next_step": "Turn existing bridge and gather-context checks into diagnostics with explicit repair actions.",
+      "scores": {
+        "impact": 5,
+        "cluster_leverage": 5,
+        "feasibility": 4,
+        "momentum": 5
+      },
+      "tags": [
+        "ssh",
+        "bridge",
+        "repair",
+        "health"
+      ]
+    }
+  ]
+}

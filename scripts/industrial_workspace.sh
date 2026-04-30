@@ -13,8 +13,16 @@ LOG_DIR="$ROOT_DIR/logs/industrial-workspace"
 LOG_FILE="$LOG_DIR/$(date '+%Y%m%d-%H%M%S')-industrial-workspace.log"
 PANEL_SCRIPT="$ROOT_DIR/scripts/industrial_panel.py"
 HERO_ART="${CENTO_INDUSTRIAL_HERO_ART:-$ROOT_DIR/assets/industrial-os/volcano-pane.png}"
+TERMINAL_ART="${CENTO_INDUSTRIAL_TERMINAL_ART:-$ROOT_DIR/assets/industrial-os/activity-pane.png}"
+JOBS_ART="${CENTO_INDUSTRIAL_JOBS_ART:-$ROOT_DIR/assets/industrial-os/jobs-pane.png}"
+CLUSTER_ART="${CENTO_INDUSTRIAL_CLUSTER_ART:-$ROOT_DIR/assets/industrial-os/cluster-pane.png}"
+ACTIVITY_ART="${CENTO_INDUSTRIAL_ACTIVITY_ART:-$ROOT_DIR/assets/industrial-os/activity-pane.png}"
+ACTIONS_ART="${CENTO_INDUSTRIAL_ACTIONS_ART:-$ROOT_DIR/assets/industrial-os/actions-pane.png}"
+BACKGROUND_MODE="${CENTO_INDUSTRIAL_BACKGROUND_MODE:-images}"
+BLACK_ONLY="${CENTO_INDUSTRIAL_BLACK_ONLY:-0}"
 TERMINAL_SHELL="${SHELL:-/usr/bin/env bash}"
 PANEL_FONT_SIZE="${CENTO_INDUSTRIAL_PANEL_FONT_SIZE:-11.0}"
+HERO_FONT_SIZE="${CENTO_INDUSTRIAL_HERO_FONT_SIZE:-9.0}"
 TERMINAL_FONT_SIZE="${CENTO_INDUSTRIAL_TERMINAL_FONT_SIZE:-12.0}"
 KITTY_PANEL_OPTIONS=(
     -o "font_size=$PANEL_FONT_SIZE"
@@ -26,15 +34,15 @@ KITTY_PANEL_OPTIONS=(
 KITTY_TERMINAL_OPTIONS=(
     -o "font_size=$TERMINAL_FONT_SIZE"
     -o "window_padding_width=7"
-    -o "background_opacity=0.94"
-    -o "background=#050403"
+    -o "background_opacity=0.82"
+    -o "background=#180604"
     -o "foreground=#f4e8dc"
-    -o "selection_background=#ff5a00"
+    -o "selection_background=#8f1f0a"
     -o "selection_foreground=#050403"
-    -o "cursor=#ff5a00"
+    -o "cursor=#ffb000"
     -o "cursor_text_color=#050403"
     -o "url_color=#ff9a3d"
-    -o "color0=#090705"
+    -o "color0=#0b0302"
     -o "color1=#ff3500"
     -o "color2=#6be675"
     -o "color3=#ffb000"
@@ -42,7 +50,7 @@ KITTY_TERMINAL_OPTIONS=(
     -o "color5=#d95f2a"
     -o "color6=#e0a070"
     -o "color7=#f4e8dc"
-    -o "color8=#5a3728"
+    -o "color8=#6d2618"
     -o "color9=#ff6a00"
     -o "color10=#a4ff9b"
     -o "color11=#ffd166"
@@ -59,7 +67,6 @@ GENERATED_CLASSES=(
     "cento-industrial-terminal"
     "cento-industrial-jobs"
     "cento-industrial-cluster"
-    "cento-industrial-resources"
     "cento-industrial-activity"
     "cento-industrial-actions"
 )
@@ -71,6 +78,8 @@ Usage: industrial_workspace.sh [options]
 Options:
   --workspace NAME_OR_NUMBER     Workspace to compose. Default: 1
   --preserve-workspace NAME      Where non-preset windows from workspace 1 are moved. Default: 9
+  --backgrounds images|black     Use pane images or plain black backgrounds. Default: images
+  --black-only                   Alias for --backgrounds black
   -h, --help                     Show this help.
 USAGE
 }
@@ -283,37 +292,93 @@ close_generated_panes() {
     sleep 0.2
 }
 
+backgrounds_enabled() {
+    [[ "$BLACK_ONLY" != "1" ]] || return 1
+    case "$BACKGROUND_MODE" in
+        black|none|off|0|false) return 1 ;;
+        *) return 0 ;;
+    esac
+}
+
+panel_art() {
+    case "$1" in
+        hero) printf '%s\n' "$HERO_ART" ;;
+        terminal) printf '%s\n' "$TERMINAL_ART" ;;
+        jobs) printf '%s\n' "$JOBS_ART" ;;
+        cluster) printf '%s\n' "$CLUSTER_ART" ;;
+        activity) printf '%s\n' "$ACTIVITY_ART" ;;
+        actions) printf '%s\n' "$ACTIONS_ART" ;;
+        *) return 1 ;;
+    esac
+}
+
+append_background_options() {
+    local panel=$1
+    local tint=${2:-0.88}
+    local art
+    art=$(panel_art "$panel" 2>/dev/null || true)
+    if backgrounds_enabled && [[ -n "$art" && -f "$art" ]]; then
+        options+=(
+            -o "background_opacity=1.0"
+            -o "background=#050403"
+            -o "background_image=$art"
+            -o "background_image_layout=cscaled"
+            -o "background_image_linear=yes"
+            -o "background_tint=$tint"
+        )
+    else
+        options+=(
+            -o "background_opacity=1.0"
+            -o "background=#050403"
+            -o "background_image=none"
+        )
+    fi
+}
+
 launch_panel() {
     local klass=$1
     local title=$2
     local panel=$3
     local -a options=("${KITTY_PANEL_OPTIONS[@]}")
-    if [[ "$panel" == "hero" && -f "$HERO_ART" ]]; then
+    local -a command=(env CENTO_INDUSTRIAL_HERO_BACKGROUND=0 python3 "$PANEL_SCRIPT" "$panel")
+    if [[ "$panel" == "hero" ]]; then
         options=(
-            -o "font_size=$PANEL_FONT_SIZE"
+            -o "font_size=$HERO_FONT_SIZE"
             -o "window_padding_width=5"
-            -o "background_opacity=1.0"
-            -o "background=#050403"
-            -o "background_image=$HERO_ART"
-            -o "background_image_layout=cscaled"
-            -o "background_image_linear=yes"
-            -o "background_tint=0.30"
+            -o "foreground=#f4e8dc"
+            -o "selection_background=#8f1f0a"
+            -o "selection_foreground=#050403"
+            -o "cursor=#ffb000"
+            -o "cursor_text_color=#050403"
+            -o "url_color=#ff9a3d"
             -o "cursor_blink_interval=0"
             -o "confirm_os_window_close=0"
         )
+        append_background_options "$panel" "0.90"
+        command=(env CENTO_INDUSTRIAL_HERO_BACKGROUND=1 python3 "$PANEL_SCRIPT" "$panel")
+    elif [[ "$panel" == "jobs" ]]; then
+        append_background_options "$panel" "0.92"
+        command=("$ROOT_DIR/scripts/industrial_jobs_tui.sh")
+    elif [[ "$panel" == "cluster" ]]; then
+        append_background_options "$panel" "0.90"
+        command=("$ROOT_DIR/scripts/industrial_cluster_tui.sh")
+    elif [[ "$panel" == "activity" || "$panel" == "actions" ]]; then
+        append_background_options "$panel" "0.92"
+        command=("$ROOT_DIR/scripts/industrial_aux_tui.sh" "$panel")
     fi
     setsid -f kitty \
         "${options[@]}" \
         --class "$klass" \
         --title "$title" \
         --working-directory "$ROOT_DIR" \
-        env CENTO_INDUSTRIAL_HERO_BACKGROUND=$([[ "$panel" == "hero" && -f "$HERO_ART" ]] && printf 1 || printf 0) \
-            python3 "$PANEL_SCRIPT" "$panel" >/dev/null 2>&1 || true
+        "${command[@]}" >/dev/null 2>&1 || true
 }
 
 launch_terminal() {
+    local -a options=("${KITTY_TERMINAL_OPTIONS[@]}")
+    append_background_options "terminal" "0.94"
     setsid -f kitty \
-        "${KITTY_TERMINAL_OPTIONS[@]}" \
+        "${options[@]}" \
         --class "cento-industrial-terminal" \
         --title "cento terminal" \
         --working-directory "$HOME" \
@@ -340,7 +405,6 @@ ensure_all_windows() {
     launch_terminal
     launch_panel "cento-industrial-jobs" "jobs dashboard" "jobs"
     launch_panel "cento-industrial-cluster" "cluster status" "cluster"
-    launch_panel "cento-industrial-resources" "system resources" "resources"
     launch_panel "cento-industrial-activity" "activity feed" "activity"
     launch_panel "cento-industrial-actions" "quick actions" "actions"
 
@@ -410,7 +474,7 @@ if bottom_height < 190:
 
 row(
     ["discord", "cento-industrial-hero", "cento-industrial-terminal"],
-    [0.31, 0.35, 0.34],
+    [0.31, 0.39, 0.30],
     x,
     y,
     width,
@@ -421,11 +485,10 @@ row(
     [
         "cento-industrial-jobs",
         "cento-industrial-cluster",
-        "cento-industrial-resources",
         "cento-industrial-activity",
         "cento-industrial-actions",
     ],
-    [0.34, 0.22, 0.18, 0.16, 0.10],
+    [0.34, 0.22, 0.22, 0.22],
     x,
     y + top_height + gap,
     width,
@@ -511,7 +574,7 @@ if discord:
 
 right_edge = x + width
 remaining = max(640, right_edge - discord_right - gap)
-hero_width = max(320, round((remaining - gap) * 0.51))
+hero_width = max(320, round((remaining - gap) * 0.58))
 terminal_width = max(320, right_edge - (discord_right + gap) - hero_width - gap)
 hero_x = discord_right + gap
 terminal_x = hero_x + hero_width + gap
@@ -524,11 +587,10 @@ row(
     [
         "cento-industrial-jobs",
         "cento-industrial-cluster",
-        "cento-industrial-resources",
         "cento-industrial-activity",
         "cento-industrial-actions",
     ],
-    [0.34, 0.22, 0.18, 0.16, 0.10],
+    [0.34, 0.22, 0.22, 0.22],
     x,
     y + top_height + gap,
     width,
@@ -603,6 +665,15 @@ while [[ $# -gt 0 ]]; do
         --preserve-workspace)
             PRESERVE_WORKSPACE=$2
             shift 2
+            ;;
+        --backgrounds)
+            BACKGROUND_MODE=$2
+            shift 2
+            ;;
+        --black-only)
+            BACKGROUND_MODE=black
+            BLACK_ONLY=1
+            shift
             ;;
         -h|--help)
             usage

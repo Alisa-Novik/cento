@@ -41,6 +41,10 @@ Commands:
   from-mac       Run a default or provided command on the Linux node from the Mac
   expose-linux   Expose this Linux node on the VM as a Unix socket
   expose-mac     Start user-level Mac sshd and expose this Mac as a VM Unix socket
+  install-linux-service
+                 Install a user service that keeps expose-linux repaired
+  install-mac-service
+                 Install a launchd service that keeps expose-mac repaired
   to-linux       Open a shell on the Linux node through the VM Unix socket
   to-mac         Open a shell on the Mac node through the VM Unix socket
   context-linux  Print Linux node gather-context through the VM Unix socket
@@ -68,6 +72,8 @@ Examples:
   cento bridge status
   cento bridge check
   cento bridge expose-linux
+  cento bridge install-linux-service
+  cento bridge install-mac-service
   cento bridge expose-mac
   cento bridge to-linux
   cento bridge to-mac
@@ -261,18 +267,27 @@ EOF_SSHD
 }
 
 start_socket_tunnel() {
-    local vm_user=$1 vm_host=$2 socket_path=$3 target_host=$4 target_port=$5 label=$6
+    local vm_user=$1 vm_host=$2 socket_path=$3 target_host=$4 target_port=$5 label=$6 target_user=$7 host_alias=$8
     cento_require_cmd ssh
     cento_ensure_dir "$STATE_DIR"
     local pid_file="$STATE_DIR/${label}-socket.pid"
     local log_file="$STATE_DIR/${label}-socket.log"
     if [[ -f "$pid_file" ]] && kill -0 "$(<"$pid_file")" >/dev/null 2>&1; then
-        printf '%s socket tunnel already running (pid %s).\n' "$label" "$(<"$pid_file")"
-        return 0
+        if socket_ssh_ok "$vm_user" "$vm_host" "$socket_path" "$target_user" "$host_alias"; then
+            printf '%s socket tunnel already running (pid %s).\n' "$label" "$(<"$pid_file")"
+            return 0
+        fi
+        cento_warn "$label socket tunnel pid exists but health check failed; restarting."
+        kill "$(<"$pid_file")" >/dev/null 2>&1 || true
+        rm -f "$pid_file"
     fi
     if ssh -o BatchMode=yes -o ConnectTimeout=5 "${vm_user}@${vm_host}" "test -S '$socket_path'" >/dev/null 2>&1; then
-        printf '%s socket already exists on VM: %s\n' "$label" "$socket_path"
-        return 0
+        if socket_ssh_ok "$vm_user" "$vm_host" "$socket_path" "$target_user" "$host_alias"; then
+            printf '%s socket already exists on VM and is healthy: %s\n' "$label" "$socket_path"
+            return 0
+        fi
+        cento_warn "$label socket exists on VM but is stale; removing $socket_path."
+        ssh -o BatchMode=yes -o ConnectTimeout=5 "${vm_user}@${vm_host}" "rm -f '$socket_path'" >/dev/null 2>&1 || true
     fi
     rm -f "$pid_file"
     nohup ssh \
@@ -291,6 +306,97 @@ start_socket_tunnel() {
         cento_die "$label socket tunnel failed. See $log_file"
     fi
     printf '%s socket tunnel started (pid %s): %s -> %s:%s\n' "$label" "$(<"$pid_file")" "$socket_path" "$target_host" "$target_port"
+}
+
+socket_ssh_ok() {
+    local vm_user=$1 vm_host=$2 socket_path=$3 target_user=$4 host_alias=$5
+    ssh \
+        -o BatchMode=yes \
+        -o StrictHostKeyChecking=accept-new \
+        -o ConnectTimeout=8 \
+        -o ProxyCommand="ssh ${vm_user}@${vm_host} nc -U ${socket_path}" \
+        "${target_user}@${host_alias}" \
+        true >/dev/null 2>&1
+}
+
+install_linux_service() {
+    [[ "$(uname -s)" == "Linux" ]] || cento_die "install-linux-service must run on Linux"
+    cento_require_cmd systemctl
+
+    local service_dir="$HOME/.config/systemd/user"
+    local service_file="$service_dir/cento-bridge-linux.service"
+    local cento_bin
+    cento_bin=$(command -v cento 2>/dev/null || printf '%s/bin/cento' "$HOME")
+    cento_ensure_dir "$service_dir"
+
+    cat > "$service_file" <<EOF_SERVICE
+[Unit]
+Description=Cento Linux bridge socket
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/env bash -lc 'while true; do "$cento_bin" bridge expose-linux || true; sleep 10; done'
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+EOF_SERVICE
+
+    systemctl --user daemon-reload
+    systemctl --user enable --now cento-bridge-linux.service
+    if command -v loginctl >/dev/null 2>&1; then
+        loginctl enable-linger "$USER" >/dev/null 2>&1 || true
+    fi
+    printf 'Installed and started %s\n' "$service_file"
+    printf 'Status: systemctl --user status cento-bridge-linux.service\n'
+}
+
+install_mac_service() {
+    [[ "$(uname -s)" == "Darwin" ]] || cento_die "install-mac-service must run on macOS"
+
+    local label="com.cento.bridge-mac"
+    local launch_dir="$HOME/Library/LaunchAgents"
+    local plist="$launch_dir/${label}.plist"
+    local log_dir="${XDG_STATE_HOME:-$HOME/.local/state}/cento"
+    local cento_bin
+    cento_bin=$(command -v cento 2>/dev/null || printf '%s/bin/cento' "$HOME")
+    cento_ensure_dir "$launch_dir"
+    cento_ensure_dir "$log_dir"
+
+    cat > "$plist" <<EOF_PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>$label</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-lc</string>
+    <string>while true; do "$cento_bin" bridge expose-mac || true; sleep 10; done</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>$log_dir/bridge-mac.launchd.log</string>
+  <key>StandardErrorPath</key>
+  <string>$log_dir/bridge-mac.launchd.err</string>
+</dict>
+</plist>
+EOF_PLIST
+
+    launchctl bootout "gui/$(id -u)" "$plist" >/dev/null 2>&1 || true
+    launchctl bootstrap "gui/$(id -u)" "$plist"
+    launchctl enable "gui/$(id -u)/$label" >/dev/null 2>&1 || true
+    launchctl kickstart -k "gui/$(id -u)/$label" >/dev/null 2>&1 || true
+    printf 'Installed and started %s\n' "$plist"
+    printf 'Status: launchctl print gui/%s/%s\n' "$(id -u)" "$label"
 }
 
 run_via_socket() {
@@ -457,11 +563,17 @@ main() {
             run_from_mac "$vm_user" "$vm_host" "$remote_port" "$local_user" "${passthrough[@]}"
             ;;
         expose-linux)
-            start_socket_tunnel "$vm_user" "$vm_host" "$DEFAULT_LINUX_SOCKET" "$local_host" "$local_port" "linux"
+            start_socket_tunnel "$vm_user" "$vm_host" "$DEFAULT_LINUX_SOCKET" "$local_host" "$local_port" "linux" "$local_user" "cento-linux"
+            ;;
+        install-linux-service)
+            install_linux_service
+            ;;
+        install-mac-service)
+            install_mac_service
             ;;
         expose-mac)
             start_mac_sshd
-            start_socket_tunnel "$vm_user" "$vm_host" "$DEFAULT_MAC_SOCKET" "127.0.0.1" "$DEFAULT_MAC_SSHD_PORT" "mac"
+            start_socket_tunnel "$vm_user" "$vm_host" "$DEFAULT_MAC_SOCKET" "127.0.0.1" "$DEFAULT_MAC_SSHD_PORT" "mac" "$mac_user" "cento-mac"
             ;;
         to-linux)
             cento_require_cmd ssh

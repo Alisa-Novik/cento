@@ -20,7 +20,9 @@
   - `cento conf`
   - `cento conf --path`
   - `cento completion zsh`
+  - `cento install all`
   - `cento install zsh`
+  - `cento install tmux`
   - `cento run scan --query "mcp"`
   - `cento platforms`
   - `cento platforms macos`
@@ -48,6 +50,8 @@
   - `cento bridge --from-mac`
   - `cento bridge from-mac -- 'cd "$HOME/projects/cento" && ./scripts/cento.sh platforms linux'`
   - `cento bridge expose-linux`
+  - `cento bridge install-linux-service`
+  - `cento bridge install-mac-service`
   - `cento bridge expose-mac`
   - `cento bridge to-linux`
   - `cento bridge to-mac`
@@ -178,8 +182,25 @@
 - commands:
   - `./scripts/dashboard_server.py`
   - `./scripts/dashboard_server.py --open`
+  - `./scripts/dashboard_server.py --theme industrial --open`
   - `./scripts/dashboard_server.py --host 127.0.0.1 --port 46268`
   - `cento dashboard`
+
+## Desktop Presets
+
+- `id`: `preset`
+- `lane`: `desktop ops`
+- `kind`: `shell`
+- `entrypoint`: `./scripts/preset.sh`
+- description: Apply managed Cento desktop presets such as the Industrial OS i3 theme and dashboard.
+- commands:
+  - `cento preset list`
+  - `cento preset industrial-os`
+  - `cento preset industrial-os --workspace`
+  - `cento preset industrial-os --workspace --black-only`
+  - `cento preset industrial-os --session`
+  - `cento preset industrial-os --dashboard-only --open`
+  - `cento dashboard --theme industrial --open`
 
 ## Quick Help
 
@@ -365,6 +386,40 @@
 - commands:
   - `./scripts/install_linux.sh`
 
+## Cento Notify
+
+- `id`: `notify`
+- `lane`: `agent ops`
+- `kind`: `shell`
+- `entrypoint`: `./scripts/notify.sh`
+- description: Send cluster notifications to configured ntfy targets such as iPhone and Apple Watch mirrored alerts.
+- commands:
+  - `cento notify setup iphone TOPIC`
+  - `cento notify status`
+  - `cento notify iphone "Cluster job finished"`
+  - `cento notify all "Linux healed"`
+  - `cento notify test iphone`
+
+## Cento Cluster Control
+
+- `id`: `cluster`
+- `lane`: `agent ops`
+- `kind`: `shell`
+- `entrypoint`: `./scripts/cluster.sh`
+- description: Manage Cento node identity, cluster registry, colored status, remote execution, bridge healing, and read-only git drift checks.
+- commands:
+  - `cento cluster init`
+  - `cento cluster nodes`
+  - `cento cluster status`
+  - `cento cluster exec linux -- tmux ls`
+  - `cento cluster exec macos -- cento gather-context --no-remote`
+  - `cento cluster sync`
+  - `cento cluster heal`
+  - `cento cluster heal linux`
+  - `cento cluster heartbeat iphone`
+  - `cento cluster metric memory`
+  - `cento cluster ask "send me notification with total memory consumption on the cluster"`
+
 ## Gather Context
 
 - `id`: `gather-context`
@@ -384,7 +439,7 @@
 - `lane`: `agent ops`
 - `kind`: `shell`
 - `entrypoint`: `./scripts/network_tui.sh`
-- description: Platform-agnostic Bubble Tea monitor for local and remote Cento node health, platform support, command paths, repo status, and bridge connectivity.
+- description: Cluster-focused Bubble Tea monitor for Cento nodes, connection state, activity state, tmux presence, VM mesh sockets, and companion-device reachability.
 - commands:
   - `cento network-tui`
   - `cento network-tui --no-remote`

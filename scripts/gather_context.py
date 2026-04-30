@@ -85,6 +85,43 @@ def command_path_any(*names: str) -> str | None:
     return None
 
 
+def process_activity(timeout: int) -> dict[str, Any]:
+    result = run(["ps", "ax", "-o", "command="], timeout=timeout)
+    matches: list[str] = []
+    if result["stdout"]:
+        for line in result["stdout"].splitlines():
+            lowered = line.lower()
+            if "codex" in lowered and "gather_context.py" not in lowered:
+                matches.append(line.strip())
+    return {
+        "state": "executing agent" if matches else "idle",
+        "summary": matches[0] if matches else "idle",
+        "count": len(matches),
+    }
+
+
+def apple_watch_status(timeout: int) -> dict[str, Any]:
+    if current_platform() != "macos":
+        return {"name": "apple watch", "connection": "unknown", "activity": "idle", "detail": "not local macos"}
+    result = run(["system_profiler", "SPBluetoothDataType", "-json"], timeout=min(timeout, 4))
+    if result["returncode"] != 0:
+        return {"name": "apple watch", "connection": "unknown", "activity": "idle", "detail": result["stderr"] or "bluetooth query failed"}
+    try:
+        payload = json.loads(result["stdout"] or "{}")
+    except json.JSONDecodeError:
+        return {"name": "apple watch", "connection": "unknown", "activity": "idle", "detail": "bluetooth output was not json"}
+
+    for group_name, connection in [("device_connected", "connected"), ("device_not_connected", "disconnected")]:
+        for controller in payload.get("SPBluetoothDataType", []):
+            for item in controller.get(group_name, []) or []:
+                for name, data in item.items():
+                    if "watch" in name.lower():
+                        rssi = data.get("device_rssi")
+                        detail = f"rssi {rssi}" if rssi else "paired"
+                        return {"name": name, "connection": connection, "activity": "idle", "detail": detail}
+    return {"name": "apple watch", "connection": "unknown", "activity": "idle", "detail": "not found in bluetooth devices"}
+
+
 def read_json(path: Path) -> Any:
     return json.loads(path.read_text())
 
@@ -134,6 +171,7 @@ def local_context(root: Path, timeout: int) -> dict[str, Any]:
     commands["fd"] = command_path_any("fd", "fdfind")
     if not commands["cento"] and Path(wrappers["cento"]).exists():
         commands["cento"] = wrappers["cento"]
+    cento_cmd = commands["cento"] or str(root / "scripts" / "cento.sh")
     return {
         "host": {
             "hostname": socket.gethostname(),
@@ -160,6 +198,13 @@ def local_context(root: Path, timeout: int) -> dict[str, Any]:
         },
         "tools": tool_summary(root),
         "platform_report": run([sys.executable, str(root / "scripts" / "platform_report.py"), "--registry", str(root / "data" / "tools.json")], root, timeout),
+        "health": {
+            "tmux": run(["tmux", "ls"], timeout=timeout) if commands.get("tmux") else {"returncode": None, "stdout": "", "stderr": "tmux missing"},
+            "mesh_status": run([cento_cmd, "bridge", "mesh-status"], root, timeout),
+            "linux_bridge_service": run(["systemctl", "--user", "is-active", "cento-bridge-linux.service"], timeout=timeout) if current_platform() == "linux" and command_path("systemctl") else {"returncode": None, "stdout": "", "stderr": "not linux/systemd"},
+            "activity": process_activity(timeout),
+            "apple_watch": apple_watch_status(timeout),
+        },
     }
 
 
@@ -184,6 +229,8 @@ fi
 if [ -n "$repo" ]; then
   printf 'repo=%s\n' "$repo"
   git -C "$repo" status --short --branch | head -1 | sed 's/^/git_status=/'
+  git -C "$repo" rev-parse --short HEAD 2>/dev/null | sed 's/^/git_head=/'
+  printf 'git_dirty_count=%s\n' "$(git -C "$repo" status --short 2>/dev/null | wc -l | tr -d ' ')"
 else
   printf 'repo=missing\n'
 fi
@@ -209,6 +256,22 @@ elif command -v fdfind >/dev/null 2>&1; then
   printf 'cmd_fd=%s\n' "$(command -v fdfind)"
 else
   printf 'cmd_fd=\n'
+fi
+if command -v tmux >/dev/null 2>&1; then
+  printf 'tmux=%s\n' "$(tmux ls 2>&1 | head -5 | tr '\n' ';' | sed 's/;*$//')"
+else
+  printf 'tmux=missing\n'
+fi
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl --user is-active cento-bridge-linux.service 2>&1 | head -1 | sed 's/^/linux_bridge_service=/'
+fi
+agent="$(ps ax -o command= 2>/dev/null | awk 'tolower($0) ~ /codex/ && $0 !~ /awk/ {print}' | head -5 | tr '\n' ';' | sed 's/;*$//')"
+if [ -n "$agent" ]; then
+  printf 'activity=executing agent\n'
+  printf 'activity_detail=%s\n' "$agent"
+else
+  printf 'activity=idle\n'
+  printf 'activity_detail=idle\n'
 fi
 '''
     if use_tcp:

@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cento navigator</title>
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #141414;
+    --surface2: #1c1c1c;
+    --border: #2a2a2a;
+    --accent: #e8a838;
+    --accent2: #5ba4cf;
+    --text: #d4d4d4;
+    --muted: #666;
+    --green: #4caf7d;
+    --red: #e06c75;
+    --tag-bg: #1e2a1e;
+    --tag-text: #4caf7d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', 'Fira Mono', monospace; font-size: 13px; line-height: 1.6; }
+
+  header { padding: 18px 24px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; }
+  header .logo { color: var(--accent); font-size: 18px; font-weight: bold; letter-spacing: 2px; }
+  header .tagline { color: var(--muted); font-size: 11px; }
+
+  .top-bar { display: flex; gap: 10px; padding: 14px 24px; border-bottom: 1px solid var(--border); align-items: center; flex-wrap: wrap; }
+  #search { flex: 1; min-width: 200px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 7px 12px; border-radius: 4px; font-family: inherit; font-size: 13px; outline: none; }
+  #search:focus { border-color: var(--accent); }
+  #search::placeholder { color: var(--muted); }
+
+  .lanes { display: flex; gap: 6px; flex-wrap: wrap; }
+  .lane-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); padding: 5px 10px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 11px; transition: all 0.15s; }
+  .lane-btn:hover, .lane-btn.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: bold; }
+
+  .section-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 24px; }
+  .section-tab { padding: 9px 16px; cursor: pointer; color: var(--muted); font-size: 12px; border-bottom: 2px solid transparent; transition: all 0.15s; }
+  .section-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .section-tab:hover { color: var(--text); }
+
+  .content { padding: 16px 24px; display: flex; gap: 16px; }
+
+  .tools-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; align-content: start; }
+
+  .tool-card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; overflow: hidden; transition: border-color 0.15s; }
+  .tool-card:hover { border-color: #3a3a3a; }
+  .tool-card.expanded { border-color: var(--accent); }
+
+  .card-header { padding: 12px 14px; cursor: pointer; display: flex; align-items: flex-start; gap: 10px; }
+  .card-icon { width: 28px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+  .kind-shell { background: #1a2a1a; color: var(--green); }
+  .kind-python { background: #1a1a2a; color: var(--accent2); }
+  .kind-go { background: #2a1a1a; color: #e06c75; }
+
+  .card-meta { flex: 1; min-width: 0; }
+  .card-name { color: #eee; font-weight: bold; font-size: 13px; }
+  .card-desc { color: var(--muted); font-size: 11px; margin-top: 3px; line-height: 1.4; }
+
+  .card-badges { display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap; }
+  .badge { font-size: 10px; padding: 2px 6px; border-radius: 2px; }
+  .badge-lane { background: #1e1e2e; color: #7c7caa; }
+  .badge-platform { background: #1e2a1e; color: #4caf7d; }
+  .badge-platform.linux-only { background: #2a1a1a; color: #e06c75; }
+
+  .expand-arrow { color: var(--muted); font-size: 10px; transition: transform 0.2s; flex-shrink: 0; }
+  .expanded .expand-arrow { transform: rotate(90deg); }
+
+  .card-body { border-top: 1px solid var(--border); padding: 12px 14px; display: none; }
+  .expanded .card-body { display: block; }
+
+  .section-label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; margin-top: 10px; }
+  .section-label:first-child { margin-top: 0; }
+
+  .cmd-list { display: flex; flex-direction: column; gap: 4px; }
+  .cmd-item { background: var(--bg); border: 1px solid var(--border); border-radius: 3px; padding: 5px 8px; font-size: 11px; color: var(--accent2); display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; }
+  .cmd-item:hover { border-color: var(--accent2); }
+  .cmd-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .copy-btn { color: var(--muted); font-size: 10px; flex-shrink: 0; opacity: 0; transition: opacity 0.1s; }
+  .cmd-item:hover .copy-btn { opacity: 1; }
+  .copy-btn.copied { color: var(--green); opacity: 1; }
+
+  .notes-list { display: flex; flex-direction: column; gap: 4px; }
+  .note-item { font-size: 11px; color: #888; padding-left: 10px; border-left: 2px solid var(--border); line-height: 1.5; }
+
+  .outputs-list { display: flex; flex-direction: column; gap: 3px; }
+  .output-item { font-size: 11px; color: #7a7a7a; font-family: inherit; }
+
+  /* CLI section */
+  .cli-panel { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+  .cli-card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+  .cli-card-header { padding: 10px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+  .cli-cmd-name { color: var(--accent); font-weight: bold; font-size: 13px; }
+  .cli-usage { color: var(--muted); font-size: 11px; margin-top: 2px; }
+  .cli-summary { color: #999; font-size: 11px; margin-top: 3px; }
+  .cli-card-body { border-top: 1px solid var(--border); padding: 12px 14px; display: none; }
+  .cli-card.expanded .cli-card-body { display: block; }
+  .cli-card.expanded .expand-arrow { transform: rotate(90deg); }
+
+  .flag-item { margin-top: 6px; }
+  .flag-name { color: var(--accent2); font-size: 11px; font-weight: bold; }
+  .flag-summary { color: #888; font-size: 11px; }
+
+  /* Stats bar */
+  .stats { display: flex; gap: 16px; padding: 8px 24px; border-bottom: 1px solid var(--border); font-size: 11px; color: var(--muted); }
+  .stat { display: flex; gap: 5px; align-items: center; }
+  .stat-val { color: var(--text); font-weight: bold; }
+
+  .hidden { display: none !important; }
+
+  .no-results { color: var(--muted); padding: 32px; text-align: center; width: 100%; }
+
+  #section-tools, #section-cli { display: none; }
+  #section-tools.active, #section-cli.active { display: flex; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">⬡ cento</div>
+    <div class="tagline">local-first codex automation toolkit</div>
+  </div>
+</header>
+
+<div class="top-bar">
+  <input id="search" type="text" placeholder="search tools, commands, descriptions..." autocomplete="off" />
+  <div class="lanes" id="lane-filters"></div>
+</div>
+
+<div class="stats" id="stats"></div>
+
+<div class="section-tabs">
+  <div class="section-tab active" data-section="tools">Tools <span id="tools-count" style="color:var(--muted);font-size:10px"></span></div>
+  <div class="section-tab" data-section="cli">CLI Built-ins <span id="cli-count" style="color:var(--muted);font-size:10px"></span></div>
+</div>
+
+<div class="content">
+  <div id="section-tools" class="active">
+    <div class="tools-grid" id="tools-grid"></div>
+  </div>
+  <div id="section-cli">
+    <div class="cli-panel" id="cli-panel"></div>
+  </div>
+</div>
+
+<script>
+const TOOLS = {"tools":[{"id":"cento-cli","name":"Cento CLI","lane":"general ops","kind":"shell","entrypoint":"./scripts/cento.sh","wrapper":"~/bin/cento","description":"Unified cento facade for built-ins, terminal docs browsing, tool dispatch, and user-defined aliases.","platforms":["linux","macos"],"commands":["cento help","cento interactive","cento docs","cento docs conf","cento docs --json","cento docs --path","cento tools","cento aliases","cento conf","cento conf --path","cento completion zsh","cento install all","cento install zsh","cento install tmux","cento run scan --query \"mcp\"","cento platforms","cento platforms macos","cento platforms linux","cento platforms --markdown"],"outputs":["~/.config/cento/aliases.sh","~/.config/cento/init.zsh","~/.config/cento/tmux.conf"],"notes":["Canonical built-in docs live in data/cento-cli.json.","Use cento interactive for the Bubble Tea terminal browser of built-ins, tools, and aliases.","Use cento docs for the non-interactive JSON-backed docs path.","Combined aliases can chain multiple cento subcommands through bash -lc.","Use cento platforms to compare declared macOS and Linux support."]},{"id":"bridge","name":"OCI SSH Bridge","lane":"remote access","kind":"shell","entrypoint":"./scripts/bridge.sh","description":"Create a reverse SSH tunnel through the OCI VM so another machine can SSH back into this host through the VM relay.","platforms":["linux","macos"],"commands":["cento bridge start","cento bridge status","cento bridge stop","cento bridge restart","cento bridge foreground","cento bridge command","cento bridge mac-command","cento bridge docs","cento bridge check","cento bridge from-mac","cento bridge --from-mac","cento bridge expose-linux","cento bridge install-linux-service","cento bridge install-mac-service","cento bridge expose-mac","cento bridge to-linux","cento bridge to-mac","cento bridge mesh-status","cento bridge context-linux","cento bridge context-mac"],"outputs":["~/.local/state/cento/bridge.pid","~/.local/state/cento/bridge.log"],"notes":["Defaults to the OCI instance opc@129.213.17.199 from instance-20250511-1002.","Uses ~/.ssh/id_ed25519 as the default private key for that VM.","Requests a localhost reverse tunnel on the VM: 127.0.0.1:2222 -> this machine 127.0.0.1:22.","The Mac connects with ProxyJump through the VM instead of using a public relay port.","Use cento bridge check to validate the local repo and Mac-through-VM SSH path.","Secure mesh mode uses SSH remote Unix sockets on the VM instead of public VM TCP listeners.","Use expose-linux on the Linux node and expose-mac on the Mac node, then use to-linux/to-mac for node-to-node commands."]},{"id":"daily","name":"Daily Execution Support","lane":"execution","kind":"shell","entrypoint":"./scripts/daily_tui.sh","description":"Bubble Tea execution cockpit for morning brief, midday recalibration, evening wrap-up, and local continuity.","platforms":["linux","macos"],"commands":["cento daily"],"outputs":["workspace/runs/daily/history.json"],"notes":["Mock brief generation is isolated behind a BriefGenerator interface for later LLM replacement.","The launcher builds a cached Bubble Tea binary from scripts/daily_tui.go."]},{"id":"tui","name":"Telegram TUI","lane":"communications","kind":"shell","entrypoint":"./scripts/telegram_tui.sh","description":"Bubble Tea Telegram TUI with cached Go launcher, local config, and planned CRM hooks.","platforms":["linux","macos"],"commands":["cento tui","cento tui status","cento tui config --path","cento tui docs","cento crm integration --provider telegram"],"outputs":["~/.config/cento/telegram.json","workspace/runs/telegram-tui/*.md","workspace/runs/crm-app/<profile>/integration-telegram.md"],"notes":["This tool follows the repo TUI standard in standards/tui.md.","The launcher builds a cached Bubble Tea binary from scripts/telegram_tui.go.","CRM integration remains a registered placeholder under cento crm integration."]},{"id":"crm","name":"CRM Module","lane":"career consulting","kind":"python","entrypoint":"./scripts/crm_module.py","description":"Embedded cento CRM with questionnaire bootstrap, career-intake dossiers, local JSON persistence, and a self-hosted no-build SPA.","platforms":["linux","macos"],"commands":["cento crm","cento crm questionnaire","cento crm init","cento crm intake init --person \"Ada Lovelace\"","cento crm intake add --person \"Ada Lovelace\" --kind resume --file ./resume.pdf","cento crm intake plan --person \"Ada Lovelace\"","cento crm integration --provider redmine --person \"Ada Lovelace\" --start-workflow --dry-run","cento crm serve --open","cento crm show","cento crm docs"],"outputs":["workspace/runs/crm-questionnaire/<profile>/answers.json","workspace/runs/crm-questionnaire/<profile>/summary.md","workspace/runs/crm-app/<profile>/state.json","workspace/runs/crm-app/latest.json","workspace/runs/career-intake/<person>/manifest.json","workspace/runs/career-intake/<person>/artifact-plan.md","workspace/runs/career-intake/<person>/prompts/*.md","workspace/runs/career-intake/<person>/artifacts/*.md","Redmine project and issues via REST API"],"notes":["Run cento crm serve to host the local SPA through the cento CLI.","Run cento crm init to bootstrap app state from the saved questionnaire.","Run cento crm intake to collect raw candidate inputs and generate a Codex-ready artifact plan.","Run cento crm integration --provider redmine --start-workflow to create a Redmine workflow from generated artifacts.","The CRM is a no-build local app backed by JSON persistence."]},{"id":"burp","name":"Burp Suite Community","lane":"security testing","kind":"shell","entrypoint":"./scripts/burp_suite_community.sh","description":"Download, set up, and control PortSwigger Burp Suite Community through cento wrappers.","platforms":["linux"],"commands":["cento burp download","cento burp download --type linux","cento burp setup","cento burp controller start --use-defaults","cento burp run -- --help","cento burp status","cento burp stop","cento burp docs"],"outputs":["~/.local/share/cento/burp/downloads/*","~/.local/share/cento/burp/current/burpsuite_community.jar","~/.local/bin/burp-community","~/.local/share/cento/burp/install.env","~/.local/share/cento/burp/burp.pid","~/.local/share/cento/burp/burp.log"],"notes":["Downloads use PortSwigger's official latest Community Edition endpoints.","The default setup path installs the official JAR and generates a local burp-community launcher.","Use download --type linux to fetch the official Linux installer for later manual or automated installer work.","Burp Suite is a GUI application; controller start runs it in the background and records a local PID."]},{"id":"mcp","name":"MCP Tooling","lane":"general ops","kind":"python","entrypoint":"./scripts/mcp_tooling.py","description":"Manage repo-root MCP config, env templates, validation, and tool-call docs.","platforms":["linux","macos"],"commands":["cento mcp doctor","cento mcp init --write-env","cento mcp docs","cento mcp paths"],"outputs":[".mcp.json",".env.mcp.example",".env.mcp","mcp/*.md"],"notes":["The canonical shared config lives at the repo root in .mcp.json.","Machine-local secrets should live in environment variables or .env.mcp.","This tool follows standards/mcp.md."]},{"id":"scan","name":"Scan One Pager","lane":"general ops","kind":"python","entrypoint":"./scripts/scan_onepager.py","description":"Scan cento for a topic and generate an archived HTML one-pager with explanation and snippets.","platforms":["linux","macos"],"commands":["cento scan --query \"mcp\"","cento scan --query \"telegram\" --no-open","cento scan --query \"crm\" --case-sensitive","cento scan --query \"mcp\" --port 47890"],"outputs":["workspace/runs/scan-onepager/latest/index.html","workspace/runs/scan-onepager/latest/summary.json","workspace/runs/scan-onepager/archive/*","workspace/runs/scan-onepager/server.json"],"notes":["Each run archives the previous latest output before writing the new page.","The tool starts or reuses a local preview server on a high port and opens the browser by default.","See docs/scan-onepager.md for the command surface and output model."]},{"id":"bluetooth-audio-doctor","name":"Bluetooth Audio Doctor","lane":"general ops","kind":"python","entrypoint":"./scripts/bluetooth_audio_doctor.py","wrapper":"~/bin/codex-bt-audio-doctor","description":"Diagnose Bluetooth and Bluetooth-audio failures, generate detailed reports, and apply safe repair actions.","platforms":["linux"],"commands":["python3 ./scripts/bluetooth_audio_doctor.py \"Black Diamond\"","python3 ./scripts/bluetooth_audio_doctor.py \"Black Diamond\" --fix","python3 ./scripts/bluetooth_audio_doctor.py \"Black Diamond\" --fix --repair-pairing"],"outputs":["stdout Markdown report","~/bluetooth-audio-reports/*.md"],"notes":["The script is safe by default.","--repair-pairing removes the current Bluetooth bond and pairs again."]},{"id":"audio-quick-connect","name":"Audio Quick Connect","lane":"general ops","kind":"shell","entrypoint":"./scripts/audio_quick_connect.sh","description":"Quickly connect a paired Bluetooth audio device by name or address with a short retry path and per-run logs.","platforms":["linux"],"commands":["./scripts/audio_quick_connect.sh \"Black Diamond\"","./scripts/audio_quick_connect.sh \"Bose\"","cento audio-quick-connect \"Black Diamond\""],"outputs":["logs/audio-quick-connect/*.log"],"notes":["Matches paired devices by exact name, substring, or MAC address.","Verifies the target advertises Bluetooth audio capabilities before connecting.","Writes the latest run to logs/audio-quick-connect/latest.log."]},{"id":"dashboard","name":"Dashboard","lane":"general ops","kind":"python","entrypoint":"./scripts/dashboard_server.py","description":"Run a localhost web dashboard with current state, recent cento activity, aliases, tools, and repo progress.","platforms":["linux"],"commands":["./scripts/dashboard_server.py","./scripts/dashboard_server.py --open","./scripts/dashboard_server.py --theme industrial --open","./scripts/dashboard_server.py --host 127.0.0.1 --port 46268","cento dashboard"],"outputs":["logs/dashboard/*.log"],"notes":["Starts a local HTTP server on 127.0.0.1 by default.","Use --theme industrial for the Industrial OS dashboard skin.","Shows current theme, wallpaper, audio, displays, recent tool runs, aliases, tools, and git progress.","Use --open to launch it in your default browser."]},{"id":"preset","name":"Desktop Presets","lane":"desktop ops","kind":"shell","entrypoint":"./scripts/preset.sh","description":"Apply managed Cento desktop presets such as the Industrial OS i3 theme and dashboard.","platforms":["linux"],"commands":["cento preset list","cento preset industrial-os","cento preset industrial-os --workspace","cento preset industrial-os --workspace --black-only","cento preset industrial-os --session","cento preset industrial-os --dashboard-only --open","cento dashboard --theme industrial --open"],"outputs":["~/.config/cento/preset.env","~/.config/cento/industrial-os/polybar/config.ini","~/.config/cento/industrial-os/rofi.rasi","~/.local/share/cento/industrial-os/wallpaper.png","~/.local/state/cento/industrial-os/dashboard.url","logs/industrial-os/*.log","logs/industrial-workspace/*.log"],"notes":["industrial-os writes a guarded block to ~/.config/i3/config so i3 reloads keep the preset active.","The preset applies the Cento Industrial OS Kitty theme, generated wallpaper, Polybar config, Rofi theme, and Picom config.","Mod+Shift+I runs --workspace and composes workspace 1 into the cockpit tile layout.","Use --black-only or CENTO_INDUSTRIAL_BACKGROUND_MODE=black for plain black workspace pane backgrounds.","--session reapplies runtime pieces without rewriting the i3 config and is intended for i3 startup."]},{"id":"quick-help","name":"Quick Help","lane":"general ops","kind":"shell","entrypoint":"./scripts/quick_help.sh","description":"Rofi-based searchable help palette for cento built-ins, tools, and aliases.","platforms":["linux"],"commands":["./scripts/quick_help.sh","./scripts/quick_help.sh --show","cento quick-help"],"outputs":["logs/quick-help/*.log"],"notes":["Uses rofi when available and follows your existing polybar rofi launcher theme when present.","Lets you search cento built-ins, registered tools, and aliases from one palette.","Can run the selected command or copy it to the clipboard."]},{"id":"display-layout-fix","name":"Display Layout Fix","lane":"general ops","kind":"shell","entrypoint":"./scripts/display_layout_fix.sh","description":"Detect two connected monitors, stack them vertically, and refresh wallpaper plus polybar.","platforms":["linux"],"commands":["./scripts/display_layout_fix.sh --show","./scripts/display_layout_fix.sh --save-defaults","./scripts/display_layout_fix.sh --top DP-4.8 --bottom HDMI-0 --save-defaults"],"outputs":["~/.config/cento/display.env","logs/display-layout-fix/*.log"],"notes":["Defaults to using the primary connected output as the top monitor.","Reapplies wallpaper and relaunches polybar after xrandr changes.","i3 startup now calls cento display-layout-fix instead of a hardcoded xrandr --right-of line."]},{"id":"i3reorg","name":"i3 Reorg","lane":"desktop ops","kind":"shell","entrypoint":"./scripts/i3reorg.sh","description":"Move numeric i3 workspaces to the bottom monitor, apply the preferred app map, and optionally place the study YouTube window on top workspace L2 fullscreen.","platforms":["linux"],"commands":["./scripts/i3reorg.sh","./scripts/i3reorg.sh --dry-run","./scripts/i3reorg.sh --bottom-output DP-4.8","./scripts/i3reorg.sh --study","cento i3reorg","cento i3reorg --study","cento i3reorg --focus 2"],"outputs":["i3 workspace moves"],"notes":["Detects the active output with the largest y-position as the bottom monitor.","Study mode keeps a matching Firefox YouTube window on top workspace L2 fullscreen.","Uses i3 criteria against common Firefox, terminal, Discord, and Telegram window classes."]},{"id":"wallpaper-manager","name":"Wallpaper Manager","lane":"general ops","kind":"shell","entrypoint":"./scripts/wallpaper_manager.sh","description":"Choose, preview, apply, and persist desktop wallpapers for i3 and feh.","platforms":["linux"],"commands":["./scripts/wallpaper_manager.sh --choose","./scripts/wallpaper_manager.sh --set green_arctic.jpg","./scripts/wallpaper_manager.sh --apply-current","./scripts/wallpaper_manager.sh --list"],"outputs":["~/.config/cento/wallpaper.env","logs/wallpaper-manager/*.log"],"notes":["Uses the current i3 wallpaper library in ~/.config/kitty by default.","Interactive picker uses fzf and attempts Kitty-based preview when available.","i3 startup can call cento wallpaper-manager --apply-current to restore the saved wallpaper."]},{"id":"kitty-theme-manager","name":"Kitty Theme Manager","lane":"general ops","kind":"shell","entrypoint":"./scripts/kitty_theme_manager.sh","wrapper":"~/bin/codex-kitty-theme","description":"Manage Kitty themes with interactive selection, persistent logs, and tmux-aware refresh behavior.","platforms":["linux","macos"],"commands":["./scripts/kitty_theme_manager.sh","./scripts/kitty_theme_manager.sh --plain-menu","./scripts/kitty_theme_manager.sh --theme \"Cento Rose Pine\"","tail -n 80 ./logs/kitty-theme-manager/latest.log"],"outputs":["~/.config/kitty/themes/*.conf","~/.config/kitty/current-theme.conf"],"notes":["Writes per-run logs to logs/kitty-theme-manager/.","If run inside tmux, it reloads tmux config and refreshes the client.","Uses Kitty signal-based reloads unless KITTY_LISTEN_ON is available."]},{"id":"system-inventory","name":"System Inventory","lane":"general ops","kind":"shell","entrypoint":"./scripts/system_inventory.sh","description":"Capture a Markdown baseline of host, shell, tooling, and environment state.","platforms":["linux","macos"],"commands":["./scripts/system_inventory.sh","./scripts/system_inventory.sh --output ~/reports/system.md"],"outputs":["workspace/runs/system-inventory-*.md"]},{"id":"repo-snapshot","name":"Repo Snapshot","lane":"general ops","kind":"shell","entrypoint":"./scripts/repo_snapshot.sh","description":"Create a compact repo status report including tree, git status, diffstat, and recent commits.","platforms":["linux","macos"],"commands":["./scripts/repo_snapshot.sh --target .","./scripts/repo_snapshot.sh --target ~/projects/cento"],"outputs":["workspace/runs/repo-snapshot-*.md"]},{"id":"project-scaffold","name":"Project Scaffold","lane":"general ops","kind":"shell","entrypoint":"./scripts/project_scaffold.sh","description":"Scaffold a generic project with starter README, notes, scripts, data, and workspace folders.","platforms":["linux","macos"],"commands":["./scripts/project_scaffold.sh --path ~/projects/example-kit"],"outputs":["new project directory tree"]},{"id":"batch-exec","name":"Batch Exec","lane":"general ops","kind":"shell","entrypoint":"./scripts/batch_exec.sh","description":"Run one shell command across multiple directories with dry-run and git-only support.","platforms":["linux","macos"],"commands":["./scripts/batch_exec.sh --root ~/projects --pattern '*' --command 'git status --short'","./scripts/batch_exec.sh --root ~/projects --pattern '*' --git-only --dry-run --command 'pwd'"],"outputs":["stdout execution summary"]},{"id":"search-report","name":"Search Report","lane":"general ops","kind":"shell","entrypoint":"./scripts/search_report.sh","description":"Search a filesystem tree and write a Markdown report with matches and context.","platforms":["linux","macos"],"commands":["./scripts/search_report.sh --query TODO --root ~/projects/cento","./scripts/search_report.sh --query bluetooth --root ~/projects"],"outputs":["workspace/runs/search-report-*.md"]},{"id":"rd","name":"Restart Discord","lane":"desktop ops","kind":"shell","entrypoint":"./scripts/restart_discord.sh","description":"Terminate and relaunch Discord through the available desktop launcher.","platforms":["linux"],"commands":["cento rd"],"outputs":["stderr status messages"],"notes":["Launches via discord, Discord, Flatpak com.discordapp.Discord, or Snap discord."]},{"id":"tool-index","name":"Tool Index Generator","lane":"general ops","kind":"python","entrypoint":"./scripts/tool_index.py","description":"Generate a Markdown tool index from the central registry.","platforms":["linux","macos"],"commands":["python3 ./scripts/tool_index.py --registry data/tools.json --output docs/tool-index.md"],"outputs":["docs/tool-index.md"]},{"id":"platform-report","name":"Platform Report","lane":"general ops","kind":"python","entrypoint":"./scripts/platform_report.py","description":"Report declared macOS and Linux support for registered cento tools and generate docs/platform-support.md.","platforms":["linux","macos"],"commands":["cento platforms","cento platforms macos","python3 ./scripts/platform_report.py --markdown --output docs/platform-support.md"],"outputs":["docs/platform-support.md"],"notes":["Reads data/tools.json as the source of truth."]},{"id":"quick-help-fzf","name":"Quick Help FZF","lane":"general ops","kind":"shell","entrypoint":"./scripts/quick_help_fzf.sh","description":"Cross-platform fzf command palette for cento built-ins, tools, and aliases.","platforms":["linux","macos"],"commands":["cento quick-help-fzf","cento quick-help-fzf --print"],"outputs":["selected command execution"],"notes":["Use this on macOS; quick-help remains the Linux rofi palette."]},{"id":"install-macos","name":"macOS Installer","lane":"setup","kind":"shell","entrypoint":"./scripts/install_macos.sh","description":"Install local macOS dependencies, wrappers, PATH block, and Zsh integration for cento.","platforms":["macos"],"commands":["./scripts/install_macos.sh"],"outputs":["~/bin/cento","~/bin/codex-bt-audio-doctor","~/bin/codex-kitty-theme","~/.config/cento/init.zsh"]},{"id":"install-linux","name":"Linux Installer","lane":"setup","kind":"shell","entrypoint":"./scripts/install_linux.sh","description":"Install local Linux dependencies, wrappers, PATH block, and Zsh integration for cento.","platforms":["linux"],"commands":["./scripts/install_linux.sh"],"outputs":["~/bin/cento","~/bin/codex-bt-audio-doctor","~/bin/codex-kitty-theme","~/.config/cento/init.zsh"]},{"id":"notify","name":"Cento Notify","lane":"agent ops","kind":"shell","entrypoint":"./scripts/notify.sh","description":"Send cluster notifications to configured ntfy targets such as iPhone and Apple Watch mirrored alerts.","platforms":["linux","macos"],"commands":["cento notify setup iphone TOPIC","cento notify status","cento notify iphone \"Cluster job finished\"","cento notify all \"Linux healed\"","cento notify test iphone"],"outputs":["~/.config/cento/notify.json","ntfy push notification"],"notes":["Stores private ntfy topics in the machine-local Cento config, not in the repo.","Apple Watch delivery uses normal iPhone notification mirroring for the ntfy app."]},{"id":"cluster","name":"Cento Cluster Control","lane":"agent ops","kind":"shell","entrypoint":"./scripts/cluster.sh","description":"Manage Cento node identity, cluster registry, colored status, remote execution, bridge healing, and read-only git drift checks.","platforms":["linux","macos"],"commands":["cento cluster init","cento cluster nodes","cento cluster status","cento cluster exec linux -- tmux ls","cento cluster exec macos -- cento gather-context --no-remote","cento cluster sync","cento cluster heal","cento cluster heal linux","cento cluster heartbeat iphone","cento cluster metric memory","cento cluster ask \"send me notification with total memory consumption on the cluster\""],"outputs":["~/.config/cento/node.json","~/.config/cento/cluster.json","stdout cluster status and command output"],"notes":["status is the health view.","sync is a read-only git drift report; it never writes to either node.","heal is the single repair path for bridge services and sockets.","Remote execution uses the existing OCI Unix-socket mesh."]},{"id":"gather-context","name":"Gather Context","lane":"agent ops","kind":"python","entrypoint":"./scripts/gather_context.py","description":"Gather AI-ready local and remote Cento context including platform support, repo state, command paths, MCP hints, and SSH connectivity.","platforms":["linux","macos"],"commands":["cento gather-context","cento gather-context --no-remote","cento gather-context --json","cento gather-context --output workspace/runs/cento-context.md"],"outputs":["stdout Markdown or JSON","workspace/runs/cento-context.md"],"notes":["Use this before cross-node work so agents can reason from current platform, repo, SSH, and tool availability facts."]},{"id":"network-tui","name":"Cento Network Monitor","lane":"agent ops","kind":"shell","entrypoint":"./scripts/network_tui.sh","description":"Cluster-focused Bubble Tea monitor for Cento nodes, connection state, activity state, tmux presence, VM mesh sockets, and companion-device reachability.","platforms":["linux","macos"],"commands":["cento network-tui","cento network-tui --no-remote","./scripts/network_tui.sh"],"outputs":["interactive terminal dashboard","plain health summary when stdout is not a TTY"],"notes":["Uses gather-context as the data source.","Auto-refreshes every 10 seconds; press r to refresh manually."]}]};
+
+const CLI = {"name":"cento","summary":"Unified cento CLI facade for built-ins, tool dispatch, alias dispatch, shell integration, and terminal help browsing.","usage":"cento <command> [args...]","commands":[{"name":"help","summary":"Show root cento CLI help.","usage":"cento help","flags":[{"name":"-h, --help","summary":"Show root CLI help without naming the help subcommand.","usage":"cento --help"}],"examples":["cento help","cento --help"]},{"name":"interactive","summary":"Open the Bubble Tea TUI for built-ins, tools, aliases, and docs.","usage":"cento interactive","flags":[],"examples":["cento interactive","cento interactive --section builtins","cento interactive --entry conf"]},{"name":"docs","summary":"Print cento CLI docs from the canonical JSON source.","usage":"cento docs [ENTRY] [--json|--path]","flags":[{"name":"--json","summary":"Print the raw JSON document.","usage":"cento docs --json"},{"name":"--path","summary":"Print the path to the canonical JSON document.","usage":"cento docs --path"}],"examples":["cento docs","cento docs conf","cento docs --json","cento docs --path"]},{"name":"tools","summary":"List registered cento tools from the tool registry.","usage":"cento tools","flags":[],"examples":["cento tools"]},{"name":"aliases","summary":"List configured user aliases.","usage":"cento aliases","flags":[],"examples":["cento aliases"]},{"name":"conf","summary":"Open or print the cento alias config file.","usage":"cento conf [--path]","flags":[{"name":"--path","summary":"Print the config path instead of opening it in an editor.","usage":"cento conf --path"}],"examples":["cento conf","cento conf --path"]},{"name":"completion","summary":"Print shell completion for a supported shell.","usage":"cento completion zsh","flags":[],"examples":["cento completion zsh"]},{"name":"install","summary":"Install cento shell and terminal integration.","usage":"cento install [zsh|tmux|terminal|all]","flags":[],"examples":["cento install","cento install zsh","cento install tmux","cento install terminal"],"details":["`zsh` installs completion under ~/.config/cento/completions/_cento, writes ~/.config/cento/init.zsh, injects one guarded source block into ~/.zshrc, and adds a right-prompt segment like [cento:linux:host].","`tmux` writes ~/.config/cento/tmux.conf, injects one guarded source block into ~/.tmux.conf, and reloads tmux when a server is running.","`terminal` and `all` install the Zsh/Oh My Zsh prompt and completion path only."]},{"name":"tmux","summary":"Manage the cento tmux status badge integration.","usage":"cento tmux [badge|install|status|docs]","flags":[],"examples":["cento tmux badge","cento tmux status","cento tmux install","cento tmux docs"],"details":["`cento tmux badge` prints the short label rendered in tmux status-left.","Set CENTO_TMUX_BADGE to override the label and CENTO_TMUX_BADGE_HOST=1 to append the short hostname."]},{"name":"run","summary":"Run a registered tool by id.","usage":"cento run TOOL [args...]","flags":[],"examples":["cento run scan --query \"mcp\"","cento run crm docs"]}]};
+
+const kindIcon = { shell: 'sh', python: 'py', go: 'go' };
+
+let currentLane = 'all';
+let currentSection = 'tools';
+let searchQuery = '';
+
+function getAllLanes() {
+  const lanes = new Set();
+  TOOLS.tools.forEach(t => lanes.add(t.lane));
+  return ['all', ...Array.from(lanes).sort()];
+}
+
+function renderLaneFilters() {
+  const el = document.getElementById('lane-filters');
+  getAllLanes().forEach(lane => {
+    const btn = document.createElement('button');
+    btn.className = 'lane-btn' + (lane === 'all' ? ' active' : '');
+    btn.textContent = lane;
+    btn.dataset.lane = lane;
+    btn.addEventListener('click', () => {
+      currentLane = lane;
+      document.querySelectorAll('.lane-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTools();
+    });
+    el.appendChild(btn);
+  });
+}
+
+function matchesTool(tool, query) {
+  if (!query) return true;
+  const q = query.toLowerCase();
+  return (
+    tool.name.toLowerCase().includes(q) ||
+    tool.id.toLowerCase().includes(q) ||
+    tool.description.toLowerCase().includes(q) ||
+    tool.lane.toLowerCase().includes(q) ||
+    (tool.commands || []).some(c => c.toLowerCase().includes(q)) ||
+    (tool.notes || []).some(n => n.toLowerCase().includes(q))
+  );
+}
+
+function copyToClipboard(text, el) {
+  navigator.clipboard.writeText(text).then(() => {
+    el.textContent = 'copied!';
+    el.classList.add('copied');
+    setTimeout(() => { el.textContent = 'copy'; el.classList.remove('copied'); }, 1500);
+  });
+}
+
+function renderTools() {
+  const grid = document.getElementById('tools-grid');
+  grid.innerHTML = '';
+  const tools = TOOLS.tools.filter(t => {
+    if (currentLane !== 'all' && t.lane !== currentLane) return false;
+    if (!matchesTool(t, searchQuery)) return false;
+    return true;
+  });
+
+  document.getElementById('tools-count').textContent = `(${tools.length})`;
+  updateStats(tools);
+
+  if (tools.length === 0) {
+    grid.innerHTML = '<div class="no-results">no tools match your search</div>';
+    return;
+  }
+
+  tools.forEach(tool => {
+    const card = document.createElement('div');
+    card.className = 'tool-card';
+    card.id = 'tool-' + tool.id;
+
+    const platforms = tool.platforms || [];
+    const isLinuxOnly = platforms.length === 1 && platforms[0] === 'linux';
+    const isMacOnly = platforms.length === 1 && platforms[0] === 'macos';
+
+    const platformBadges = platforms.map(p =>
+      `<span class="badge badge-platform${isLinuxOnly ? ' linux-only' : ''}">${p}</span>`
+    ).join('');
+
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="card-icon kind-${tool.kind}">${kindIcon[tool.kind] || tool.kind}</div>
+        <div class="card-meta">
+          <div class="card-name">${tool.name}</div>
+          <div class="card-desc">${tool.description}</div>
+          <div class="card-badges">
+            <span class="badge badge-lane">${tool.lane}</span>
+            ${platformBadges}
+          </div>
+        </div>
+        <div class="expand-arrow">▶</div>
+      </div>
+      <div class="card-body">
+        ${tool.commands && tool.commands.length ? `
+          <div class="section-label">commands</div>
+          <div class="cmd-list">
+            ${tool.commands.map(cmd => `
+              <div class="cmd-item" title="${cmd}">
+                <span class="cmd-text">${cmd}</span>
+                <span class="copy-btn">copy</span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        ${tool.notes && tool.notes.length ? `
+          <div class="section-label">notes</div>
+          <div class="notes-list">
+            ${tool.notes.map(n => `<div class="note-item">${n}</div>`).join('')}
+          </div>
+        ` : ''}
+        ${tool.outputs && tool.outputs.length ? `
+          <div class="section-label">outputs</div>
+          <div class="outputs-list">
+            ${tool.outputs.map(o => `<div class="output-item">${o}</div>`).join('')}
+          </div>
+        ` : ''}
+        <div class="section-label">entrypoint</div>
+        <div class="cmd-list">
+          <div class="cmd-item">
+            <span class="cmd-text">${tool.entrypoint}</span>
+            <span class="copy-btn">copy</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    card.querySelector('.card-header').addEventListener('click', () => {
+      card.classList.toggle('expanded');
+    });
+
+    card.querySelectorAll('.cmd-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        const copyBtn = item.querySelector('.copy-btn');
+        copyToClipboard(item.querySelector('.cmd-text').textContent.trim(), copyBtn);
+        e.stopPropagation();
+      });
+    });
+
+    grid.appendChild(card);
+  });
+}
+
+function updateStats(filteredTools) {
+  const total = TOOLS.tools.length;
+  const shown = filteredTools.length;
+  const byKind = {};
+  filteredTools.forEach(t => { byKind[t.kind] = (byKind[t.kind] || 0) + 1; });
+  const el = document.getElementById('stats');
+  el.innerHTML = `
+    <span class="stat">showing <span class="stat-val">${shown}</span> of <span class="stat-val">${total}</span> tools</span>
+    ${Object.entries(byKind).map(([k,v]) => `<span class="stat"><span class="stat-val">${v}</span> ${k}</span>`).join('')}
+  `;
+}
+
+function renderCLI() {
+  const panel = document.getElementById('cli-panel');
+  panel.innerHTML = '';
+  document.getElementById('cli-count').textContent = `(${CLI.commands.length})`;
+
+  const filtered = CLI.commands.filter(cmd => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      cmd.name.toLowerCase().includes(q) ||
+      cmd.summary.toLowerCase().includes(q) ||
+      cmd.usage.toLowerCase().includes(q) ||
+      (cmd.examples || []).some(e => e.toLowerCase().includes(q)) ||
+      (cmd.flags || []).some(f => f.name.toLowerCase().includes(q) || f.summary.toLowerCase().includes(q))
+    );
+  });
+
+  if (filtered.length === 0) {
+    panel.innerHTML = '<div class="no-results">no commands match your search</div>';
+    return;
+  }
+
+  filtered.forEach(cmd => {
+    const card = document.createElement('div');
+    card.className = 'cli-card';
+    card.innerHTML = `
+      <div class="cli-card-header">
+        <div>
+          <div class="cli-cmd-name">cento ${cmd.name}</div>
+          <div class="cli-usage">${cmd.usage}</div>
+          <div class="cli-summary">${cmd.summary}</div>
+        </div>
+        <div class="expand-arrow">▶</div>
+      </div>
+      <div class="cli-card-body">
+        ${cmd.flags && cmd.flags.length ? `
+          <div class="section-label">flags</div>
+          ${cmd.flags.map(f => `
+            <div class="flag-item">
+              <div class="flag-name">${f.name}</div>
+              <div class="flag-summary">${f.summary}</div>
+            </div>
+          `).join('')}
+        ` : ''}
+        ${cmd.examples && cmd.examples.length ? `
+          <div class="section-label">examples</div>
+          <div class="cmd-list">
+            ${cmd.examples.map(ex => `
+              <div class="cmd-item">
+                <span class="cmd-text">${ex}</span>
+                <span class="copy-btn">copy</span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        ${cmd.details && cmd.details.length ? `
+          <div class="section-label">details</div>
+          <div class="notes-list">
+            ${cmd.details.map(d => `<div class="note-item">${d}</div>`).join('')}
+          </div>
+        ` : ''}
+      </div>
+    `;
+
+    card.querySelector('.cli-card-header').addEventListener('click', () => {
+      card.classList.toggle('expanded');
+    });
+
+    card.querySelectorAll('.cmd-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        const copyBtn = item.querySelector('.copy-btn');
+        copyToClipboard(item.querySelector('.cmd-text').textContent.trim(), copyBtn);
+        e.stopPropagation();
+      });
+    });
+
+    panel.appendChild(card);
+  });
+}
+
+document.getElementById('search').addEventListener('input', (e) => {
+  searchQuery = e.target.value.trim();
+  renderTools();
+  renderCLI();
+});
+
+document.querySelectorAll('.section-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    currentSection = tab.dataset.section;
+    document.querySelectorAll('.section-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('section-tools').classList.remove('active');
+    document.getElementById('section-cli').classList.remove('active');
+    document.getElementById('section-' + currentSection).classList.add('active');
+  });
+});
+
+renderLaneFilters();
+renderTools();
+renderCLI();
+</script>
+</body>
+</html>

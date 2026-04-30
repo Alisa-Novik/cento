@@ -513,6 +513,7 @@
         "cento preset list",
         "cento preset industrial-os",
         "cento preset industrial-os --workspace",
+        "cento preset industrial-os --workspace --black-only",
         "cento preset industrial-os --session",
         "cento preset industrial-os --dashboard-only --open",
         "cento dashboard --theme industrial --open"
@@ -528,8 +529,9 @@
       ],
       "notes": [
         "industrial-os writes a guarded block to ~/.config/i3/config so i3 reloads keep the preset active.",
-        "The preset applies the Cento Industrial OS Kitty theme, generated wallpaper, Polybar config, Rofi theme, Picom config, and themed dashboard server.",
-        "Mod+Shift+I runs --workspace and composes workspace 1 into the Discord, hero, terminal, jobs, cluster, resources, activity, and actions tile layout.",
+        "The preset applies the Cento Industrial OS Kitty theme, generated wallpaper, Polybar config, Rofi theme, and Picom config; the themed dashboard server stays on the explicit --dashboard-only path.",
+        "Mod+Shift+I runs --workspace and composes workspace 1 into the Discord, hero, terminal, jobs, cluster, activity, and actions tile layout with background images on every generated pane without starting the dashboard server.",
+        "Use --black-only or CENTO_INDUSTRIAL_BACKGROUND_MODE=black for plain black workspace pane backgrounds.",
         "Mod+h/j/k/l uses the Industrial OS visual focus router on the cockpit and falls back to native i3 focus elsewhere.",
         "--session reapplies runtime pieces without rewriting the i3 config and is intended for i3 startup."
       ]

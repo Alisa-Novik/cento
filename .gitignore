@@ -7,6 +7,9 @@ workspace/inbox/*
 workspace/runs/*
 !workspace/runs/.gitkeep
 
+workspace/cluster-worktrees/*
+!workspace/cluster-worktrees/.gitkeep
+
 workspace/tmp/*
 !workspace/tmp/.gitkeep
 

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cento Idea Board</title>
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="topbar">
+        <div>
+          <p class="eyebrow">Cento planning</p>
+          <h1>Idea Board</h1>
+        </div>
+        <div class="actions">
+          <button id="addIdea" type="button">Add Idea</button>
+          <button id="saveIdeas" type="button" class="primary">Save JSON</button>
+        </div>
+      </section>
+
+      <section class="summary" aria-label="Idea summary">
+        <div>
+          <span id="ideaCount">0</span>
+          <small>Ideas</small>
+        </div>
+        <div>
+          <span id="topScore">0.0</span>
+          <small>Top Score</small>
+        </div>
+        <div>
+          <span id="nextCount">0</span>
+          <small>Marked Next</small>
+        </div>
+        <div>
+          <span id="updatedAt">unknown</span>
+          <small>Updated</small>
+        </div>
+      </section>
+
+      <section class="controls" aria-label="Filters">
+        <label>
+          Search
+          <input id="searchInput" type="search" placeholder="Filter ideas, tags, notes">
+        </label>
+        <label>
+          Category
+          <select id="categoryFilter"></select>
+        </label>
+        <label>
+          Status
+          <select id="statusFilter">
+            <option value="">All statuses</option>
+            <option value="next">Next</option>
+            <option value="candidate">Candidate</option>
+            <option value="later">Later</option>
+            <option value="paused">Paused</option>
+          </select>
+        </label>
+        <label>
+          Sort
+          <select id="sortMode">
+            <option value="score">Score</option>
+            <option value="title">Title</option>
+            <option value="category">Category</option>
+            <option value="status">Status</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="editor">
+        <div class="editor-title">
+          <h2 id="editorHeading">Select an idea</h2>
+          <div class="editor-actions">
+            <button id="editIdea" type="button">Edit</button>
+            <button id="duplicateIdea" type="button">Duplicate</button>
+            <button id="cancelEdit" type="button">Cancel</button>
+            <button id="deleteIdea" type="button" class="danger">Delete</button>
+          </div>
+        </div>
+        <p id="editorState" class="editor-state">Select an idea to view details.</p>
+        <form id="ideaForm">
+          <div class="field two">
+            <label>Title<input name="title" required></label>
+            <label>Category<input name="category" list="categoryList"></label>
+          </div>
+          <div class="field three">
+            <label>Status
+              <select name="status">
+                <option value="next">Next</option>
+                <option value="candidate">Candidate</option>
+                <option value="later">Later</option>
+                <option value="paused">Paused</option>
+              </select>
+            </label>
+            <label>Horizon
+              <select name="horizon">
+                <option value="near">Near</option>
+                <option value="mid">Mid</option>
+                <option value="long">Long</option>
+              </select>
+            </label>
+            <label>Tags<input name="tags" placeholder="comma, separated, tags"></label>
+          </div>
+          <label>Summary<textarea name="summary" rows="3"></textarea></label>
+          <label>Why Cluster<textarea name="why_cluster" rows="3"></textarea></label>
+          <label>Next Step<textarea name="next_step" rows="2"></textarea></label>
+          <div id="scoreFields" class="score-fields"></div>
+        </form>
+      </section>
+
+      <section id="ideaGrid" class="idea-grid" aria-live="polite"></section>
+    </main>
+    <datalist id="categoryList"></datalist>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <script src="/app.js"></script>
+  </body>
+</html>

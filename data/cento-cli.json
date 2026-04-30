@@ -5,7 +5,8 @@
   "notes": [
     "Registered tools can be invoked directly as `cento TOOL [args...]`.",
     "Configured aliases can be invoked directly as `cento ALIAS [args...]`.",
-    "Use `cento docs` or `cento interactive` when you need the built-in command surface explained from the canonical JSON source."
+    "Use `cento docs` or `cento interactive` when you need the built-in command surface explained from the canonical JSON source.",
+    "`cento install terminal` installs the managed Zsh/Oh My Zsh completion init plus the Cento prompt segment."
   ],
   "routing": [
     {
@@ -115,12 +116,36 @@
     },
     {
       "name": "install",
-      "summary": "Install cento shell integration for a supported shell.",
-      "usage": "cento install [zsh]",
+      "summary": "Install cento shell and terminal integration.",
+      "usage": "cento install [zsh|tmux|terminal|all]",
       "flags": [],
       "examples": [
         "cento install",
-        "cento install zsh"
+        "cento install zsh",
+        "cento install tmux",
+        "cento install terminal"
+      ],
+      "details": [
+        "`zsh` installs completion under `~/.config/cento/completions/_cento`, writes `~/.config/cento/init.zsh`, injects one guarded source block into `~/.zshrc`, and adds a right-prompt segment like `[cento:linux:host]`.",
+        "`tmux` writes `~/.config/cento/tmux.conf`, injects one guarded source block into `~/.tmux.conf`, and reloads tmux when a server is running.",
+        "`terminal` and `all` install the Zsh/Oh My Zsh prompt and completion path only. Run `cento install tmux` explicitly if you want tmux status integration."
+      ]
+    },
+    {
+      "name": "tmux",
+      "summary": "Manage the cento tmux status badge integration.",
+      "usage": "cento tmux [badge|install|status|docs]",
+      "flags": [],
+      "examples": [
+        "cento tmux badge",
+        "cento tmux status",
+        "cento tmux install",
+        "cento tmux docs"
+      ],
+      "details": [
+        "`cento tmux badge` prints the short label rendered in tmux status-left.",
+        "Set `CENTO_TMUX_BADGE` to override the label and `CENTO_TMUX_BADGE_HOST=1` to append the short hostname.",
+        "The generated fragment preserves the current status-left as `@cento_status_left_base` and prepends the Cento badge. Tmux integration is opt-in via `cento install tmux`."
       ]
     },
     {

@@ -74,7 +74,7 @@ export PATH=\"/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:
 exec /opt/homebrew/bin/bash \"$ROOT_DIR/scripts/kitty_theme_manager.sh\" \"\$@\""
 
     ensure_path_block
-    "$BIN_DIR/cento" install zsh
+    "$BIN_DIR/cento" install terminal
     printf 'macOS cento install complete.\n'
 }
 

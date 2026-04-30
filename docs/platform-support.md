@@ -4,10 +4,10 @@ This file is generated from `data/tools.json`.
 
 ## Summary
 
-- macOS tools: 19
-- Linux tools: 28
-- both platforms: 18
-- Linux only: 10
+- macOS tools: 21
+- Linux tools: 31
+- both platforms: 20
+- Linux only: 11
 - macOS only: 1
 
 ## Tool Matrix
@@ -20,6 +20,7 @@ This file is generated from `data/tools.json`.
 | `bridge` | yes | yes | Create a reverse SSH tunnel through the OCI VM so another machine can SSH back into this host through the VM relay. |
 | `burp` | no | yes | Download, set up, and control PortSwigger Burp Suite Community through cento wrappers. |
 | `cento-cli` | yes | yes | Unified cento facade for built-ins, terminal docs browsing, tool dispatch, and user-defined aliases. |
+| `cluster` | yes | yes | Manage Cento node identity, cluster registry, colored status, remote execution, bridge healing, and read-only git drift checks. |
 | `crm` | yes | yes | Embedded cento CRM with questionnaire bootstrap, career-intake dossiers, local JSON persistence, and a self-hosted no-build SPA. |
 | `daily` | yes | yes | Bubble Tea execution cockpit for morning brief, midday recalibration, evening wrap-up, and local continuity. |
 | `dashboard` | no | yes | Run a localhost web dashboard with current state, recent cento activity, aliases, tools, and repo progress. |
@@ -30,8 +31,10 @@ This file is generated from `data/tools.json`.
 | `install-macos` | yes | no | Install local macOS dependencies, wrappers, PATH block, and Zsh integration for cento. |
 | `kitty-theme-manager` | yes | yes | Manage Kitty themes with interactive selection, persistent logs, and tmux-aware refresh behavior. |
 | `mcp` | yes | yes | Manage repo-root MCP config, env templates, validation, and tool-call docs. |
-| `network-tui` | yes | yes | Platform-agnostic Bubble Tea monitor for local and remote Cento node health, platform support, command paths, repo status, and bridge connectivity. |
+| `network-tui` | yes | yes | Cluster-focused Bubble Tea monitor for Cento nodes, connection state, activity state, tmux presence, VM mesh sockets, and companion-device reachability. |
+| `notify` | yes | yes | Send cluster notifications to configured ntfy targets such as iPhone and Apple Watch mirrored alerts. |
 | `platform-report` | yes | yes | Report declared macOS and Linux support for registered cento tools and generate docs/platform-support.md. |
+| `preset` | no | yes | Apply managed Cento desktop presets such as the Industrial OS i3 theme and dashboard. |
 | `project-scaffold` | yes | yes | Scaffold a generic project with starter README, notes, scripts, data, and workspace folders. |
 | `quick-help` | no | yes | Rofi-based searchable help palette for cento built-ins, tools, and aliases. |
 | `quick-help-fzf` | yes | yes | Cross-platform fzf command palette for cento built-ins, tools, and aliases. |
@@ -49,12 +52,14 @@ This file is generated from `data/tools.json`.
 - `batch-exec`
 - `bridge`
 - `cento-cli`
+- `cluster`
 - `crm`
 - `daily`
 - `gather-context`
 - `kitty-theme-manager`
 - `mcp`
 - `network-tui`
+- `notify`
 - `platform-report`
 - `project-scaffold`
 - `quick-help-fzf`
@@ -74,6 +79,7 @@ This file is generated from `data/tools.json`.
 - `display-layout-fix`
 - `i3reorg`
 - `install-linux`
+- `preset`
 - `quick-help`
 - `rd`
 - `wallpaper-manager`

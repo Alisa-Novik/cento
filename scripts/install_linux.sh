@@ -60,7 +60,7 @@ main() {
         ln -sfn "$(command -v fdfind)" "$BIN_DIR/fd"
     fi
     ensure_path_block
-    "$BIN_DIR/cento" install zsh || true
+    "$BIN_DIR/cento" install terminal || true
     printf 'Linux cento install complete.\n'
 }
 

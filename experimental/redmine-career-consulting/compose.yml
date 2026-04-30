@@ -34,4 +34,5 @@ services:
     volumes:
       - ./data/redmine/files:/usr/src/redmine/files
       - ./plugins:/usr/src/redmine/plugins
-      - ./themes:/usr/src/redmine/public/themes
+      - ./themes:/usr/src/redmine/themes
+      - ./themes:/usr/src/redmine/public/assets/themes
