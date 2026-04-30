@@ -1,0 +1,33 @@
+{
+  "execute": false,
+  "count": 0,
+  "limit": 5,
+  "status": "queued",
+  "package": "no-such-package",
+  "node": "",
+  "role": "",
+  "runtime": "codex",
+  "model": "gpt-5.3-codex-spark",
+  "diagnostics": {
+    "open_issues": 49,
+    "wanted_status": "queued",
+    "status_matches": 1,
+    "eligible_before_limit": 0,
+    "filters": {
+      "package": "no-such-package",
+      "node": "",
+      "role": "",
+      "include_epics": false
+    },
+    "skipped": {
+      "status": 48,
+      "companion_node": 0,
+      "epic_or_non_task": 0,
+      "package": 1,
+      "node": 0,
+      "role": 0
+    },
+    "zero_launch_reason": "all_candidates_filtered_by_package"
+  },
+  "planned": []
+}

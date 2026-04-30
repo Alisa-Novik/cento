@@ -1951,19 +1951,81 @@ def dispatch_pool_candidates(args: argparse.Namespace) -> list[dict[str, Any]]:
         if str(issue.get("status") or "").lower() != wanted_status:
             continue
         node = str(issue.get("node") or "")
-        if not args.node and node and node not in {"linux", "macos"}:
+        node_normalized = node.lower()
+        if not args.node and node and node_normalized not in {"linux", "macos"}:
             continue
         if not args.include_epics and str(issue.get("tracker") or "") != "Agent Task":
             continue
         if args.package and str(issue.get("package") or "") != args.package:
             continue
-        if args.node and str(issue.get("node") or "") != args.node:
+        if args.node and node_normalized != str(args.node or "").lower():
             continue
         if args.role and str(issue.get("role") or "") != args.role:
             continue
         candidates.append(issue)
     candidates.sort(key=lambda item: int(item["id"]))
-    return candidates[: max(int(args.limit or 1), 0)]
+    limit = int(args.limit) if args.limit is not None else 1
+    return candidates[: max(limit, 0)]
+
+
+def dispatch_pool_diagnostics(args: argparse.Namespace) -> dict[str, Any]:
+    wanted_status = str(args.status or "queued").lower()
+    items = list_issues(include_closed=False)
+    diagnostics: dict[str, Any] = {
+        "open_issues": len(items),
+        "wanted_status": wanted_status,
+        "status_matches": 0,
+        "eligible_before_limit": 0,
+        "filters": {
+            "package": args.package or "",
+            "node": args.node or "",
+            "role": args.role or "",
+            "include_epics": bool(args.include_epics),
+        },
+        "skipped": {
+            "status": 0,
+            "companion_node": 0,
+            "epic_or_non_task": 0,
+            "package": 0,
+            "node": 0,
+            "role": 0,
+        },
+    }
+    for issue in items:
+        if str(issue.get("status") or "").lower() != wanted_status:
+            diagnostics["skipped"]["status"] += 1
+            continue
+        diagnostics["status_matches"] += 1
+        node = str(issue.get("node") or "")
+        node_normalized = node.lower()
+        if not args.node and node and node_normalized not in {"linux", "macos"}:
+            diagnostics["skipped"]["companion_node"] += 1
+            continue
+        if not args.include_epics and str(issue.get("tracker") or "") != "Agent Task":
+            diagnostics["skipped"]["epic_or_non_task"] += 1
+            continue
+        if args.package and str(issue.get("package") or "") != args.package:
+            diagnostics["skipped"]["package"] += 1
+            continue
+        if args.node and node_normalized != str(args.node or "").lower():
+            diagnostics["skipped"]["node"] += 1
+            continue
+        if args.role and str(issue.get("role") or "") != args.role:
+            diagnostics["skipped"]["role"] += 1
+            continue
+        diagnostics["eligible_before_limit"] += 1
+    reason = "has_candidates"
+    limit = int(args.limit) if args.limit is not None else 1
+    if limit <= 0:
+        reason = "limit_zero"
+    elif diagnostics["status_matches"] == 0:
+        reason = "no_issues_with_requested_status"
+    elif diagnostics["eligible_before_limit"] == 0:
+        skipped = diagnostics["skipped"]
+        reason = max((key for key in skipped if key != "status"), key=lambda key: int(skipped[key]), default="filtered_out")
+        reason = f"all_candidates_filtered_by_{reason}"
+    diagnostics["zero_launch_reason"] = reason
+    return diagnostics
 
 
 def dispatch_pool_plan(args: argparse.Namespace) -> list[dict[str, Any]]:
@@ -2010,6 +2072,7 @@ def dispatch_pool_plan(args: argparse.Namespace) -> list[dict[str, Any]]:
 
 def command_dispatch_pool(args: argparse.Namespace) -> int:
     plan = dispatch_pool_plan(args)
+    diagnostics = dispatch_pool_diagnostics(args)
     payload = {
         "execute": bool(args.execute),
         "count": len(plan),
@@ -2020,6 +2083,7 @@ def command_dispatch_pool(args: argparse.Namespace) -> int:
         "role": args.role,
         "runtime": args.runtime or "codex",
         "model": args.model or "gpt-5.3-codex-spark",
+        "diagnostics": diagnostics,
         "planned": plan,
     }
     if args.json and not args.execute:

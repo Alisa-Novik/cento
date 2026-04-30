@@ -148,6 +148,8 @@ For automation and dashboards:
 cento agent-work dispatch-pool --limit 5 --json
 ```
 
+The JSON output includes `diagnostics`, including `zero_launch_reason`, so a zero-worker result explains whether the cause was no matching status, filters, companion-node exclusion, non-task epics, or `--limit 0`.
+
 Check what is actually running:
 
 ```bash
