@@ -1,0 +1,36 @@
+{
+  "run_dir": "workspace/runs/agent-work/56",
+  "requires": {
+    "builder_report": "workspace/runs/agent-work/56/builder-report.md",
+    "ui_screenshots": false,
+    "validator_agents": [
+      "alice-validator",
+      "anovik-air"
+    ]
+  },
+  "checks": [
+    {
+      "name": "Story manifest validates",
+      "type": "command",
+      "command": "python3 scripts/story_manifest.py validate workspace/runs/agent-work/56/story.json --check-links"
+    },
+    {
+      "name": "Story manifest helper compiles",
+      "type": "command",
+      "command": "python3 -m py_compile scripts/story_manifest.py"
+    },
+    {
+      "name": "Story manifest docs exist",
+      "type": "file",
+      "path": "docs/agent-work-story-manifest.md",
+      "non_empty": true
+    },
+    {
+      "name": "Example story manifest exists",
+      "type": "file",
+      "path": "workspace/runs/agent-work/56/story.json",
+      "non_empty": true
+    }
+  ],
+  "report": "workspace/runs/agent-work/56/validation-report.md"
+}

@@ -1,0 +1,60 @@
+{
+  "issue": 56,
+  "subject": "Process Scaling: Story manifest format",
+  "result": "pass",
+  "agent": "anovik-air",
+  "node": "macos",
+  "manifest": "workspace/runs/agent-work/56/validation.json",
+  "evidence": [
+    "workspace/runs/agent-work/56/builder-report.md",
+    "docs/agent-work-story-manifest.md",
+    "workspace/runs/agent-work/56/story.json",
+    "workspace/runs/agent-work/56/validation-report.md",
+    "workspace/runs/agent-work/56/validation-report.json"
+  ],
+  "checks": [
+    {
+      "ok": true,
+      "message": "exists",
+      "path": "workspace/runs/agent-work/56/builder-report.md",
+      "evidence": "workspace/runs/agent-work/56/builder-report.md",
+      "name": "Builder report exists",
+      "type": "file"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "python3 scripts/story_manifest.py validate workspace/runs/agent-work/56/story.json --check-links",
+      "stdout": "story_manifest: /Users/anovik-air/cento/workspace/runs/agent-work/56/story.json\nissue: #56 Process Scaling: Story manifest format\npackage: improve-dev-process\nlane: builder owner=builder node=linux agent=alice\nrun_dir: workspace/runs/agent-work/56\nroutes: 1\napi_endpoints: 0\nscreenshots: 0\nexpected_outputs: 3\nstatus: ok\n",
+      "stderr": "",
+      "name": "Story manifest validates",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exit 0",
+      "command": "python3 -m py_compile scripts/story_manifest.py",
+      "stdout": "",
+      "stderr": "",
+      "name": "Story manifest helper compiles",
+      "type": "command"
+    },
+    {
+      "ok": true,
+      "message": "exists",
+      "path": "docs/agent-work-story-manifest.md",
+      "evidence": "docs/agent-work-story-manifest.md",
+      "name": "Story manifest docs exist",
+      "type": "file"
+    },
+    {
+      "ok": true,
+      "message": "exists",
+      "path": "workspace/runs/agent-work/56/story.json",
+      "evidence": "workspace/runs/agent-work/56/story.json",
+      "name": "Example story manifest exists",
+      "type": "file"
+    }
+  ],
+  "updated_at": "2026-04-30T03:34:41.358694+00:00"
+}
