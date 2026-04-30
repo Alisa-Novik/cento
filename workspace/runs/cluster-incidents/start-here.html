@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cluster Incidents Start Here</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #070809;
+      --panel: #12161a;
+      --line: #29313a;
+      --text: #f4f6f7;
+      --muted: #a9b3bd;
+      --orange: #ff7900;
+      --green: #35d273;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 50% -120px, rgba(255,121,0,.16), transparent 420px), var(--bg);
+      color: var(--text);
+      font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main {
+      width: min(1040px, calc(100vw - 28px));
+      margin: 0 auto;
+      padding: 28px 0 42px;
+    }
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: start;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 16px;
+    }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 34px; line-height: 1.08; }
+    h2 {
+      color: var(--orange);
+      font-size: 13px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    h3 { font-size: 18px; margin-bottom: 4px; }
+    .sub { color: var(--muted); margin-top: 8px; font-size: 17px; }
+    .badge {
+      min-width: 122px;
+      padding: 12px;
+      border: 1px solid rgba(53,210,115,.45);
+      border-radius: 8px;
+      background: rgba(53,210,115,.08);
+      text-align: center;
+      color: var(--green);
+      font-weight: 800;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 12px;
+    }
+    section, .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02));
+    }
+    section {
+      grid-column: span 12;
+      padding: 16px;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .card {
+      display: block;
+      min-height: 126px;
+      padding: 14px;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .card.primary {
+      border-color: rgba(255,121,0,.5);
+      background: linear-gradient(180deg, rgba(255,121,0,.18), rgba(255,121,0,.055));
+    }
+    .card span {
+      display: block;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    .card code, .commands code {
+      display: inline-block;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      padding: 2px 5px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #080a0c;
+      color: #ffd7b0;
+    }
+    .commands {
+      display: grid;
+      gap: 8px;
+    }
+    .commands code {
+      display: block;
+      padding: 10px;
+    }
+    .status-list {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .status-item {
+      min-height: 74px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.025);
+    }
+    .status-item strong { display: block; }
+    .status-item span { display: block; color: var(--muted); font-size: 13px; margin-top: 3px; }
+    ul { margin: 0; padding-left: 20px; }
+    li + li { margin-top: 6px; }
+    a { color: inherit; }
+    footer {
+      color: var(--muted);
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+    }
+    @media (max-width: 780px) {
+      main { width: min(100vw - 22px, 560px); padding-top: 20px; }
+      header, .cards, .status-list { grid-template-columns: 1fr; }
+      h1 { font-size: 29px; }
+      .card { min-height: auto; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Cluster Incidents Start Here</h1>
+        <p class="sub">Visible incident dashboard for Cento cluster-health events, mitigations, and operator runbooks.</p>
+      </div>
+      <div class="badge">Active</div>
+    </header>
+
+    <div class="grid">
+      <section>
+        <h2>Use First</h2>
+        <div class="cards">
+          <a class="card primary" href="bridge-stale-socket-20260430/start-here.html">
+            <h3>SEV2: Stale Linux Bridge Socket</h3>
+            <code>workspace/runs/cluster-incidents/bridge-stale-socket-20260430/start-here.html</code>
+            <span>2026-04-30 incident bundle for the stale /tmp/cento-linux.sock outage and mitigation.</span>
+          </a>
+          <a class="card" href="../../../docs/cluster-bridge-incident.md">
+            <h3>Permanent Bridge Runbook</h3>
+            <code>docs/cluster-bridge-incident.md</code>
+            <span>Repo-level bridge outage runbook with detection, mitigation, verification, and follow-up work.</span>
+          </a>
+          <a class="card" href="../../../docs/incident-response.md">
+            <h3>Incident Response Overview</h3>
+            <code>docs/incident-response.md</code>
+            <span>Cento incident-response overview and related guardrails.</span>
+          </a>
+          <a class="card" href="../../../CLUSTER_NOTICE.md">
+            <h3>Cluster Notice</h3>
+            <code>CLUSTER_NOTICE.md</code>
+            <span>Cluster coordination notice for cheap Spark workers and safe delegation.</span>
+          </a>
+        </div>
+      </section>
+
+      <section>
+        <h2>Status By Story</h2>
+        <div class="status-list">
+
+          <div class="status-item"><strong>Open incident bundles</strong><span>1</span></div>
+
+          <div class="status-item"><strong>Latest severity</strong><span>SEV2</span></div>
+
+          <div class="status-item"><strong>Latest status</strong><span>Mitigated</span></div>
+
+          <div class="status-item"><strong>Primary repair</strong><span>cento cluster heal linux</span></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Run / Token</h2>
+        <div class="commands">
+          <code>cento gather-context</code>
+          <code>cento cluster status</code>
+          <code>cento bridge check</code>
+          <code>cento bridge to-linux -- &#x27;hostname; date&#x27;</code>
+          <code>cento cluster heal linux</code>
+        </div>
+      </section>
+
+      <section>
+        <h2>Screenshots</h2>
+        <div class="cards">
+
+        </div>
+      </section>
+
+      <section>
+        <h2>What To Review</h2>
+        <ul>
+          <li>Use this dashboard before relying on chat history for cluster incidents.</li>
+          <li>Every cluster-health incident should get a dated bundle under workspace/runs/cluster-incidents/.</li>
+          <li>Every mitigation should include detection, repair, verification, and residual risk.</li>
+          <li>Do not overwrite dirty node work during incident response.</li>
+        </ul>
+      </section>
+    </div>
+
+    <footer>
+      Cluster incident dashboard: workspace/runs/cluster-incidents/start-here.html.
+    </footer>
+  </main>
+</body>
+</html>

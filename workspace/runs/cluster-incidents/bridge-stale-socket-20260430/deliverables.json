@@ -1,0 +1,80 @@
+{
+  "title": "Cluster Incident: Stale Linux Bridge Socket",
+  "subtitle": "SEV2 cluster-health incident from 2026-04-30. Documents detection, mitigation, verification, and follow-up work.",
+  "badge": "Mitigated",
+  "footer": "Incident bundle: workspace/runs/cluster-incidents/bridge-stale-socket-20260430. Permanent runbook: docs/cluster-bridge-incident.md.",
+  "use_first": [
+    {
+      "title": "Incident Report",
+      "href": "incident.md",
+      "description": "Timeline, root cause, mitigation, and operator runbook for the stale Linux bridge socket.",
+      "code": "workspace/runs/cluster-incidents/bridge-stale-socket-20260430/incident.md",
+      "primary": true
+    },
+    {
+      "title": "Permanent Runbook",
+      "href": "../../../../docs/cluster-bridge-incident.md",
+      "description": "Repo-level documentation for future agents and operators.",
+      "code": "docs/cluster-bridge-incident.md"
+    },
+    {
+      "title": "Validation Log",
+      "href": "validation.md",
+      "description": "Commands and observed healthy outputs after mitigation.",
+      "code": "workspace/runs/cluster-incidents/bridge-stale-socket-20260430/validation.md"
+    },
+    {
+      "title": "Cluster Control",
+      "href": "../../../../scripts/cluster.sh",
+      "description": "Implementation of cluster heal, exec, and status commands used for repair.",
+      "code": "scripts/cluster.sh"
+    },
+    {
+      "title": "Bridge Control",
+      "href": "../../../../scripts/bridge.sh",
+      "description": "Implementation of bridge check, to-linux, from-mac, and socket tunnel controls.",
+      "code": "scripts/bridge.sh"
+    },
+    {
+      "title": "Incident Response Docs",
+      "href": "../../../../docs/incident-response.md",
+      "description": "Cento incident-response overview, now linked to cluster bridge incidents.",
+      "code": "docs/incident-response.md"
+    }
+  ],
+  "stories": [
+    {
+      "label": "Severity",
+      "description": "SEV2 cluster health"
+    },
+    {
+      "label": "Status",
+      "description": "Mitigated"
+    },
+    {
+      "label": "Affected path",
+      "description": "/tmp/cento-linux.sock on OCI relay"
+    },
+    {
+      "label": "Repair",
+      "description": "cento cluster heal linux"
+    }
+  ],
+  "commands": [
+    "cento gather-context",
+    "cento bridge check",
+    "cento bridge to-linux -- 'hostname; date'",
+    "cento cluster heal linux",
+    "cento bridge from-mac -- 'hostname'",
+    "cento cluster status",
+    "cento agent-work runs --json --active"
+  ],
+  "screenshots": [],
+  "review": [
+    "Incident is documented with symptom, impact, root cause, and mitigation.",
+    "Runbook includes detection, repair, verification, and guardrails.",
+    "Start-here hub links incident report, permanent runbook, validation, cluster implementation, and bridge implementation.",
+    "Residual risk is explicit: mitigation is currently manual.",
+    "Linux dirty checkout must not be overwritten as part of bridge repair."
+  ]
+}

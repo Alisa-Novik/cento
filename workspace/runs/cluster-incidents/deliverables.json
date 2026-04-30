@@ -1,0 +1,65 @@
+{
+  "title": "Cluster Incidents Start Here",
+  "subtitle": "Visible incident dashboard for Cento cluster-health events, mitigations, and operator runbooks.",
+  "badge": "Active",
+  "footer": "Cluster incident dashboard: workspace/runs/cluster-incidents/start-here.html.",
+  "use_first": [
+    {
+      "title": "SEV2: Stale Linux Bridge Socket",
+      "href": "bridge-stale-socket-20260430/start-here.html",
+      "description": "2026-04-30 incident bundle for the stale /tmp/cento-linux.sock outage and mitigation.",
+      "code": "workspace/runs/cluster-incidents/bridge-stale-socket-20260430/start-here.html",
+      "primary": true
+    },
+    {
+      "title": "Permanent Bridge Runbook",
+      "href": "../../../docs/cluster-bridge-incident.md",
+      "description": "Repo-level bridge outage runbook with detection, mitigation, verification, and follow-up work.",
+      "code": "docs/cluster-bridge-incident.md"
+    },
+    {
+      "title": "Incident Response Overview",
+      "href": "../../../docs/incident-response.md",
+      "description": "Cento incident-response overview and related guardrails.",
+      "code": "docs/incident-response.md"
+    },
+    {
+      "title": "Cluster Notice",
+      "href": "../../../CLUSTER_NOTICE.md",
+      "description": "Cluster coordination notice for cheap Spark workers and safe delegation.",
+      "code": "CLUSTER_NOTICE.md"
+    }
+  ],
+  "stories": [
+    {
+      "label": "Open incident bundles",
+      "description": "1"
+    },
+    {
+      "label": "Latest severity",
+      "description": "SEV2"
+    },
+    {
+      "label": "Latest status",
+      "description": "Mitigated"
+    },
+    {
+      "label": "Primary repair",
+      "description": "cento cluster heal linux"
+    }
+  ],
+  "commands": [
+    "cento gather-context",
+    "cento cluster status",
+    "cento bridge check",
+    "cento bridge to-linux -- 'hostname; date'",
+    "cento cluster heal linux"
+  ],
+  "screenshots": [],
+  "review": [
+    "Use this dashboard before relying on chat history for cluster incidents.",
+    "Every cluster-health incident should get a dated bundle under workspace/runs/cluster-incidents/.",
+    "Every mitigation should include detection, repair, verification, and residual risk.",
+    "Do not overwrite dirty node work during incident response."
+  ]
+}

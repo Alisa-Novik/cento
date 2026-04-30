@@ -2,6 +2,22 @@
 
 `cento incident` runs bounded checks for Cento control-plane failures and escalates actionable failures into `agent-work`.
 
+## Cluster Bridge Incident Runbook
+
+The 2026-04-30 Linux bridge outage is documented as a SEV2 cluster-health incident:
+
+- Permanent runbook: [`docs/cluster-bridge-incident.md`](cluster-bridge-incident.md)
+- Cluster incidents dashboard: [`workspace/runs/cluster-incidents/start-here.html`](../workspace/runs/cluster-incidents/start-here.html)
+- Incident bundle: [`workspace/runs/cluster-incidents/bridge-stale-socket-20260430/start-here.html`](../workspace/runs/cluster-incidents/bridge-stale-socket-20260430/start-here.html)
+
+Primary mitigation:
+
+```bash
+cento cluster heal linux
+```
+
+Use this when `/tmp/cento-linux.sock` exists on the OCI relay but `cento bridge to-linux` or `cento gather-context` reports `Connection refused`.
+
 The first MVP check is `iphone-ce`. It watches whether the iPhone command path is healthy enough for:
 
 ```bash
