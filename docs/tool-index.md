@@ -486,6 +486,33 @@
   - `cento agent-work runs --json --active`
   - `cento agent-work run-status RUN_ID --json`
 
+## Agent Pool Kicker
+
+- `id`: `agent-pool-kick`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/agent_pool_kick.py`
+- description: Bounded worker-pool launcher that keeps builder, validator, small-task, and coordinator lanes moving without unbounded dispatch.
+- commands:
+  - `cento agent-pool-kick --dry-run`
+  - `cento agent-pool-kick --max-launch 3 --dry-run`
+  - `cento agent-pool-kick --max-launch 3 --model gpt-5.3-codex-spark`
+  - `cento agent-pool-kick --builder-target 2 --validator-target 2 --small-target 1 --coordinator-target 1`
+  - `python3 scripts/agent_pool_kick.py --dry-run`
+
+## Agent Work Hygiene
+
+- `id`: `agent-work-hygiene`
+- `lane`: `agent ops`
+- `kind`: `shell`
+- `entrypoint`: `./scripts/agent_work_hygiene.sh`
+- description: Collect a point-in-time reconciliation report of agent run ledgers, tmux sessions, and Codex/Claude processes.
+- commands:
+  - `cento agent-work-hygiene`
+  - `cento agent-work-hygiene --issue 94`
+  - `cento agent-work-hygiene --out-dir workspace/runs/agent-work/reconciliation`
+  - `./scripts/agent_work_hygiene.sh`
+
 ## Cento Incident Response
 
 - `id`: `incident`

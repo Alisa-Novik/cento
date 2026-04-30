@@ -4,9 +4,9 @@ This file is generated from `data/tools.json`.
 
 ## Summary
 
-- macOS tools: 26
-- Linux tools: 34
-- both platforms: 23
+- macOS tools: 28
+- Linux tools: 36
+- both platforms: 25
 - Linux only: 11
 - macOS only: 3
 
@@ -14,7 +14,9 @@ This file is generated from `data/tools.json`.
 
 | Tool | macOS | Linux | Description |
 |---|---:|---:|---|
+| `agent-pool-kick` | yes | yes | Bounded worker-pool launcher that keeps builder, validator, small-task, and coordinator lanes moving without unbounded dispatch. |
 | `agent-work` | yes | yes | Redmine-backed Jira-style work tracker for assigning, splitting, dispatching, and reviewing Cento agent tasks across the Mac/Linux cluster. |
+| `agent-work-hygiene` | yes | yes | Collect a point-in-time reconciliation report of agent run ledgers, tmux sessions, and Codex/Claude processes. |
 | `audio-quick-connect` | no | yes | Quickly connect a paired Bluetooth audio device by name or address with a short retry path and per-run logs. |
 | `batch-exec` | yes | yes | Run one shell command across multiple directories with dry-run and git-only support. |
 | `bluetooth-audio-doctor` | no | yes | Diagnose Bluetooth and Bluetooth-audio failures, generate detailed reports, and apply safe repair actions. |
@@ -54,7 +56,9 @@ This file is generated from `data/tools.json`.
 
 ## Available On Both
 
+- `agent-pool-kick`
 - `agent-work`
+- `agent-work-hygiene`
 - `batch-exec`
 - `bridge`
 - `cento-cli`

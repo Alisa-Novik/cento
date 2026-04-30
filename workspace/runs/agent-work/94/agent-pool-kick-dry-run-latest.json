@@ -1,0 +1,33 @@
+{
+  "generated_at": "2026-04-30T13:56:25.185426+00:00",
+  "dry_run": true,
+  "model": "gpt-5.3-codex-spark",
+  "max_launch": 2,
+  "active_counts": {
+    "builder": 4,
+    "validator": 2,
+    "small": 3,
+    "coordinator": 0
+  },
+  "targets": {
+    "validator": 3,
+    "builder": 4,
+    "small": 3,
+    "coordinator": 1
+  },
+  "launched_count": 2,
+  "launched": [
+    {
+      "issue": 15,
+      "lane": "validator",
+      "subject": "iPhone Cento App iOS Creation",
+      "dry_run": true
+    },
+    {
+      "issue": 52,
+      "lane": "coordinator",
+      "subject": "Spark Coordinator Agent Lane",
+      "dry_run": true
+    }
+  ]
+}

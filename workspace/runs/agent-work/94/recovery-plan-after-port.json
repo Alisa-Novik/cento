@@ -1,0 +1,153 @@
+{
+  "generated_at": "2026-04-30T13:52:54.593469+00:00",
+  "counts": {
+    "total_open": 47,
+    "queued": 32,
+    "blocked": 3,
+    "review": 4,
+    "running": 8,
+    "validating": 0,
+    "tracked_active_runs": 10,
+    "stale_runs": 10
+  },
+  "blocked_by_package": {
+    "system-self-improvement": 3
+  },
+  "blocked_by_role": {
+    "validator": 3
+  },
+  "top_blocked": [
+    {
+      "id": 103,
+      "status": "Blocked",
+      "node": "linux",
+      "role": "validator",
+      "agent": "stress-validator",
+      "package": "system-self-improvement",
+      "title": "Concurrency stress: dual-backend replacement locking"
+    },
+    {
+      "id": 104,
+      "status": "Blocked",
+      "node": "linux",
+      "role": "validator",
+      "agent": "stress-validator",
+      "package": "system-self-improvement",
+      "title": "Concurrency stress: dual-backend replacement locking"
+    },
+    {
+      "id": 105,
+      "status": "Blocked",
+      "node": "linux",
+      "role": "validator",
+      "agent": "stress-validator",
+      "package": "system-self-improvement",
+      "title": "Concurrency stress: dual-backend replacement locking"
+    }
+  ],
+  "top_review": [
+    {
+      "id": 13,
+      "status": "Review",
+      "node": "Linux",
+      "role": "",
+      "agent": "alice",
+      "package": "mission-control",
+      "title": "Test task"
+    },
+    {
+      "id": 16,
+      "status": "Review",
+      "node": "linux",
+      "role": "",
+      "agent": "alice",
+      "package": "iphone-cento-app-ios-creation",
+      "title": "iPhone Cento App iOS Creation: Define product requirements, architecture, and delivery roadmap for the iPhone app."
+    },
+    {
+      "id": 17,
+      "status": "Review",
+      "node": "macos",
+      "role": "",
+      "agent": "anovik-air",
+      "package": "iphone-cento-app-ios-creation",
+      "title": "iPhone Cento App: Mac Xcode signing and physical-device setup"
+    },
+    {
+      "id": 81,
+      "status": "Review",
+      "node": "Linux",
+      "role": "validator",
+      "agent": "alice",
+      "package": "redmine-replacement-v1",
+      "title": "Self-Hosted Agent Work UI Replacement: Update agent_work.py to use new tracker backend and full E2E validation"
+    }
+  ],
+  "stale_runs": [
+    {
+      "run_id": "issue-65-20260430-022535-3a5b55",
+      "issue_id": 65,
+      "node": "linux",
+      "runtime": "claude-code",
+      "health": "stale_no_process"
+    },
+    {
+      "run_id": "issue-65-20260430-022535-8ef57b",
+      "issue_id": 65,
+      "node": "linux",
+      "runtime": "codex",
+      "health": "stale_no_process"
+    },
+    {
+      "run_id": "issue-65-20260430-022615-83bdcc",
+      "issue_id": 65,
+      "node": "linux",
+      "runtime": "codex",
+      "health": "stale_no_process"
+    },
+    {
+      "run_id": "issue-77-20260430-021906-6e5d8c",
+      "issue_id": 77,
+      "node": "linux",
+      "runtime": "codex",
+      "health": "stale_no_process"
+    },
+    {
+      "run_id": "issue-77-20260430-021912-084490",
+      "issue_id": 77,
+      "node": "linux",
+      "runtime": "codex",
+      "health": "stale_no_process"
+    },
+    {
+      "run_id": "issue-77-20260430-021927-d59fb8",
+      "issue_id": 77,
+      "node": "linux",
+      "runtime": "claude-code",
+      "health": "stale_no_process"
+    },
+    {
+      "run_id": "issue-77-20260430-022002-8cb9c0",
+      "issue_id": 77,
+      "node": "linux",
+      "runtime": "codex",
+      "health": "stale_no_process"
+    },
+    {
+      "run_id": "issue-80-20260430-021150-ff9e4d",
+      "issue_id": 80,
+      "node": "linux",
+      "runtime": "codex",
+      "health": "stale_no_process"
+    }
+  ],
+  "suggestions": [
+    "Group blocked work by package/role and unblock the largest cluster before launching more workers.",
+    "Run validators or close approved Review items to reduce board noise.",
+    "Run ledger hygiene before dispatching more workers; stale entries can make pool capacity look occupied or failed."
+  ],
+  "create_followup": {
+    "requested": false,
+    "created": false
+  }
+}

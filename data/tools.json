@@ -1081,6 +1081,65 @@
       ]
     },
     {
+      "id": "agent-pool-kick",
+      "name": "Agent Pool Kicker",
+      "lane": "agent ops",
+      "kind": "python",
+      "entrypoint": "./scripts/agent_pool_kick.py",
+      "description": "Bounded worker-pool launcher that keeps builder, validator, small-task, and coordinator lanes moving without unbounded dispatch.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento agent-pool-kick --dry-run",
+        "cento agent-pool-kick --max-launch 3 --dry-run",
+        "cento agent-pool-kick --max-launch 3 --model gpt-5.3-codex-spark",
+        "cento agent-pool-kick --builder-target 2 --validator-target 2 --small-target 1 --coordinator-target 1",
+        "python3 scripts/agent_pool_kick.py --dry-run"
+      ],
+      "outputs": [
+        "~/.local/state/cento/agent-pool-kick-latest.json",
+        "stdout JSON launch summary",
+        "Redmine issue state and agent run ledgers through agent-work dispatch"
+      ],
+      "notes": [
+        "Dry-run first before launching workers.",
+        "Defaults to the cheap Spark/Codex model unless CENTO_POOL_CODEX_MODEL, CENTO_AGENT_MODEL, or --model overrides it.",
+        "Uses current agent-work list and runs state to avoid dispatching issues that already have active runs.",
+        "Designed for a small cheap worker pool; use max-launch and target flags as guardrails."
+      ]
+    },
+    {
+      "id": "agent-work-hygiene",
+      "name": "Agent Work Hygiene",
+      "lane": "agent ops",
+      "kind": "shell",
+      "entrypoint": "./scripts/agent_work_hygiene.sh",
+      "description": "Collect a point-in-time reconciliation report of agent run ledgers, tmux sessions, and Codex/Claude processes.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento agent-work-hygiene",
+        "cento agent-work-hygiene --issue 94",
+        "cento agent-work-hygiene --out-dir workspace/runs/agent-work/reconciliation",
+        "./scripts/agent_work_hygiene.sh"
+      ],
+      "outputs": [
+        "workspace/runs/agent-work/reconciliation/hygiene-*/hygiene-report.md",
+        "workspace/runs/agent-work/reconciliation/hygiene-*/agent-work-runs.json",
+        "workspace/runs/agent-work/reconciliation/hygiene-*/tmux-sessions.txt",
+        "workspace/runs/agent-work/reconciliation/hygiene-*/process-probe.txt"
+      ],
+      "notes": [
+        "Use before dispatching more workers when stale run records or blocked pool state are confusing capacity.",
+        "The report is evidence-first and does not mutate source code.",
+        "Pass --issue to scope reconciliation to one tracked run family."
+      ]
+    },
+    {
       "id": "incident",
       "name": "Cento Incident Response",
       "lane": "agent ops",

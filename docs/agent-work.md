@@ -190,6 +190,33 @@ cento agent-work recovery-plan --create-followup
 
 The create path has duplicate-task and cooldown guards. Use `--force-create` only when intentionally bypassing those guards.
 
+## Pool Hygiene
+
+Use the pool kicker when the board has queued builder, validator, small evidence, or coordinator work and the active run targets are below capacity:
+
+```bash
+cento agent-pool-kick --dry-run
+cento agent-pool-kick --max-launch 3
+cento agent-pool-kick --max-launch 3 --model gpt-5.3-codex-spark
+```
+
+It writes the latest summary to:
+
+```text
+~/.local/state/cento/agent-pool-kick-latest.json
+```
+
+The default launch model is `gpt-5.3-codex-spark`, with `CENTO_POOL_CODEX_MODEL`, `CENTO_AGENT_MODEL`, or `--model` available when the pool needs a different Codex runtime.
+
+Use the hygiene report before launching more workers when capacity looks wrong, workers went stale, or blocked state is confusing:
+
+```bash
+cento agent-work-hygiene
+cento agent-work-hygiene --issue 94
+```
+
+The report includes run ledger JSON, tmux sessions, process probes, stale counts, and minimal reconciliation suggestions under `workspace/runs/agent-work/reconciliation/`.
+
 ## Redmine UI
 
 The existing Linux Redmine stack is the visual board:
