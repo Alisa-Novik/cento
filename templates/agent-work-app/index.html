@@ -224,14 +224,11 @@
           <aside class="docsSidebar" data-doc-section="left-nav" aria-label="Documentation navigation">
             <nav>
               <details open>
-                <summary>Documentation</summary>
-                <a href="#overview"><span class="navIcon">⌂</span>Overview</a>
+                <summary>Cento</summary>
+                <a class="active" href="#overview"><span class="navIcon">⌂</span>Overview</a>
                 <a href="#getting-started"><span class="navIcon">◉</span>Getting started</a>
-              </details>
-              <details open>
-                <summary>Research</summary>
-                <a class="active" href="#research-implementation"><span class="navIcon">▣</span>Research Center</a>
-                <a href="#all-research"><span class="navIcon">▤</span>All research</a>
+                <a href="#tool-registry"><span class="navIcon">⌘</span>Tool registry</a>
+                <a href="#validation"><span class="navIcon">▧</span>Validation</a>
               </details>
               <details open>
                 <summary>Taskstream</summary>
@@ -272,15 +269,140 @@
             <div class="docsBreadcrumb" aria-label="Breadcrumb">
               <span>Docs</span>
               <b>›</b>
-              <span>Research</span>
+              <strong>Overview</strong>
+            </div>
+
+            <header id="overview" class="docsHero" data-doc-section="hero">
+              <h1>Cento Documentation</h1>
+              <p>Operator-facing reference for running Cento, validating work, and finding the right command surface without leaving the console.</p>
+            </header>
+
+            <section id="getting-started" class="docsSection" data-doc-section="explore">
+              <h2>Explore by area</h2>
+              <div class="docsExploreGrid">
+                <a class="docsAreaCard" href="#taskstream">
+                  <span class="docGlyph">▥</span>
+                  <div>
+                    <h3>Taskstream</h3>
+                    <p>Issues, review queues, validation evidence, journals, saved filters, and agent handoff status.</p>
+                  </div>
+                  <b>↗</b>
+                </a>
+                <a class="docsAreaCard" href="#factory">
+                  <span class="docGlyph stacked">▣</span>
+                  <div>
+                    <h3>Factory</h3>
+                    <p>Manifest-driven queues, runtime adapters, owned-path leases, dry-run integration, and release evidence.</p>
+                  </div>
+                  <b>↗</b>
+                </a>
+                <a class="docsAreaCard" href="#cluster">
+                  <span class="docGlyph">⊙</span>
+                  <div>
+                    <h3>Cluster</h3>
+                    <p>Node inventory, package support, capability scans, update status, and platform contracts.</p>
+                  </div>
+                  <b>↗</b>
+                </a>
+                <a class="docsAreaCard" href="#consulting">
+                  <span class="docGlyph">♙</span>
+                  <div>
+                    <h3>Consulting</h3>
+                    <p>CRM workspace, intake workflows, funnel reports, and client delivery modules.</p>
+                  </div>
+                  <b>↗</b>
+                </a>
+                <a class="docsAreaCard" href="/research-center">
+                  <span class="docGlyph">▤</span>
+                  <div>
+                    <h3>Research Center</h3>
+                    <p>Deep research reports and implementation mapping live in their own console section.</p>
+                  </div>
+                  <b>↗</b>
+                </a>
+                <a class="docsAreaCard" href="#api-reference">
+                  <span class="docGlyph">⌘</span>
+                  <div>
+                    <h3>API Reference</h3>
+                    <p>Local endpoint contracts, CLI surfaces, generated tool index, and integration boundaries.</p>
+                  </div>
+                  <b>↗</b>
+                </a>
+                <a class="docsAreaCard" href="#ai-optimization">
+                  <span class="docGlyph">◫</span>
+                  <div>
+                    <h3>AI optimization</h3>
+                    <p>No-model validation, prompt budgets, execution modes, and evidence-first delivery constraints.</p>
+                  </div>
+                  <b>↗</b>
+                </a>
+              </div>
+            </section>
+
+            <section id="updates" class="docsSection" data-doc-section="updates">
+              <h2>Recent updates</h2>
+              <div class="docsUpdates">
+                <div><strong>Factory runtime adapters v1</strong><time datetime="2026-05-01">May 1, 2026</time></div>
+                <div><strong>Factory autopilot control loop v1</strong><time datetime="2026-05-01">May 1, 2026</time></div>
+                <div><strong>Docs and Research Center routes split</strong><time datetime="2026-05-01">May 1, 2026</time></div>
+              </div>
+            </section>
+
+            <section id="need-help" class="docsSupport" data-doc-section="support">
+              <span class="supportIcon">?</span>
+              <div>
+                <h2>Can't find what you're looking for?</h2>
+                <p>Use the tool registry and validation manifests when the console docs do not yet cover a command.</p>
+              </div>
+              <a href="#tool-registry">Open registry <span>↗</span></a>
+            </section>
+          </article>
+
+          <aside class="docsToc" data-doc-section="right-toc" aria-label="On this page">
+            <h2>On this page</h2>
+            <a class="active" href="#overview">Overview</a>
+            <a href="#getting-started">Explore by area</a>
+            <a href="#updates">Recent updates</a>
+            <a href="#need-help">Support</a>
+          </aside>
+        </section>
+
+        <section id="researchView" class="view hidden">
+          <aside class="docsSidebar researchSidebar" data-doc-section="left-nav" aria-label="Research Center navigation">
+            <nav>
+              <details open>
+                <summary>Research Center</summary>
+                <a class="active" href="#research-implementation"><span class="navIcon">▣</span>Implementation map</a>
+                <a href="#research-report"><span class="navIcon">▧</span>Research report</a>
+                <a href="#key-findings"><span class="navIcon">◉</span>Key findings</a>
+                <a href="#sources"><span class="navIcon">▤</span>Sources</a>
+              </details>
+              <details open>
+                <summary>Linked systems</summary>
+                <a href="/factory"><span class="navIcon">▣</span>Factory</a>
+                <a href="/cluster"><span class="navIcon">⊙</span>Cluster</a>
+                <a href="/consulting"><span class="navIcon">♙</span>Consulting</a>
+              </details>
+            </nav>
+            <a class="docsHelpCard" href="/docs">
+              <span class="docGlyph">⌂</span>
+              <strong>Docs</strong>
+              <small>Open console documentation</small>
+              <b>↗</b>
+            </a>
+          </aside>
+
+          <article class="docsMain researchMain" aria-label="Research Center">
+            <div class="docsBreadcrumb" aria-label="Breadcrumb">
+              <span>Research Center</span>
               <b>›</b>
               <span>Implementations</span>
               <b>›</b>
-              <strong>Deep Research: Multi-Agent Observability Best Practices</strong>
+              <strong>Multi-Agent Observability Best Practices</strong>
             </div>
 
             <header id="research-implementation" class="researchHeader" data-doc-section="hero">
-              <a class="researchBack" href="#all-research" aria-label="Back to research list">‹</a>
+              <a class="researchBack" href="#research-report" aria-label="Back to research report">‹</a>
               <div>
                 <h1>Deep Research: Multi-Agent Observability Best Practices</h1>
                 <nav class="researchTabs" aria-label="Research sections">

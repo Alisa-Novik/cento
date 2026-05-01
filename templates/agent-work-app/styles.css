@@ -687,23 +687,37 @@ button:hover {
   color: var(--muted);
 }
 
-body.docsMode .appShell {
+body.docsMode .appShell,
+body.researchMode .appShell {
   grid-template-columns: 1fr;
   min-height: calc(100vh - 64px);
 }
 
 body.docsMode .sidebar,
-body.docsMode .taskstreamNav {
+body.docsMode .taskstreamNav,
+body.researchMode .sidebar,
+body.researchMode .taskstreamNav {
   display: none;
 }
 
-body.docsMode .content {
+body.docsMode .content,
+body.researchMode .content {
   padding: 0;
   border: 0;
   min-height: calc(100vh - 64px);
 }
 
 #docsView:not(.hidden) {
+  display: grid;
+  grid-template-columns: 246px minmax(560px, 1fr) 320px;
+  min-height: calc(100vh - 64px);
+  border-bottom: 1px solid var(--line);
+  background:
+    radial-gradient(circle at 80% 10%, rgba(255, 90, 0, 0.06), transparent 26rem),
+    linear-gradient(180deg, rgba(7, 8, 8, 0.96), rgba(5, 5, 4, 0.98));
+}
+
+#researchView:not(.hidden) {
   display: grid;
   grid-template-columns: 246px minmax(460px, 1fr) minmax(560px, 1.25fr);
   min-height: calc(100vh - 64px);
@@ -1108,7 +1122,7 @@ body.docsMode .content {
 
 .docsExploreGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.1rem 1.45rem;
 }
 
@@ -3038,7 +3052,8 @@ kbd {
     justify-self: start;
   }
 
-  #docsView:not(.hidden) {
+  #docsView:not(.hidden),
+  #researchView:not(.hidden) {
     grid-template-columns: 260px minmax(0, 1fr);
   }
 
@@ -3165,7 +3180,8 @@ kbd {
     grid-template-columns: 1fr;
   }
 
-  #docsView:not(.hidden) {
+  #docsView:not(.hidden),
+  #researchView:not(.hidden) {
     grid-template-columns: 1fr;
   }
 

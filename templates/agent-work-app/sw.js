@@ -1,4 +1,4 @@
-const CACHE_NAME = "cento-taskstream-v11-docs-research-routes";
+const CACHE_NAME = "cento-taskstream-v12-docs-research-split";
 const APP_SHELL = [
   "/",
   "/index.html",

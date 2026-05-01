@@ -39,6 +39,7 @@ const clusterView = document.querySelector("#clusterView");
 const consultingView = document.querySelector("#consultingView");
 const factoryView = document.querySelector("#factoryView");
 const docsView = document.querySelector("#docsView");
+const researchView = document.querySelector("#researchView");
 const factoryRunList = document.querySelector("#factoryRunList");
 const factoryRunCount = document.querySelector("#factoryRunCount");
 const factoryDeliveredCount = document.querySelector("#factoryDeliveredCount");
@@ -860,7 +861,8 @@ function setNavActive(route) {
     link.classList.toggle("active", link.dataset.navRoute === activeRoute);
   });
   if (taskstreamNav) taskstreamNav.classList.toggle("hidden", activeMain !== "taskstream");
-  document.body.classList.toggle("docsMode", activeMain === "docs" || activeMain === "research");
+  document.body.classList.toggle("docsMode", activeMain === "docs");
+  document.body.classList.toggle("researchMode", activeMain === "research");
 }
 
 function refreshSavedQueryOptions() {
@@ -1546,6 +1548,7 @@ function showReview() {
   consultingView.classList.add("hidden");
   factoryView.classList.add("hidden");
   docsView.classList.add("hidden");
+  researchView.classList.add("hidden");
   reviewView.classList.remove("hidden");
   history.replaceState(null, "", "/review");
   void loadReview().catch((error) => {
@@ -1609,6 +1612,7 @@ async function showDetail(issueId) {
   consultingView.classList.add("hidden");
   factoryView.classList.add("hidden");
   docsView.classList.add("hidden");
+  researchView.classList.add("hidden");
   detailView.classList.remove("hidden");
   history.replaceState(null, "", `/issues/${issueId}`);
   try {
@@ -1628,6 +1632,7 @@ function showList() {
   consultingView.classList.add("hidden");
   factoryView.classList.add("hidden");
   docsView.classList.add("hidden");
+  researchView.classList.add("hidden");
   listView.classList.remove("hidden");
   setLocationFromState();
   void withSpinner(loadIssues());
@@ -1635,7 +1640,6 @@ function showList() {
 
 function showCentoSection(route) {
   setNavActive(route);
-  const docsLike = route === "docs" || route === "research";
   document.body.classList.remove("reviewMode");
   reviewView.classList.add("hidden");
   detailView.classList.add("hidden");
@@ -1643,7 +1647,8 @@ function showCentoSection(route) {
   clusterView.classList.toggle("hidden", route !== "cluster");
   consultingView.classList.toggle("hidden", route !== "consulting");
   factoryView.classList.toggle("hidden", route !== "factory");
-  docsView.classList.toggle("hidden", !docsLike);
+  docsView.classList.toggle("hidden", route !== "docs");
+  researchView.classList.toggle("hidden", route !== "research");
   if (route === "factory") {
     history.replaceState(null, "", "/factory");
     void loadFactory();
