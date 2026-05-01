@@ -654,6 +654,7 @@ button:hover {
   background: rgba(5, 5, 4, 0.34);
   min-height: 7.5rem;
   padding: 0.7rem;
+  overflow-wrap: anywhere;
 }
 
 .factoryMiniPanel h3 {
@@ -674,6 +675,10 @@ button:hover {
 .factoryMiniPanel ul {
   margin: 0;
   padding-left: 1rem;
+}
+
+.factoryMiniPanel strong {
+  color: var(--paper);
 }
 
 .factoryEmpty {

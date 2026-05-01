@@ -1107,6 +1107,14 @@ def factory_run_list() -> dict[str, Any]:
             dispatch = read_json_path(run_dir / "dispatch-plan.json")
             patch_collection = read_json_path(run_dir / "patch-collection-summary.json")
             integration = read_json_path(run_dir / "integration" / "integration-plan.json") or read_json_path(run_dir / "integration-plan.json")
+            integration_state = read_json_path(run_dir / "integration" / "integration-state.json")
+            integration_branch = read_json_path(run_dir / "integration" / "integration-branch.json")
+            applied_patches = read_json_path(run_dir / "integration" / "applied-patches.json")
+            rejected_patches = read_json_path(run_dir / "integration" / "rejected-patches.json")
+            validation_after_each = read_json_path(run_dir / "integration" / "validation-after-each-patch.json")
+            rollback_plan = read_json_path(run_dir / "integration" / "rollback-plan.json")
+            merge_readiness = read_json_path(run_dir / "integration" / "merge-readiness.json")
+            taskstream_sync = read_json_path(run_dir / "integration" / "taskstream-sync-preview.json")
             release_gates = read_json_path(run_dir / "integration" / "release-gates.json")
             preflight = read_json_path(run_dir / "preflight-summary.json") or read_json_path(run_dir / "preflight.json")
             queue_stats = queue.get("stats") if isinstance(queue.get("stats"), dict) else {}
@@ -1122,6 +1130,12 @@ def factory_run_list() -> dict[str, Any]:
             ]
             patch_rows = patch_collection.get("patches") if isinstance(patch_collection.get("patches"), list) else []
             validation_checks = validation.get("checks") if isinstance(validation.get("checks"), list) else []
+            applied_rows = applied_patches.get("patches") if isinstance(applied_patches.get("patches"), list) else integration_state.get("applied_patches") or []
+            rejected_rows = rejected_patches.get("patches") if isinstance(rejected_patches.get("patches"), list) else integration_state.get("rejected_patches") or []
+            per_patch_validations = validation_after_each.get("validations") if isinstance(validation_after_each.get("validations"), list) else (integration_state.get("validation_after_each_patch") or {}).get("validations") or []
+            taskstream_transitions = taskstream_sync.get("transitions") if isinstance(taskstream_sync.get("transitions"), list) else (integration_state.get("taskstream_sync_preview") or {}).get("transitions") or []
+            branch_payload = integration_branch or integration_state.get("branch") or {}
+            readiness_payload = merge_readiness or integration_state.get("merge_readiness") or {}
             runs.append(
                 {
                     "run_id": run_dir.name,
@@ -1145,6 +1159,21 @@ def factory_run_list() -> dict[str, Any]:
                         "missing": len(integration.get("missing") or []),
                         "conflicts": len(integration.get("conflicts") or []),
                         "release_gate_status": str(release_gates.get("status") or ""),
+                        "state_present": bool(integration_state),
+                        "branch": str(branch_payload.get("branch") or ""),
+                        "worktree": str(branch_payload.get("worktree") or ""),
+                        "branch_status": str(branch_payload.get("status") or ""),
+                        "applied_count": len([item for item in applied_rows if isinstance(item, dict)]),
+                        "rejected_count": len([item for item in rejected_rows if isinstance(item, dict)]),
+                        "validation_after_count": len([item for item in per_patch_validations if isinstance(item, dict)]),
+                        "applied_patches": [item for item in applied_rows if isinstance(item, dict)][:40],
+                        "rejected_patches": [item for item in rejected_rows if isinstance(item, dict)][:40],
+                        "validation_after_each": [item for item in per_patch_validations if isinstance(item, dict)][:40],
+                        "merge_readiness": str(readiness_payload.get("decision") or ""),
+                        "merge_blockers": readiness_payload.get("blockers") or [],
+                        "registry_gate": str(readiness_payload.get("registry_gate") or ""),
+                        "rollback_patches": len(rollback_plan.get("patches") or []),
+                        "taskstream_transitions": len([item for item in taskstream_transitions if isinstance(item, dict)]),
                     },
                     "validation": {
                         "checks": len(validation_checks),
@@ -1161,6 +1190,8 @@ def factory_run_list() -> dict[str, Any]:
                     "start_hub": str(run_dir.relative_to(ROOT_DIR) / "start-here.html") if (run_dir / "start-here.html").exists() else "",
                     "implementation_map": str(run_dir.relative_to(ROOT_DIR) / "implementation-map.html") if (run_dir / "implementation-map.html").exists() else "",
                     "release_packet": str(run_dir.relative_to(ROOT_DIR) / "release-packet.md") if (run_dir / "release-packet.md").exists() else "",
+                    "release_candidate": str(run_dir.relative_to(ROOT_DIR) / "integration" / "release-candidate.md") if (run_dir / "integration" / "release-candidate.md").exists() else "",
+                    "integration_summary": str(run_dir.relative_to(ROOT_DIR) / "integration" / "integration-summary.html") if (run_dir / "integration" / "integration-summary.html").exists() else "",
                     "delivery_status": str(run_dir.relative_to(ROOT_DIR) / "delivery-status.json") if (run_dir / "delivery-status.json").exists() else "",
                     "updated_at": datetime.fromtimestamp(run_dir.stat().st_mtime, timezone.utc).isoformat(),
                 }

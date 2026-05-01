@@ -12,7 +12,7 @@
     {
       "name": "tool-routing",
       "usage": "cento TOOL [args...]",
-      "summary": "Run a registered tool directly by id, including `cento factory` for plan-only factory artifacts."
+      "summary": "Run a registered tool directly by id, including `cento factory` for plan, dispatch, and Safe Integrator artifacts."
     },
     {
       "name": "alias-routing",
@@ -161,8 +161,8 @@
     },
     {
       "name": "factory",
-      "summary": "Registered tool route for the no-model Cento Factory planning and dispatch dry-run workflow.",
-      "usage": "cento factory <intake|plan|materialize|create-issues|preflight|queue|lease|dispatch|collect|validate|integrate|release|render-hub|status> [args...]",
+      "summary": "Registered tool route for the no-model Cento Factory planning, dispatch dry-run, and Safe Integrator workflow.",
+      "usage": "cento factory <intake|plan|materialize|create-issues|preflight|queue|lease|dispatch|collect|validate|integrate|validate-integrated|release-candidate|sync-taskstream|release|render-hub|status> [args...]",
       "flags": [],
       "examples": [
         "cento factory intake \"develop me a career consulting module\" --dry-run --out workspace/runs/factory/factory-planning-e2e",
@@ -174,12 +174,18 @@
         "cento factory collect workspace/runs/factory/factory-planning-e2e",
         "cento factory validate workspace/runs/factory/factory-planning-e2e",
         "cento factory integrate workspace/runs/factory/factory-planning-e2e --dry-run",
+        "cento factory integrate factory-integration-e2e --plan",
+        "cento factory integrate factory-integration-e2e --prepare-branch --branch factory/factory-integration-e2e/integration",
+        "cento factory integrate factory-integration-e2e --apply --validate-each --limit 3",
+        "cento factory validate-integrated factory-integration-e2e",
+        "cento factory release-candidate factory-integration-e2e",
+        "cento factory sync-taskstream factory-integration-e2e --dry-run",
         "cento factory release workspace/runs/factory/factory-planning-e2e --json",
         "cento factory render-hub workspace/runs/factory/factory-planning-e2e"
       ],
       "details": [
         "This command is routed through data/tools.json and scripts/factory.py.",
-        "Factory defaults to deterministic no-model planning, queueing, lease simulation, dry-run dispatch, patch collection, integration gates, and release evidence. Live Taskstream creation requires --apply."
+        "Factory defaults to deterministic no-model planning, queueing, lease simulation, dry-run dispatch, patch collection, Safe Integrator branch/apply/validate gates, rollback metadata, merge readiness, and release evidence. Live Taskstream creation requires --apply, while integration Taskstream sync is a dry-run preview by default."
       ]
     }
   ]

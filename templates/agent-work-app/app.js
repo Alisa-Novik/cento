@@ -1730,7 +1730,34 @@ function renderFactory(payload) {
         .slice(0, 4)
         .map((item) => `<li>${escapeHtml(item.task_id || "")}: ${escapeHtml(item.state || item.integration_status || "")}</li>`)
         .join("") || `<li>No patch bundles collected</li>`;
+      const appliedPreview = Array.isArray(integration.applied_patches)
+        ? integration.applied_patches
+            .slice(0, 4)
+            .map((item) => `<li>${escapeHtml(item.task_id || "")}: ${escapeHtml((item.changed_files || []).join(", ") || "applied")}</li>`)
+            .join("")
+        : "";
+      const rejectedPreview = Array.isArray(integration.rejected_patches)
+        ? integration.rejected_patches
+            .slice(0, 4)
+            .map((item) => `<li>${escapeHtml(item.task_id || "")}: ${escapeHtml((item.reasons || []).join(", ") || "rejected")}</li>`)
+            .join("")
+        : "";
+      const validationAfterPreview = Array.isArray(integration.validation_after_each)
+        ? integration.validation_after_each
+            .slice(0, 4)
+            .map((item) => `<li>${escapeHtml(item.task_id || "")}: ${escapeHtml(item.decision || "unknown")}</li>`)
+            .join("")
+        : "";
+      const branchLine = integration.branch
+        ? `<p><strong>Branch:</strong> ${escapeHtml(integration.branch)}</p><p><strong>Worktree:</strong> ${escapeHtml(integration.worktree || "pending")}</p>`
+        : `<p>Integration branch not prepared.</p>`;
       const preflightReason = Array.isArray(preflight.reasons) && preflight.reasons.length ? preflight.reasons[0] : "no blockers";
+      const releaseCandidateLink = run.release_candidate
+        ? `<a href="${escapeHtml(`/api/artifacts?path=${encodeURIComponent(run.release_candidate)}`)}" target="_blank" rel="noreferrer">release candidate</a>`
+        : `<span>release candidate pending</span>`;
+      const integrationSummaryLink = run.integration_summary
+        ? `<a href="${escapeHtml(`/api/artifacts?path=${encodeURIComponent(run.integration_summary)}`)}" target="_blank" rel="noreferrer">integration summary</a>`
+        : "";
       return `
         <article class="factoryRunCard">
           <div class="factoryRunTop">
@@ -1747,6 +1774,7 @@ function renderFactory(payload) {
             <span>${escapeHtml(String(run.dispatch_selected || 0))} dispatch planned</span>
             <span>${escapeHtml(String(preflight.status || "not_run"))} preflight</span>
             <span>${escapeHtml(String(run.integration_decision || "not_run"))} integration</span>
+            <span>${escapeHtml(String(integration.merge_readiness || "not_ready"))} merge readiness</span>
             <span>${escapeHtml(String(run.ai_calls_used || 0))} AI calls</span>
             <span>$${escapeHtml(String(Number(run.estimated_cost_usd || 0).toFixed(2)))} est.</span>
             <span>${escapeHtml(String(Math.round(Number(run.total_duration_ms || 0))))} ms</span>
@@ -1770,6 +1798,33 @@ function renderFactory(payload) {
               <p>Release gates: ${escapeHtml(integration.release_gate_status || "pending")}</p>
             </section>
             <section class="factoryMiniPanel">
+              <h3>Safe Integrator</h3>
+              ${branchLine}
+              <p>${escapeHtml(String(integration.applied_count || 0))} applied, ${escapeHtml(String(integration.rejected_count || 0))} rejected.</p>
+            </section>
+            <section class="factoryMiniPanel">
+              <h3>Applied Patches</h3>
+              <ul>${appliedPreview || `<li>No applied patches yet</li>`}</ul>
+            </section>
+            <section class="factoryMiniPanel">
+              <h3>Rejected Patches</h3>
+              <ul>${rejectedPreview || `<li>No rejected patches</li>`}</ul>
+            </section>
+            <section class="factoryMiniPanel">
+              <h3>Validation After Each</h3>
+              <ul>${validationAfterPreview || `<li>No per-patch validation yet</li>`}</ul>
+            </section>
+            <section class="factoryMiniPanel">
+              <h3>Merge Readiness</h3>
+              <p>${escapeHtml(integration.merge_readiness || "pending")}</p>
+              <p>Blockers: ${escapeHtml(Array.isArray(integration.merge_blockers) && integration.merge_blockers.length ? integration.merge_blockers.join(", ") : "none")}</p>
+            </section>
+            <section class="factoryMiniPanel">
+              <h3>Rollback</h3>
+              <p>${escapeHtml(String(integration.rollback_patches || 0))} reverse patch commands ready.</p>
+              <p>Registry gate: ${escapeHtml(integration.registry_gate || "pending")}</p>
+            </section>
+            <section class="factoryMiniPanel">
               <h3>Validation Ladder</h3>
               <p>${escapeHtml(String(validation.passed || 0))}/${escapeHtml(String(validation.checks || 0))} checks passed.</p>
               <p>Preflight: ${escapeHtml(preflightReason)}</p>
@@ -1785,6 +1840,8 @@ function renderFactory(payload) {
             ${hubLink}
             ${mapLink}
             ${releaseLink}
+            ${releaseCandidateLink}
+            ${integrationSummaryLink}
           </div>
         </article>
       `;

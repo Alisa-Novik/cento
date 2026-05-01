@@ -569,7 +569,7 @@
 - `lane`: `planning`
 - `kind`: `python`
 - `entrypoint`: `./scripts/factory.py`
-- description: Manifest-driven factory workflow that turns a high-level request into intake artifacts, a validated factory-plan.json, story manifests, validation manifests, queue ledgers, owned-path leases, worktree metadata, prompt bundles, patch collection, integration dry-runs, release status, and static evidence hubs without default AI dispatch.
+- description: Manifest-driven factory workflow that turns a high-level request into intake artifacts, a validated factory-plan.json, story manifests, validation manifests, queue ledgers, owned-path leases, worktree metadata, prompt bundles, patch collection, integration dry-runs, isolated Safe Integrator branches, per-patch validation, rollback metadata, release candidates, release status, and static evidence hubs without default AI dispatch.
 - commands:
   - `cento factory intake "develop me a career consulting module" --dry-run --out workspace/runs/factory/factory-planning-e2e`
   - `cento factory plan workspace/runs/factory/factory-planning-e2e --no-model`
@@ -582,6 +582,12 @@
   - `cento factory collect workspace/runs/factory/factory-planning-e2e`
   - `cento factory validate workspace/runs/factory/factory-planning-e2e`
   - `cento factory integrate workspace/runs/factory/factory-planning-e2e --dry-run`
+  - `cento factory integrate factory-integration-e2e --plan`
+  - `cento factory integrate factory-integration-e2e --prepare-branch --branch factory/factory-integration-e2e/integration`
+  - `cento factory integrate factory-integration-e2e --apply --validate-each --limit 3`
+  - `cento factory validate-integrated factory-integration-e2e`
+  - `cento factory release-candidate factory-integration-e2e`
+  - `cento factory sync-taskstream factory-integration-e2e --dry-run`
   - `cento factory release workspace/runs/factory/factory-planning-e2e --json`
   - `cento factory render-hub workspace/runs/factory/factory-planning-e2e`
   - `cento factory status workspace/runs/factory/factory-planning-e2e`
