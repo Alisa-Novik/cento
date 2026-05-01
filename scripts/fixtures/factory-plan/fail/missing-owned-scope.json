@@ -1,0 +1,55 @@
+{
+  "schema_version": "factory-plan/v1",
+  "run_id": "fixture-factory-run",
+  "request": {
+    "raw": "develop me a career consulting module",
+    "normalized_goal": "Plan a Cento career consulting module."
+  },
+  "package": "factory-planning-fixture-v1",
+  "mode": "plan_only",
+  "risk": "low",
+  "budget": {
+    "ai_call_budget": 0,
+    "estimated_cost_usd": 0,
+    "strong_model_calls_allowed": 0,
+    "cheap_worker_calls_allowed": 0
+  },
+  "tasks": [
+    {
+      "id": "schema-plan",
+      "title": "Schema planning task",
+      "lane": "builder",
+      "node": "linux",
+      "owned_scope": [],
+      "goal": "Plan the module schema.",
+      "expected_outputs": [
+        "workspace/runs/factory/fixture/tasks/schema-plan/evidence.md"
+      ],
+      "validation_commands": [
+        "python3 -m json.tool workspace/runs/factory/fixture/tasks/schema-plan/validation.json"
+      ],
+      "no_model_eligible": true,
+      "risk": "low",
+      "dependencies": []
+    }
+  ],
+  "integration": {
+    "strategy": "plan_only_patch_queue",
+    "merge_order": [
+      "schema-plan"
+    ],
+    "required_docs": [
+      "docs/factory.md"
+    ]
+  },
+  "validation": {
+    "minimum_tier": "tier0",
+    "requires_screenshots": true,
+    "requires_api_smoke": false,
+    "requires_human_review": false
+  },
+  "evidence": {
+    "run_dir": "workspace/runs/factory/fixture",
+    "summary": "workspace/runs/factory/fixture/summary.md"
+  }
+}
