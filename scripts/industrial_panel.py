@@ -10,19 +10,23 @@ import select
 import signal
 import shutil
 import subprocess
+import platform
 import sys
 import termios
 import textwrap
 import time
 import tty
 import unicodedata
+import shlex
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from industrial_activity import build_activity_events, classify_severity, dedupe_sort_events, event, filter_activity_events, load_agent_work_payload, parse_timestamp
 from industrial_status import metrics
 from jobs_server import load_jobs
-from network_web_server import cluster_snapshot
+from network_web_server import build_cluster_panel_model, cluster_snapshot
 
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -92,10 +96,45 @@ HERO_QUEUE = [
     },
 ]
 HERO_READY_ACTIONS = 12
+def normalize_platform_name(value: str) -> str:
+    value = value.lower()
+    if value == "darwin":
+        return "macos"
+    return value
+
+
+ACTION_PLATFORM = normalize_platform_name(platform.system())
+ACTION_REGISTRY = ROOT_DIR / "data" / "industrial-actions.json"
+ACTION_FIXTURE = os.environ.get("CENTO_INDUSTRIAL_ACTIONS_FIXTURE", "").strip()
+CLUSTER_FIXTURE = os.environ.get("CENTO_INDUSTRIAL_CLUSTER_FIXTURE", "").strip()
+ACTIVITY_FIXTURE = os.environ.get("CENTO_INDUSTRIAL_ACTIVITY_FIXTURE", "").strip()
+SAFE_ACTION_COMMANDS = {"./scripts/cento.sh", "cento", "python", "python3", sys.executable}
+UNSAFE_ACTION_COMMANDS = {"sh", "bash", "zsh", "fish", "ksh", "csh", "tcsh", "dash"}
+ACTIVITY_RENDER_OPTIONS: dict[str, Any] = {
+    "limit": 14,
+    "sources": [],
+    "severities": [],
+    "query": "",
+}
 HERO_STATE: dict[str, Any] = {
     "selected": 0,
     "message": "implement action router",
     "output": ["j/k or arrows move", "a or enter runs selected action", "o opens context", "u drafts update"],
+    "last_key": "",
+}
+ACTIONS_STATE: dict[str, Any] = {
+    "selected": 0,
+    "running": None,
+    "message": "ready",
+    "output": ["j/k or arrows move", "1-5 select", "enter runs selected action", "d dry-runs selected action", "q quits panel"],
+    "last_key": "",
+    "results": {},
+}
+ACTIONS_STATE_LOCK = threading.Lock()
+JOBS_STATE: dict[str, Any] = {
+    "selected": 0,
+    "message": "ready",
+    "output": ["j/k or arrows move", "1-9 select", "q quits panel"],
     "last_key": "",
 }
 
@@ -325,23 +364,316 @@ def queue_item_lines(action: dict[str, Any], index: int, width: int, active: boo
     return lines
 
 
-def run_action(action: dict[str, Any]) -> list[str]:
+def load_quick_actions() -> list[dict[str, Any]]:
+    def normalize(item: dict[str, Any], fallback: int) -> dict[str, Any] | None:
+        command = item.get("command")
+        if command is None:
+            normalized = []
+        elif isinstance(command, str):
+            normalized = [piece for piece in shlex.split(command) if piece]
+        elif isinstance(command, list):
+            normalized = [str(piece) for piece in command if str(piece).strip()]
+        else:
+            return None
+        dry_run = item.get("dry_run_command") if item.get("dry_run_command") is not None else normalized
+        if isinstance(dry_run, str):
+            dry_run = [piece for piece in shlex.split(dry_run) if piece]
+        if not isinstance(dry_run, list):
+            return None
+        return {
+            "key": str(item.get("key") or str(fallback)),
+            "label": str(item.get("label") or item.get("name") or f"Action {fallback}"),
+            "id": str(item.get("id") or f"action-{fallback}"),
+            "description": str(item.get("description") or ""),
+            "allowlist": [str(value).lower() for value in (item.get("allowlist") or [])],
+            "command": [str(piece) for piece in normalized],
+            "dry_run_command": [str(piece) for piece in dry_run],
+            "target_node": str(item.get("target_node") or "cluster"),
+            "availability_check": str(item.get("availability_check") or "always"),
+            "expected_output_signal": str(item.get("expected_output_signal") or ""),
+        }
+
+    payload: Any
+    if ACTION_FIXTURE:
+        try:
+            payload = json.loads(Path(ACTION_FIXTURE).read_text(encoding="utf-8"))
+        except Exception:
+            payload = []
+    else:
+        try:
+            payload = json.loads(ACTION_REGISTRY.read_text(encoding="utf-8"))
+        except Exception:
+            payload = []
+    actions: list[dict[str, Any]] = []
+    if isinstance(payload, dict):
+        payload = payload.get("actions") or []
+    if isinstance(payload, list):
+        for index, item in enumerate(payload, 1):
+            if not isinstance(item, dict):
+                continue
+            action = normalize(item, index)
+            if action is not None:
+                actions.append(action)
+    return actions
+
+
+def action_cluster_payload() -> tuple[dict[str, Any], str | None]:
+    if CLUSTER_FIXTURE:
+        try:
+            payload = json.loads(Path(CLUSTER_FIXTURE).read_text(encoding="utf-8"))
+            if isinstance(payload, dict):
+                return payload, None
+            return {}, "cluster fixture must be a JSON object"
+        except Exception as exc:
+            return {}, str(exc)
+    try:
+        return cluster_snapshot(), None
+    except Exception as exc:
+        return {}, str(exc)
+
+
+def action_command_text(command: Any) -> str:
+    if isinstance(command, list):
+        return " ".join(str(piece) for piece in command)
+    return str(command or "")
+
+
+def action_command_is_safe(command: Any) -> tuple[bool, str]:
+    if not isinstance(command, list):
+        return False, "invalid command"
+    if not command:
+        return False, "no command configured"
+    first = str(command[0]).strip()
+    if not first:
+        return False, "no command configured"
+    if first in UNSAFE_ACTION_COMMANDS:
+        return False, f"unsafe shell wrapper blocked: {first}"
+    if first in SAFE_ACTION_COMMANDS or first.startswith("./scripts/"):
+        return True, ""
+    return False, f"unsafe command blocked: {first}"
+
+
+def cluster_panel_payload() -> tuple[dict[str, Any], str | None]:
+    if CLUSTER_FIXTURE:
+        try:
+            payload = json.loads(Path(CLUSTER_FIXTURE).read_text(encoding="utf-8"))
+            if isinstance(payload, dict):
+                return payload, None
+            return {}, "cluster fixture must be a JSON object"
+        except Exception as exc:
+            return {}, str(exc)
+    try:
+        return cluster_snapshot(), None
+    except Exception as exc:
+        return {}, str(exc)
+
+
+def action_is_allowed(action: dict[str, Any], platform_name: str) -> tuple[bool, str]:
+    platform_name = normalize_platform_name(platform_name)
+    allowlist = [str(value).lower() for value in action.get("allowlist") or []]
+    if not allowlist:
+        return True, ""
+    if platform_name not in allowlist:
+        return False, f"not available on {platform_name} (allowlist: {', '.join(allowlist)})"
+    return True, ""
+
+
+def action_cluster_available(action: dict[str, Any], cluster_payload: dict[str, Any], cluster_error: str | None) -> tuple[bool, str]:
+    if cluster_error:
+        return False, f"cluster payload unavailable: {cluster_error}"
+    policy = str(action.get("availability_check") or "always")
+    if policy == "always":
+        return True, ""
+    health = cluster_payload.get("health") or {}
+    nodes = health.get("nodes") or []
+    if policy == "non_empty_cluster":
+        if not nodes:
+            return False, "cluster has no registered nodes"
+        return True, ""
+    if policy == "degraded_nodes":
+        if not nodes:
+            return False, "cluster has no registered nodes"
+        if any(str(item.get("state") or "") in {"degraded", "offline"} for item in nodes):
+            return True, ""
+        return False, "no degraded or offline nodes"
+    return True, ""
+
+
+def build_action_rows(
+    cluster_payload: dict[str, Any],
+    cluster_error: str | None = None,
+    platform_name: str = ACTION_PLATFORM,
+) -> list[dict[str, Any]]:
+    platform_name = normalize_platform_name(platform_name)
+    rows: list[dict[str, Any]] = []
+    for action in load_quick_actions():
+        entry = dict(action)
+        available, reason = action_is_allowed(action, platform_name)
+        if available:
+            cluster_available, cluster_reason = action_cluster_available(action, cluster_payload, cluster_error)
+            if not cluster_available:
+                available = False
+                reason = cluster_reason
+        if available:
+            safe, safety_reason = action_command_is_safe(action.get("command"))
+            if not safe:
+                available = False
+                reason = safety_reason
+        if not reason:
+            reason = "ready"
+        entry.update(
+            {
+                "available": available,
+                "availability_reason": reason,
+            }
+        )
+        rows.append(entry)
+    return rows
+
+
+def action_metadata_lines(action: dict[str, Any], width: int = 58) -> list[str]:
+    allowlist = ", ".join(action.get("allowlist") or []) or "all"
+    lines = [
+        f"DESCRIPTION  {clip_text(str(action.get('description') or 'n/a'), max(1, width - 14))}",
+        f"ALLOWLIST    {clip_text(allowlist, max(1, width - 14))}",
+        f"TARGET NODE  {clip_text(str(action.get('target_node') or 'cluster'), max(1, width - 14))}",
+        f"DRY RUN      {clip_text(' '.join(action.get('dry_run_command') or []), max(1, width - 14))}",
+        f"EXPECTED     {clip_text(str(action.get('expected_output_signal') or 'n/a'), max(1, width - 14))}",
+        f"CHECK       {clip_text(str(action.get('availability_check') or 'always'), max(1, width - 14))}",
+    ]
+    return lines
+
+
+def normalize_action_result(status: str, action: dict[str, Any], elapsed_seconds: float, returncode: int | None, output: str) -> dict[str, Any]:
+    command_text = action_command_text(action.get("command"))
+    output_lines = [line for line in (output or "").splitlines() if line]
+    if not output_lines and returncode is not None:
+        output_lines = [f"exit {returncode}"]
+    if not output_lines:
+        output_lines = ["completed"]
+    return {
+        "label": action.get("label", "") or "action",
+        "command": command_text,
+        "status": status,
+        "returncode": returncode,
+        "elapsed_seconds": round(elapsed_seconds, 2),
+        "output": output_lines[:8],
+        "updated_at": datetime.now().isoformat(timespec="seconds"),
+    }
+
+
+def execute_action(action: dict[str, Any], timeout: float = 12.0) -> dict[str, Any]:
     command = action.get("command")
     if not command:
-        return [
-            "Demo follow-up",
-            "Shipped readable central pane.",
-            "Next: wire real job execution for selected actions.",
-            "Ask: confirm action labels and owners.",
-        ]
+        return normalize_action_result("empty", action, 0.0, 0, "No command configured")
+    if not isinstance(command, list):
+        return normalize_action_result("blocked", action, 0.0, 126, f"invalid command: {command}")
+
+    safe, reason = action_command_is_safe(command)
+    if not safe:
+        return normalize_action_result("blocked", action, 0.0, 126, reason)
+
+    started = time.time()
     try:
-        result = subprocess.run(command, cwd=ROOT_DIR, capture_output=True, text=True, timeout=8, check=False)
+        result = subprocess.run(
+            command,
+            cwd=ROOT_DIR,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+    except FileNotFoundError as exc:
+        return normalize_action_result("unavailable", action, time.time() - started, None, f"unavailable: {exc}")
     except Exception as exc:
-        return [f"failed to start: {exc}"]
-    output = (result.stdout or result.stderr or "").strip()
-    lines = output.splitlines() if output else [f"exit {result.returncode}"]
-    prefix = "ok" if result.returncode == 0 else f"exit {result.returncode}"
-    return [f"{prefix}: {' '.join(command)}", *lines[:5]]
+        return normalize_action_result("failed", action, time.time() - started, None, str(exc))
+    output = (result.stdout or "").strip()
+    status = "succeeded" if result.returncode == 0 else "failed"
+    return normalize_action_result(status, action, time.time() - started, result.returncode, output)
+
+
+def action_status_label(status: str) -> str:
+    if status == "succeeded":
+        return f"{GREEN}SUCCEEDED{RESET}"
+    if status == "failed":
+        return f"{ORANGE}FAILED{RESET}"
+    if status == "blocked":
+        return f"{AMBER}BLOCKED{RESET}"
+    if status == "running":
+        return f"{AMBER}RUNNING{RESET}"
+    if status == "idle":
+        return f"{MUTED}IDLE{RESET}"
+    if status == "unavailable":
+        return f"{ORANGE}UNAVAILABLE{RESET}"
+    if status == "empty":
+        return f"{MUTED}EMPTY{RESET}"
+    return f"{ORANGE}DEGRADED{RESET}"
+
+
+def run_action(action: dict[str, Any], *, dry_run: bool = False) -> list[str]:
+    command = action.get("dry_run_command" if dry_run else "command") or action.get("command") or []
+    runnable = dict(action)
+    runnable["command"] = command
+    result = execute_action(runnable)
+    command_text = action_command_text(runnable.get("command"))
+    lines = [f"{result['status'].upper()}: {command_text}", *result["output"][:8]]
+    signal = str(action.get("expected_output_signal") or "").strip()
+    if signal and result["status"] == "succeeded":
+        matched = any(signal in str(line) for line in result.get("output") or [])
+        if not matched:
+            lines.append(f"expected output signal missing: {signal}")
+    return lines
+
+
+def idle_action_result(action: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "label": action.get("label", "") or "action",
+        "command": " ".join(action.get("command") or []),
+        "status": "idle",
+        "returncode": None,
+        "elapsed_seconds": None,
+        "output": ["No action has run yet."],
+        "updated_at": "never run",
+    }
+
+
+def action_output_lines(status: dict[str, Any], width: int = 58) -> list[str]:
+    lines = [
+        styled(f"{action_status_label(str(status.get('status') or 'degraded'))} {status.get('label', 'action')}", TEXT),
+        styled(str(status.get('updated_at') or 'no time'), MUTED),
+    ]
+    for line in status.get("output") or []:
+        if len(lines) >= 5:
+            break
+        lines.append(styled(clip_text(str(line), width), TEXT))
+    if status.get("elapsed_seconds") is not None:
+        lines.append(styled(f"elapsed {status['elapsed_seconds']}s", MUTED))
+    return lines
+
+
+def run_action_async(action_id: str, action: dict[str, Any]) -> None:
+    def worker() -> None:
+        result = execute_action(action)
+        with ACTIONS_STATE_LOCK:
+            if ACTIONS_STATE.get("running") == action_id:
+                ACTIONS_STATE["running"] = None
+            results = dict(ACTIONS_STATE.get("results") or {})
+            results[action_id] = result
+            ACTIONS_STATE["results"] = results
+            ACTIONS_STATE["message"] = f"{result['status']} ({result.get('label')})"
+            ACTIONS_STATE["output"] = [line for line in (result.get("output") or [])[:8]]
+
+    if not action_id:
+        return
+    with ACTIONS_STATE_LOCK:
+        if ACTIONS_STATE.get("running") is not None:
+            ACTIONS_STATE["message"] = "blocked: action already running"
+            return
+        ACTIONS_STATE["running"] = action_id
+        ACTIONS_STATE["message"] = f"running: {str(action.get('label') or 'action')}"
+        ACTIONS_STATE["output"] = ["running ..."]
+    threading.Thread(target=worker, daemon=True).start()
 
 
 def hero_context_lines() -> list[str]:
@@ -412,6 +744,137 @@ def handle_hero_key(state: dict[str, Any], key: str) -> bool:
             "a/enter: run selected",
             "o: context",
             "u: draft update",
+            "r: refresh",
+            "q: quit pane",
+        ]
+        return True
+    return True
+
+
+def handle_actions_key(state: dict[str, Any], key: str) -> bool:
+    if not key:
+        return True
+    cluster_payload, cluster_error = action_cluster_payload()
+    actions = build_action_rows(cluster_payload, cluster_error)
+    max_index = len(actions) - 1
+    if max_index < 0:
+        state["selected"] = 0
+    else:
+        state["selected"] = max(0, min(max_index, int(state.get("selected", 0))))
+    state["last_key"] = key.replace("\x1b", "esc")
+    selected = int(state.get("selected", 0))
+    if key in {"q", "Q", "\x03"}:
+        return False
+    if key in {"j", "J", "\x1b[B", "down"}:
+        state["selected"] = min(max_index, selected + 1)
+        state["message"] = "selection moved"
+        return True
+    if key in {"k", "K", "\x1b[A", "up"}:
+        state["selected"] = max(0, selected - 1)
+        state["message"] = "selection moved"
+        return True
+    if key in {"1", "2", "3", "4", "5", "6", "7", "8", "9"}:
+        number = int(key)
+        state["selected"] = min(max_index, max(0, number - 1))
+        state["message"] = "selection moved"
+        return True
+    if key in {"r", "R"}:
+        state["message"] = "refreshed"
+        state["output"] = ["state rebuilt from jobs, logs, and local metrics"]
+        return True
+    if key in {"\r", "\n", "a", "A"}:
+        if max_index < 0:
+            state["message"] = "no actions available"
+            state["output"] = ["No configured actions to run."]
+            return True
+        if state.get("running") is not None:
+            state["message"] = "action in progress"
+            state["output"] = ["Wait for selected action to finish."]
+            return True
+        action = actions[state["selected"]]
+        if not action.get("available"):
+            state["message"] = f"{action.get('label', 'action')} unavailable"
+            state["output"] = [str(action.get("availability_reason") or "action unavailable")]
+            return True
+        if not action.get("command"):
+            state["message"] = f"{action.get('label', 'action')} skipped"
+            state["output"] = ["No command configured."]
+            return True
+        state["message"] = f"launching: {action.get('label', 'action')}"
+        run_action_async(str(action.get("id") or ""), action)
+        return True
+    if key in {"d", "D"}:
+        if max_index < 0:
+            state["message"] = "no actions available"
+            state["output"] = ["No configured actions to dry-run."]
+            return True
+        action = actions[state["selected"]]
+        if not action.get("available"):
+            state["message"] = f"{action.get('label', 'action')} unavailable"
+            state["output"] = [str(action.get("availability_reason") or "action unavailable")]
+            return True
+        dry_run_command = action.get("dry_run_command") or action.get("command") or []
+        safe, reason = action_command_is_safe(dry_run_command)
+        if not safe:
+            state["message"] = f"{action.get('label', 'action')} blocked"
+            state["output"] = [reason]
+            return True
+        state["message"] = f"dry-running: {action.get('label', 'action')}"
+        state["output"] = run_action(action, dry_run=True)
+        return True
+    if key == "?":
+        state["message"] = "palette"
+        state["output"] = [
+            "j/k or arrows: move",
+            "1-9: direct select",
+            "enter/a: run selected",
+            "d: dry-run selected",
+            "r: refresh",
+            "q: quit pane",
+        ]
+        return True
+    return True
+
+
+def handle_jobs_key(state: dict[str, Any], key: str) -> bool:
+    if not key:
+        return True
+    try:
+        payload = load_jobs()
+        jobs = payload.get("jobs", [])
+    except Exception:
+        jobs = []
+    max_index = len(jobs) - 1
+    if max_index < 0:
+        state["selected"] = 0
+    else:
+        state["selected"] = max(0, min(max_index, int(state.get("selected", 0))))
+    state["last_key"] = key.replace("\x1b", "esc")
+    selected = int(state.get("selected", 0))
+    if key in {"q", "Q", "\x03"}:
+        return False
+    if key in {"j", "J", "\x1b[B", "down"}:
+        state["selected"] = min(max_index, selected + 1)
+        state["message"] = "selection moved"
+        return True
+    if key in {"k", "K", "\x1b[A", "up"}:
+        state["selected"] = max(0, selected - 1)
+        state["message"] = "selection moved"
+        return True
+    if key in {"1", "2", "3", "4", "5", "6", "7", "8", "9"}:
+        number = int(key)
+        state["selected"] = min(max_index, max(0, number - 1))
+        state["message"] = "selection moved"
+        return True
+    if key in {"r", "R"}:
+        state["message"] = "refreshed"
+        state["output"] = ["state rebuilt from jobs, logs, and local metrics"]
+        return True
+    if key == "?":
+        state["message"] = "palette"
+        state["output"] = [
+            "j/k or arrows: move",
+            "1-9: direct select",
             "r: refresh",
             "q: quit pane",
         ]
@@ -610,22 +1073,219 @@ def event_lines(limit: int = 5) -> list[tuple[str, str, str, str]]:
     return rows
 
 
-def load_recent_activity(limit: int = 12) -> list[str]:
-    entries: list[tuple[float, str]] = []
-    if not LOG_ROOT.exists():
+def load_recent_activity(
+    limit: int = 12,
+    *,
+    sources: list[str] | None = None,
+    severities: list[str] | None = None,
+    query: str = "",
+) -> list[dict[str, Any]]:
+    return load_recent_activity_filtered(limit=limit, sources=sources, severities=severities, query=query)
+
+
+def load_agent_work_detail_payload(root_dir: Path, issue_id: int, timeout: int = 8) -> dict[str, Any]:
+    command = ["python3", str(root_dir / "scripts" / "agent_work.py"), "show", str(issue_id), "--json"]
+    try:
+        result = subprocess.run(command, cwd=root_dir, capture_output=True, text=True, timeout=timeout, check=False)
+    except Exception:
+        return {}
+    if result.returncode != 0:
+        return {}
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def agent_work_journal_events(
+    root_dir: Path,
+    agent_payload: dict[str, Any] | None,
+    *,
+    detail_payloads: dict[str, Any] | None = None,
+    now: float | None = None,
+    limit: int = 12,
+) -> list[dict[str, Any]]:
+    if not agent_payload:
         return []
-    for path in LOG_ROOT.glob("*/*.log"):
-        try:
-            line = ""
-            for raw in reversed(path.read_text(errors="replace").splitlines()):
-                if raw.strip() and "Log file:" not in raw:
-                    line = raw.strip()
-                    break
-            entries.append((path.stat().st_mtime, f"{path.parent.name}: {line or path.name}"))
-        except OSError:
+    issues = [issue for issue in (agent_payload.get("issues") or []) if isinstance(issue, dict)]
+    if not issues:
+        return []
+    rows: list[dict[str, Any]] = []
+    max_issues = min(len(issues), max(1, int(limit or 12)))
+    for issue in issues[:max_issues]:
+        issue_id = issue.get("id")
+        if issue_id is None:
             continue
-    entries.sort(reverse=True)
-    return [item for _, item in entries[:limit]]
+        detail: dict[str, Any] | None = None
+        if detail_payloads is not None:
+            detail = detail_payloads.get(str(issue_id))
+            if not isinstance(detail, dict):
+                try:
+                    detail = detail_payloads.get(int(issue_id))  # type: ignore[arg-type]
+                except Exception:
+                    detail = None
+            if not isinstance(detail, dict):
+                continue
+        else:
+            detail = load_agent_work_detail_payload(root_dir, int(issue_id))
+        if not detail:
+            continue
+        journals = detail.get("journals") or []
+        if not isinstance(journals, list):
+            continue
+        journal = next((item for item in journals if isinstance(item, dict) and str(item.get("notes") or "").strip()), None)
+        if not journal:
+            continue
+        note = str(journal.get("notes") or "").strip()
+        created_on = parse_timestamp(journal.get("created_on") or issue.get("updated_on") or now or time.time())
+        issue_status = str(issue.get("status") or detail.get("status") or "unknown").strip()
+        subject = str(issue.get("subject") or detail.get("subject") or "agent work").strip()
+        rows.append(
+            event(
+                source="redmine",
+                kind="journal",
+                message=f"#{issue_id} {note}",
+                timestamp=created_on,
+                severity=classify_severity("redmine", note, issue_status),
+                fingerprint=f"redmine:journal:{issue_id}:{journal.get('id') or note}",
+                metadata={
+                    "issue_id": issue_id,
+                    "journal_id": journal.get("id"),
+                    "author": journal.get("author") or "",
+                    "status": issue_status,
+                    "subject": subject,
+                    "note": note,
+                },
+                now=now,
+            )
+        )
+    return rows
+
+
+def load_recent_activity_filtered(
+    *,
+    limit: int = 12,
+    sources: list[str] | None = None,
+    severities: list[str] | None = None,
+    query: str = "",
+) -> list[dict[str, Any]]:
+    fetch_limit = max(int(limit or 12) * 4, 50)
+    if ACTIVITY_FIXTURE:
+        try:
+            fixture_path = Path(ACTIVITY_FIXTURE)
+            fixture_payload = json.loads(fixture_path.read_text(encoding="utf-8"))
+        except Exception:
+            fixture_payload = None
+        if isinstance(fixture_payload, dict):
+            log_root_value = fixture_payload.get("log_root") or "logs"
+            log_root = Path(str(log_root_value))
+            if not log_root.is_absolute():
+                log_root = (fixture_path.parent / log_root).resolve()
+
+            def coerce_payload(key: str) -> dict[str, Any] | None:
+                value = fixture_payload.get(key)
+                return value if isinstance(value, dict) else None
+
+            fixture_limit = fixture_payload.get("limit")
+            fixture_now = fixture_payload.get("now")
+            detail_payloads = fixture_payload.get("issue_detail_payloads")
+            rows = build_activity_events(
+                log_root=log_root,
+                cluster_payload=coerce_payload("cluster_payload"),
+                jobs_payload=coerce_payload("jobs_payload"),
+                agent_payload=coerce_payload("agent_payload"),
+                limit=max(int(fixture_limit) if str(fixture_limit or "").strip() else limit, fetch_limit),
+                now=float(fixture_now) if str(fixture_now or "").strip() else None,
+                include_placeholders=bool(fixture_payload.get("include_placeholders", True)),
+            )
+            rows.extend(
+                agent_work_journal_events(
+                    ROOT_DIR,
+                    coerce_payload("agent_payload"),
+                    detail_payloads=detail_payloads if isinstance(detail_payloads, dict) else None,
+                    now=float(fixture_now) if str(fixture_now or "").strip() else None,
+                    limit=fetch_limit,
+                )
+            )
+            rows = dedupe_sort_events(rows, fetch_limit)
+            return filter_activity_events(rows, sources=sources, severities=severities, query=query)[:limit]
+    cluster_payload: dict[str, Any] | None = None
+    jobs_payload: dict[str, Any] | None = None
+    agent_payload: dict[str, Any] | None = None
+    try:
+        cluster_payload = cluster_snapshot()
+    except Exception:
+        cluster_payload = None
+    try:
+        jobs_payload = load_jobs()
+    except Exception:
+        jobs_payload = None
+    try:
+        agent_payload = load_agent_work_payload(ROOT_DIR)
+    except Exception:
+        agent_payload = None
+    rows = build_activity_events(
+        log_root=LOG_ROOT,
+        cluster_payload=cluster_payload,
+        jobs_payload=jobs_payload,
+        agent_payload=agent_payload,
+        limit=fetch_limit,
+    )
+    rows.extend(
+        agent_work_journal_events(
+            ROOT_DIR,
+            agent_payload,
+            now=None,
+            limit=fetch_limit,
+        )
+    )
+    rows = dedupe_sort_events(rows, fetch_limit)
+    return filter_activity_events(rows, sources=sources, severities=severities, query=query)[:limit]
+
+
+def activity_severity_label(severity: str) -> str:
+    severity = str(severity or "info").strip().lower() or "info"
+    if severity == "critical":
+        return styled("CRIT", ORANGE, bold=True)
+    if severity == "warning":
+        return styled("WARN", AMBER, bold=True)
+    if severity == "ok":
+        return styled("OK", GREEN, bold=True)
+    return styled("INFO", BLUE, bold=True)
+
+
+def activity_sources_label(item: dict[str, Any]) -> str:
+    sources = [str(value).strip() for value in (item.get("sources") or [item.get("source") or ""]) if str(value).strip()]
+    if not sources:
+        return "unknown"
+    if len(sources) == 1:
+        return sources[0]
+    if len(sources) == 2:
+        return f"{sources[0]} + {sources[1]}"
+    return f"{sources[0]} + {sources[1]} +{len(sources) - 2}"
+
+
+def activity_filter_summary(sources: list[str], severities: list[str], query: str) -> str:
+    parts: list[str] = []
+    if sources:
+        parts.append("source=" + ", ".join(sources))
+    if severities:
+        parts.append("severity=" + ", ".join(severities))
+    if query.strip():
+        parts.append("query=" + query.strip())
+    return " | ".join(parts) if parts else "all events"
+
+
+def activity_row(item: dict[str, Any], width: int) -> str:
+    age = styled(f"{str(item.get('age') or ''):>5}", MUTED)
+    severity = activity_severity_label(str(item.get("severity") or "info"))
+    source_width = max(6, min(36, width // 3))
+    sources = styled(clip_text(activity_sources_label(item), source_width), WHITE, bold=True)
+    fixed_width = 12 + visible_len(sources)
+    message_width = max(1, width - fixed_width)
+    message = styled(clip_text(str(item.get("message") or ""), message_width), WHITE)
+    return f"{age} {severity} {sources} {message}"
 
 
 def render_hero() -> None:
@@ -757,52 +1417,300 @@ def render_jobs() -> None:
     except Exception as exc:
         print(f"{ORANGE}jobs unavailable:{RESET} {exc}")
         return
-    counts: dict[str, int] = {}
-    for job in jobs:
-        counts[str(job.get("status") or "unknown")] = counts.get(str(job.get("status") or "unknown"), 0) + 1
-    print(f"{TEXT}TOTAL{RESET} {len(jobs):>4}   " + "   ".join(f"{key.upper()} {value}" for key, value in sorted(counts.items())))
+    counts = payload.get("counts") or {}
+    states = payload.get("states") or {}
+    state = str(payload.get("state") or ("empty" if not jobs else "ok"))
+    state_color = GREEN if state == "ok" else (AMBER if state == "empty" else ORANGE)
+    count_order = ["running", "queued", "planned", "dry-run", "succeeded", "failed", "invalid", "unknown"]
+    count_parts = [f"{key.upper()} {counts[key]}" for key in count_order if counts.get(key)]
+    print(
+        f"{TEXT}TOTAL{RESET} {len(jobs):>4}   "
+        + "   ".join(count_parts)
+        + f"   {state_color}{state.upper()}{RESET}"
+    )
+    if states:
+        print(f"{MUTED}states:{RESET} " + " ".join(f"{key}={value}" for key, value in sorted(states.items())))
     print()
-    for job in jobs[:10]:
-        print(f"{ORANGE}{job.get('id', '')[:22]:<22}{RESET} {str(job.get('status', '')):<10} {job.get('feature', '')[:54]}")
+    if not jobs:
+        print(f"{MUTED}No cluster jobs found. Run `cento cluster-job ...` to create one.{RESET}")
+        return
+    columns, lines = term_size()
+    max_rows = min(len(jobs), max(3, min(6, lines - 18)))
+    selected = max(0, min(len(jobs) - 1, int(JOBS_STATE.get("selected", 0))))
+    JOBS_STATE["selected"] = selected
+    start = max(0, min(selected - max_rows // 2, max(0, len(jobs) - max_rows)))
+    visible_jobs = jobs[start:start + max_rows]
+    header = (
+        f"{MUTED}{'ID':<22}{RESET} "
+        f"{MUTED}{'STATUS':<10}{RESET} "
+        f"{MUTED}{'TSK':>3}{RESET} "
+        f"{MUTED}{'RES':>3}{RESET} "
+        f"{MUTED}{'FAIL':>4}{RESET} "
+        f"{MUTED}{'AGE':>5}{RESET} "
+        f"{MUTED}{'STATE':<8}{RESET} "
+        f"{MUTED}STEP / FEATURE{RESET}"
+    )
+    print(header)
+    for offset, job in enumerate(visible_jobs):
+        index = start + offset
+        summary = job.get("job_summary") or {}
+        status = str(summary.get("status") or job.get("status") or "")
+        row_state = str(summary.get("state") or "")
+        state_color = ORANGE if row_state == "degraded" else (MUTED if row_state == "empty" else GREEN)
+        task_count = summary.get("task_count", len(job.get("tasks", [])))
+        result_count = summary.get("result_count", len(job.get("results", [])))
+        failed_count = summary.get("failed_task_count", 0)
+        age = str(summary.get("updated_age") or job.get("updated_age") or "")
+        step = str(summary.get("current_step") or job.get("feature") or "")
+        feature = str(summary.get("feature") or job.get("feature") or "")
+        label = f"{step} · {feature}" if feature and feature != step else step or feature
+        print(
+            f"{('▌' if index == selected else ' ')}{ORANGE}{str(job.get('id', ''))[:21]:<21}{RESET} "
+            f"{status:<10} "
+            f"{TEXT}{int(task_count):>3}{RESET} "
+            f"{TEXT}{int(result_count):>3}{RESET} "
+            f"{AMBER}{int(failed_count):>4}{RESET} "
+            f"{MUTED}{age:>5}{RESET} "
+            f"{state_color}{row_state:<8}{RESET} "
+            f"{clip_text(label, 50)}"
+        )
+        reasons = summary.get("degraded_reasons") or []
+        if reasons:
+            print(f"{MUTED}{'':<22}   degraded: {clip_text('; '.join(map(str, reasons)), 62)}{RESET}")
+    print()
+    selected_job = jobs[selected]
+    detail_width = max(24, min(columns - 2, 96))
+    detail_body = job_detail_lines(selected_job, detail_width - 4)
+    print("\n".join(hero_box("SELECTED JOB", detail_body, detail_width, "DETAIL", "▸")))
+
+
+def job_last_exit(job: dict[str, Any]) -> str:
+    tasks = [task for task in job.get("tasks", []) if isinstance(task, dict)]
+    for task in reversed(tasks):
+        returncode = task.get("returncode")
+        if returncode is not None:
+            return str(returncode)
+    summary = job.get("job_summary") or {}
+    status = str(summary.get("status") or job.get("status") or "").lower()
+    if status in {"running", "planned", "queued", "dry-run"}:
+        return "pending"
+    return "n/a"
+
+
+def job_next_action(job: dict[str, Any]) -> str:
+    summary = job.get("job_summary") or {}
+    status = str(summary.get("status") or job.get("status") or "unknown").lower()
+    state = str(summary.get("state") or "")
+    latest_log = summary.get("latest_log") or {}
+    if state == "degraded" or status in {"failed", "error", "invalid"}:
+        if latest_log.get("exists"):
+            return "inspect latest log, then rerun or mark blocked with failure detail"
+        return "inspect job.json and task manifests; log path is missing"
+    if status == "running":
+        return "tail latest log and wait for task result or timeout"
+    if status in {"planned", "queued"}:
+        return "run the job or keep planned until an operator assigns execution"
+    if status == "dry-run":
+        return "review generated scripts/manifests before actual execution"
+    return "review summary artifact and archive outcome"
+
+
+def job_detail_lines(job: dict[str, Any], width: int) -> list[str]:
+    summary = job.get("job_summary") or {}
+    tasks = [task for task in job.get("tasks", []) if isinstance(task, dict)]
+    latest_log = summary.get("latest_log") or {}
+    reasons = summary.get("degraded_reasons") or []
+    summary_path = str(job.get("summary") or "n/a")
+    summary_exists = bool(summary.get("summary_exists"))
+    command = str(job.get("agent_command") or "n/a")
+    feature = str(summary.get("feature") or job.get("feature") or "n/a")
+    status = str(summary.get("status") or job.get("status") or "unknown").upper()
+    state = str(summary.get("state") or "unknown").upper()
+    result_count = int(summary.get("result_count") or 0)
+    failed_count = int(summary.get("failed_task_count") or 0)
+    lines = [
+        styled(f"ID         {clip_text(str(job.get('id') or 'n/a'), width - 11)}", TEXT),
+        styled(f"STATUS     {status}", TEXT),
+        styled(f"STATE      {state}", TEXT),
+        styled(f"AGE        {clip_text(str(summary.get('updated_age') or job.get('updated_age') or 'n/a'), width - 11)}", TEXT),
+        styled(f"FEATURE    {clip_text(feature, width - 11)}", TEXT),
+        styled(f"RESULTS    {result_count} total / {failed_count} failed", TEXT),
+        styled(f"SUMMARY    {'present' if summary_exists else 'missing'}", GREEN if summary_exists else AMBER),
+        styled(f"SUMMARY    {clip_text(summary_path, width - 11)}", TEXT),
+        styled(f"COMMAND    {clip_text(command, width - 11)}", TEXT),
+        styled(f"LAST EXIT  {clip_text(job_last_exit(job), width - 11)}", TEXT),
+    ]
+    if reasons:
+        lines.append(styled(f"REASONS    {clip_text('; '.join(map(str, reasons)), width - 11)}", AMBER))
+    lines.append(styled("TASK STATE", ORANGE, bold=True))
+    if not tasks:
+        lines.append(styled("  no tasks recorded", MUTED))
+    else:
+        for task in tasks[:4]:
+            result = task.get("returncode")
+            task_state = "pending" if result is None else ("ok" if str(result) == "0" else f"exit {result}")
+            log_state = "present" if task.get("log_exists") else "missing"
+            script_state = "present" if task.get("script_exists") else "missing"
+            manifest_state = "present" if task.get("manifest_exists") else "missing"
+            task_line = (
+                f"  {clip_text(str(task.get('id') or ''), 14):<14} "
+                f"{clip_text(str(task.get('node') or ''), 8):<8} "
+                f"{clip_text(task_state, 9):<9} "
+                f"log={log_state:<7} "
+                f"script={script_state:<7} "
+                f"manifest={manifest_state:<7} "
+                f"{clip_text(str(task.get('title') or ''), max(8, width - 67))}"
+            )
+            lines.append(styled(task_line, TEXT))
+    lines.append(styled("LATEST LOG", ORANGE, bold=True))
+    if latest_log.get("path"):
+        lines.append(styled(f"  {'present' if latest_log.get('exists') else 'missing'}", GREEN if latest_log.get("exists") else AMBER))
+        lines.append(styled(clip_text(str(latest_log.get("path")), width), MUTED))
+        for line in (latest_log.get("tail") or [])[:4]:
+            lines.append(styled(clip_text(str(line), width), TEXT))
+    else:
+        lines.append(styled("  missing", AMBER))
+    lines.append(styled("NEXT", ORANGE, bold=True))
+    lines.append(styled(clip_text(job_next_action(job), width), WHITE))
+    return lines
+
+
+def _cluster_node_mesh_label(node: Any) -> str:
+    if node["is_local"]:
+        return "local"
+    if node["socket_path"]:
+        if node["state"] == "degraded" and any("stale mesh socket" in reason for reason in node.get("reasons", [])):
+            return "stale"
+        return "sock" if node["socket_present"] else "no-sock"
+    return "none"
+
+
+def _cluster_resource_lines(model: dict[str, Any], width: int) -> list[str]:
+    resource_health = model.get("resource_health") or {}
+    if not isinstance(resource_health, dict):
+        return []
+    lines: list[str] = []
+    local = resource_health.get("local") or {}
+    if isinstance(local, dict):
+        problem = str(local.get("problem") or "").strip()
+        metrics = local.get("metrics") or {}
+        if problem:
+            lines.append(styled(f"local metrics unavailable: {clip_text(problem, max(12, width - 28))}", AMBER))
+        elif isinstance(metrics, dict) and metrics:
+            bits: list[str] = []
+            for key, label, suffix in (
+                ("cpu", "CPU", "%"),
+                ("ram", "RAM", "%"),
+                ("disk", "DISK", "%"),
+                ("temp", "TEMP", "C"),
+                ("net_down", "DOWN", "/s"),
+                ("net_up", "UP", "/s"),
+            ):
+                value = metrics.get(key)
+                if value in (None, ""):
+                    continue
+                bits.append(f"{label}={value}{suffix}")
+            if bits:
+                lines.append(styled(f"local {' '.join(bits)}", WHITE))
+    remote = resource_health.get("remote") or {}
+    if isinstance(remote, dict):
+        remote_nodes = remote.get("nodes") or []
+        if remote_nodes:
+            summary: list[str] = []
+            for item in remote_nodes:
+                node_id = str(item.get("id") or "")
+                state = str(item.get("state") or "")
+                status = str(item.get("status") or "")
+                if state == "online":
+                    summary.append(f"{node_id}: {status or 'telemetry missing'}")
+                else:
+                    summary.append(f"{node_id}: {state}")
+            lines.append(styled(f"remote {clip_text('; '.join(summary), max(20, width - 10))}", MUTED))
+        else:
+            summary = str(remote.get("summary") or "").strip()
+            if summary:
+                lines.append(styled(clip_text(summary, width), MUTED))
+    return lines
+
+
+def _cluster_event_lines(events: list[dict[str, Any]], width: int) -> list[str]:
+    if not events:
+        return [styled("no recent cluster events", MUTED)]
+    lines: list[str] = []
+    for event in events[:4]:
+        severity = str(event.get("severity") or "info").lower()
+        dot = MUTED
+        if severity in {"critical", "warning"}:
+            dot = AMBER
+        elif severity == "ok":
+            dot = GREEN
+        stamp = str(event.get("stamp") or "")
+        age = str(event.get("age") or "")
+        message = clip_text(str(event.get("message") or ""), max(12, width - 18))
+        lines.append(f" {styled('●', dot)}  {styled(stamp, MUTED)}  {styled(message, WHITE)} {styled(age, MUTED)}")
+    return lines
 
 
 def render_cluster() -> None:
     try:
-        payload = cluster_snapshot()
+        payload, error = cluster_panel_payload()
+        if error:
+            raise RuntimeError(error)
     except Exception as exc:
         print(f"{ORANGE}{BOLD}▣ CLUSTER STATUS{RESET}\n")
         print(f"{ORANGE}cluster unavailable:{RESET} {exc}")
         return
-    nodes = payload.get("nodes") or []
-    status = payload.get("status") or {}
-    status_output = "\n".join(item for item in [status.get("stdout", ""), status.get("stderr", "")] if item)
-    node_states = parse_node_states(status_output)
-    online_count = 0
-    table_rows: list[tuple[str, str, str, str, str]] = []
-    data = metrics()
-    for index, node in enumerate(nodes[:6]):
-        label = str(node.get("id") or node.get("name") or "node")
-        state = node_states.get(label)
-        if not state:
-            state = "local" if label == payload.get("local") else "registered"
-        normalized = "online" if state in {"connected", "local", "online"} else "offline"
-        if normalized == "online":
-            online_count += 1
-        cpu = f"{data['cpu']}%" if index == 0 else "--"
-        mem = f"{data['ram']}%" if index == 0 else "--"
-        uptime = "local" if state == "local" else ("now" if normalized == "online" else "--")
-        table_rows.append((clip_text(label, 16), normalized, cpu, mem, uptime))
+    model = build_cluster_panel_model(payload)
 
-    total = len(nodes)
-    health = "HEALTHY" if total > 0 and online_count == total else "DEGRADED"
-    health_color = GREEN if health == "HEALTHY" else AMBER
+    table_rows: list[tuple[str, str, str, str, str]] = []
+    for node in model["nodes"][:6]:
+        m = node["metrics"]
+        cpu = f"{m.get('cpu')}%" if m.get("cpu") is not None else "--"
+        mem = f"{m.get('ram')}%" if m.get("ram") is not None else "--"
+        table_rows.append((
+            clip_text(node["id"], 16),
+            node["state"],
+            cpu,
+            mem,
+            _cluster_node_mesh_label(node),
+        ))
+
+    overall = model["overall"]
+    total = len(model["nodes"])
+    online_count = model["counts"].get("online", 0)
+
+    if overall == "unavailable":
+        health_label, health_color = "UNAVAILABLE", ORANGE
+    elif overall == "healthy":
+        health_label, health_color = "HEALTHY", GREEN
+    elif overall == "empty":
+        health_label, health_color = "EMPTY", AMBER
+    else:
+        health_label, health_color = "DEGRADED", AMBER
 
     print(f"{ORANGE}{BOLD}▣ CLUSTER STATUS{RESET}")
     print()
     title_line = f"{ORANGE}{BOLD}CENTO-CLUSTER{RESET}"
-    badge = f"{health_color}{BOLD}{health}{RESET}"
-    print(f"{pad_visible(title_line, PANEL_WIDTH - 13)}{AMBER}{DIM}[{RESET} {badge} {AMBER}{DIM}]{RESET}")
+    health_badge = f"{health_color}{BOLD}{health_label}{RESET}"
+    print(f"{pad_visible(title_line, PANEL_WIDTH - 13)}{AMBER}{DIM}[{RESET} {health_badge} {AMBER}{DIM}]{RESET}")
     print(f"{WHITE}{BOLD}{online_count}/{total} nodes online{RESET}")
+    counts = model["counts"]
+    if counts:
+        print(f"{MUTED}online={counts.get('online', 0)} degraded={counts.get('degraded', 0)} offline={counts.get('offline', 0)}{RESET}")
+    if model["relay_present"]:
+        print(f"{MUTED}relay={clip_text(model['relay_host'], 28)}{RESET}")
+    else:
+        print(f"{AMBER}relay=missing{RESET}")
+    if not model["status_ok"]:
+        print(f"{AMBER}cluster status command unavailable{RESET}")
+    if not model["mesh_ok"] and any(n["socket_path"] for n in model["nodes"]):
+        print(f"{AMBER}bridge mesh-status unavailable{RESET}")
+    metrics_error = ""
+    metrics_payload = payload.get("metrics")
+    if isinstance(metrics_payload, dict):
+        metrics_error = str(metrics_payload.get("error") or "").strip()
+    if metrics_error:
+        print(f"{AMBER}metrics unavailable: {clip_text(metrics_error, PANEL_WIDTH - 22)}{RESET}")
     print()
     print(f"{MUTED}+{'-' * (PANEL_WIDTH - 2)}+{RESET}")
     print(
@@ -811,12 +1719,12 @@ def render_cluster() -> None:
         f"{BLUE}{BOLD}{'STATUS':<11}{RESET} "
         f"{BLUE}{BOLD}{'CPU':>5}{RESET} "
         f"{BLUE}{BOLD}{'MEM':>5}{RESET} "
-        f"{BLUE}{BOLD}{'UPTIME':>8}{RESET} "
+        f"{BLUE}{BOLD}{'MESH':>8}{RESET} "
         f"{MUTED}|{RESET}"
     )
     print(f"{MUTED}|{'-' * (PANEL_WIDTH - 2)}|{RESET}")
-    for label, state, cpu, mem, uptime in table_rows:
-        dot_color = GREEN if state == "online" else MUTED
+    for label, state, cpu, mem, mesh_label in table_rows:
+        dot_color = GREEN if state == "online" else (AMBER if state == "degraded" else MUTED)
         state_text = f"{dot_color}●{RESET} {state}"
         print(
             f"{MUTED}|{RESET} "
@@ -824,19 +1732,47 @@ def render_cluster() -> None:
             f"{pad_visible(state_text, 11)} "
             f"{AMBER}{cpu:>5}{RESET} "
             f"{AMBER}{mem:>5}{RESET} "
-            f"{WHITE}{uptime:>8}{RESET} "
+            f"{WHITE}{mesh_label:>8}{RESET} "
             f"{MUTED}|{RESET}"
         )
     if not table_rows:
         print(f"{MUTED}|{RESET} {WHITE}{'no nodes registered':<{PANEL_WIDTH - 4}}{RESET} {MUTED}|{RESET}")
     print(f"{MUTED}+{'-' * (PANEL_WIDTH - 2)}+{RESET}")
 
+    resource_lines = _cluster_resource_lines(model, PANEL_WIDTH)
     print()
-    print(f"{ORANGE}{BOLD}RECENT EVENTS{RESET}")
+    print(f"{ORANGE}{BOLD}RESOURCE HEALTH{RESET}")
+    if resource_lines:
+        for line in resource_lines[:4]:
+            print(f" {line}")
+    else:
+        print(f" {MUTED}no resource health available{RESET}")
+
     print()
-    for level, stamp, label, age_text in event_lines(5):
-        dot = f"{ORANGE}●{RESET}" if level == "hot" else f"{MUTED}●{RESET}"
-        print(f" {dot}  {WHITE}{stamp}{RESET}  {WHITE}{clip_text(label, 32):<32}{RESET} {WHITE}{age_text:>5}{RESET}")
+    print(f"{ORANGE}{BOLD}RECENT CLUSTER EVENTS{RESET}")
+    event_lines = _cluster_event_lines(list(model.get("recent_events") or []), PANEL_WIDTH)
+    for line in event_lines:
+        print(f" {line}")
+
+    if model["degraded_reasons"]:
+        print()
+        print(f"{ORANGE}{BOLD}DEGRADED REASONS{RESET}")
+        for reason in model["degraded_reasons"][:4]:
+            print(f" {AMBER}●{RESET} {WHITE}{clip_text(str(reason), PANEL_WIDTH - 5)}{RESET}")
+    if model["remediation_actions"]:
+        print()
+        print(f"{ORANGE}{BOLD}REMEDIATION{RESET}")
+        for action in model["remediation_actions"][:4]:
+            owner = str(action.get("owner") or "operator")
+            act_label = str(action.get("action") or "inspect")
+            command = ""
+            commands = action.get("commands") or []
+            if commands:
+                command = str(commands[0])
+            line = f"{action.get('node')}: {act_label} · {owner}"
+            print(f" {AMBER}▶{RESET} {WHITE}{clip_text(line, PANEL_WIDTH - 5)}{RESET}")
+            if command:
+                print(f"   {MUTED}{clip_text(command, PANEL_WIDTH - 4)}{RESET}")
 
 
 def render_resources() -> None:
@@ -854,22 +1790,110 @@ def render_resources() -> None:
 
 def render_activity() -> None:
     title("Activity Feed")
-    for item in load_recent_activity(14):
-        print(f"{ORANGE}> {RESET}{item[:110]}")
+    options = dict(ACTIVITY_RENDER_OPTIONS)
+    events = load_recent_activity(
+        limit=int(options.get("limit") or 14),
+        sources=[str(value) for value in options.get("sources") or []],
+        severities=[str(value) for value in options.get("severities") or []],
+        query=str(options.get("query") or ""),
+    )
+    columns, _ = term_size()
+    if not events:
+        summary = activity_filter_summary(
+            [str(value) for value in options.get("sources") or []],
+            [str(value) for value in options.get("severities") or []],
+            str(options.get("query") or ""),
+        )
+        if summary == "all events":
+            print(f"{MUTED}No activity events found.{RESET}")
+        else:
+            print(f"{MUTED}No activity events matched the active filters ({summary}).{RESET}")
+        return
+    summary = activity_filter_summary(
+        [str(value) for value in options.get("sources") or []],
+        [str(value) for value in options.get("severities") or []],
+        str(options.get("query") or ""),
+    )
+    print(f"{MUTED}FILTERS{RESET} {WHITE}{clip_text(summary, 72)}{RESET}")
+    print(
+        f"{MUTED}{'AGE':>5}{RESET} "
+        f"{MUTED}{'SEV':<8}{RESET} "
+        f"{MUTED}{'SOURCE':<24}{RESET} "
+        f"{MUTED}MESSAGE{RESET}"
+    )
+    for item in events:
+        print(activity_row(item, columns))
 
 
 def render_actions() -> None:
     title("Quick Actions")
-    actions = [
-        ("cento act jobs", "Jobs dashboard"),
-        ("cento cluster health", "Cluster status"),
-        ("cento replay demo", "Replay last demo"),
-        ("cento codex status", "Codex usage"),
-        ("cento preset industrial-os", "Reapply preset"),
-    ]
-    for command, label in actions:
-        print(f"{ORANGE}> {command:<30}{RESET} {MUTED}{label}{RESET}")
-    print(f"\n{MUTED}Mod+Shift+O opens the web dashboard.{RESET}")
+    columns, _ = term_size()
+    payload, error = action_cluster_payload()
+    rows = build_action_rows(payload, error)
+    with ACTIONS_STATE_LOCK:
+        action_state = dict(ACTIONS_STATE)
+        results = dict(action_state.get("results", {}))
+        running = action_state.get("running")
+        status_message = action_state.get("message", "ready")
+        status_output = [str(line) for line in (action_state.get("output") or [])]
+    selected = int(action_state.get("selected", 0))
+    selected = max(0, min(len(rows) - 1, selected)) if rows else 0
+    with ACTIONS_STATE_LOCK:
+        ACTIONS_STATE["selected"] = selected
+
+    print(f"{MUTED}STATUS{RESET}  {status_message}")
+    if error:
+        print(f"{AMBER}{badge('cluster-unavailable')}{RESET} {styled(f'cluster signal unavailable: {error}', AMBER)}")
+    if not rows:
+        print(f"{MUTED}No actions configured.{RESET}")
+        return
+
+    print(f"{MUTED}{'KEY':<6}{'ACTION':<31}{'STATE':<12}{'AVAILABILITY':<{max(16, columns - 56)}}{RESET}")
+    for index, row in enumerate(rows):
+        active = index == selected
+        command = row.get("command") or []
+        command_text = " ".join(command) if isinstance(command, list) else str(command)
+        reason = str(row.get("availability_reason") or "")
+        action_id = str(row.get("id") or "")
+        row_status = results.get(action_id)
+        if running == action_id:
+            state_label = action_status_label("running")
+            reason = "running selected action"
+        elif row_status is not None:
+            state_label = action_status_label(str(row_status.get("status") or "degraded"))
+        elif not bool(row.get("available")):
+            state_label = action_status_label("unavailable")
+        else:
+            state_label = f"{GREEN}READY{RESET}"
+        print(
+            f"{'▌' if active else ' '} {badge(str(row.get('key') or index + 1))} "
+            f"{styled(clip_text(str(row.get('label') or f'Action {index + 1}'), max(1, columns - 52)), WHITE, bold=active)} "
+            f"{state_label:<12} "
+            f"{MUTED}{clip_text(reason or command_text, max(1, columns - 56))}{RESET}"
+        )
+
+    selected_row = rows[selected]
+    selected_id = str(selected_row.get("id") or "")
+    selected_status = dict(results.get(selected_id) or {})
+    if not selected_status:
+        selected_status = idle_action_result(selected_row)
+    selected_status.setdefault("label", selected_row.get("label", f"Action {selected + 1}"))
+    selected_status.setdefault("output", status_output)
+    selected_status.setdefault("status", "idle")
+    if running == selected_id:
+        selected_status["status"] = "running"
+        selected_status["output"] = status_output or ["running ..."]
+    elif not bool(selected_row.get("available")):
+        selected_status["status"] = "unavailable"
+        selected_status["output"] = [str(selected_row.get("availability_reason") or "unavailable")]
+
+    print(f"\n{ORANGE}{'ACTION DETAILS':<14}{RESET} {styled(str(selected_row.get('label') or ''), WHITE)}")
+    for line in action_metadata_lines(selected_row, width=max(16, columns - 24)):
+        print(styled(line, TEXT if line.startswith("DESCRIPTION") else MUTED))
+    print(f"\n{ORANGE}{'LAST RESULT':<11}{RESET} {styled(str(selected_row.get('label') or ''), WHITE)}")
+    for line in action_output_lines(selected_status, width=max(16, columns - 24)):
+        print(line)
+    print(f"\n{MUTED}Controls: j/k move, 1-9 select, enter/a run, d dry-run, q quit{RESET}")
 
 
 RENDERERS = {
@@ -888,7 +1912,20 @@ def main() -> int:
     parser.add_argument("--interval", type=float, default=5.0)
     parser.add_argument("--once", action="store_true", help="Render one frame and exit.")
     parser.add_argument("--plain", action="store_true", help="Strip ANSI color from --once output.")
+    parser.add_argument("--limit", type=int, default=14, help="Limit activity rows when rendering the feed.")
+    parser.add_argument("--source", action="append", default=[], help="Filter activity by source. Repeatable.")
+    parser.add_argument("--severity", action="append", default=[], help="Filter activity by severity. Repeatable.")
+    parser.add_argument("--query", default="", help="Filter activity by message substring.")
     args = parser.parse_args()
+
+    ACTIVITY_RENDER_OPTIONS.update(
+        {
+            "limit": max(1, int(args.limit or 14)),
+            "sources": [str(value) for value in args.source or [] if str(value).strip()],
+            "severities": [str(value) for value in args.severity or [] if str(value).strip()],
+            "query": str(args.query or ""),
+        }
+    )
 
     if args.once:
         frame = render_frame(args.panel)
@@ -904,16 +1941,23 @@ def main() -> int:
     signal.signal(signal.SIGINT, stop)
     enter_live_display()
     old_term = None
-    if args.panel == "hero" and sys.stdin.isatty():
+    if args.panel in {"hero", "actions", "jobs"} and sys.stdin.isatty():
         old_term = termios.tcgetattr(sys.stdin.fileno())
         tty.setcbreak(sys.stdin.fileno())
     try:
         while True:
             paint_frame(render_frame(args.panel))
-            if args.panel == "hero" and sys.stdin.isatty():
+            if args.panel in {"hero", "actions", "jobs"} and sys.stdin.isatty():
                 key = read_key(args.interval)
-                if not handle_hero_key(HERO_STATE, key):
-                    return 0
+                if args.panel == "hero":
+                    if not handle_hero_key(HERO_STATE, key):
+                        return 0
+                elif args.panel == "actions":
+                    if not handle_actions_key(ACTIONS_STATE, key):
+                        return 0
+                else:
+                    if not handle_jobs_key(JOBS_STATE, key):
+                        return 0
             else:
                 time.sleep(args.interval)
     except KeyboardInterrupt:

@@ -375,7 +375,7 @@ launch_panel() {
         append_background_options "$panel" "0.90"
         command=("$ROOT_DIR/scripts/industrial_cluster_tui.sh")
     elif [[ "$panel" == "agents" ]]; then
-        append_solid_background_options
+        append_background_options "$panel" "0.92"
         command=("$ROOT_DIR/scripts/industrial_aux_tui.sh" "$panel")
     elif [[ "$panel" == "activity" || "$panel" == "actions" ]]; then
         append_background_options "$panel" "0.92"

@@ -1,6 +1,6 @@
 # Agent Work Story Manifest
 
-`story.json` is the shared contract for one Redmine-backed Cento story. It sits above the existing validation and deliverables manifests so every agent lane can start from the same source instead of chat history.
+`story.json` is the shared contract for one Cento Taskstream story. It sits above the existing validation and deliverables manifests so every agent lane can start from the same source instead of chat history.
 
 Recommended path:
 
@@ -29,7 +29,7 @@ cento agent-work handoff <issue-id> --manifest workspace/runs/agent-work/<issue-
 ## Required Fields
 
 - `schema_version`: current value is `1.0`.
-- `issue`: Redmine identity: `id`, `title`, `package`, and optional `url`.
+- `issue`: story identity: `id`, `title`, `package`, and optional `url`.
 - `lane`: owner lane metadata: `owner`, `role`, `node`, and `agent`.
 - `paths.run_dir`: durable run directory for the story.
 - `scope.acceptance`: non-empty acceptance checklist.
@@ -44,7 +44,19 @@ cento agent-work handoff <issue-id> --manifest workspace/runs/agent-work/<issue-
 - `deliverables.manifest`: `deliverables.json` path for `scripts/deliverables_hub.py`.
 - `screenshots`: required screenshot names, URLs, viewports, and output paths.
 - `handoff`: human/device handoff steps and notes.
-- `review_gate`: required Redmine review-note sections and residual-risk policy.
+- `review_gate`: required review-note sections and residual-risk policy.
+- `review_gate.required_evidence_categories`: optional list of evidence classes to enforce (`syntax-test`, `api-check`, `screenshot`, `visual-inspection`).
+
+Screenshot support:
+
+- `screenshots[]` supports optional `auth` and `auth_note` metadata for protected targets.
+- `cento story-screenshot-runner` reads screenshot entries, generates deterministic screenshot paths, captures both desktop/mobile viewports, and writes metadata/index evidence for Docs/Evidence and Validator lanes.
+
+Example:
+
+```bash
+cento story-screenshot-runner workspace/runs/agent-work/59/story.json --force
+```
 
 ## Agent Lane Usage
 
@@ -58,7 +70,7 @@ Builder:
 Validator:
 
 - Starts from `validation.manifest`.
-- Runs `cento agent-work validate-run ISSUE --manifest validation.json`.
+- Runs `cento agent-work validate-run ISSUE --manifest validation.json --story-manifest story.json`.
 - Checks screenshots and evidence listed in `story.json`.
 - Moves the story to Review only after required checks and evidence pass.
 
@@ -66,14 +78,17 @@ Docs/Evidence:
 
 - Maintains `deliverables.manifest`, `start-here.html`, screenshot index, and manager-facing summaries.
 - Preserves old evidence instead of rewriting history.
-- Links `story.json`, `validation.json`, validation reports, screenshots, and Redmine status.
+- Links `story.json`, `validation.json`, validation reports, screenshots, and current story status.
 
 Coordinator:
 
 - Creates or updates `story.json` before dispatch.
-- Splits stories when `routes`, `api_endpoints`, or screenshot evidence differs.
-- Combines stories when they share validation evidence.
+- Splits stories when `routes`, `api_endpoints`, `screenshots[]`, or `handoff` requirements differ.
+- Combines stories only when they can share the same acceptance contract, validation commands, evidence files, and review gate.
+- Routes work explicitly to Builder, Validator, and Docs/Evidence lanes instead of overloading a single owner.
+- Keeps Taskstream statuses aligned with the active owner and the current blocker state.
 - Escalates missing device access or human handoff requirements early.
+- Follow the operating checklist in `docs/agent-work-coordinator-lane.md` for intake, acceptance contracts, shared evidence, notifications, and handoff escalation.
 
 ## Minimal Shape
 
@@ -108,6 +123,18 @@ Coordinator:
       "description": "Story manifest contract documentation"
     }
   ]
+}
+```
+
+If used for strict gate checks, extend the manifest with `review_gate`:
+
+```json
+{
+  "review_gate": {
+    "required_sections": ["Delivered", "Validation", "Evidence", "Residual risk"],
+    "residual_risk_required": true,
+    "required_evidence_categories": ["syntax-test", "screenshot", "visual-inspection", "api-check"]
+  }
 }
 ```
 

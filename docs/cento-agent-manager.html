@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cento Agent Manager Business Request</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f6f2;
+      --paper: #ffffff;
+      --paper-2: #eef3ec;
+      --ink: #1b241f;
+      --muted: #5f6d65;
+      --line: #d5ded7;
+      --accent: #1b7f64;
+      --accent-2: #225c9f;
+      --warn: #a85d16;
+      --danger: #b64235;
+      --code-bg: #121714;
+      --code-text: #edf5ee;
+      --radius: 8px;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--sans);
+      line-height: 1.55;
+    }
+
+    a {
+      color: var(--accent);
+      text-underline-offset: 3px;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      background: var(--paper);
+    }
+
+    .wrap {
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .hero {
+      padding: 44px 0 30px;
+    }
+
+    .eyebrow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 3px 9px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper-2);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 840px;
+      margin: 0;
+      font-size: clamp(32px, 5vw, 58px);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+
+    .summary {
+      max-width: 820px;
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    main {
+      padding: 30px 0 56px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.8fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    section,
+    aside {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      padding: 22px;
+    }
+
+    section + section {
+      margin-top: 18px;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 22px 0 8px;
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 12px;
+    }
+
+    ul,
+    ol {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    li + li {
+      margin-top: 8px;
+    }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 5px;
+      background: #e7ede8;
+      color: #18352a;
+      font-family: var(--mono);
+      font-size: 0.92em;
+    }
+
+    pre {
+      margin: 12px 0 0;
+      padding: 14px;
+      overflow: auto;
+      border-radius: var(--radius);
+      background: var(--code-bg);
+      color: var(--code-text);
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      background: var(--paper-2);
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 20px;
+      color: var(--accent);
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .side {
+      position: sticky;
+      top: 18px;
+    }
+
+    .side dl {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+    }
+
+    .side dt {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .side dd {
+      margin: 0;
+      font-weight: 650;
+    }
+
+    .deliverables {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .deliverables a {
+      display: block;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper-2);
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .deliverables a:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    @media (max-width: 840px) {
+      .grid,
+      .metric-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .side {
+        position: static;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap hero">
+      <div class="eyebrow">
+        <span class="tag">Business Request</span>
+        <span class="tag">Self Improvement</span>
+        <span class="tag">Agent Operations</span>
+      </div>
+      <h1>Cento Agent Manager</h1>
+      <p class="summary">
+        Build a managed operations layer that continuously inspects Cento agent activity, detects stale or wasteful work, and provides hardcoded management tools for safe remediation.
+      </p>
+    </div>
+  </header>
+
+  <main class="wrap grid">
+    <div>
+      <section>
+        <h2>Executive Summary</h2>
+        <p>
+          Cento currently relies on several independent signals for agent health: tmux sessions, process trees, run ledgers, issue status, pool reports, logs, and manual operator observation. The recent stale-validator incident showed that these signals can disagree and create confusing UI output.
+        </p>
+        <p>
+          Cento Agent Manager should become the standard control plane for agent operations. It should scan for stale, idle, stuck, errored, duplicated, and low-value agent work; produce actionable recommendations; and expose a deliberately small toolkit for managing Cento agents.
+        </p>
+      </section>
+
+      <section>
+        <h2>Business Need</h2>
+        <ul>
+          <li>Reduce wasted model limits caused by stuck validators, duplicate builders, dead ledgers, and idle shells.</li>
+          <li>Improve operator trust by separating live work from stale historical evidence.</li>
+          <li>Create a repeatable process for agent cleanup, timeout policy, and escalation.</li>
+          <li>Provide clear metrics for agent throughput, failure modes, cost pressure, and review bottlenecks.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Scope</h2>
+        <h3>In Scope</h3>
+        <ul>
+          <li>Read tmux, process, run-ledger, issue, and pool state.</li>
+          <li>Classify agents as live, stale, idle, stuck, errored, duplicate, manual, or unmanaged.</li>
+          <li>Detect suspicious patterns such as empty logs after long runtime, low CPU for active work, repeated failed validators, and issue status mismatches.</li>
+          <li>Generate operator-facing insights with recommended commands and confidence levels.</li>
+          <li>Expose hardcoded management actions through a small MCP-style toolkit and CLI wrapper.</li>
+        </ul>
+
+        <h3>Out of Scope for MVP</h3>
+        <ul>
+          <li>Fully autonomous killing or dispatching without explicit policy gates.</li>
+          <li>Generic third-party process management outside Cento agent sessions.</li>
+          <li>Cost accounting beyond approximate runtime and model/provider attribution.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>MVP Requirements</h2>
+        <ol>
+          <li>Create `scripts/agent_manager.py scan --json` to produce a normalized inventory of live processes, tmux sessions, run ledgers, issue state, and pool state.</li>
+          <li>Create stuck-agent heuristics: no log growth, idle CPU, long elapsed runtime, child process wait, missing tmux session, done issue with active run, and duplicate active runs per issue.</li>
+          <li>Create `scripts/agent_manager.py report` to print concise operator recommendations and write JSON/Markdown evidence under `workspace/runs/agent-manager/`.</li>
+          <li>Create explicit actions for mark-stale, mark-blocked, terminate-session, attach-log, reconcile-ledger, and generate-ticket.</li>
+          <li>Add tests using fixture ledgers for stale validators, stuck Playwright command, duplicate issue runners, and manual shells.</li>
+          <li>Update the Agent Processes panel to consume manager output when available.</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>Hardcoded MCP Toolkit</h2>
+        <p>
+          The toolkit should be intentionally narrow. It can be exposed first as local functions and later as an MCP server. Each action must return a structured result with `dry_run`, `evidence`, `command`, and `risk`.
+        </p>
+        <pre><code>cento.agent_manager.scan()
+cento.agent_manager.classify(run_id=None, issue_id=None)
+cento.agent_manager.recommend(limit=20)
+cento.agent_manager.mark_stale(run_id, reason)
+cento.agent_manager.mark_blocked(issue_id, reason, evidence)
+cento.agent_manager.terminate_tmux(session, reason, dry_run=True)
+cento.agent_manager.reconcile_ledger(run_id, dry_run=True)
+cento.agent_manager.open_evidence(run_id=None, issue_id=None)
+cento.agent_manager.create_investigation_ticket(title, description, severity="SEV2")
+cento.agent_manager.pool_stats(window="24h")</code></pre>
+      </section>
+
+      <section>
+        <h2>Implemented CLI</h2>
+        <p>
+          The MVP is implemented as <code>scripts/agent_manager.py</code>. It keeps destructive actions dry-run by default and writes durable reports under <code>workspace/runs/agent-manager/</code>.
+        </p>
+        <pre><code>cento agent-manager scan
+cento agent-manager scan --json
+cento agent-manager report
+cento agent-manager recommend --limit 10
+cento agent-manager classify --issue-id 81
+cento agent-manager mark-stale RUN_ID --reason "stuck validator" --dry-run
+cento agent-manager mark-blocked 81 --reason "stuck validator" --evidence RUN_ID --dry-run
+cento agent-manager terminate-tmux cento-agent-81-095103 --reason "stuck validator" --dry-run
+cento agent-manager reconcile-ledger RUN_ID --apply</code></pre>
+        <p>
+          <code>reconcile-ledger --apply</code> is intentionally bounded. It archives only stale ledger rows attached to Done issues and leaves stale rows on open issues actionable for requeue, validation, or blocker triage.
+        </p>
+      </section>
+
+      <section>
+        <h2>Operating Policy</h2>
+        <ul>
+          <li>Default mode is observe and recommend.</li>
+          <li>Mutating actions require a policy flag, explicit operator action, or a ticket-owned workflow.</li>
+          <li>Any kill action must capture process tree, tmux pane, ledger state, issue state, and log size before termination.</li>
+          <li>Done issues with stale ledgers should not be shown as running work.</li>
+          <li>Historical stale ledgers for Done issues may be archived out of active views; stale ledgers for open issues must remain visible as actionable risk.</li>
+          <li>Long-running validators with empty logs should be escalated automatically as likely stuck.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Acceptance Criteria</h2>
+        <ul>
+          <li>Manager identifies the current `#81` stuck validator pattern and recommends a safe remediation.</li>
+          <li>Manager distinguishes stale `#65/#77` ledger rows from live agent processes.</li>
+          <li>Manager writes a durable report with enough evidence for a human or AI worker to act without chat context.</li>
+          <li>Manager exposes the hardcoded toolkit actions behind dry-run defaults.</li>
+          <li>Agent Processes panel can display manager-derived live, stale, manual, and risk counts.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Metrics</h2>
+        <div class="metric-grid">
+          <div class="metric">
+            <strong>&lt; 5 min</strong>
+            <span>Detect stuck validator with empty log</span>
+          </div>
+          <div class="metric">
+            <strong>0</strong>
+            <span>Done issues shown as running work</span>
+          </div>
+          <div class="metric">
+            <strong>100%</strong>
+            <span>Mutating actions produce evidence</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="side">
+      <h2>Request Card</h2>
+      <dl>
+        <dt>Agent Work Ticket</dt>
+        <dd>#1000014</dd>
+        <dt>Owner</dt>
+        <dd>Cento self-improvement lane</dd>
+        <dt>Priority</dt>
+        <dd>High</dd>
+        <dt>Package</dt>
+        <dd>agent-manager-v1</dd>
+        <dt>Primary Users</dt>
+        <dd>Operator, coordinator agent, validators</dd>
+        <dt>Primary Risk</dt>
+        <dd>Unbounded autonomous remediation</dd>
+      </dl>
+
+      <h3>Deliverables</h3>
+      <div class="deliverables">
+        <a href="agent-run-ledger.md">Agent Run Ledger</a>
+        <a href="agent-work-coordinator-lane.md">Coordinator Lane</a>
+        <a href="agent-work-validator-lane.md">Validator Lane</a>
+        <a href="agent-work-deliverables-hub.md">Deliverables Hub Standard</a>
+        <a href="../scripts/agent_work.py">Current Agent Work CLI</a>
+        <a href="../scripts/industrial_aux_tui.go">Agent Processes Panel Source</a>
+      </div>
+    </aside>
+  </main>
+</body>
+</html>

@@ -16,22 +16,41 @@ Each run records issue, package, node, runtime, model, command, pid, tmux sessio
 cento agent-work runs
 cento agent-work runs --json --active
 cento agent-work run-status RUN_ID --json
+cento agent-work recovery-plan
 cento agent-work dispatch ISSUE --runtime claude-code --dry-run
-cento agent-work dispatch-pool --limit 3
 ```
+
+Reconcile stale entries and capture proof artifacts in one shot:
+
+```sh
+./scripts/agent_work_hygiene.sh --out-dir workspace/runs/agent-work/reconciliation
+```
+
+The script runs:
+
+1. `cento agent-work runs --json --reconcile`
+2. `tmux list-sessions -F '#{session_name}\t#{session_created}\t#{session_attached}'`
+3. `ps` probe for interactive Codex/Claude/`agent_work.py` processes
+
+This is the evidence bundle expected for visibility audits: reconciled runs JSON,
+tmux session snapshot, and a short `hygiene-report.md` with minimal fix suggestions.
+The reconciliation step now promotes stale entries back to `running` when their
+pid or tmux session is still alive, so the report only flags runs that are truly dead.
+
+Agent Manager owns the safe cleanup path for historical stale rows:
+
+```sh
+make agent-manager-janitor ARGS="--dry-run --json"
+make agent-manager-janitor ARGS="--apply --json"
+```
+
+The janitor archives only stale ledgers attached to Done issues. Stale ledgers for
+open issues remain visible as actionable risk, because they may need validation,
+requeue, blocker triage, or a follow-up ticket.
 
 `runs` also scans `ps` for interactive Codex and Claude Code sessions that do not have a ledger record. In JSON those are `untracked_interactive`; in the Industrial OS pane they are shown as `MANUAL` because they are real local agent shells, but Cento cannot attach them to an issue, prompt, or log path.
 
-`dispatch-pool` is the safe way to prepare several cheap Spark/Codex workers. It is plan-only by default, so it does not create run ledger entries until the operator passes `--execute`.
-
-For runs dispatched to another node, Mac-side `runs` and `run-status` perform a bounded remote lookup before marking the local ledger stale. Mac-side `runs` also appends Linux's own run ledger so the manager view can see Linux-local pool workers that were launched from Linux and never had a Mac-side ledger record. A Linux run that is still active remotely reports `remote_running`; a finished remote run reports the remote health such as `remote_ok`. Use `--no-remote-reconcile` when you need a strictly local, no-SSH view.
-
-This distinction matters during pool work:
-
-- `cento agent-work runs --json --active` is the cluster-aware manager view.
-- `cento agent-work runs --json --active --no-remote-reconcile` is the local-only view.
-- If the local-only view is empty but the cluster-aware view has Linux records, workers exist but were launched from another node.
-- If both views are empty and the board has queued work, the pool is not dispatching.
+`recovery-plan` is the board recovery companion: it summarizes blocked/review pressure, stale runs, manual shells, blocker causes, and safe next commands. In report-only mode it also writes a before/after board snapshot plus guardrails; `--apply` is bounded to requeueing stale blocked work and creating at most three small follow-up tasks when the blocker is an internal Cento gap or an explicit split-needed case.
 
 ## Industrial OS Pane
 

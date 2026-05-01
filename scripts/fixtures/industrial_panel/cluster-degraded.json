@@ -1,0 +1,257 @@
+{
+  "updated_at": "2026-04-30T09:51:07-04:00",
+  "cluster_file": "/home/alice/.config/cento/cluster.json",
+  "relay": {
+    "user": "opc",
+    "host": "129.213.17.199"
+  },
+  "nodes": [
+    {
+      "id": "linux",
+      "platform": "linux",
+      "user": "alice",
+      "host_alias": "cento-linux",
+      "repo": "/home/alice/projects/cento",
+      "socket": "/tmp/cento-linux.sock",
+      "bridge_service": "systemd:user:cento-bridge-linux.service",
+      "capabilities": [
+        "shell",
+        "tmux",
+        "git",
+        "cento"
+      ]
+    },
+    {
+      "id": "macos",
+      "platform": "macos",
+      "user": "anovik-air",
+      "host_alias": "cento-mac",
+      "repo": "/Users/anovik-air/cento",
+      "socket": "/tmp/cento-mac.sock",
+      "bridge_service": "launchd:com.cento.bridge-mac",
+      "capabilities": [
+        "shell",
+        "tmux",
+        "git",
+        "cento"
+      ]
+    },
+    {
+      "id": "iphone",
+      "platform": "ios-ish",
+      "user": "root",
+      "role": "companion",
+      "entry_node": "macos",
+      "host_alias": "iphone-cento",
+      "repo": "",
+      "socket": "",
+      "bridge_service": "ios foreground iSH only",
+      "capabilities": [
+        "ssh-client",
+        "status",
+        "trigger",
+        "logs"
+      ],
+      "authorized_key_comment": "iphone-cento"
+    }
+  ],
+  "health": {
+    "overall": "degraded",
+    "local": "linux",
+    "counts": {
+      "online": 0,
+      "offline": 1,
+      "degraded": 2
+    },
+    "nodes": [
+      {
+        "id": "linux",
+        "platform": "linux",
+        "role": "worker",
+        "state": "degraded",
+        "status": "connected",
+        "is_local": true,
+        "host_alias": "cento-linux",
+        "socket": "/tmp/cento-linux.sock",
+        "socket_present": true,
+        "socket_detail": {
+          "present": true,
+          "owner": "opc",
+          "group": "opc",
+          "raw": "srw-------. 1 opc opc 0 Apr 30 13:51 /tmp/cento-linux.sock"
+        },
+        "bridge_service": "systemd:user:cento-bridge-linux.service",
+        "capabilities": [
+          "shell",
+          "tmux",
+          "git",
+          "cento"
+        ],
+        "metrics": {
+          "error": "collector unavailable"
+        },
+        "reasons": [
+          "metrics unavailable: collector unavailable"
+        ],
+        "remediation": {
+          "severity": "warning",
+          "owner": "local operator",
+          "action": "restore local metrics",
+          "commands": [
+            "python3 scripts/industrial_status.py --json",
+            "cento cluster status"
+          ]
+        }
+      },
+      {
+        "id": "macos",
+        "platform": "macos",
+        "role": "worker",
+        "state": "degraded",
+        "status": "disconnected",
+        "is_local": false,
+        "host_alias": "cento-mac",
+        "socket": "/tmp/cento-mac.sock",
+        "socket_present": true,
+        "socket_detail": {
+          "present": true,
+          "owner": "opc",
+          "group": "opc",
+          "raw": "srw-------. 1 opc opc 0 Apr 29 20:56 /tmp/cento-mac.sock"
+        },
+        "bridge_service": "launchd:com.cento.bridge-mac",
+        "capabilities": [
+          "shell",
+          "tmux",
+          "git",
+          "cento"
+        ],
+        "metrics": {},
+        "reasons": [
+          "cluster status=disconnected",
+          "stale mesh socket"
+        ],
+        "remediation": {
+          "severity": "warning",
+          "owner": "macos operator",
+          "action": "repair stale socket",
+          "commands": [
+            "cento bridge status",
+            "cento bridge mesh-status",
+            "cento cluster heal macos"
+          ]
+        }
+      },
+      {
+        "id": "iphone",
+        "platform": "ios-ish",
+        "role": "companion",
+        "state": "offline",
+        "status": "disconnected",
+        "is_local": false,
+        "host_alias": "iphone-cento",
+        "socket": "",
+        "socket_present": true,
+        "socket_detail": {},
+        "bridge_service": "ios foreground iSH only",
+        "capabilities": [
+          "ssh-client",
+          "status",
+          "trigger",
+          "logs"
+        ],
+        "metrics": {},
+        "reasons": [
+          "companion disconnected"
+        ],
+        "remediation": {
+          "severity": "critical",
+          "owner": "macos operator",
+          "action": "refresh companion heartbeat",
+          "commands": [
+            "cento cluster heartbeat iphone",
+            "cento cluster heal macos"
+          ]
+        }
+      }
+    ],
+    "mesh_sockets": {
+      "/tmp/cento-linux.sock": {
+        "present": true,
+        "owner": "opc",
+        "group": "opc",
+        "raw": "srw-------. 1 opc opc 0 Apr 30 13:51 /tmp/cento-linux.sock"
+      },
+      "/tmp/cento-mac.sock": {
+        "present": true,
+        "owner": "opc",
+        "group": "opc",
+        "raw": "srw-------. 1 opc opc 0 Apr 29 20:56 /tmp/cento-mac.sock"
+      }
+    },
+    "metrics": {
+      "error": "collector unavailable"
+    },
+    "reasons": [
+      "metrics unavailable: collector unavailable",
+      "cluster status=disconnected",
+      "stale mesh socket",
+      "companion disconnected"
+    ],
+    "actions": [
+      {
+        "node": "linux",
+        "severity": "warning",
+        "owner": "local operator",
+        "action": "restore local metrics",
+        "commands": [
+          "python3 scripts/industrial_status.py --json",
+          "cento cluster status"
+        ]
+      },
+      {
+        "node": "macos",
+        "severity": "warning",
+        "owner": "macos operator",
+        "action": "repair stale socket",
+        "commands": [
+          "cento bridge status",
+          "cento bridge mesh-status",
+          "cento cluster heal macos"
+        ]
+      },
+      {
+        "node": "iphone",
+        "severity": "critical",
+        "owner": "macos operator",
+        "action": "refresh companion heartbeat",
+        "commands": [
+          "cento cluster heartbeat iphone",
+          "cento cluster heal macos"
+        ]
+      }
+    ]
+  },
+  "status": {
+    "ok": true,
+    "returncode": 0,
+    "stdout": "cluster status\nlocal       linux\nnode config /home/alice/.config/cento/node.json\nregistry    /home/alice/.config/cento/cluster.json\n\nmesh\nsrw-------. 1 opc opc 0 Apr 30 13:51 /tmp/cento-linux.sock\nsrw-------. 1 opc opc 0 Apr 29 20:56 /tmp/cento-mac.sock\n\nnodes\nlinux    connected\nmacos    disconnected\niphone   disconnected",
+    "stderr": ""
+  },
+  "mesh": {
+    "ok": true,
+    "returncode": 0,
+    "stdout": "srw-------. 1 opc opc 0 Apr 30 13:51 /tmp/cento-linux.sock\nsrw-------. 1 opc opc 0 Apr 29 20:56 /tmp/cento-mac.sock",
+    "stderr": ""
+  },
+  "metrics": {
+    "error": "collector unavailable"
+  },
+  "commands": {
+    "tui": "cento network --tui",
+    "web": "cento network --web",
+    "jobs": "cento jobs",
+    "cluster_status": "cento cluster status",
+    "cluster_heal": "cento cluster heal"
+  }
+}

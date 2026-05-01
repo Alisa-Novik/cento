@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Cento Console">
+  <rect width="512" height="512" rx="84" fill="#050403"/>
+  <path d="M96 142h320v52H96z" fill="#ff4b00"/>
+  <path d="M96 230h200v52H96z" fill="#ff9a3d"/>
+  <path d="M96 318h320v52H96z" fill="#a0d76e"/>
+  <path d="M348 230h68v52h-68z" fill="#ffffff"/>
+</svg>

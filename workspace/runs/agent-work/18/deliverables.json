@@ -27,6 +27,11 @@
       "description": "Inefficiencies, agent lanes, validation split, and next sprint process steps."
     },
     {
+      "title": "Optimizing AI",
+      "href": "../../../../docs/optimizing-ai-validator-tiers.md",
+      "description": "Main direction: structured evidence, deterministic checks, and cheap model judges before spending Spark/Codex."
+    },
+    {
       "title": "Hub Standard",
       "href": "../../../../docs/agent-work-deliverables-hub.md",
       "description": "Reusable process rule for generated start pages and review evidence."

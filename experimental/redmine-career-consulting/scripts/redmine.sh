@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="$ROOT/.env"
 COMPOSE_FILE="$ROOT/compose.yml"
 PROJECT_NAME="cento-redmine-career"
+SUDO_COMPOSE_HELPER="$ROOT/scripts/redmine-compose-root.sh"
 
 usage() {
   cat <<'USAGE'
@@ -13,6 +14,9 @@ Usage: scripts/redmine.sh <command>
 Commands:
   init       Create .env with generated local secrets when missing
   up         Start Redmine and PostgreSQL
+  cutover-stop  Stop Redmine stack for validation window (requires sudo helper)
+  cutover-start Start Redmine stack after a cutover window (requires sudo helper)
+  cutover-status Show compose status for validation window checks (requires sudo helper)
   down       Stop the stack
   restart    Restart the stack
   logs       Follow Redmine logs
@@ -56,6 +60,26 @@ compose() {
   fi
 }
 
+compose_as_root() {
+  local action=${1:-}
+  shift || true
+  if [[ ! -x "$SUDO_COMPOSE_HELPER" ]]; then
+    echo "Missing privileged helper: $SUDO_COMPOSE_HELPER" >&2
+    echo "Create the least-privilege sudoers entry documented in docs/redmine-retirement-roadmap.md" >&2
+    exit 1
+  fi
+  local output
+  if ! output="$(sudo -n "$SUDO_COMPOSE_HELPER" "$action" "$@" 2>&1)"; then
+    echo "$output" >&2
+    echo "If this is a permission issue, add a restricted sudoers entry for $SUDO_COMPOSE_HELPER." >&2
+    echo "See docs/redmine-retirement-roadmap.md under 'Cutover gate command set'." >&2
+    return 1
+  fi
+  if [[ -n "$output" ]]; then
+    printf '%s\n' "$output"
+  fi
+}
+
 random_secret() {
   openssl rand -hex 48
 }
@@ -91,6 +115,18 @@ case "$cmd" in
     ensure_env
     compose up -d
     "$0" url
+    ;;
+  cutover-stop)
+    ensure_env
+    compose_as_root down --remove-orphans
+    ;;
+  cutover-start)
+    ensure_env
+    compose_as_root up -d
+    ;;
+  cutover-status)
+    ensure_env
+    compose_as_root ps
     ;;
   down)
     ensure_env

@@ -8,10 +8,11 @@ DEVICE ?=
 CMD ?= pwd
 ARGS ?=
 
-.PHONY: check tree index platforms inventory snapshot scaffold batch search bt-audio-doctor audio-quick-connect kitty-theme wallpaper display i3reorg dashboard preset bridge quick-help quick-help-fzf network network-tui jobs idea-board tg tui crm funnel funnel-check burp mcp scan cento redmine-e2e terminal-e2e industrial-e2e
+.PHONY: check tree index platforms inventory snapshot scaffold batch search bt-audio-doctor audio-quick-connect kitty-theme wallpaper display i3reorg dashboard preset bridge quick-help quick-help-fzf network network-tui jobs idea-board tg tui crm funnel funnel-check burp mcp scan cento redmine-e2e tracker-migrate agent-work-e2e agent-work-dual-backend-stress agent-work-app-start agent-work-app-stop agent-work-app-status agent-work-app-sync agent-manager agent-manager-janitor terminal-e2e industrial-e2e
 
 check:
-	$(PYTHON) -m py_compile scripts/agent_work.py scripts/bluetooth_audio_doctor.py scripts/cento_interactive.py scripts/cluster_job_runner.py scripts/crm_module.py scripts/dashboard_server.py scripts/funnel_check.py scripts/funnel_module.py scripts/gather_context.py scripts/idea_board_server.py scripts/industrial_focus.py scripts/industrial_panel.py scripts/industrial_status.py scripts/jobs_server.py scripts/mcp_tooling.py scripts/cento_mcp_server.py scripts/network_web_server.py scripts/platform_report.py scripts/scan_onepager.py scripts/tool_index.py
+	$(PYTHON) -m py_compile scripts/agent_manager.py scripts/agent_work.py scripts/bluetooth_audio_doctor.py scripts/cento_interactive.py scripts/cluster_job_runner.py scripts/crm_module.py scripts/dashboard_server.py scripts/funnel_check.py scripts/funnel_module.py scripts/gather_context.py scripts/idea_board_server.py scripts/industrial_focus.py scripts/industrial_panel.py scripts/industrial_status.py scripts/jobs_server.py scripts/mcp_tooling.py scripts/network_web_server.py scripts/platform_report.py scripts/scan_onepager.py scripts/story_screenshot_runner.py scripts/tool_index.py
+	$(PYTHON) scripts/agent_manager_contract_check.py
 	go build -o workspace/tmp/cento-interactive-check ./scripts/cento_interactive.go
 	go build -o workspace/tmp/cento-daily-check ./scripts/daily_tui.go
 	go build -o workspace/tmp/cento-industrial-aux-tui-check ./scripts/industrial_aux_tui.go
@@ -63,6 +64,9 @@ kitty-theme:
 
 cento:
 	./scripts/cento.sh $(ARGS)
+
+tracker-migrate:
+	$(PYTHON) scripts/migrate_redmine_to_tracker.py $(ARGS)
 
 wallpaper:
 	./scripts/wallpaper_manager.sh $(ARGS)
@@ -127,5 +131,32 @@ scan:
 redmine-e2e:
 	./scripts/redmine_workflow_e2e.sh $(ARGS)
 
+agent-work-e2e:
+	./scripts/agent_work_e2e.sh $(ARGS)
+
+agent-work-dual-backend-stress:
+	./scripts/agent_work_dual_backend_stress.sh $(ARGS)
+
+agent-work-app-start:
+	./scripts/cento.sh agent-work-app start
+
+agent-work-app-stop:
+	./scripts/cento.sh agent-work-app stop
+
+agent-work-app-status:
+	curl -fsS http://127.0.0.1:47910/health
+
+agent-work-app-sync:
+	$(PYTHON) scripts/agent_work_app.py install-sync
+
+agent-manager:
+	$(PYTHON) scripts/agent_manager.py $(ARGS)
+
+agent-manager-janitor:
+	$(PYTHON) scripts/agent_manager.py janitor $(ARGS)
+
 terminal-e2e:
 	./scripts/terminal_integration_e2e.sh $(ARGS)
+
+agent-tracker-backend:
+	python3 -m uvicorn backend.main:app --app-dir apps/agent-tracker --host 127.0.0.1 --port 7070 $(ARGS)

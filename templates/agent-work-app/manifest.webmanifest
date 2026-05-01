@@ -1,0 +1,19 @@
+{
+  "name": "Cento Console",
+  "short_name": "Cento",
+  "description": "Cento web app with Taskstream, Cluster, Consulting, and Docs sections.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#050403",
+  "theme_color": "#050403",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

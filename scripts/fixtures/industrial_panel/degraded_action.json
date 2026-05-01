@@ -1,0 +1,7 @@
+[
+  {
+    "key": "1",
+    "label": "degraded command",
+    "command": ["python3", "-c", "import sys; print('degraded') ; sys.exit(12)"]
+  }
+]

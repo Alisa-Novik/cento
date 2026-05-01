@@ -1,0 +1,59 @@
+{
+  "updated_at": "2026-04-30T10:12:00-04:00",
+  "cluster_file": "/home/alice/.config/cento/cluster.json",
+  "nodes": [],
+  "health": {
+    "overall": "unavailable",
+    "local": "",
+    "counts": {
+      "online": 0,
+      "offline": 0,
+      "degraded": 0
+    },
+    "nodes": [],
+    "mesh_sockets": {},
+    "metrics": {
+      "error": "collector unavailable"
+    },
+    "reasons": [
+      "cluster status command unavailable",
+      "bridge mesh-status unavailable",
+      "metrics unavailable: collector unavailable"
+    ],
+    "actions": [
+      {
+        "node": "metrics",
+        "severity": "critical",
+        "owner": "local operator",
+        "action": "restore local metrics",
+        "commands": [
+          "python3 scripts/industrial_status.py --json",
+          "cento cluster status"
+        ]
+      }
+    ]
+  },
+  "relay": {},
+  "status": {
+    "ok": false,
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "cluster status unreachable"
+  },
+  "mesh": {
+    "ok": false,
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "bridge mesh-status unreachable"
+  },
+  "metrics": {
+    "error": "collector unavailable"
+  },
+  "commands": {
+    "tui": "cento network --tui",
+    "web": "cento network --web",
+    "jobs": "cento jobs",
+    "cluster_status": "cento cluster status",
+    "cluster_heal": "cento cluster heal"
+  }
+}

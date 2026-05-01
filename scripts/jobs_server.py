@@ -7,6 +7,7 @@ import json
 import mimetypes
 import socket
 import sys
+import os
 import threading
 import webbrowser
 from datetime import datetime
@@ -16,7 +17,7 @@ from typing import Any
 
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-RUN_ROOT = ROOT_DIR / "workspace" / "runs" / "cluster-jobs"
+RUN_ROOT = Path(os.environ.get("CENTO_CLUSTER_JOBS_ROOT", ROOT_DIR / "workspace" / "runs" / "cluster-jobs"))
 TEMPLATE_DIR = ROOT_DIR / "templates" / "jobs-web"
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 47883
@@ -66,6 +67,112 @@ def recent_log_tail(path: Path, limit: int = 30) -> list[str]:
     return lines[-limit:]
 
 
+def normalize_status(value: Any) -> str:
+    status = str(value or "").strip().lower().replace("_", "-")
+    return status or "unknown"
+
+
+def parse_time(value: Any) -> datetime | None:
+    if not value:
+        return None
+    raw = str(value).strip()
+    if not raw:
+        return None
+    if raw.endswith("Z"):
+        raw = raw[:-1] + "+00:00"
+    try:
+        return datetime.fromisoformat(raw)
+    except ValueError:
+        return None
+
+
+def age_label(dt: datetime | None, now: datetime | None = None) -> str:
+    if not dt:
+        return "unknown"
+    current = now or datetime.now().astimezone()
+    if dt.tzinfo is None:
+        dt = dt.astimezone()
+    seconds = max(0, int((current - dt.astimezone(current.tzinfo)).total_seconds()))
+    if seconds < 60:
+        return f"{seconds}s"
+    if seconds < 3600:
+        return f"{seconds // 60}m"
+    if seconds < 86400:
+        return f"{seconds // 3600}h"
+    return f"{seconds // 86400}d"
+
+
+def first_line(value: Any) -> str:
+    for line in str(value or "").splitlines():
+        line = line.strip()
+        if line:
+            return line
+    return ""
+
+
+def latest_log_for_job(job: dict[str, Any], run_dir: Path) -> dict[str, Any]:
+    candidates: list[Path] = []
+    for result in job.get("results", []):
+        if isinstance(result, dict) and result.get("log"):
+            candidates.append(Path(str(result["log"])))
+    log_dir = run_dir / "logs"
+    if log_dir.exists():
+        candidates.extend(path for path in log_dir.glob("*.log") if path.is_file())
+    existing = [path for path in candidates if path.exists() and path.is_file()]
+    if not existing:
+        return {"path": "", "exists": False, "tail": []}
+    latest = max(existing, key=lambda path: path.stat().st_mtime)
+    return {"path": str(latest), "exists": True, "tail": recent_log_tail(latest, limit=8)}
+
+
+def current_step(job: dict[str, Any]) -> str:
+    tasks = [task for task in job.get("tasks", []) if isinstance(task, dict)]
+    results = {item.get("task"): item for item in job.get("results", []) if isinstance(item, dict)}
+    for task in tasks:
+        task_id = task.get("id", "")
+        if task_id and task_id not in results:
+            return str(task.get("title") or task_id)
+    if tasks:
+        return str(tasks[-1].get("title") or tasks[-1].get("id") or "tasks complete")
+    return "no tasks"
+
+
+def job_summary(job: dict[str, Any], run_dir: Path, job_path: Path, now: datetime | None = None) -> dict[str, Any]:
+    status = normalize_status(job.get("status"))
+    summary_path = Path(job.get("artifacts", {}).get("summary") or run_dir / "summary.md")
+    latest_log = latest_log_for_job(job, run_dir)
+    updated_at = parse_time(job.get("finished_at")) or parse_time(job.get("updated_at")) or parse_time(job.get("created_at"))
+    if not updated_at:
+        updated_at = datetime.fromtimestamp(job_path.stat().st_mtime).astimezone()
+    tasks = [task for task in job.get("tasks", []) if isinstance(task, dict)]
+    results = [result for result in job.get("results", []) if isinstance(result, dict)]
+    failed_results = [result for result in results if result.get("returncode") not in (0, None)]
+    degraded_reasons: list[str] = []
+    if status in {"failed", "error", "invalid", "unknown"}:
+        degraded_reasons.append(f"status={status}")
+    if failed_results:
+        degraded_reasons.append(f"{len(failed_results)} failed task result(s)")
+    if tasks and not results and status not in {"planned", "queued", "dry-run"}:
+        degraded_reasons.append("tasks have no results")
+    if not latest_log["exists"] and status in {"running", "failed", "succeeded"}:
+        degraded_reasons.append("latest log missing")
+    return {
+        "id": job.get("id") or job_path.parent.name,
+        "status": status,
+        "feature": first_line(job.get("feature")),
+        "task_count": len(tasks),
+        "result_count": len(results),
+        "failed_task_count": len(failed_results),
+        "summary_exists": summary_path.exists(),
+        "updated_at": updated_at.isoformat(timespec="seconds"),
+        "updated_age": age_label(updated_at, now),
+        "current_step": current_step(job),
+        "latest_log": latest_log,
+        "state": "degraded" if degraded_reasons else ("empty" if not tasks else "ok"),
+        "degraded_reasons": degraded_reasons,
+    }
+
+
 def task_details(job: dict[str, Any], run_dir: Path) -> list[dict[str, Any]]:
     results = {item.get("task"): item for item in job.get("results", []) if isinstance(item, dict)}
     details = []
@@ -92,6 +199,7 @@ def task_details(job: dict[str, Any], run_dir: Path) -> list[dict[str, Any]]:
                 "script": str(script_path),
                 "script_exists": script_path.exists(),
                 "manifest": str(prompt_path),
+                "manifest_exists": prompt_path.exists(),
             }
         )
     return details
@@ -100,25 +208,59 @@ def task_details(job: dict[str, Any], run_dir: Path) -> list[dict[str, Any]]:
 def load_jobs() -> dict[str, Any]:
     RUN_ROOT.mkdir(parents=True, exist_ok=True)
     jobs = []
+    counts: dict[str, int] = {}
+    states: dict[str, int] = {}
+    current_time = datetime.now().astimezone()
     for job_path in sorted(RUN_ROOT.glob("*/job.json"), key=lambda path: path.stat().st_mtime, reverse=True):
         try:
             job = read_json(job_path)
         except NetworkWebError as exc:
-            jobs.append({"id": job_path.parent.name, "status": "invalid", "error": str(exc), "path": str(job_path)})
+            summary = {
+                "id": job_path.parent.name,
+                "status": "invalid",
+                "feature": str(exc),
+                "task_count": 0,
+                "result_count": 0,
+                "failed_task_count": 0,
+                "updated_at": datetime.fromtimestamp(job_path.stat().st_mtime).astimezone().isoformat(timespec="seconds"),
+                "updated_age": age_label(datetime.fromtimestamp(job_path.stat().st_mtime).astimezone(), current_time),
+                "current_step": "invalid job.json",
+                "latest_log": {"path": "", "exists": False, "tail": []},
+                "state": "degraded",
+                "degraded_reasons": [str(exc)],
+            }
+            counts["invalid"] = counts.get("invalid", 0) + 1
+            states["degraded"] = states.get("degraded", 0) + 1
+            jobs.append(
+                {
+                    "id": job_path.parent.name,
+                    "status": "invalid",
+                    "error": str(exc),
+                    "path": str(job_path),
+                    "summary": summary,
+                    "job_summary": summary,
+                }
+            )
             continue
         run_dir = Path(job.get("run_dir") or job_path.parent)
         summary = Path(job.get("artifacts", {}).get("summary") or run_dir / "summary.md")
+        normalized = job_summary(job, run_dir, job_path, current_time)
+        counts[normalized["status"]] = counts.get(normalized["status"], 0) + 1
+        states[normalized["state"]] = states.get(normalized["state"], 0) + 1
         jobs.append(
             {
                 "id": job.get("id", job_path.parent.name),
-                "status": job.get("status", "unknown"),
-                "feature": job.get("feature", ""),
+                "status": normalized["status"],
+                "feature": normalized["feature"],
                 "created_at": job.get("created_at", ""),
                 "finished_at": job.get("finished_at", ""),
+                "updated_at": normalized["updated_at"],
+                "updated_age": normalized["updated_age"],
                 "repo": job.get("repo", ""),
                 "run_dir": str(run_dir),
                 "job": str(job_path),
                 "summary": str(summary),
+                "job_summary": normalized,
                 "summary_exists": summary.exists(),
                 "agent_command": job.get("agent_command", ""),
                 "tasks": task_details(job, run_dir),
@@ -127,6 +269,9 @@ def load_jobs() -> dict[str, Any]:
     return {
         "updated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "run_root": str(RUN_ROOT),
+        "state": "empty" if not jobs else ("degraded" if states.get("degraded") else "ok"),
+        "counts": counts,
+        "states": states,
         "jobs": jobs,
     }
 

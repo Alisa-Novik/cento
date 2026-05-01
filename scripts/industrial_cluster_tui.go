@@ -34,17 +34,54 @@ type clusterNode struct {
 type clusterSnapshot struct {
 	UpdatedAt string         `json:"updated_at"`
 	Nodes     []clusterNode  `json:"nodes"`
+	Health    healthModel    `json:"health"`
 	Status    commandResult  `json:"status"`
 	Mesh      commandResult  `json:"mesh"`
 	Jobs      map[string]int `json:"jobs"`
 }
 
+type healthModel struct {
+	Overall string         `json:"overall"`
+	Local   string         `json:"local"`
+	Counts  map[string]int `json:"counts"`
+	Nodes   []healthNode   `json:"nodes"`
+	Reasons []string       `json:"reasons"`
+	Actions []nodeAction   `json:"actions"`
+}
+
+type healthNode struct {
+	ID            string         `json:"id"`
+	Platform      string         `json:"platform"`
+	Role          string         `json:"role"`
+	State         string         `json:"state"`
+	Status        string         `json:"status"`
+	IsLocal       bool           `json:"is_local"`
+	Socket        string         `json:"socket"`
+	SocketPresent bool           `json:"socket_present"`
+	BridgeService string         `json:"bridge_service"`
+	Metrics       map[string]any `json:"metrics"`
+	Reasons       []string       `json:"reasons"`
+	Remediation   nodeAction     `json:"remediation"`
+}
+
+type nodeAction struct {
+	Node     string   `json:"node"`
+	Severity string   `json:"severity"`
+	Owner    string   `json:"owner"`
+	Action   string   `json:"action"`
+	Commands []string `json:"commands"`
+}
+
 type nodeRow struct {
-	Name   string
-	State  string
-	CPU    string
-	Mem    string
-	Uptime string
+	Name    string
+	State   string
+	CPU     string
+	Mem     string
+	Mesh    string
+	Reasons []string
+	Action  string
+	Owner   string
+	Command string
 }
 
 type eventRow struct {
@@ -59,6 +96,10 @@ type clusterData struct {
 	Events    []eventRow
 	UpdatedAt time.Time
 	Err       error
+	Overall   string
+	Online    int
+	Reasons   []string
+	Actions   []nodeAction
 }
 
 type snapshotMsg struct {
@@ -156,15 +197,10 @@ func (m model) View() tea.View {
 
 func (m model) renderBody(width int) string {
 	rows := m.data.Rows
-	online := 0
-	for _, row := range rows {
-		if row.State == "online" {
-			online++
-		}
-	}
+	online := m.data.Online
 	health := "DEGRADED"
 	badge := badgeWarn.Render(health)
-	if len(rows) > 0 && online == len(rows) && m.data.Err == nil {
+	if len(rows) > 0 && m.data.Overall == "healthy" && m.data.Err == nil {
 		health = "HEALTHY"
 		badge = badgeGood.Render(health)
 	}
@@ -187,6 +223,10 @@ func (m model) renderBody(width int) string {
 		"",
 		m.renderTable(width, rows),
 		"",
+		m.renderReasons(width),
+		"",
+		m.renderActions(width),
+		"",
 		titleStyle.Render("RECENT EVENTS"),
 		"",
 		m.renderEvents(width),
@@ -206,7 +246,7 @@ func (m model) renderTable(width int, rows []nodeRow) string {
 		cell(headerStyle.Render("STATUS"), 10, false),
 		cell(headerStyle.Render("CPU"), 4, true),
 		cell(headerStyle.Render("MEM"), 4, true),
-		cell(headerStyle.Render("UP"), 7, true),
+		cell(headerStyle.Render("MESH"), 7, true),
 	}, " ")
 	lines := []string{header}
 	if len(rows) == 0 {
@@ -216,6 +256,8 @@ func (m model) renderTable(width int, rows []nodeRow) string {
 			dot := quietDot
 			if row.State == "online" {
 				dot = goodDot
+			} else if row.State == "degraded" {
+				dot = hotDot
 			}
 			state := fmt.Sprintf("%s %s", dot, row.State)
 			lines = append(lines, strings.Join([]string{
@@ -223,11 +265,41 @@ func (m model) renderTable(width int, rows []nodeRow) string {
 				cell(state, 10, false),
 				cell(valueStyle.Render(row.CPU), 4, true),
 				cell(valueStyle.Render(row.Mem), 4, true),
-				cell(nameStyle.Render(row.Uptime), 7, true),
+				cell(nameStyle.Render(row.Mesh), 7, true),
 			}, " "))
 		}
 	}
 	return tableStyle.Width(inner).Render(lipgloss.JoinVertical(lipgloss.Left, lines...))
+}
+
+func (m model) renderReasons(width int) string {
+	if len(m.data.Reasons) == 0 {
+		return mutedStyle.Render("no degraded reasons")
+	}
+	lines := []string{titleStyle.Render("DEGRADED REASONS")}
+	for _, reason := range m.data.Reasons[:min(len(m.data.Reasons), 4)] {
+		lines = append(lines, hotDot+" "+nameStyle.Render(clip(reason, width-4)))
+	}
+	return lipgloss.JoinVertical(lipgloss.Left, lines...)
+}
+
+func (m model) renderActions(width int) string {
+	if len(m.data.Actions) == 0 {
+		return mutedStyle.Render("no remediation actions")
+	}
+	lines := []string{titleStyle.Render("REMEDIATION")}
+	for _, action := range m.data.Actions[:min(len(m.data.Actions), 4)] {
+		command := ""
+		if len(action.Commands) > 0 {
+			command = action.Commands[0]
+		}
+		line := fmt.Sprintf("%s: %s · %s", action.Node, action.Action, action.Owner)
+		lines = append(lines, hotDot+" "+nameStyle.Render(clip(line, width-4)))
+		if command != "" {
+			lines = append(lines, "  "+mutedStyle.Render(clip(command, width-4)))
+		}
+	}
+	return lipgloss.JoinVertical(lipgloss.Left, lines...)
 }
 
 func (m model) renderEvents(width int) string {
@@ -270,41 +342,57 @@ func loadData(root string) clusterData {
 	if err != nil {
 		return clusterData{Err: err, UpdatedAt: time.Now()}
 	}
-	metrics := localMetrics()
-	states := parseNodeStates(snapshot.Status.Stdout)
-	localID := parseLocalID(snapshot.Status.Stdout)
-	meshAges := parseMeshAges(snapshot.Mesh.Stdout)
-	rows := make([]nodeRow, 0, len(snapshot.Nodes))
-	for _, node := range snapshot.Nodes {
-		if node.Role == "companion" {
-			continue
-		}
-		state := states[node.ID]
-		if state == "" {
-			state = "registered"
-		}
-		if state == "connected" || state == "local" {
-			state = "online"
-		}
+	rows := make([]nodeRow, 0, len(snapshot.Health.Nodes))
+	for _, node := range snapshot.Health.Nodes {
 		cpu := "--"
 		mem := "--"
-		uptime := "--"
-		if node.ID == localID {
-			cpu = metrics.CPU
-			mem = metrics.Mem
-			uptime = metrics.Uptime
-		} else if state == "online" {
-			uptime = meshAges[node.Socket]
-			if uptime == "" {
-				uptime = "now"
+		if node.IsLocal {
+			cpu = metricString(node.Metrics, "cpu", "%")
+			mem = metricString(node.Metrics, "ram", "%")
+		}
+		mesh := "none"
+		if node.Socket != "" {
+			mesh = "missing"
+			if node.SocketPresent {
+				mesh = "socket"
 			}
 		}
-		rows = append(rows, nodeRow{Name: node.ID, State: state, CPU: cpu, Mem: mem, Uptime: uptime})
+		if node.IsLocal {
+			mesh = "local"
+		}
+		command := ""
+		if len(node.Remediation.Commands) > 0 {
+			command = node.Remediation.Commands[0]
+		}
+		rows = append(rows, nodeRow{Name: node.ID, State: node.State, CPU: cpu, Mem: mem, Mesh: mesh, Reasons: node.Reasons, Action: node.Remediation.Action, Owner: node.Remediation.Owner, Command: command})
 	}
 	return clusterData{
 		Rows:      rows,
 		Events:    recentEvents(filepath.Join(root, "logs"), 5),
 		UpdatedAt: time.Now(),
+		Overall:   snapshot.Health.Overall,
+		Online:    snapshot.Health.Counts["online"],
+		Reasons:   snapshot.Health.Reasons,
+		Actions:   snapshot.Health.Actions,
+	}
+}
+
+func metricString(metrics map[string]any, key string, suffix string) string {
+	value, ok := metrics[key]
+	if !ok || value == nil {
+		return "--"
+	}
+	switch typed := value.(type) {
+	case float64:
+		return fmt.Sprintf("%d%s", int(typed), suffix)
+	case int:
+		return fmt.Sprintf("%d%s", typed, suffix)
+	default:
+		text := fmt.Sprint(value)
+		if text == "" || text == "<nil>" {
+			return "--"
+		}
+		return text + suffix
 	}
 }
 

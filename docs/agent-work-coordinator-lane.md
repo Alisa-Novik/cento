@@ -1,166 +1,203 @@
 # Agent Work Coordinator Lane
 
-The Coordinator lane keeps Cento agent work moving without turning into another implementation lane. It owns routing, story shape, board hygiene, and escalation discipline.
+The Coordinator lane owns intake triage, story splitting, lane routing, acceptance contract hygiene, shared evidence decisions, replacement state changes, and early escalation when a story needs human/device access.
 
-This contract comes from the process-scaling report at `workspace/runs/agent-work/18/process-scaling.html`: builders should build, validators should validate, Docs/Evidence should preserve proof, and coordinators should remove coordination drag.
+The lane does not implement product code or validate final evidence. It keeps the work queue coherent and makes the next action explicit.
 
-## Lane Contract
+## Coordinator Contract
 
-The Coordinator lane is responsible for:
+Use the Coordinator lane to make the work graph smaller and clearer before a Builder starts.
 
-- Splitting Redmine work before dispatch when routes, APIs, screenshots, or device requirements differ.
-- Combining small items when they share validation evidence and can be reviewed together.
-- Creating or updating `story.json` before a worker starts.
-- Keeping statuses accurate across `Queued`, `Running`, `Validating`, `Review`, `Blocked`, and `Done`.
-- Assigning Builder, Validator, Docs/Evidence, and small-worker lanes based on board pressure.
-- Running pool planning in dry-run mode before launching more agents.
-- Detecting stale ledgers and asking for hygiene before capacity decisions.
-- Escalating missing device, credential, quota, bridge, or environment access early.
-- Sending notifications only on meaningful state changes.
+Split a story when any of the following differ:
 
-The Coordinator lane does **not**:
+- route coverage or page surface
+- API coverage or request shape
+- screenshot outputs, viewport sizes, or device targets
+- human/device/environment access requirements
+- review-note or evidence requirements
 
-- Implement product code except tiny manifest or process fixes needed to route work.
-- Approve its own implementation work.
-- Move a story to `Review` without a Validator pass.
-- Launch unbounded workers or retry quota failures in a loop.
-- Overwrite dirty work on another node.
+Combine related work only when the stories can share the same acceptance contract, validation commands, evidence files, review gate, and durable outputs. If the evidence is shared but the story boundaries are still fuzzy, keep the stories separate and point them at the same artifact set instead of forcing a merge.
 
-## Required Inputs
+Every split task must declare owned files, modules, or responsibility boundaries. Use `cento agent-work create --owns PATH_OR_SCOPE` or `cento agent-work split --owns PATH_OR_SCOPE` so builder and validator prompts show the ownership boundary. Do not dispatch two builders with overlapping owned paths unless one is explicitly a read-only validator or docs/evidence worker.
 
-Every coordinator cycle should start from current state, not chat memory:
+Assign lanes by responsibility:
+
+- Builder: smallest coherent implementation slice, changed files, and implementation notes.
+- Validator: independent checks, screenshots, review evidence, and pass/fail judgment.
+- Docs/Evidence: `story.json`, `deliverables.json`, `start-here.html`, validation logs, screenshot indexes, and review-note wording.
+- Coordinator: triage, split/combine decisions, routing, blocker escalation, and replacement status hygiene.
+
+Keep replacement statuses accurate:
+
+- `Queued` before claim.
+- `Running` only while the active owner is actually working.
+- `Blocked` as soon as a missing dependency is known.
+- `Validating` when the implementation is ready for the next owner or the coordinator has finished triage and written the handoff.
+- `Review` only after a Validator pass.
+- `Done` only after review close-out.
+
+If a status note does not change ownership, blockers, or the next owner, do not send another status update.
+
+## Operating Commands
+
+Use these commands as the default coordinator toolkit:
 
 ```bash
-cento gather-context
+cento agent-work claim ISSUE_ID --node "$(uname -s)" --agent "$USER" --role coordinator
+cento agent-work show ISSUE_ID
 cento agent-work list --json
 cento agent-work runs --json --active
-cento agent-work recovery-plan --json
+cento agent-work run-status RUN_ID --json
+cento agent-work review-drain --package <package> --dry-run
+python3 scripts/story_manifest.py validate workspace/runs/agent-work/<issue-id>/story.json --check-links
+python3 scripts/story_manifest.py render-hub workspace/runs/agent-work/<issue-id>/story.json --check-links
+cento agent-work update ISSUE_ID --status running --role coordinator --note "..."
+cento agent-work update ISSUE_ID --status blocked --role coordinator --note "blocked because ..."
+cento agent-work update ISSUE_ID --status validating --role coordinator --note "..."
+cento notify status
+cento notify iphone "ISSUE_ID moved to Review"
+cento notify all "ISSUE_ID blocked: ..."
 ```
 
-When capacity looks wrong, run hygiene before dispatch:
+## Pool Kick Diagnostics
+
+The automatic pool launcher writes the latest machine-readable summary to `~/.local/state/cento/agent-pool-kick-latest.json`. The coordinator run bundle mirrors the same payload under `workspace/runs/agent-work/<run-id>/actions.json`.
+
+When the pool starts zero workers, read these fields first:
+
+- `reason_summary.primary_reason`
+- `reason_summary.summary`
+- `reason_summary.next_action`
+- `reason_summary.lanes[]`
+- `reason_summary.dispatch_failures[]`
+
+Typical next actions:
+
+- `active_target_already_met`: wait for active workers to finish or raise the target.
+- `no_candidates`: queue or split a matching issue for the lane.
+- `all_candidates_blocked_review`: unblock or finish the blocked or Review issues.
+- `version_skew`: requeue the stale-model work or align the runtime/model mapping.
+- `runtime_missing`: fix the runtime registry or missing binary on the launch node.
+- `dispatch_failures`: inspect the dispatch failure records and fix the underlying error.
+
+## Story Intake Checklist
+
+1. Claim the issue as coordinator and record the current node and agent owner.
+2. Read the replacement issue and any `story.json` or deliverables manifest attached to the run directory.
+3. Check the live board and running ledger together. The board can show queued work that is not actually running, and the run ledger can show active work that has not yet been recorded on the board.
+4. Record a short running note that names the intake decision, the package, and any immediate blocker.
+5. If the issue is part of a package with multiple stories, compare the sibling stories before dispatching anything new and decide whether to split, combine, or leave them separate.
+
+## Acceptance Contract Checklist
+
+Before dispatching or combining work, verify that the story contract is explicit:
+
+- `scope.acceptance` is non-empty and uses outcome language, not vague status language.
+- `expected_outputs` lists the durable artifacts the reviewer should open.
+- `validation.commands` names the checks that should run before handoff.
+- `validation.required_evidence` matches the commands and the artifact paths.
+- `handoff.human_steps` exists when a human must touch a device, simulator, account, or LAN-only environment.
+- `review_gate.required_sections` includes `Delivered`, `Validation`, `Evidence`, and `Residual risk` when strict review notes are required.
+
+If the acceptance contract is missing or incomplete, stop and either:
+
+- mark the issue `blocked`, or
+- split it into a narrower story with a tighter contract.
+
+## Shared Evidence Detection
+
+Combine stories only when they truly share evidence. Treat the following as the decision inputs:
+
+- `routes`
+- `api_endpoints`
+- `screenshots[].output`
+- `validation.required_evidence`
+- `validation.commands`
+- `expected_outputs`
+- `review_gate`
+
+Stories should usually stay separate when any of these differ:
+
+- route coverage
+- API coverage
+- screenshot outputs or viewports
+- device access requirements
+- final review-note requirements
+
+Stories can be combined when they reuse the same evidence files, the same validation commands, and the same review gate. If the evidence is shared but the story boundaries are still unclear, keep the stories separate and point them at the same durable artifact set.
+
+Before closing a package with shared review evidence, dry-run:
 
 ```bash
-cento agent-work-hygiene
+cento agent-work review-drain --package <package> --dry-run
 ```
 
-Before launching workers, plan first:
+When the board is stalled with no queued work, start with:
 
 ```bash
-cento agent-pool-kick --dry-run --max-launch 3
+cento agent-work recovery-plan
 ```
 
-## Status Rules
+Use the report to decide whether the next safe move is:
 
-Use these status meanings consistently:
+- requeue stale blocked work that has no live run,
+- drain review-ready items,
+- or create at most one or two small follow-up tasks for internal Cento gaps or explicit split-needed blockers.
 
-| Status | Coordinator meaning |
-|---|---|
-| `Queued` | Work is ready to assign; it should have enough scope for an agent to start. |
-| `Running` | A human or tracked run is actively working it; stale or missing runs need a note. |
-| `Validating` | Builder output exists and needs independent validation. |
-| `Review` | Validator passed, or a human review decision is explicitly pending. |
-| `Blocked` | A concrete external blocker exists, with the next unblock action named. |
-| `Done` | Verified, approved, or intentionally closed with evidence. |
+Do not create follow-up work for human, device, credential, or LAN blockers. If the recovery plan cannot point to a bounded internal gap, leave the blocked issue in place and record the blocker instead of spawning new tasks.
 
-Blocked notes must name the blocker and the next action. Examples:
+## State-Change Notifications
 
-```text
-Blocked: Spark quota hit. Next action: retry after reset or dispatch with explicitly approved fallback model.
-Blocked: iPhone is locked. Next action: operator unlocks device and reconnects cable.
-```
+Notify only on state changes that matter:
 
-## Splitting Rules
+- claim/start
+- blocked
+- validating / ready for validation
+- review
+- done
+- human input needed
 
-Split a Redmine item when:
+Keep the message short and factual. Include the issue id, the new state, the blocking dependency if there is one, and the next owner when it changes.
 
-- It touches unrelated files or ownership boundaries.
-- It needs different validation evidence, screenshots, devices, or API endpoints.
-- One part can be validated while another remains blocked.
-- A worker would need more than one coherent context window to finish safely.
-
-Keep a Redmine item together when:
-
-- The same screenshots or validation commands prove all acceptance criteria.
-- The files are tightly coupled and a split would create merge friction.
-- The work is small enough for one focused handoff.
-
-## Dispatch Rules
-
-The default pool policy is conservative:
-
-- Dry-run first.
-- Cap launches with `--max-launch`.
-- Prefer Spark/Codex for cheap workers when available.
-- Do not retry the same quota failure repeatedly.
-- Keep at most one coordinator worker active unless explicitly scaling a coordinator backlog.
-- Do not launch workers against a dirty remote checkout unless the work is isolated from those files.
-
-Useful commands:
+Recommended pattern:
 
 ```bash
-cento agent-pool-kick --dry-run --max-launch 3
-cento agent-pool-kick --max-launch 1 --coordinator-target 1 --builder-target 0 --validator-target 0 --small-target 0
-cento agent-work dispatch-pool --limit 3 --json
+cento agent-work update ISSUE_ID --status running --role coordinator --note "..."
+cento notify iphone "ISSUE_ID now running"
 ```
 
-If Spark is blocked, the coordinator should record the blocker instead of silently switching models. Model fallback must be explicit:
+Use `cento notify all` only for broad blockers or when more than one person needs the same update.
 
-```bash
-cento agent-pool-kick --max-launch 1 --model gpt-5.4-mini
-```
+Do not send progress pings for every minor edit or inspection step.
 
-## Notification Rules
+## Human Handoff Escalation
 
-Notify only on state changes that affect the operator:
+Escalate immediately when a story needs something the current node cannot provide:
 
-- Work starts on a high-priority item.
-- Human input is required.
-- A device, credential, quota, bridge, or relay blocker appears.
-- A story reaches `Review` or `Done`.
-- Validation fails with a clear next action.
+- physical device access
+- simulator or emulator access
+- LAN-only service access
+- credentials or secrets the agent cannot mint
+- a missing build machine, browser, or test host
 
-Avoid progress pings that do not change operator action.
+Escalation checklist:
 
-## Coordinator Cycle
+1. Mark the issue `blocked`.
+2. State the exact missing dependency in the board note.
+3. Include the human action needed to unblock the story.
+4. Name the evidence path or device artifact that must be provided.
+5. Send a short notification when a configured target exists.
 
-A normal coordinator cycle:
+For mobile and device-heavy stories, write the human handoff details into `story.json` so the next coordinator does not have to reconstruct them from chat history.
 
-1. Refresh context and board state.
-2. Run recovery-plan and hygiene if runs look stale.
-3. Close or route `Review` noise before launching more work.
-4. Pick the largest blocked package and create the smallest unblock task.
-5. Create or update `story.json` for queued work.
-6. Run pool dry-run.
-7. Launch a capped batch only when capacity and blockers are understood.
-8. Leave Redmine notes that name the action taken and evidence path.
+## Coordinator Exit Criteria
 
-## Required Outputs
+The coordinator job is complete when:
 
-For coordinator-owned stories, produce:
+- the story contract is explicit,
+- the queue decision is recorded,
+- any follow-up dispatch recommendation is written down,
+- blocker states are reflected on the board,
+- and the next owner is obvious.
 
-| File | Purpose |
-|---|---|
-| `workspace/runs/agent-work/<id>/story.json` | Shared scope and evidence contract. |
-| `workspace/runs/agent-work/<id>/builder-report.md` | What coordination decision changed and why. |
-| `workspace/runs/agent-work/<id>/start-here.html` | Manager-facing evidence hub when generated from story manifest. |
-
-## Review Handoff
-
-Coordinator handoff notes should include:
-
-```text
-Delivered:
-- Story split/routing/status hygiene completed.
-
-Validation:
-- Commands run and result.
-
-Evidence:
-- story.json path
-- builder-report path
-- generated hub path
-
-Residual risk:
-- Remaining blockers, if any, or "None".
-```
-
+At that point, leave a concise report and move the issue to `validating` with the coordinator role.

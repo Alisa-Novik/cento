@@ -195,6 +195,33 @@ _cento() {
               'dispatch[Dispatch an issue through the cluster]'
           fi
           ;;
+        agent-work-app)
+          if (( CURRENT == 3 )); then
+            _values 'agent-work-app command' \
+              'start[Start the replacement app in the background]' \
+              'stop[Stop the background app]' \
+              'status[Check the app health endpoint]' \
+              'import-redmine[Import the current Redmine-backed tracker]' \
+              'install-sync[Install the recurring Redmine sync cron job]' \
+              'serve[Run the app in the foreground]'
+          fi
+          ;;
+        agent-manager)
+          if (( CURRENT == 3 )); then
+            _values 'agent-manager command' \
+              'scan[Scan agent process and ledger state]' \
+              'report[Write JSON and Markdown reports]' \
+              'recommend[Print actionable recommendations]' \
+              'classify[Classify one run or issue]' \
+              'pool-stats[Print pool statistics]' \
+              'mark-stale[Mark a run ledger stale]' \
+              'mark-blocked[Mark an issue blocked]' \
+              'terminate-tmux[Terminate a tmux session]' \
+              'reconcile-ledger[Reconcile one run ledger]' \
+              'open-evidence[List evidence paths]' \
+              'create-investigation-ticket[Create a follow-up ticket]'
+          fi
+          ;;
         notify)
           if (( CURRENT == 3 )); then
             _values 'notify command or target' \

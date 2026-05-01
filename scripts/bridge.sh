@@ -282,7 +282,7 @@ start_socket_tunnel() {
     local pid_file="$STATE_DIR/${label}-socket.pid"
     local log_file="$STATE_DIR/${label}-socket.log"
     if [[ -f "$pid_file" ]] && kill -0 "$(<"$pid_file")" >/dev/null 2>&1; then
-        if socket_ssh_ok "$vm_user" "$vm_host" "$socket_path" "$target_user" "$host_alias"; then
+        if socket_transport_ok "$vm_user" "$vm_host" "$socket_path"; then
             printf '%s socket tunnel already running (pid %s).\n' "$label" "$(<"$pid_file")"
             return 0
         fi
@@ -291,7 +291,7 @@ start_socket_tunnel() {
         rm -f "$pid_file"
     fi
     if ssh -o BatchMode=yes -o ConnectTimeout=5 "${vm_user}@${vm_host}" "test -S '$socket_path'" >/dev/null 2>&1; then
-        if socket_ssh_ok "$vm_user" "$vm_host" "$socket_path" "$target_user" "$host_alias"; then
+        if socket_transport_ok "$vm_user" "$vm_host" "$socket_path"; then
             printf '%s socket already exists on VM and is healthy: %s\n' "$label" "$socket_path"
             return 0
         fi
@@ -311,19 +311,51 @@ start_socket_tunnel() {
         "${vm_user}@${vm_host}" >"$log_file" 2>&1 &
     printf '%s\n' "$!" > "$pid_file"
     sleep 1
-    if ! kill -0 "$(<"$pid_file")" >/dev/null 2>&1; then
+    local started_pid
+    started_pid=$(<"$pid_file")
+    if ! kill -0 "$started_pid" >/dev/null 2>&1; then
         cento_die "$label socket tunnel failed. See $log_file"
     fi
-    printf '%s socket tunnel started (pid %s): %s -> %s:%s\n' "$label" "$(<"$pid_file")" "$socket_path" "$target_host" "$target_port"
+    local healthy=0
+    for _ in 1 2 3 4 5; do
+        if socket_transport_ok "$vm_user" "$vm_host" "$socket_path"; then
+            healthy=1
+            break
+        fi
+        sleep 1
+    done
+    if [[ "$healthy" != "1" ]]; then
+        kill "$started_pid" >/dev/null 2>&1 || true
+        rm -f "$pid_file"
+        ssh -o BatchMode=yes -o ConnectTimeout=5 "${vm_user}@${vm_host}" "rm -f '$socket_path'" >/dev/null 2>&1 || true
+        cento_die "$label socket tunnel started but did not pass SSH health check. See $log_file"
+    fi
+    printf '%s socket tunnel started (pid %s): %s -> %s:%s\n' "$label" "$started_pid" "$socket_path" "$target_host" "$target_port"
+}
+
+socket_transport_ok() {
+    local vm_user=$1 vm_host=$2 socket_path=$3
+    ssh \
+        -n \
+        -o BatchMode=yes \
+        -o StrictHostKeyChecking=accept-new \
+        -o ConnectTimeout=5 \
+        -o ConnectionAttempts=1 \
+        "${vm_user}@${vm_host}" \
+        "timeout 6 nc -U '$socket_path' </dev/null >/dev/null" >/dev/null 2>&1
 }
 
 socket_ssh_ok() {
     local vm_user=$1 vm_host=$2 socket_path=$3 target_user=$4 host_alias=$5
     ssh \
+        -n \
         -o BatchMode=yes \
         -o StrictHostKeyChecking=accept-new \
         -o ConnectTimeout=8 \
-        -o ProxyCommand="ssh ${vm_user}@${vm_host} nc -U ${socket_path}" \
+        -o ConnectionAttempts=1 \
+        -o ServerAliveInterval=5 \
+        -o ServerAliveCountMax=1 \
+        -o ProxyCommand="ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 -o ConnectionAttempts=1 ${vm_user}@${vm_host} timeout 6 nc -U ${socket_path}" \
         "${target_user}@${host_alias}" \
         true >/dev/null 2>&1
 }

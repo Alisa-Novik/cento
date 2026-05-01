@@ -1,0 +1,5 @@
+{
+  "log_root": "./unavailable/logs",
+  "include_placeholders": true,
+  "limit": 8
+}

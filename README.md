@@ -43,6 +43,8 @@ The bias is toward low-dependency tooling that works well from a terminal and ca
   Manage Cento nodes, remote execution, bridge healing, git drift checks, and parallel agent jobs.
 - `cluster_job_runner.py`
   Plan feature requests into node-assigned agent tasks, dispatch them in parallel, and collect logs plus worktree artifacts.
+- `agent_work_app.py`
+  Run the Cento Console web app with Taskstream, Cluster, Consulting, and Docs sections, plus background process control, health checks, and migration import sync.
 - `network.sh`
   Route `cento network --tui` and `cento network --web`.
 - `network_web_server.py`
@@ -75,6 +77,8 @@ The bias is toward low-dependency tooling that works well from a terminal and ca
   Non-interactive docs backend for `cento docs` and scripted lookups.
 - `scan_onepager.py`
   Scan cento content and generate an archived HTML one-pager.
+- `story_screenshot_runner.py`
+  Capture desktop and mobile screenshots from `story.json` with deterministic evidence and an index.
 - `kitty_theme_manager.sh`
   Sync custom Kitty themes, present theme choices interactively, and reload Kitty plus tmux context.
 - `wallpaper_manager.sh`
@@ -141,6 +145,12 @@ make crm ARGS="init"
 make crm ARGS='intake init --person "Ada Lovelace" --target-role "Product Manager"'
 make crm ARGS='intake plan --person "Ada Lovelace"'
 make crm ARGS="serve --open"
+make agent-work-app-start
+make agent-work-app-status
+make agent-work-app-sync
+make agent-work-app-stop
+make agent-manager ARGS="scan"
+make agent-manager ARGS="recommend --limit 10"
 make funnel ARGS="init"
 make funnel ARGS="sources"
 make funnel ARGS="report"
@@ -154,6 +164,7 @@ make mcp ARGS="doctor"
 make mcp ARGS="init --write-env"
 make scan QUERY="mcp"
 make scan QUERY="telegram" ARGS="--no-open"
+cento story-screenshot-runner workspace/runs/agent-work/59/story.json --force
 make quick-help
 make cento ARGS="tools"
 make cento ARGS="interactive"
@@ -192,6 +203,16 @@ go run ./scripts/telegram_tui.go
 ./scripts/crm_module.py intake plan --person "Ada Lovelace"
 ./scripts/crm_module.py serve --open
 ./scripts/crm_module.py show
+./scripts/agent_work_app.py start
+./scripts/agent_work_app.py status
+./scripts/agent_work_app.py import-redmine
+./scripts/agent_work_app.py install-sync
+./scripts/agent_work.py backup
+./scripts/agent_work.py restore --bundle workspace/runs/agent-work/cutover/e2e-check/backup
+./scripts/agent_work.py archive --query "cutover"
+./scripts/agent_work.py cutover-status
+./scripts/agent_work.py cutover-verify --run-dir workspace/runs/agent-work/cutover/e2e-check
+./scripts/agent_work.py cutover-finalize --force
 ./scripts/funnel_module.py init
 ./scripts/funnel_module.py report
 ./scripts/burp_suite_community.sh setup
@@ -202,6 +223,7 @@ go run ./scripts/telegram_tui.go
 ./scripts/mcp_tooling.py init --write-env
 ./scripts/scan_onepager.py --query "mcp"
 ./scripts/scan_onepager.py --query "telegram" --no-open
+./scripts/story_screenshot_runner.py workspace/runs/agent-work/59/story.json --force
 ./scripts/quick_help.sh
 ./scripts/cento_interactive.sh
 ./scripts/cento_interactive.sh --section builtins
@@ -644,6 +666,25 @@ go run ./scripts/telegram_tui.go
 cento dashboard
 cento dashboard --theme industrial --open
 ```
+
+## Agent Manager
+
+`cento agent-manager` is the operator control plane for Cento agent runs. It correlates run ledgers, issue state, tmux sessions, process trees, log files, and pool state to identify stale, idle, stuck, errored, duplicated, manual, and low-value agent activity.
+
+Examples:
+
+```bash
+cento agent-manager scan
+cento agent-manager scan --json
+cento agent-manager report
+cento agent-manager recommend --limit 10
+cento agent-manager classify --issue-id 81
+cento agent-manager mark-stale RUN_ID --reason "stuck validator" --dry-run
+cento agent-manager mark-blocked 81 --reason "stuck validator" --evidence RUN_ID --dry-run
+cento agent-manager terminate-tmux cento-agent-81-095103 --reason "stuck validator" --dry-run
+```
+
+Reports are written under `workspace/runs/agent-manager/`. Management actions default to dry-run unless `--apply` is passed.
 
 ## Desktop Presets
 

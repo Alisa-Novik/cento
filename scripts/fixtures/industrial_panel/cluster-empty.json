@@ -1,0 +1,34 @@
+{
+  "updated_at": "2026-04-30T00:00:00+00:00",
+  "relay": {
+    "user": "opc",
+    "host": "129.213.17.199"
+  },
+  "health": {
+    "overall": "empty",
+    "counts": {
+      "online": 0,
+      "offline": 0,
+      "degraded": 0
+    },
+    "nodes": [],
+    "mesh_sockets": {},
+    "reasons": [],
+    "actions": []
+  },
+  "commands": {
+    "cluster_status": "cento cluster status",
+    "cluster_nodes": "cento cluster nodes",
+    "cluster_heal": "cento cluster heal"
+  },
+  "status": {
+    "ok": true,
+    "stdout": "local       local-node\nnodes\n",
+    "stderr": ""
+  },
+  "mesh": {
+    "ok": true,
+    "stdout": "",
+    "stderr": ""
+  }
+}

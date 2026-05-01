@@ -1,0 +1,5 @@
+{
+  "log_root": "./empty/logs",
+  "include_placeholders": false,
+  "limit": 8
+}

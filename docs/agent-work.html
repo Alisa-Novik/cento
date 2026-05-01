@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cento Agent Work</title>
+  <title>Cento Console Agent Work</title>
   <style>
     :root {
       color-scheme: light;
@@ -598,8 +598,8 @@
       <div class="brand">
         <div class="brand-mark">cw</div>
         <div>
-          <strong>Cento Agent Work</strong>
-          <span>Redmine-backed agent tracking</span>
+          <strong>Cento Console</strong>
+          <span>Taskstream, Cluster, Consulting, Docs</span>
         </div>
       </div>
 
@@ -612,8 +612,9 @@
         <a href="#lanes">Lanes <span>06</span></a>
         <a href="#prompt">Prompt <span>07</span></a>
         <a href="#dispatch">Dispatch <span>08</span></a>
-        <a href="#redmine">Redmine <span>09</span></a>
-        <a href="#limits">Limits <span>10</span></a>
+        <a href="#console">Console <span>09</span></a>
+        <a href="#taskstream">Taskstream <span>10</span></a>
+        <a href="#limits">Limits <span>11</span></a>
       </nav>
 
       <div class="aside-note">
@@ -626,13 +627,13 @@
         <div class="eyebrow">
           <span class="pill">MVP ready</span>
           <span class="pill">Mac + Linux</span>
-          <span class="pill">Redmine board</span>
+          <span class="pill">Cento Console</span>
           <span class="pill">Cluster dispatch</span>
         </div>
-        <h1>Give work to agents and track it like a board.</h1>
+        <h1>Run Cento from one operator console.</h1>
         <p>
-          <code>cento agent-work</code> creates Redmine issues for agent tasks, splits packages across Cento nodes,
-          tracks lifecycle state, generates agent prompts, and dispatches work through the cluster.
+          The web app is becoming the Cento Console: Taskstream for issues and review, Cluster for runtime health,
+          Consulting for CRM and intake, and Docs for operating guides.
         </p>
         <div class="hero-actions">
           <a class="button primary" href="#bootstrap">Start with bootstrap</a>
@@ -645,7 +646,7 @@
         <section id="overview">
           <h2>Overview</h2>
           <p class="section-lead">
-            The tracker is a thin Cento layer over your Linux Redmine stack. Redmine stores the board;
+            The tracker is a thin Cento layer over your Linux Taskstream stack. Taskstream stores the board;
             Cento provides the command line workflow that agents can follow.
           </p>
 
@@ -653,7 +654,7 @@
             <article class="card metric card-body">
               <span class="metric-label">Project</span>
               <span class="metric-value">cento-agent-work</span>
-              <p>A dedicated Redmine project for agent issues.</p>
+              <p>A dedicated Taskstream project for agent issues.</p>
             </article>
             <article class="card metric card-body">
               <span class="metric-label">Trackers</span>
@@ -663,7 +664,7 @@
             <article class="card metric card-body">
               <span class="metric-label">Status flow</span>
               <span class="metric-value">Queued -> Done</span>
-              <p>Every agent should keep the Redmine issue current.</p>
+              <p>Every agent should keep the Taskstream issue current.</p>
             </article>
             <article class="card metric card-body">
               <span class="metric-label">Run bundles</span>
@@ -674,16 +675,30 @@
 
           <div class="callout">
             <p>
-              Operating model: create or split work, assign nodes, let agents claim tasks, keep notes in Redmine,
+              Operating model: create or split work, assign nodes, let agents claim tasks, keep notes in Taskstream,
               and inspect <code>cento cluster activity</code> for the live machine state.
             </p>
+          </div>
+        </section>
+
+        <section id="console">
+          <h2>Cento Console Direction</h2>
+          <p class="section-lead">
+            Taskstream is now one section of the broader Cento web app. The global header should expose
+            Taskstream, Cluster, Consulting, and Docs, while Issues and Review stay nested inside Taskstream.
+          </p>
+          <div class="grid four">
+            <article class="card card-body"><h3>Taskstream</h3><p>Issues, review queue, dispatch, validation evidence, and lifecycle.</p></article>
+            <article class="card card-body"><h3>Cluster</h3><p>Node health, bridge mesh, Agent Processes, worker pools, and usage.</p></article>
+            <article class="card card-body"><h3>Consulting</h3><p>CRM, career intake, funnel, and client deliverable workflows.</p></article>
+            <article class="card card-body"><h3>Docs</h3><p>Operating guides, contracts, validation lanes, runbooks, and tool references.</p></article>
           </div>
         </section>
 
         <section id="bootstrap">
           <h2>Bootstrap</h2>
           <p class="section-lead">
-            Run this once from either node. It creates the Redmine project, statuses, trackers, and fields.
+            Run this once from either node. It creates the Taskstream project, statuses, trackers, and fields.
             It is idempotent, so re-running it is safe.
           </p>
 
@@ -698,7 +713,7 @@
               <p>On macOS, Cento uses <code>alice@alisapad.local</code> when available, then falls back to the cluster SSH mesh.</p>
               <div class="command-block">
                 <div class="command-head"><span>force cluster mesh</span><button class="copy" type="button">Copy</button></div>
-                <pre><code class="language-bash">CENTO_REDMINE_TRANSPORT=cluster cento agent-work list</code></pre>
+                <pre><code class="language-bash">CENTO_TASKSTREAM_TRANSPORT=cluster cento agent-work list</code></pre>
               </div>
             </article>
             <article class="card card-body">
@@ -706,7 +721,7 @@
               <p>Use this when the Linux host name changes or you want a different SSH route.</p>
               <div class="command-block">
                 <div class="command-head"><span>custom ssh target</span><button class="copy" type="button">Copy</button></div>
-                <pre><code class="language-bash">CENTO_REDMINE_SSH=alice@alisapad.local cento agent-work list</code></pre>
+                <pre><code class="language-bash">CENTO_TASKSTREAM_SSH=alice@alisapad.local cento agent-work list</code></pre>
               </div>
             </article>
           </div>
@@ -715,7 +730,7 @@
         <section id="create">
           <h2>Create One Task</h2>
           <p class="section-lead">
-            Use <code>create</code> for one focused task. It writes the Redmine issue, stores node/owner/package fields,
+            Use <code>create</code> for one focused task. It writes the Taskstream issue, stores node/owner/package fields,
             and adds a starting journal note.
           </p>
 
@@ -758,9 +773,9 @@
             <div class="command-head"><span>split package</span><button class="copy" type="button">Copy</button></div>
             <pre><code class="language-bash">cento agent-work split \
   --title "Mission control MVP" \
-  --goal "Track what agents are doing as first-class Redmine work." \
+  --goal "Track what agents are doing as first-class Taskstream work." \
   --nodes linux,macos \
-  --task "Create Redmine-backed task model and CLI" \
+  --task "Create Taskstream-backed task model and CLI" \
   --task "Add Mac mission-control tile view" \
   --task "Document agent operating procedure"</code></pre>
           </div>
@@ -786,7 +801,7 @@
               </tr>
               <tr>
                 <td><code>Custom fields</code></td>
-                <td>Make Redmine useful as a board.</td>
+                <td>Make Taskstream useful as a board.</td>
                 <td>Node, owner, state, package, and dispatch metadata.</td>
               </tr>
             </tbody>
@@ -813,7 +828,7 @@
             <pre><code class="language-bash">cento agent-work claim 123 --node linux --agent codex
 cento agent-work update 123 --status running --note "Found the dashboard entry point."
 cento agent-work update 123 --status review --note "Implemented; make check passes."
-cento agent-work update 123 --status blocked --note "Blocked waiting for Redmine access."
+cento agent-work update 123 --status blocked --note "Blocked waiting for Taskstream access."
 cento agent-work update 123 --status done --note "Verified and closed."</code></pre>
           </div>
         </section>
@@ -911,23 +926,23 @@ cento cluster activity --json linux</code></pre>
 
           <div class="callout">
             <p>
-              Redmine is the assignment and lifecycle record. <code>cluster activity</code> is the live execution view:
+              Taskstream is the assignment and lifecycle record. <code>cluster activity</code> is the live execution view:
               tmux sessions, Codex processes, and recent pane text.
             </p>
           </div>
         </section>
 
-        <section id="redmine">
-          <h2>Redmine UI</h2>
+        <section id="taskstream">
+          <h2>Cento Console UI</h2>
           <p class="section-lead">
-            Use the existing Linux Redmine stack as the board view. The Cento CLI writes the fields and journal notes
-            that make the project readable.
+            Use the Cento Console as the web shell. Taskstream remains the first complete interactive area for
+            issue lifecycle, review, and dispatch.
           </p>
 
           <div class="grid three">
             <article class="card card-body">
               <h3>Container</h3>
-              <p><code>cento-redmine</code></p>
+              <p><code>cento-taskstream</code></p>
             </article>
             <article class="card card-body">
               <h3>Project</h3>
@@ -943,7 +958,7 @@ cento cluster activity --json linux</code></pre>
         <section id="limits">
           <h2>MVP Limits And Verification</h2>
           <p class="section-lead">
-            The MVP is deliberately practical and local-first. It is intended for this trusted self-hosted Redmine stack.
+            The MVP is deliberately practical and local-first. It is intended for this trusted self-hosted Taskstream stack.
           </p>
 
           <div class="grid two">

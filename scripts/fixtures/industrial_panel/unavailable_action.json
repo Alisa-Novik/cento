@@ -1,0 +1,7 @@
+[
+  {
+    "key": "1",
+    "label": "missing command",
+    "command": ["cento_missing_binary_2026"]
+  }
+]

@@ -1,0 +1,71 @@
+[
+  {
+    "key": "1",
+    "id": "selected_ok",
+    "label": "Selected action",
+    "description": "Deterministic success path for selected/running/succeeded snapshots.",
+    "allowlist": [
+      "linux",
+      "macos"
+    ],
+    "command": [
+      "python3",
+      "-c",
+      "print('selected action ok')"
+    ],
+    "dry_run_command": [
+      "python3",
+      "-c",
+      "print('selected dry-run ok')"
+    ],
+    "target_node": "cluster",
+    "availability_check": "always",
+    "expected_output_signal": "selected action ok"
+  },
+  {
+    "key": "2",
+    "id": "selected_fail",
+    "label": "Failed action",
+    "description": "Deterministic failure path for terminal snapshot coverage.",
+    "allowlist": [
+      "linux",
+      "macos"
+    ],
+    "command": [
+      "python3",
+      "-c",
+      "import sys; print('selected action failed'); sys.exit(7)"
+    ],
+    "dry_run_command": [
+      "python3",
+      "-c",
+      "print('selected action failed dry-run')"
+    ],
+    "target_node": "cluster",
+    "availability_check": "always",
+    "expected_output_signal": "selected action failed"
+  },
+  {
+    "key": "3",
+    "id": "selected_blocked",
+    "label": "Blocked action",
+    "description": "Unsafe shell wrapper that should be rendered unavailable.",
+    "allowlist": [
+      "linux",
+      "macos"
+    ],
+    "command": [
+      "sh",
+      "-c",
+      "echo blocked"
+    ],
+    "dry_run_command": [
+      "python3",
+      "-c",
+      "print('blocked dry-run helper')"
+    ],
+    "target_node": "cluster",
+    "availability_check": "always",
+    "expected_output_signal": "blocked"
+  }
+]

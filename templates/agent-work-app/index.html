@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cento Console</title>
+    <meta name="theme-color" content="#050403" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="productBrand" href="/" aria-label="Cento Console home">
+        <span class="brandMark">C</span>
+        <span>
+          <strong>Cento Console</strong>
+          <small>Industrial OS control plane</small>
+        </span>
+      </a>
+      <nav class="primaryNav" aria-label="Primary navigation">
+        <a class="active" href="/" data-main-route="taskstream">Taskstream</a>
+        <a href="/cluster" data-main-route="cluster">Cluster</a>
+        <a href="/consulting" data-main-route="consulting">Consulting</a>
+        <a href="/docs" data-main-route="docs">Docs</a>
+      </nav>
+      <div class="headerActions" aria-label="Cento actions">
+        <a href="/review?status=open">Review queue</a>
+        <button id="headerNewIssueButton" type="button">New issue</button>
+      </div>
+    </header>
+
+    <div class="appShell">
+      <aside class="sidebar">
+        <section>
+          <h2>Project</h2>
+          <button class="selectProject">▣ Industrial OS <span>⌄</span></button>
+        </section>
+        <section>
+          <h2>Trackers</h2>
+          <a href="/" data-filter="all">All issues <span id="countAll"></span></a>
+          <a class="active" href="/" data-filter="Agent Task">Agent Task <span id="countAgentTask"></span></a>
+          <a href="/" data-filter="Feature">Feature <span id="countFeature"></span></a>
+          <a href="/" data-filter="Bug">Bug <span id="countBug"></span></a>
+          <a href="/" data-filter="Support">Support <span id="countSupport"></span></a>
+          <a href="/" data-filter="Review">Review <span id="countReview"></span></a>
+        </section>
+        <div class="plant">
+          <div class="plantImage"></div>
+          <strong>INDUSTRIAL OS v1.1.0</strong>
+        </div>
+      </aside>
+
+      <main class="content">
+        <nav class="taskstreamNav" aria-label="Taskstream navigation">
+          <span>Taskstream</span>
+          <a class="active" href="/" data-nav-route="issues">Issues</a>
+          <a href="/review?status=open" data-nav-route="review">Review</a>
+        </nav>
+
+        <section id="clusterView" class="view hidden">
+          <div class="sectionHeader">
+            <div>
+              <span class="eyebrow">Cluster</span>
+              <h1>Nodes, processes, and agent runtime health</h1>
+            </div>
+            <a class="sectionAction" href="/docs#cluster">Open cluster docs</a>
+          </div>
+          <div class="sectionGrid">
+            <article class="sectionCard">
+              <span>Live agents</span>
+              <strong>Agent Processes</strong>
+              <p>Track managed runs, manual shells, stale processes, and queue pressure from the Mac/Linux cluster.</p>
+              <code>cento agent-processes</code>
+            </article>
+            <article class="sectionCard">
+              <span>Mesh</span>
+              <strong>Bridge status</strong>
+              <p>Inspect secure Mac/Linux node reachability, VM sockets, and companion-device heartbeats.</p>
+              <code>cento cluster status</code>
+            </article>
+            <article class="sectionCard">
+              <span>Dispatch</span>
+              <strong>Worker pool</strong>
+              <p>Review bounded builder, validator, small-task, and coordinator capacity before launching more work.</p>
+              <code>cento agent-pool-kick --dry-run</code>
+            </article>
+          </div>
+        </section>
+
+        <section id="consultingView" class="view hidden">
+          <div class="sectionHeader">
+            <div>
+              <span class="eyebrow">Consulting</span>
+              <h1>CRM, career intake, and client deliverables</h1>
+            </div>
+            <a class="sectionAction" href="/docs#consulting">Open consulting docs</a>
+          </div>
+          <div class="sectionGrid">
+            <article class="sectionCard">
+              <span>CRM</span>
+              <strong>Local consulting workspace</strong>
+              <p>Run the no-build CRM for contacts, pipeline, notes, templates, tasks, and forms.</p>
+              <code>cento crm serve --open</code>
+            </article>
+            <article class="sectionCard">
+              <span>Intake</span>
+              <strong>Career artifact plan</strong>
+              <p>Collect raw client context and generate prompt-ready resumes, profiles, interviews, and action plans.</p>
+              <code>cento crm intake plan</code>
+            </article>
+            <article class="sectionCard">
+              <span>Funnel</span>
+              <strong>Lead source view</strong>
+              <p>Inspect consulting sources and exportable funnel reports from the local JSON workspace.</p>
+              <code>cento funnel report</code>
+            </article>
+          </div>
+        </section>
+
+        <section id="docsView" class="view hidden">
+          <div class="sectionHeader">
+            <div>
+              <span class="eyebrow">Docs</span>
+              <h1>Cento operating documentation</h1>
+            </div>
+            <a class="sectionAction" href="/docs/agent-work.md">Open Taskstream docs</a>
+          </div>
+          <div class="sectionGrid">
+            <article id="cluster" class="sectionCard">
+              <span>Cluster</span>
+              <strong>Node operations</strong>
+              <p>Bridge, mesh, gather-context, agent process, and runtime docs for Mac/Linux operations.</p>
+              <code>docs/agent-run-ledger.md</code>
+            </article>
+            <article id="consulting" class="sectionCard">
+              <span>Consulting</span>
+              <strong>CRM and intake</strong>
+              <p>Consulting app, career intake workflow, and funnel documentation.</p>
+              <code>docs/crm-module.md</code>
+            </article>
+            <article class="sectionCard">
+              <span>Taskstream</span>
+              <strong>Agent work</strong>
+              <p>Issue lifecycle, dispatch, review, validation, and deliverables hub contracts.</p>
+              <code>docs/agent-work.md</code>
+            </article>
+          </div>
+        </section>
+
+        <section id="reviewView" class="view hidden">
+          <header class="reviewTopbar">
+            <div class="reviewModeTitle">
+              <strong>Review Mode</strong>
+              <span>(j/k to navigate)</span>
+            </div>
+            <a class="reviewBackLink" href="/">Back to issues</a>
+            <div class="reviewRunMeta">
+              <span>Agent: <b id="reviewAgent">-</b></span>
+              <span>Task: <b id="reviewTask">-</b></span>
+              <span>Issue: <b id="reviewIssue">-</b></span>
+              <span>Run: <b id="reviewPosition">0/0</b></span>
+            </div>
+            <label class="reviewAuto">
+              <span>Auto-advance</span>
+              <input id="reviewAutoAdvance" type="checkbox" checked />
+            </label>
+          </header>
+
+          <div class="reviewShell">
+            <aside class="reviewQueuePanel">
+              <div class="reviewQueueHeader">
+                <h1>Review Queue</h1>
+                <span id="reviewTotal">0</span>
+              </div>
+              <div class="reviewStats">
+                <button data-review-filter="approve"><strong id="reviewApproveCount">0</strong><span>Approve</span></button>
+                <button data-review-filter="needs_fix"><strong id="reviewFixCount">0</strong><span>Needs Fix</span></button>
+                <button data-review-filter="reject"><strong id="reviewRejectCount">0</strong><span>Reject</span></button>
+                <button data-review-filter="blocker"><strong id="reviewBlockerCount">0</strong><span>Blockers</span></button>
+              </div>
+              <p class="reviewSort">Blockers first, then confidence</p>
+              <div id="reviewQueue" class="reviewQueue"></div>
+            </aside>
+
+            <section class="reviewArtifactPanel">
+              <nav class="reviewTabs" aria-label="deliverable artifact tabs">
+                <button class="active" data-artifact-tab="screenshot">▧ Screenshot</button>
+                <button data-artifact-tab="logs">▤ Logs</button>
+                <button data-artifact-tab="video">▷ Video</button>
+                <button data-artifact-tab="output">⌘ Output / JSON</button>
+                <button data-artifact-tab="metadata">Metadata</button>
+                <button data-artifact-tab="notes">Notes</button>
+              </nav>
+              <div class="reviewArtifactHeader">
+                <div>
+                  <span>Artifact</span>
+                  <strong id="reviewArtifactTitle">-</strong>
+                </div>
+                <div class="reviewConfidence">
+                  <span>Confidence</span>
+                  <strong id="reviewConfidence">0%</strong>
+                </div>
+              </div>
+              <div id="reviewLogHighlights" class="reviewLogHighlights top hidden"></div>
+              <div id="reviewArtifact" class="reviewArtifact"></div>
+              <section class="reviewLogs">
+                <div>
+                  <h2>Logs</h2>
+                  <button id="reviewShowLogs">Show full logs</button>
+                </div>
+                <pre id="reviewLogText">No logs selected.</pre>
+              </section>
+            </section>
+
+            <aside class="reviewDecisionPanel">
+              <div class="decisionHeader">
+                <h2>Decision</h2>
+                <span>Hotkeys: A / R / F</span>
+              </div>
+              <button id="reviewApprove" class="decisionButton approve"><strong>✓ Approve (A)</strong><span>Looks good</span></button>
+              <button id="reviewReject" class="decisionButton reject"><strong>× Reject (R)</strong><span>Does not meet requirements</span></button>
+              <button id="reviewNeedsFix" class="decisionButton fix"><strong>⌁ Needs Fix (F)</strong><span>Request changes</span></button>
+              <section id="blockerResolution" class="blockerResolution hidden" aria-label="Blocker resolution">
+                <div class="blockerHeader">
+                  <h2>Blocker Resolution</h2>
+                  <span id="blockerKind">Blocked</span>
+                </div>
+                <p id="blockerSummary">No blocker selected.</p>
+                <textarea id="blockerNote" rows="4" placeholder="Answer the question, paste the command to run, or describe why this can be requeued."></textarea>
+                <div class="blockerActions">
+                  <button id="blockerQuestion" type="button">Ask question <span>Needs human answer</span></button>
+                  <button id="blockerCommand" type="button">Ask command <span>Operator should run this</span></button>
+                  <button id="blockerRequeue" type="button">Requeue <span>Blocker resolved</span></button>
+                </div>
+              </section>
+              <div class="reviewOtherActions">
+                <h2>Other Actions</h2>
+                <button id="reviewRerun">↻ Re-run <span>Run this task again</span></button>
+                <button id="reviewAssign">→ Assign to agent <span>Send back to agent</span></button>
+                <button id="reviewComment">◯ Add comment <span>Add review comment</span></button>
+              </div>
+              <div id="reviewContext" class="reviewContext"></div>
+            </aside>
+          </div>
+          <footer class="reviewFooter">
+            <span><kbd>j</kbd>/<kbd>k</kbd> Next / Previous</span>
+            <span><kbd>a</kbd> Approve</span>
+            <span><kbd>r</kbd> Reject</span>
+            <span><kbd>f</kbd> Needs Fix</span>
+            <span><kbd>d</kbd> Details</span>
+          </footer>
+        </section>
+
+        <section id="listView" class="view">
+          <div class="listHeader">
+            <div class="titleCluster">
+              <h1>Agent Task</h1>
+              <button class="filterChip">Status: open <span>×</span></button>
+              <button id="clearFiltersButton" class="linkButton" type="button">Clear filters</button>
+            </div>
+            <div class="searchCluster">
+              <label class="searchBox">
+                <span>Search issues</span>
+                <input id="searchInput" type="search" />
+                <b>⌕</b>
+              </label>
+              <button class="moreButton">•••</button>
+            </div>
+          </div>
+          <div class="toolbar">
+            <button id="newIssueButton" class="primary" type="button">＋ New issue</button>
+          </div>
+          <section class="filterPanel" aria-label="Issue filters">
+            <label>
+              <span>Status</span>
+              <select id="statusFilter">
+                <option value="open">Open</option>
+                <option value="all">All</option>
+                <option value="queued">Queued</option>
+                <option value="running">Running</option>
+                <option value="review">Review</option>
+                <option value="blocked">Blocked</option>
+                <option value="validating">Validating</option>
+                <option value="done">Done</option>
+              </select>
+            </label>
+            <label>
+              <span>Tracker</span>
+              <select id="trackerFilter">
+                <option value="">All</option>
+                <option value="Agent Task">Agent Task</option>
+                <option value="Agent Epic">Agent Epic</option>
+                <option value="Feature">Feature</option>
+                <option value="Bug">Bug</option>
+                <option value="Support">Support</option>
+              </select>
+            </label>
+            <label>
+              <span>Package</span>
+              <input id="packageFilter" type="text" placeholder="taskstream-v1" />
+            </label>
+            <label>
+              <span>Role</span>
+              <input id="roleFilter" type="text" placeholder="builder" />
+            </label>
+            <label>
+              <span>Agent</span>
+              <input id="agentFilter" type="text" placeholder="alice" />
+            </label>
+            <label>
+              <span>Updated from</span>
+              <input id="updatedFromFilter" type="date" />
+            </label>
+            <label>
+              <span>Updated to</span>
+              <input id="updatedToFilter" type="date" />
+            </label>
+            <label>
+              <span>Evidence</span>
+              <select id="evidenceFilter">
+                <option value="">Any</option>
+                <option value="present">Has evidence</option>
+                <option value="missing">No evidence</option>
+              </select>
+            </label>
+            <label>
+              <span>Risk</span>
+              <select id="riskFilter">
+                <option value="">Any</option>
+                <option value="flagged">Flagged</option>
+                <option value="clear">Clear</option>
+              </select>
+            </label>
+          </section>
+          <div class="tableWrap">
+            <div id="listLoading" class="listLoading hidden" aria-live="polite">
+              <span class="spinner" aria-hidden="true"></span>
+              <span>Loading issues…</span>
+            </div>
+            <div id="emptyState" class="emptyState hidden" role="status">No issues match your current filters.</div>
+            <table>
+              <thead>
+                <tr>
+                  <th><input type="checkbox" /></th>
+                  <th>#</th>
+                  <th>Tracker</th>
+                  <th>Status</th>
+                  <th>Priority</th>
+                  <th>Subject</th>
+                  <th>Assignee</th>
+                  <th>Updated</th>
+                </tr>
+              </thead>
+              <tbody id="issueRows"></tbody>
+            </table>
+          </div>
+          <footer class="pager">
+            <div>
+              <button id="prevPage" disabled>« Previous</button>
+              <button id="pageButton" class="pageActive">1</button>
+              <button id="nextPage">Next »</button>
+              <span id="rangeLabel">(1-25/26)</span>
+              <span>Per page: <button id="perPage25" class="perPageButton pageActive">25</button>, <button id="perPage50" class="perPageButton">50</button></span>
+            </div>
+          </footer>
+        </section>
+
+        <section id="detailView" class="view hidden">
+          <article class="issueDetail">
+            <header class="detailTopBar">
+              <button id="backButton" class="backButton">‹ Back to list</button>
+              <div class="detailActions">
+                <button id="detailEditButton" type="button">Edit</button>
+                <button>Log time</button>
+                <button>Watch</button>
+                <button>•••</button>
+              </div>
+            </header>
+            <div id="detailContent" class="detailContent">
+              <div id="detailLoading" class="detailLoading">Loading issue…</div>
+            </div>
+            <section class="workflowPanel">
+              <div class="workflowHeader">
+                <h2>Workflow</h2>
+                <span>API-backed transitions, notes, and evidence</span>
+              </div>
+              <div class="workflowGrid">
+                <form id="statusForm" class="workflowCard">
+                  <h3>Status transition</h3>
+                  <label>
+                    <span>Status</span>
+                    <select id="detailStatusSelect"></select>
+                  </label>
+                  <label>
+                    <span>Done ratio</span>
+                    <input id="detailDoneRatio" type="range" min="0" max="100" step="5" />
+                  </label>
+                  <label>
+                    <span>Assignee</span>
+                    <input id="detailAssignee" type="text" />
+                  </label>
+                  <label>
+                    <span>Transition note</span>
+                    <textarea id="detailTransitionNote" rows="4" placeholder="Optional status note"></textarea>
+                  </label>
+                  <button type="submit" class="primary">Apply transition</button>
+                </form>
+                <form id="journalForm" class="workflowCard">
+                  <h3>Add journal</h3>
+                  <label>
+                    <span>Author</span>
+                    <input id="journalAuthor" type="text" />
+                  </label>
+                  <label>
+                    <span>Note</span>
+                    <textarea id="journalNote" rows="6" placeholder="Journal entry"></textarea>
+                  </label>
+                  <button type="submit">Add journal</button>
+                </form>
+                <form id="evidenceForm" class="workflowCard">
+                  <h3>Attach evidence</h3>
+                  <label>
+                    <span>Type</span>
+                    <select id="evidenceType">
+                      <option value="attachment">Attachment</option>
+                      <option value="validation">Validation evidence</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Label / filename</span>
+                    <input id="evidenceLabel" type="text" placeholder="validation-report.md" />
+                  </label>
+                  <label>
+                    <span>Path or URL</span>
+                    <input id="evidencePath" type="text" placeholder="workspace/runs/agent-work/116/validation.md" />
+                  </label>
+                  <label>
+                    <span>Note / source</span>
+                    <input id="evidenceNote" type="text" placeholder="validator" />
+                  </label>
+                  <button type="submit">Attach evidence</button>
+                </form>
+              </div>
+            </section>
+          </article>
+          <aside class="historyPanel">
+            <h2>Change History</h2>
+            <div id="historyList"></div>
+            <button class="historyMore">View all history</button>
+          </aside>
+        </section>
+      </main>
+    </div>
+
+    <div id="issueModal" class="modal hidden" aria-hidden="true">
+      <div class="modalBackdrop" data-modal-close></div>
+      <section class="modalCard" role="dialog" aria-modal="true" aria-labelledby="issueModalTitle">
+        <header class="modalHeader">
+          <div>
+            <span class="eyebrow">Issue editor</span>
+            <h2 id="issueModalTitle">Create from prompt</h2>
+          </div>
+          <button type="button" class="modalClose" data-modal-close>×</button>
+        </header>
+        <form id="issueForm" class="issueForm">
+          <input id="issueId" type="hidden" />
+          <input id="issueSubject" type="hidden" />
+          <input id="issueTracker" type="hidden" value="Agent Task" />
+          <select id="issueStatus" class="hidden" aria-hidden="true"></select>
+          <input id="issuePriority" type="hidden" value="Normal" />
+          <input id="issueAssignee" type="hidden" />
+          <input id="issueAgent" type="hidden" />
+          <input id="issueRole" type="hidden" value="builder" />
+          <input id="issuePackage" type="hidden" value="default" />
+          <input id="issueNode" type="hidden" />
+          <input id="issueDoneRatio" type="hidden" value="0" />
+          <input id="issueValidationReport" type="hidden" />
+          <label class="fieldBlock">
+            <span>Prompt</span>
+            <textarea id="issueDescription" rows="13" required autofocus></textarea>
+          </label>
+          <div class="modalActions">
+            <button type="button" data-modal-close>Cancel</button>
+            <button id="issueSubmitButton" type="submit" class="primary">Create issue</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <footer class="footer">Powered by <strong>Cento Console</strong> © 2026 Industrial OS</footer>
+    <script src="/app.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/sw.js").then((registration) => {
+            registration.update().catch(() => {});
+          }).catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>

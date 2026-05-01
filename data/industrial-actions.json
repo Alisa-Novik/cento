@@ -1,0 +1,122 @@
+[
+  {
+    "key": "1",
+    "id": "cluster_status",
+    "label": "Cluster status",
+    "description": "Read live node health, mesh, and relay state from the current cluster.",
+    "allowlist": [
+      "linux",
+      "macos"
+    ],
+    "command": [
+      "./scripts/cento.sh",
+      "cluster",
+      "status"
+    ],
+    "dry_run_command": [
+      "./scripts/cento.sh",
+      "cluster",
+      "status"
+    ],
+    "target_node": "cluster",
+    "availability_check": "always",
+    "expected_output_signal": "nodes"
+  },
+  {
+    "key": "2",
+    "id": "cluster_nodes",
+    "label": "Cluster nodes",
+    "description": "List configured nodes from the cluster registry.",
+    "allowlist": [
+      "linux",
+      "macos"
+    ],
+    "command": [
+      "./scripts/cento.sh",
+      "cluster",
+      "nodes"
+    ],
+    "dry_run_command": [
+      "./scripts/cento.sh",
+      "cluster",
+      "nodes"
+    ],
+    "target_node": "cluster",
+    "availability_check": "non_empty_cluster",
+    "expected_output_signal": "nodes"
+  },
+  {
+    "key": "3",
+    "id": "cluster_heal",
+    "label": "Repair degraded cluster",
+    "description": "Inspect degraded and offline nodes, then surface repair commands for the live cluster.",
+    "allowlist": [
+      "linux",
+      "macos"
+    ],
+    "command": [
+      "./scripts/cento.sh",
+      "cluster",
+      "heal"
+    ],
+    "dry_run_command": [
+      "./scripts/cento.sh",
+      "cluster",
+      "heal",
+      "--help"
+    ],
+    "target_node": "cluster",
+    "availability_check": "degraded_nodes",
+    "expected_output_signal": "heal"
+  },
+  {
+    "key": "4",
+    "id": "iphone_heartbeat",
+    "label": "Check iPhone heartbeat",
+    "description": "Inspect the companion heartbeat for the currently offline iPhone node.",
+    "allowlist": [
+      "linux",
+      "macos"
+    ],
+    "command": [
+      "./scripts/cento.sh",
+      "cluster",
+      "heartbeat",
+      "iphone"
+    ],
+    "dry_run_command": [
+      "./scripts/cento.sh",
+      "cluster",
+      "heartbeat",
+      "iphone"
+    ],
+    "target_node": "iphone",
+    "availability_check": "degraded_nodes",
+    "expected_output_signal": "stale age="
+  },
+  {
+    "key": "5",
+    "id": "preset_session",
+    "label": "Reapply Industrial preset",
+    "description": "Reassert the Industrial OS preset for the local workstation session.",
+    "allowlist": [
+      "linux",
+      "macos"
+    ],
+    "command": [
+      "./scripts/cento.sh",
+      "preset",
+      "industrial-os",
+      "--session"
+    ],
+    "dry_run_command": [
+      "./scripts/cento.sh",
+      "preset",
+      "industrial-os",
+      "--help"
+    ],
+    "target_node": "local",
+    "availability_check": "always",
+    "expected_output_signal": "Usage: cento preset industrial-os"
+  }
+]

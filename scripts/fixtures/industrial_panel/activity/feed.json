@@ -1,0 +1,85 @@
+{
+  "log_root": "./feed/logs",
+  "cluster_payload": {
+    "updated_at": "2026-04-30T09:55:03+00:00",
+    "health": {
+      "overall": "degraded",
+      "counts": {
+        "online": 1,
+        "offline": 1,
+        "degraded": 0
+      },
+      "nodes": [
+        {
+          "id": "linux",
+          "state": "online",
+          "reasons": []
+        },
+        {
+          "id": "iphone",
+          "state": "offline",
+          "reasons": [
+            "companion disconnected"
+          ],
+          "remediation": {
+            "action": "refresh companion heartbeat"
+          }
+        }
+      ]
+    }
+  },
+  "jobs_payload": {
+    "jobs": [
+      {
+        "id": "activity-feed-job",
+        "job_summary": {
+          "feature": "activity feed",
+          "status": "failed",
+          "state": "degraded",
+          "updated_at": "2026-04-30T09:55:02+00:00",
+          "degraded_reasons": [
+            "result missing"
+          ]
+        }
+      }
+    ]
+  },
+  "agent_payload": {
+    "issues": [
+      {
+        "id": 39,
+        "status": "Running",
+        "subject": "Industrial OS Activity Feed Panel",
+        "updated_on": "2026-04-30T16:08:43.162288",
+        "agent": "industrial-panel-activity",
+        "role": "builder",
+        "package": "industrial-panels-v1"
+      },
+      {
+        "id": 42,
+        "status": "Validating",
+        "subject": "Industrial OS Activity Feed Panel",
+        "updated_on": "2026-04-30T09:55:01+00:00",
+        "agent": "claude-code",
+        "role": "builder",
+        "package": "industrial-panels-v1"
+      }
+    ]
+  },
+  "issue_detail_payloads": {
+    "39": {
+      "journals": [
+        {
+          "id": 851,
+          "author": "admin",
+          "created_on": "2026-04-30T16:08:43.620523",
+          "notes": "Dispatched builder to linux with codex gpt-5.4-mini. Prompt: /home/alice/projects/cento/workspace/runs/agent-work/issue-39-20260430-120840-9d3497/prompt.md",
+          "old_status": "",
+          "new_status": ""
+        }
+      ]
+    }
+  },
+  "include_placeholders": false,
+  "limit": 14
+}

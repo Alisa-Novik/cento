@@ -2,22 +2,33 @@
 
 Readable HTML guide: [`docs/agent-work.html`](./agent-work.html).
 
-`cento agent-work` turns the Linux Redmine stack into a small Jira-style board for Cento agents. The MVP is intentionally direct: Cento writes to the trusted local Redmine Postgres container over SSH, so it works without hunting for a Redmine API key.
+`cento agent-work` is the Taskstream command surface inside the broader Cento Console. It creates, splits, dispatches, validates, and reviews tasks across the Mac/Linux cluster.
+
+## Cento Web App Direction
+
+The web app is the broader Cento Console, not a single-purpose task board. Its primary header should expose these top-level areas early:
+
+- `Taskstream`: issues, review queue, dispatch, validation evidence, and agent-work lifecycle.
+- `Cluster`: Mac/Linux/iPhone node health, bridge mesh, Agent Processes, worker pools, and runtime status.
+- `Consulting`: CRM, career intake, funnel, and client deliverable workflows.
+- `Docs`: operating guides, tasking contracts, validation lanes, runbooks, and generated tool references.
+
+Taskstream remains the tasking system inside that console. Issues and review are nested under Taskstream rather than being the whole product shell.
 
 ## What It Creates
 
-- Redmine project: `cento-agent-work`
+- Taskstream project: `cento-agent-work`
 - Trackers: `Agent Epic`, `Agent Task`
 - Statuses: `Queued`, `Running`, `Review`, `Blocked`, `Done`
-- Custom fields: `Agent Node`, `Agent Owner`, `Agent State`, `Cento Work Package`, `Cluster Dispatch`
+- Custom fields: `Agent Node`, `Agent Owner`, `Agent State`, `Cento Work Package`, `TUI Summary`, `Cluster Dispatch`
 - Local run bundles: `workspace/runs/agent-work/<run-id>/`
 
 This is the operating model:
 
-1. You create or split work into Redmine issues.
+1. You create or split work into Taskstream issues.
 2. Each task gets a node, agent owner, package, status, and work instructions.
-3. Agents claim tasks, update status, and leave notes in Redmine.
-4. You inspect Redmine, `cento agent-work list`, and `cento cluster activity` to see what is assigned and what is actually running.
+3. Agents claim tasks, update status, and leave notes in Taskstream.
+4. You inspect Taskstream, `cento agent-work list`, and `cento cluster activity` to see what is assigned and what is actually running.
 
 ## Bootstrap
 
@@ -27,14 +38,7 @@ Run this once from the Mac or Linux node:
 cento agent-work bootstrap
 ```
 
-It is safe to run again. The command creates anything missing and leaves existing Redmine data in place.
-
-On macOS, Redmine database access uses `alice@alisapad.local` when that LAN route is available, then falls back to `cento cluster exec linux`. Override this when needed:
-
-```bash
-CENTO_REDMINE_TRANSPORT=cluster cento agent-work list
-CENTO_REDMINE_SSH=alice@alisapad.local cento agent-work list
-```
+It is safe to run again. The command creates any missing Taskstream schema and workflow metadata.
 
 ## Create One Task
 
@@ -53,6 +57,8 @@ List active work:
 cento agent-work list
 ```
 
+Machine-readable task JSON from `cento agent-work list --json` and `cento agent-work show --json` includes `tui_summary`, a short one- or two-word label intended for constrained terminal dashboards. Existing issues get a generated fallback from their subject when the custom field is not populated.
+
 Show a task:
 
 ```bash
@@ -66,9 +72,9 @@ Use `split` when you want one package of work spread across nodes:
 ```bash
 cento agent-work split \
   --title "Mission control MVP" \
-  --goal "Track what agents are doing as first-class Redmine work." \
+  --goal "Track what agents are doing as first-class Taskstream work." \
   --nodes linux,macos \
-  --task "Create Redmine-backed task model and CLI" \
+  --task "Create Taskstream task model and CLI" \
   --task "Add Mac mission-control tile view" \
   --task "Document agent operating procedure"
 ```
@@ -83,7 +89,7 @@ Agents should keep the issue current:
 cento agent-work claim 123 --node linux --agent codex
 cento agent-work update 123 --status running --note "Found the dashboard entry point."
 cento agent-work update 123 --status review --note "Implemented; make check passes."
-cento agent-work update 123 --status blocked --note "Blocked waiting for Redmine access."
+cento agent-work update 123 --status blocked --note "Blocked waiting for required access."
 cento agent-work update 123 --status done --note "Verified and closed."
 ```
 
@@ -166,7 +172,7 @@ cento cluster activity linux
 cento cluster activity --json linux
 ```
 
-The Redmine issue tracks assignment and lifecycle. `cluster activity` tracks the live node state: tmux sessions, Codex processes, and recent pane text.
+The Taskstream issue tracks assignment and lifecycle. `cluster activity` tracks the live node state: tmux sessions, Codex processes, and recent pane text.
 
 Dispatch also writes a durable run ledger under `workspace/runs/agent-runs/<run-id>/run.json`:
 
@@ -176,7 +182,7 @@ cento agent-work runs --json --active
 cento agent-work run-status RUN_ID --json
 ```
 
-`runs` reconciles ledger entries with `ps`/tmux health and reports interactive Codex or Claude Code sessions without a ledger as `untracked_interactive`. The Industrial OS pane labels those as `MANUAL`: real local agent shells that cannot yet be attached to an issue, prompt, or log. The pane also shows tracked Redmine work first so the manager view remains useful before every agent launch flows through the ledger wrapper.
+`runs` reconciles ledger entries with `ps`/tmux health and reports interactive Codex or Claude Code sessions without a ledger as `untracked_interactive`. The Industrial OS pane labels those as `MANUAL`: real local agent shells that cannot yet be attached to an issue, prompt, or log. The pane also shows tracked Taskstream work first so the manager view remains useful before every agent launch flows through the ledger wrapper.
 
 The cluster command path still prefers the OCI Unix-socket mesh. If that socket is stale, `cento cluster exec linux` now falls back to direct LAN SSH at `alice@alisapad.local`, which keeps dispatch and activity usable while the relay repairs itself.
 
@@ -226,21 +232,21 @@ cento agent-work-hygiene --issue 94
 
 The report includes run ledger JSON, tmux sessions, process probes, stale counts, and minimal reconciliation suggestions under `workspace/runs/agent-work/reconciliation/`.
 
-## Redmine UI
+## Cento Console UI
 
-The existing Linux Redmine stack is the visual board:
+The web UI is the Cento Console. Taskstream is its first fully interactive area:
 
-- Container: `cento-redmine`
 - Project identifier: `cento-agent-work`
-- Local Linux URL: `http://127.0.0.1:47874`
-
-If you expose the Redmine port through your existing tunnel or browser path, use the `Cento Agent Work` project as the board.
+- App command: `make agent-work-app-status`
+- Local Linux app URL: shown by `make agent-work-app-status`
+- Main sections: `Taskstream`, `Cluster`, `Consulting`, `Docs`
+- Taskstream sections: `Issues`, `Review`
 
 ## MVP Limits
 
-- This MVP writes directly to the trusted local Redmine database over local SSH or the Cento cluster SSH mesh. It is meant for your self-hosted Redmine stack, not a shared production Redmine.
+- Taskstream is the main tasking backend for Cento agent work.
 - Dispatch expects the target node to have `codex`, `tmux`, and a usable Cento checkout. If the target checkout has not been updated with `agent-work`, the Codex run still starts, but final status updates from inside the tmux job may be skipped.
-- Parent/child hierarchy is represented by the `Cento Work Package` field in the MVP. A future version can add native Redmine parent links or a REST API backend.
+- Parent/child hierarchy is represented by the `Cento Work Package` field.
 
 ## Verification
 
@@ -250,4 +256,4 @@ Run the E2E probe:
 make agent-work-e2e
 ```
 
-It bootstraps Redmine, creates a unique issue, claims it, moves it to review, generates a dry-run dispatch bundle, closes the issue, and confirms it appears in `list --all`.
+It bootstraps Taskstream, creates a unique issue, claims it, moves it to review, generates a dry-run dispatch bundle, closes the issue, and confirms it appears in `list --all`.

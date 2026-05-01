@@ -10,7 +10,7 @@ The Docs/Evidence lane is responsible for:
 - Maintaining `deliverables.json` with current artifact links.
 - Writing and publishing validation logs and screenshot indexes.
 - Keeping captain's notes append-only (no history rewrites).
-- Composing Redmine review notes with the required four sections.
+- Composing review notes with the required four sections.
 - Preserving old evidence rather than overwriting it.
 
 The Docs/Evidence lane does **not**:
@@ -24,8 +24,8 @@ The Docs/Evidence lane does **not**:
 
 | Field | Purpose |
 |---|---|
-| `issue.id`, `issue.title`, `issue.status` | Hub header and Redmine link |
-| `issue.url` | Direct link to the Redmine story |
+| `issue.id`, `issue.title`, `issue.status` | Hub header and story link |
+| `issue.url` | Direct link to the story |
 | `lane.owner`, `lane.agent`, `lane.node` | Attribution in the hub |
 | `paths.run_dir` | Root for all output files |
 | `scope.goal` | Hub subtitle |
@@ -36,7 +36,7 @@ The Docs/Evidence lane does **not**:
 | `deliverables.hub` | Target hub path |
 | `screenshots[]` | Names, descriptions, and output paths for screenshot index |
 | `handoff.notes` | Appended to captain's notes |
-| `review_gate.required_sections` | Sections to include in the Redmine review note |
+| `review_gate.required_sections` | Sections to include in the review note |
 | `review_gate.residual_risk_required` | Whether the review note must include a non-empty Residual risk section |
 | `routes[]` | App/UI links for the hub |
 
@@ -46,7 +46,7 @@ Every story worked by this lane must produce:
 
 | File | Description |
 |---|---|
-| `<run_dir>/start-here.html` | Manager-facing hub with links to app, docs, screenshots, validation log, and Redmine status |
+| `<run_dir>/start-here.html` | Manager-facing hub with links to app, docs, screenshots, validation log, and current story status |
 | `<run_dir>/deliverables.json` | Structured manifest consumed by `scripts/deliverables_hub.py` or `scripts/story_manifest.py render-hub` |
 | `<run_dir>/validation.md` | Append-only evidence log: commands run, results, screenshot paths |
 | `<run_dir>/screenshots/` | Visual evidence directory; each screenshot indexed in the hub |
@@ -74,9 +74,9 @@ python3 scripts/deliverables_hub.py workspace/runs/agent-work/<id>/deliverables.
 
 Run either command again to regenerate — it must not destroy prior evidence.
 
-## Redmine Review-Note Sections
+## Review-Note Sections
 
-Every Redmine review note posted by this lane must include all four sections below. The `review_gate.required_sections` field in `story.json` is the machine-readable version of this requirement.
+Every review note posted by this lane must include all four sections below. The `review_gate.required_sections` field in `story.json` is the machine-readable version of this requirement.
 
 ### Delivered
 
@@ -141,7 +141,7 @@ The `review_gate` field enforces the four-section requirement at the manifest le
 }
 ```
 
-`residual_risk_required: true` means the Residual risk section must be present and non-empty. The Docs/Evidence lane is responsible for writing this field into new story manifests it creates, and for including all four sections in every Redmine review note.
+`residual_risk_required: true` means the Residual risk section must be present and non-empty. The Docs/Evidence lane is responsible for writing this field into new story manifests it creates, and for including all four sections in every review note.
 
 ## Evidence Preservation Rules
 

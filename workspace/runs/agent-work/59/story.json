@@ -64,7 +64,26 @@
     "manifest": "workspace/runs/agent-work/59/deliverables.json",
     "hub": "workspace/runs/agent-work/59/start-here.html"
   },
-  "screenshots": [],
+  "screenshots": [
+    {
+      "name": "issue-59 start-here desktop",
+      "url": "file:///{root}/workspace/runs/agent-work/56/start-here.html",
+      "viewport": "1280,1200",
+      "output": "workspace/runs/agent-work/59/screenshots/story-59-start-here-desktop.png",
+      "description": "Story #59 source hub at desktop viewport.",
+      "auth": "none",
+      "auth_note": "No auth required."
+    },
+    {
+      "name": "issue-59 start-here mobile",
+      "url": "file:///{root}/workspace/runs/agent-work/56/start-here.html",
+      "viewport": "390,844",
+      "output": "workspace/runs/agent-work/59/screenshots/story-59-start-here-mobile.png",
+      "description": "Story #59 source hub at mobile viewport.",
+      "auth": "none",
+      "auth_note": "No auth required."
+    }
+  ],
   "handoff": {
     "human_steps": [],
     "device_access": "none",
@@ -73,6 +92,18 @@
     ]
   },
   "expected_outputs": [
+    {
+      "path": "workspace/runs/agent-work/59/screenshot-evidence.json",
+      "owner": "builder",
+      "description": "Story-driven screenshot run metadata.",
+      "required": true
+    },
+    {
+      "path": "workspace/runs/agent-work/59/screenshot-index.md",
+      "owner": "docs-evidence",
+      "description": "Story-driven screenshot evidence index.",
+      "required": true
+    },
     {
       "path": "scripts/story_manifest.py",
       "owner": "builder",

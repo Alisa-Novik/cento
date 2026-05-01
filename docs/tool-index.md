@@ -134,19 +134,6 @@
   - `cento mcp docs`
   - `cento mcp paths`
 
-## Cento MCP Server
-
-- `id`: `cento-mcp`
-- `lane`: `agent ops`
-- `kind`: `python`
-- `entrypoint`: `./scripts/cento_mcp_server.py`
-- description: Local MCP stdio server that exposes safe Cento agent-work, story manifest, cluster, bridge, and context tools.
-- commands:
-  - `python3 scripts/cento_mcp_server.py --list-tools`
-  - `python3 scripts/cento_mcp_server.py --call-tool cento_agent_work_list --arguments '{}'`
-  - `python3 scripts/cento_mcp_server.py --call-tool cento_context --arguments '{"remote":false}'`
-  - `cento mcp doctor`
-
 ## Scan One Pager
 
 - `id`: `scan`
@@ -463,55 +450,89 @@
   - `cento network-tui --no-remote`
   - `./scripts/network_tui.sh`
 
-## Agent Work Tracker
+## Cento Taskstream CLI
 
 - `id`: `agent-work`
 - `lane`: `agent ops`
 - `kind`: `python`
 - `entrypoint`: `./scripts/agent_work.py`
-- description: Redmine-backed Jira-style work tracker for assigning, splitting, dispatching, and reviewing Cento agent tasks across the Mac/Linux cluster.
+- description: Cento Taskstream CLI for assigning, splitting, dispatching, reviewing, archiving, and cutting over Cento agent tasks across the Mac/Linux cluster.
 - commands:
   - `cento agent-work bootstrap`
   - `cento agent-work create --title "Fix dashboard" --node linux --agent codex`
+  - `CENTO_AGENT_WORK_BACKEND=dual cento agent-work create --title "Validate parity" --node linux --agent codex`
   - `cento agent-work split --title "Improve mission control" --nodes linux,macos --task "Backend status" --task "Mac tile view"`
   - `cento agent-work list`
   - `cento agent-work show 123`
   - `cento agent-work claim 123 --node linux --agent codex`
   - `cento agent-work update 123 --status review --note "implemented and tested"`
+  - `CENTO_AGENT_WORK_BACKEND=dual cento agent-work update 123 --status validating --note "builder update path check"`
+  - `CENTO_AGENT_WORK_BACKEND=dual cento agent-work validate 123 --result pass --note "validation accepted" --evidence workspace/runs/agent-work/validation-report.md`
+  - `CENTO_AGENT_WORK_BACKEND=dual cento agent-work cutover-parity --all --run-dir workspace/runs/agent-work/cutover`
+  - `cento agent-work backup --run-dir workspace/runs/agent-work/cutover/e2e-check`
+  - `cento agent-work restore --bundle workspace/runs/agent-work/cutover/e2e-check/backup --verify`
+  - `cento agent-work archive --query "cutover"`
+  - `cento agent-work cutover-status`
+  - `cento agent-work cutover-freeze`
+  - `cento agent-work cutover-verify --run-dir workspace/runs/agent-work/cutover/e2e-check`
+  - `cento agent-work cutover-finalize --force`
+  - `cento agent-work review-drain --package mission-control --dry-run`
+  - `cento agent-work review-drain --package mission-control --apply`
   - `cento agent-work prompt 123`
   - `cento agent-work dispatch 123 --node linux --dry-run`
-  - `cento agent-work dispatch-pool --limit 3`
-  - `cento agent-work dispatch-pool --limit 2 --runtime codex --model gpt-5.3-codex-spark --execute`
+  - `CENTO_AGENT_WORK_BACKEND=dual make agent-work-e2e`
+  - `CENTO_AGENT_WORK_BACKEND=dual make agent-work-dual-backend-stress`
   - `cento agent-work runs`
   - `cento agent-work runs --json --active`
   - `cento agent-work run-status RUN_ID --json`
 
-## Agent Pool Kicker
+## Agent Manager
 
-- `id`: `agent-pool-kick`
+- `id`: `agent-manager`
 - `lane`: `agent ops`
 - `kind`: `python`
-- `entrypoint`: `./scripts/agent_pool_kick.py`
-- description: Bounded worker-pool launcher that keeps builder, validator, small-task, and coordinator lanes moving without unbounded dispatch.
+- `entrypoint`: `./scripts/agent_manager.py`
+- description: Control-plane scanner for Cento agents that detects stale, idle, stuck, errored, duplicated, manual, and low-value runs and writes actionable reports.
 - commands:
-  - `cento agent-pool-kick --dry-run`
-  - `cento agent-pool-kick --max-launch 3 --dry-run`
-  - `cento agent-pool-kick --max-launch 3 --model gpt-5.3-codex-spark`
-  - `cento agent-pool-kick --builder-target 2 --validator-target 2 --small-target 1 --coordinator-target 1`
-  - `python3 scripts/agent_pool_kick.py --dry-run`
+  - `cento agent-manager scan`
+  - `cento agent-manager scan --json`
+  - `cento agent-manager report`
+  - `cento agent-manager recommend --limit 10`
+  - `cento agent-manager classify --issue-id 81`
+  - `cento agent-manager mark-stale RUN_ID --reason "stuck validator" --dry-run`
+  - `cento agent-manager mark-blocked 81 --reason "stuck validator" --evidence RUN_ID --dry-run`
+  - `cento agent-manager terminate-tmux cento-agent-81-095103 --reason "stuck validator" --dry-run`
+  - `make agent-manager ARGS="pool-stats --json"`
 
-## Agent Work Hygiene
+## Cento Console App
 
-- `id`: `agent-work-hygiene`
+- `id`: `agent-work-app`
 - `lane`: `agent ops`
-- `kind`: `shell`
-- `entrypoint`: `./scripts/agent_work_hygiene.sh`
-- description: Collect a point-in-time reconciliation report of agent run ledgers, tmux sessions, and Codex/Claude processes.
+- `kind`: `python`
+- `entrypoint`: `./scripts/agent_work_app.py`
+- description: Self-hosted Cento Console web app with Taskstream, Cluster, Consulting, and Docs sections, plus background process control, health checks, and migration import sync.
 - commands:
-  - `cento agent-work-hygiene`
-  - `cento agent-work-hygiene --issue 94`
-  - `cento agent-work-hygiene --out-dir workspace/runs/agent-work/reconciliation`
-  - `./scripts/agent_work_hygiene.sh`
+  - `cento agent-work-app start`
+  - `cento agent-work-app stop`
+  - `cento agent-work-app status`
+  - `cento agent-work-app import-redmine`
+  - `cento agent-work-app install-sync`
+  - `cento agent-work backup`
+  - `cento agent-work restore --bundle workspace/runs/agent-work/cutover/e2e-check/backup --verify`
+  - `cento agent-work archive --query "migration"`
+  - `cento agent-work cutover-status`
+
+## Story Screenshot Runner
+
+- `id`: `story-screenshot-runner`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/story_screenshot_runner.py`
+- description: Read screenshot requirements from story.json, capture desktop and mobile evidence with Playwright, and write deterministic metadata plus an index for Docs/Evidence and Validator lanes.
+- commands:
+  - `cento story-screenshot-runner workspace/runs/agent-work/59/story.json`
+  - `cento story-screenshot-runner workspace/runs/agent-work/59/story.json --force`
+  - `./scripts/story_screenshot_runner.py workspace/runs/agent-work/59/story.json --force`
 
 ## Cento Incident Response
 
@@ -557,3 +578,15 @@
   - `cento mobile token-from-linux`
   - `cento mobile watch-status`
   - `cento mobile docs`
+
+## Cento Temporary Commands
+
+- `id`: `temp`
+- `lane`: `ops`
+- `kind`: `shell`
+- `entrypoint`: `./scripts/cento_temp.sh`
+- description: Short-lived operator wrappers for fragile one-off commands that should not be pasted as multiline shell.
+- commands:
+  - `cento run temp 1`
+  - `cento run temp 1 status`
+  - `cento run temp 1 rollback`
