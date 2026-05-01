@@ -232,8 +232,14 @@ _cento() {
               'create-issues[Preview Taskstream issue creation]' \
               'preflight[Run safety preflight]' \
               'queue[Create queue and owned-path ledgers]' \
+              'lease[Simulate or acquire an owned-path lease]' \
               'dispatch[Plan dispatch and leases]' \
-              'integrate[Write integration gate metadata]' \
+              'collect[Collect patch bundles from completed tasks]' \
+              'validate[Run T0/T1/T2 validation ladder]' \
+              'integrate[Plan, prepare branch, or apply patches via Safe Integrator]' \
+              'validate-integrated[Validate integration state and merge readiness]' \
+              'release-candidate[Render integration release-candidate.md]' \
+              'sync-taskstream[Preview Taskstream transitions from integration results]' \
               'release[Write delivery status]' \
               'render-hub[Render start-here and implementation map]' \
               'status[Show factory run artifact status]'
