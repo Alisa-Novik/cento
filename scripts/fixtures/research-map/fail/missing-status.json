@@ -1,0 +1,15 @@
+{
+  "schema_version": "research-map/v1",
+  "source": {
+    "title": "Factory planning fixture",
+    "artifact": "factory-plan.json"
+  },
+  "sections": [
+    {
+      "id": "1.0",
+      "title": "Plan validation",
+      "recommendation": "Validate task ownership and deterministic checks before dispatch.",
+      "coverage": 100
+    }
+  ]
+}

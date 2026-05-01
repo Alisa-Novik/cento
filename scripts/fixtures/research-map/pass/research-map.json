@@ -1,0 +1,30 @@
+{
+  "schema_version": "research-map/v1",
+  "source": {
+    "title": "Factory planning fixture",
+    "artifact": "factory-plan.json"
+  },
+  "sections": [
+    {
+      "id": "1.0",
+      "title": "Plan validation",
+      "recommendation": "Validate task ownership and deterministic checks before dispatch.",
+      "status": "implemented",
+      "coverage": 100,
+      "linked_tasks": [
+        "schema-plan"
+      ],
+      "evidence": [
+        "scripts/factory_plan.py"
+      ]
+    },
+    {
+      "id": "2.0",
+      "title": "Live dispatch",
+      "recommendation": "Dispatch workers only after factory planning is proven.",
+      "status": "deferred_deliberately",
+      "coverage": 0,
+      "decision": "Out of scope for factory-planning-v1."
+    }
+  ]
+}
