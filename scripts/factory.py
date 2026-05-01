@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 import factory_plan
+import factory_dispatch_core
 import factory_render
 import story_manifest
 import validation_manifest
@@ -611,44 +612,20 @@ def command_create_issues(args: argparse.Namespace) -> int:
 
 
 def command_preflight(args: argparse.Namespace) -> int:
-    run_dir = repo_path(args.run_dir)
-    plan = load_plan(run_dir)
-    validate_materialized(run_dir, plan)
-    manager = subprocess.run(["python3", "scripts/agent_manager.py", "scan", "--json"], cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
-    manager_payload: dict[str, Any] = {}
-    if manager.returncode == 0:
-        try:
-            decoded = json.loads(manager.stdout)
-            manager_payload = decoded if isinstance(decoded, dict) else {}
-        except json.JSONDecodeError:
-            manager_payload = {}
-    summary = manager_payload.get("summary") if isinstance(manager_payload.get("summary"), dict) else {}
-    warnings = []
-    actionable_stale = int(summary.get("actionable_stale", 0) or 0)
-    risk_count = int(summary.get("risk_count", 0) or 0)
-    if actionable_stale > args.max_actionable_stale:
-        warnings.append(f"actionable stale runs {actionable_stale} exceeds threshold {args.max_actionable_stale}")
-    if risk_count > args.max_risk_count:
-        warnings.append(f"manager risk count {risk_count} exceeds threshold {args.max_risk_count}")
-    payload = {
-        "schema_version": "factory-preflight/v1",
-        "run_dir": rel(run_dir),
-        "agent_manager_exit_code": manager.returncode,
-        "agent_manager_available": manager.returncode == 0,
-        "blocked": manager.returncode != 0 or bool(warnings),
-        "reason": "; ".join(warnings) if warnings else "" if manager.returncode == 0 else (manager.stderr.strip() or manager.stdout.strip()[-500:]),
-        "manager_summary": summary,
-        "tasks": len(plan.get("tasks") or []),
-        "ai_calls_used": 0,
-        "estimated_ai_cost_usd": 0,
-    }
-    write_json(run_dir / "preflight.json", payload)
+    run_dir = factory_dispatch_core.resolve_run_dir(args.run_dir)
+    payload = factory_dispatch_core.preflight(
+        run_dir,
+        max_actionable_stale=args.max_actionable_stale,
+        max_risk_count=args.max_risk_count,
+    )
     print(json.dumps(payload, indent=2, sort_keys=True))
     return 0 if not payload["blocked"] else 1
 
 
 def command_render_hub(args: argparse.Namespace) -> int:
-    outputs = factory_render.render_run(repo_path(args.run_dir))
+    run_dir = factory_dispatch_core.resolve_run_dir(args.run_dir)
+    outputs = factory_render.render_run(run_dir)
+    outputs.update(factory_dispatch_core.release_packet(run_dir))
     print(json.dumps(outputs, indent=2, sort_keys=True) if args.json else outputs["start_hub"])
     return 0
 
@@ -708,8 +685,9 @@ def build_queue(run_dir: Path) -> dict[str, Any]:
 
 
 def command_queue(args: argparse.Namespace) -> int:
-    state = build_queue(repo_path(args.run_dir))
-    print(json.dumps(state, indent=2, sort_keys=True) if args.json else rel(queue_dir(repo_path(args.run_dir)) / "state.json"))
+    run_dir = factory_dispatch_core.resolve_run_dir(args.run_dir)
+    state = factory_dispatch_core.generate_queue(run_dir)
+    print(json.dumps(state, indent=2, sort_keys=True) if args.json else rel(queue_dir(run_dir) / "queue.json"))
     return 0
 
 
@@ -737,98 +715,46 @@ def runnable_tasks(state: dict[str, Any], *, lane: str = "", include_waiting: bo
 
 
 def command_dispatch(args: argparse.Namespace) -> int:
-    run_dir = repo_path(args.run_dir)
-    preflight_args = argparse.Namespace(
-        run_dir=str(run_dir),
-        json=True,
+    run_dir = factory_dispatch_core.resolve_run_dir(args.run_dir)
+    dispatch_plan = factory_dispatch_core.dispatch_dry_run(
+        run_dir,
+        lane=args.lane,
+        limit=args.max,
+        include_waiting=args.include_waiting,
+        execute=args.execute,
         max_actionable_stale=args.max_actionable_stale,
         max_risk_count=args.max_risk_count,
     )
-    preflight_result = command_preflight(preflight_args)
-    if preflight_result != 0:
-        return preflight_result
-    state = load_queue_state(run_dir)
-    selected = runnable_tasks(state, lane=args.lane, include_waiting=args.include_waiting)[: args.max]
-    issue_map = read_json(issue_map_path(run_dir)) if issue_map_path(run_dir).exists() else {}
-    issue_lookup = {
-        str(item.get("task")): item.get("issue")
-        for item in issue_map.get("issues", [])
-        if isinstance(item, dict)
-    }
-    leases = []
-    for item in selected:
-        task_id = str(item.get("task_id"))
-        lease = {
-            "lease_id": f"lease-{task_id}-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
-            "task_id": task_id,
-            "issue_id": issue_lookup.get(task_id),
-            "lane": str(item.get("lane") or ""),
-            "node": str(item.get("node") or ""),
-            "owned_scope": item.get("owned_scope") or [],
-            "story_manifest": item.get("story_manifest"),
-            "validation_manifest": item.get("validation_manifest"),
-            "status": "planned" if args.dry_run else "leased",
-            "dry_run": bool(args.dry_run),
-            "created_at": now_iso(),
-            "dispatch_command": (
-                f"cento agent-work dispatch {issue_lookup.get(task_id)} --node {shlex.quote(str(item.get('node') or ''))} --dry-run"
-                if issue_lookup.get(task_id)
-                else "blocked: create Taskstream issues before live dispatch"
-            ),
-        }
-        leases.append(lease)
-    qdir = queue_dir(run_dir)
-    existing_leases = read_jsonl(qdir / "leased.jsonl")
-    write_jsonl(qdir / "leased.jsonl", [*existing_leases, *leases])
-    dispatch_plan = {
-        "schema_version": "factory-dispatch-plan/v1",
-        "run_dir": rel(run_dir),
-        "dry_run": bool(args.dry_run),
-        "lane": args.lane,
-        "max": args.max,
-        "selected": leases,
-        "blocked_reason": "" if selected else "no runnable tasks matched lane/dependency filters",
-        "ai_calls_used": 0,
-        "estimated_ai_cost_usd": 0,
-        "generated_at": now_iso(),
-    }
-    write_json(run_dir / "dispatch-plan.json", dispatch_plan)
     print(json.dumps(dispatch_plan, indent=2, sort_keys=True))
     return 0
 
 
-def command_integrate(args: argparse.Namespace) -> int:
-    run_dir = repo_path(args.run_dir)
-    plan = load_plan(run_dir)
-    validate_materialized(run_dir, plan)
-    patches_dir = run_dir / "patches"
-    entries = []
-    for task_id in (plan.get("integration") or {}).get("merge_order") or []:
-        patch_path = patches_dir / str(task_id) / "patch.diff"
-        validation_path = run_dir / "tasks" / str(task_id) / "validation.json"
-        entries.append(
-            {
-                "task_id": str(task_id),
-                "patch": rel(patch_path) if patch_path.exists() else "",
-                "patch_available": patch_path.exists(),
-                "validation_manifest": rel(validation_path),
-                "decision": "ready_for_patch_validation" if patch_path.exists() else "no_patch_plan_only",
-            }
-        )
-    integration = {
-        "schema_version": "factory-integration-plan/v1",
-        "run_dir": rel(run_dir),
-        "dry_run": bool(args.dry_run),
-        "strategy": str((plan.get("integration") or {}).get("strategy") or "patch_queue"),
-        "entries": entries,
-        "decision": "approve_plan_only" if all(not item["patch_available"] for item in entries) else "needs_patch_validation",
-        "ai_calls_used": 0,
-        "estimated_ai_cost_usd": 0,
-        "generated_at": now_iso(),
-    }
-    write_json(run_dir / "integration-plan.json", integration)
-    print(json.dumps(integration, indent=2, sort_keys=True))
+def command_lease(args: argparse.Namespace) -> int:
+    run_dir = factory_dispatch_core.resolve_run_dir(args.run_dir)
+    payload = factory_dispatch_core.simulate_or_acquire_lease(run_dir, args.task, dry_run=not args.execute)
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0 if payload["allowed"] else 1
+
+
+def command_collect(args: argparse.Namespace) -> int:
+    run_dir = factory_dispatch_core.resolve_run_dir(args.run_dir)
+    payload = factory_dispatch_core.collect_patches(run_dir)
+    print(json.dumps(payload, indent=2, sort_keys=True) if args.json else rel(run_dir / "patch-collection-summary.json"))
     return 0
+
+
+def command_validate(args: argparse.Namespace) -> int:
+    run_dir = factory_dispatch_core.resolve_run_dir(args.run_dir)
+    payload = factory_dispatch_core.validation_summary(run_dir)
+    print(json.dumps(payload, indent=2, sort_keys=True) if args.json else rel(run_dir / "evidence" / "validation-summary.json"))
+    return 0 if payload["decision"] == "approve" else 1
+
+
+def command_integrate(args: argparse.Namespace) -> int:
+    run_dir = factory_dispatch_core.resolve_run_dir(args.run_dir)
+    integration = factory_dispatch_core.integration_dry_run(run_dir)
+    print(json.dumps(integration, indent=2, sort_keys=True))
+    return 0 if integration["decision"] != "blocked" else 1
 
 
 def delivery_status(run_dir: Path) -> dict[str, Any]:
@@ -863,8 +789,9 @@ def delivery_status(run_dir: Path) -> dict[str, Any]:
 
 
 def command_release(args: argparse.Namespace) -> int:
-    run_dir = repo_path(args.run_dir)
+    run_dir = factory_dispatch_core.resolve_run_dir(args.run_dir)
     factory_render.render_run(run_dir)
+    factory_dispatch_core.release_packet(run_dir)
     status = delivery_status(run_dir)
     write_json(run_dir / "delivery-status.json", status)
     release_lines = [
@@ -887,18 +814,8 @@ def command_release(args: argparse.Namespace) -> int:
 
 
 def command_status(args: argparse.Namespace) -> int:
-    run_dir = repo_path(args.run_dir)
-    files = {
-        "intake": (run_dir / "intake.json").exists(),
-        "plan": (run_dir / "factory-plan.json").exists(),
-        "materialized": (run_dir / "materialize-summary.json").exists(),
-        "queue": (queue_dir(run_dir) / "state.json").exists(),
-        "dispatch_plan": (run_dir / "dispatch-plan.json").exists(),
-        "integration_plan": (run_dir / "integration-plan.json").exists(),
-        "hub": (run_dir / "start-here.html").exists(),
-        "delivery_status": (run_dir / "delivery-status.json").exists(),
-    }
-    payload = {"run_dir": rel(run_dir), "files": files, "delivery": delivery_status(run_dir) if (run_dir / "validation-summary.json").exists() else {}}
+    run_dir = factory_dispatch_core.resolve_run_dir(args.run_dir)
+    payload = factory_dispatch_core.status(run_dir)
     print(json.dumps(payload, indent=2, sort_keys=True))
     return 0
 
@@ -935,27 +852,45 @@ def build_parser() -> argparse.ArgumentParser:
     create_issues.add_argument("--force", action="store_true", help="Recreate issue map even if taskstream-issues.json exists.")
     create_issues.set_defaults(func=command_create_issues)
 
-    preflight = sub.add_parser("preflight", help="Run plan-only factory safety preflight.")
+    preflight = sub.add_parser("preflight", help="Run Factory queue, Agent Manager, git, budget, and backpressure preflight.")
     preflight.add_argument("run_dir")
     preflight.add_argument("--json", action="store_true")
-    preflight.add_argument("--max-actionable-stale", type=int, default=8)
+    preflight.add_argument("--max-actionable-stale", type=int, default=5)
     preflight.add_argument("--max-risk-count", type=int, default=10)
     preflight.set_defaults(func=command_preflight)
 
-    queue = sub.add_parser("queue", help="Create deterministic queue, dependency, and owned-path ledgers.")
+    queue = sub.add_parser("queue", help="Create deterministic queue, dependency, lease, event, and owned-path ledgers.")
     queue.add_argument("run_dir")
     queue.add_argument("--json", action="store_true")
     queue.set_defaults(func=command_queue)
 
-    dispatch = sub.add_parser("dispatch", help="Plan runnable work and write lease records without launching AI by default.")
+    lease = sub.add_parser("lease", help="Simulate or acquire an owned-path task lease.")
+    lease.add_argument("run_dir")
+    lease.add_argument("--task", required=True)
+    lease.add_argument("--dry-run", action="store_true", default=True)
+    lease.add_argument("--execute", action="store_true", help="Acquire the lease instead of only simulating it.")
+    lease.set_defaults(func=command_lease)
+
+    dispatch = sub.add_parser("dispatch", help="Select runnable work, simulate leases/worktrees, and write prompt bundles.")
     dispatch.add_argument("run_dir")
     dispatch.add_argument("--lane", default="")
     dispatch.add_argument("--max", type=int, default=4)
     dispatch.add_argument("--dry-run", action="store_true", default=True)
+    dispatch.add_argument("--execute", action="store_true", help="Acquire leases and prepare dispatch records; live runtime execution remains gated.")
     dispatch.add_argument("--include-waiting", action="store_true", help="Include tasks whose dependencies are not marked done.")
-    dispatch.add_argument("--max-actionable-stale", type=int, default=8)
+    dispatch.add_argument("--max-actionable-stale", type=int, default=5)
     dispatch.add_argument("--max-risk-count", type=int, default=10)
     dispatch.set_defaults(func=command_dispatch)
+
+    collect = sub.add_parser("collect", help="Collect or explicitly mark missing patch bundles for queued tasks.")
+    collect.add_argument("run_dir")
+    collect.add_argument("--json", action="store_true")
+    collect.set_defaults(func=command_collect)
+
+    validate = sub.add_parser("validate", help="Aggregate queue, lease, dispatch, patch, and integration validation evidence.")
+    validate.add_argument("run_dir")
+    validate.add_argument("--json", action="store_true")
+    validate.set_defaults(func=command_validate)
 
     integrate = sub.add_parser("integrate", help="Write patch queue integration plan and release gate metadata.")
     integrate.add_argument("run_dir")
@@ -974,6 +909,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     status = sub.add_parser("status", help="Show factory run artifact status.")
     status.add_argument("run_dir")
+    status.add_argument("--json", action="store_true")
     status.set_defaults(func=command_status)
     return parser
 
