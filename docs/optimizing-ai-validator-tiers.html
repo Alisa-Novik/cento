@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Optimizing AI: Cheap Validator Tiers</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f4ee;
+      --ink: #202124;
+      --muted: #62615d;
+      --line: #d9d2c6;
+      --panel: #ffffff;
+      --accent: #156a5c;
+      --accent-soft: #e0f0eb;
+      --code: #111827;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    main {
+      width: min(100% - 32px, 980px);
+      margin: 0 auto;
+      padding: 48px 0 64px;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 28px;
+      margin-bottom: 28px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 16px 0 10px;
+      font-size: clamp(34px, 5vw, 58px);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 34px 0 12px;
+      font-size: 22px;
+      line-height: 1.25;
+    }
+
+    p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    ul, ol {
+      margin: 0 0 18px;
+      padding-left: 22px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    li { margin: 7px 0; }
+
+    strong { color: var(--ink); }
+
+    .note {
+      margin: 18px 0 24px;
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 18px 0 24px;
+    }
+
+    .tier {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      min-height: 154px;
+    }
+
+    .tier h3 {
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+
+    .tier p {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 26px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      font-size: 15px;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--ink);
+      background: #fdfcf9;
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+
+    td { color: var(--muted); }
+
+    tr:last-child td { border-bottom: 0; }
+
+    th:first-child,
+    td:first-child {
+      min-width: 94px;
+    }
+
+    td:first-child strong {
+      white-space: nowrap;
+    }
+
+    pre {
+      margin: 14px 0 24px;
+      padding: 18px;
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #fdfcf9;
+      color: var(--code);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    code {
+      font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+    }
+
+    .flow {
+      font-weight: 700;
+      color: var(--accent);
+      white-space: pre-wrap;
+    }
+
+    @media (max-width: 760px) {
+      main { width: min(100% - 24px, 980px); padding-top: 28px; }
+      .grid { grid-template-columns: 1fr; }
+      h1 { font-size: 38px; }
+      table { display: block; overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <span class="tag">optimizing-ai</span>
+      <h1>Optimizing AI: Cheap Validator Tiers</h1>
+      <p>Use tools created by AI to reduce AI waste, improve agent throughput, and make the next generation of tools cheaper to operate.</p>
+    </header>
+
+    <section>
+      <h2>Thesis</h2>
+      <p>Most validator work should not spend scarce Spark/Codex budget. If builders emit structured evidence, validation becomes a small decision problem:</p>
+      <ol>
+        <li>Check deterministic facts.</li>
+        <li>Ask a cheap model only when judgment is needed.</li>
+        <li>Escalate to Spark/Codex only when the validator must reason across code, diagnose failures, or produce a fix.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Validator Routing</h2>
+      <pre class="flow"><code>builder output
+  -> validation packet
+  -> deterministic gate
+  -> cheap model judge
+  -> Spark/Codex only for complex or failed cases</code></pre>
+
+      <div class="grid">
+        <article class="tier">
+          <h3>Tier 0: No Model</h3>
+          <p>Command exit codes, file existence, JSON schema, API smoke checks, screenshot dimensions, and log pass/fail markers.</p>
+        </article>
+        <article class="tier">
+          <h3>Tier 1: Cheap Judge</h3>
+          <p>Read a compact validation packet and return <strong>approve</strong>, <strong>needs_fix</strong>, or <strong>blocked</strong>.</p>
+        </article>
+        <article class="tier">
+          <h3>Tier 2: Spark/Codex</h3>
+          <p>Inspect code, debug ambiguous failures, write repairs, or validate high-risk architectural changes.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>Required Validation Packet</h2>
+      <pre><code>{
+  "schema": "cento.validation-packet.v1",
+  "task": "#123",
+  "claim": "Review page shows structured summary above logs.",
+  "risk": "low",
+  "checks": [
+    {
+      "name": "syntax",
+      "status": "passed",
+      "evidence": "node --check templates/agent-work-app/app.js"
+    },
+    {
+      "name": "api",
+      "status": "passed",
+      "evidence": "GET /api/review/123 includes review_summary"
+    },
+    {
+      "name": "screenshot",
+      "status": "passed",
+      "evidence": "workspace/runs/agent-work/123/screenshots/review.png"
+    }
+  ],
+  "decision_requested": "approve"
+}</code></pre>
+    </section>
+
+    <section>
+      <h2>Cheap Judge Prompt</h2>
+      <pre><code>You are a strict Cento validation judge.
+Return only JSON with:
+  decision: approve | needs_fix | blocked
+  reason: one short sentence
+  missing_evidence: string[]
+
+Rules:
+- Approve only if all required checks passed and evidence paths are present.
+- Use needs_fix if implementation evidence exists but a check failed.
+- Use blocked if external access, credentials, devices, or human decisions are required.
+- Do not infer from missing data.</code></pre>
+
+      <pre><code>{
+  "decision": "approve",
+  "reason": "All required checks passed and screenshot evidence is present.",
+  "missing_evidence": []
+}</code></pre>
+    </section>
+
+    <section>
+      <h2>Operating Policy</h2>
+      <ul>
+        <li>Default simple validators to Tier 0.</li>
+        <li>Do not introduce a Tier 1 model judge until deterministic validation has real usage data.</li>
+        <li>Reserve Codex for implementing the validator and for explicit human-requested follow-up, not automatic escalation.</li>
+        <li>Track estimated AI cost per issue, even when the value is zero.</li>
+        <li>Prefer a plain JSON or Markdown run summary over new dashboard UI in the first hour.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Proposed Jira Backlog</h2>
+      <p>Use these as tiny tickets for a one-hour local implementation. IDs are placeholders until created in the real Jira project.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Jira</th>
+            <th>Type</th>
+            <th>Scope</th>
+            <th>Acceptance Signal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>AI-VAL-001</strong></td>
+            <td>Story</td>
+            <td>Create one minimal <code>validation-packet.json</code> format and example packet.</td>
+            <td>A sample low-risk task has task, claim, risk, checks, requested decision, and timestamp.</td>
+          </tr>
+          <tr>
+            <td><strong>AI-VAL-002</strong></td>
+            <td>Story</td>
+            <td>Add deterministic Tier 0 evaluation for file existence, command exit code, and JSON field presence.</td>
+            <td>One passing packet returns <code>approve</code>; one failing packet returns <code>needs_fix</code> or <code>blocked</code>.</td>
+          </tr>
+          <tr>
+            <td><strong>AI-VAL-003</strong></td>
+            <td>Story</td>
+            <td>Emit routing metadata: <code>validator_tier</code>, <code>ai_calls_used</code>, <code>estimated_ai_cost</code>, and reason.</td>
+            <td>Tier 0 outputs always show zero runtime AI calls and a clear decision reason.</td>
+          </tr>
+          <tr>
+            <td><strong>AI-VAL-004</strong></td>
+            <td>Task</td>
+            <td>Write a small run summary beside the packet.</td>
+            <td>The summary is human-readable and can be pasted into Taskstream/Jira without extra model work.</td>
+          </tr>
+          <tr>
+            <td><strong>AI-VAL-005</strong></td>
+            <td>Deferred</td>
+            <td>Cheap model judge and automatic Codex escalation.</td>
+            <td>Only revisit after the Tier 0 path saves repeated manual validation work.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Roadmap</h2>
+      <p>This is a one-hour E2E implementation plan, not a corporate program. The goal is a thin but working validator loop that can prove value before any larger spend.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Slice</th>
+            <th>Timebox</th>
+            <th>Build</th>
+            <th>Done When</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>0. Scope Lock</strong></td>
+            <td>5 min</td>
+            <td>Use one schema, one output path, and three deterministic check types: file exists, command exit code, and JSON field present.</td>
+            <td>No cheap model integration, no general dashboard redesign, and no broad policy engine in the first pass.</td>
+          </tr>
+          <tr>
+            <td><strong>1. Packet Writer</strong></td>
+            <td>15 min</td>
+            <td>Add a small helper that writes <code>validation-packet.json</code> with task, claim, risk, checks, decision requested, and timestamp.</td>
+            <td>A sample run produces a valid packet in the task workspace without requiring model calls.</td>
+          </tr>
+          <tr>
+            <td><strong>2. Tier 0 Gate</strong></td>
+            <td>20 min</td>
+            <td>Add deterministic evaluation that marks each check <code>passed</code>, <code>failed</code>, or <code>missing</code> and decides <code>approve</code> only when every required check passes.</td>
+            <td>Failed or missing evidence returns <code>needs_fix</code> or <code>blocked</code> without spending AI budget.</td>
+          </tr>
+          <tr>
+            <td><strong>3. Routing Stub</strong></td>
+            <td>10 min</td>
+            <td>Add explicit routing fields: <code>validator_tier</code>, <code>ai_calls_used</code>, <code>estimated_ai_cost</code>, and <code>escalation_reason</code>.</td>
+            <td>Tier 0 approvals show zero AI cost; failures include a clear reason for human/Codex follow-up.</td>
+          </tr>
+          <tr>
+            <td><strong>4. Smoke Test</strong></td>
+            <td>10 min</td>
+            <td>Run one passing packet and one failing packet, then record the outputs in the task folder or existing run log.</td>
+            <td>The E2E path demonstrates approval, failure, and zero-cost accounting in under one hour total.</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="note">
+        Defer model judging, batching, historical dashboards, and advanced escalation packaging until Tier 0 has proven that it saves real repeated work. The first implementation should be boring and local.
+      </div>
+    </section>
+
+    <section>
+      <h2>AI Budget</h2>
+      <p>Hard cap: one Codex hour to implement the first E2E version. Runtime AI budget for Tier 0 is zero.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Budget</th>
+            <th>What It Buys</th>
+            <th>What It Does Not Buy</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Codex implementation</strong></td>
+            <td>Max 60 min</td>
+            <td>One helper, one deterministic gate, one sample passing packet, one sample failing packet, and clear output files.</td>
+            <td>No generalized workflow engine, no new service, no full Taskstream UI rewrite.</td>
+          </tr>
+          <tr>
+            <td><strong>Runtime AI</strong></td>
+            <td>$0 for Tier 0</td>
+            <td>Approvals and failures based on deterministic evidence only.</td>
+            <td>No semantic judgment and no reading source code to infer intent.</td>
+          </tr>
+          <tr>
+            <td><strong>Optional Tier 1</strong></td>
+            <td>Deferred</td>
+            <td>Later cheap-model review for ambiguous packets after Tier 0 is useful.</td>
+            <td>Not part of the first hour; do not spend model budget until there are real ambiguous packets.</td>
+          </tr>
+          <tr>
+            <td><strong>Optional Tier 2</strong></td>
+            <td>Manual only</td>
+            <td>A failed packet can tell Codex what evidence is missing.</td>
+            <td>No automatic Spark/Codex escalation pipeline in the first version.</td>
+          </tr>
+          <tr>
+            <td><strong>Reporting</strong></td>
+            <td>5 min inside the hour</td>
+            <td>Append or emit a small JSON/Markdown summary with tier, decision, and estimated AI cost.</td>
+            <td>No charting, no monthly analytics, no dashboard redesign.</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="note">
+        Success metric for the first hour: one low-risk task can be validated end to end with <strong>zero runtime model calls</strong>, and a failed task produces an actionable missing-evidence reason.
+      </div>
+    </section>
+
+    <section>
+      <h2>Potential Caveats</h2>
+      <ul>
+        <li><strong>False approvals:</strong> deterministic checks can still approve the wrong thing if the check is too weak. Mitigation: keep claims narrow and require exact evidence paths or exact JSON fields.</li>
+        <li><strong>Packet gaming:</strong> builders could emit optimistic claims. Mitigation: Tier 0 should verify evidence independently instead of trusting claim text.</li>
+        <li><strong>Overbuilding risk:</strong> the system can become more expensive than the validation it replaces. Mitigation: one helper, one gate, one output summary in the first version.</li>
+        <li><strong>Context loss:</strong> compact packets may hide architectural risk. Mitigation: mark migrations, security-sensitive code, data loss risk, and cross-module contracts as manual review.</li>
+        <li><strong>Fake savings:</strong> avoided AI spend is meaningless if humans spend more time debugging the validator. Mitigation: measure whether the packet made the next review faster.</li>
+        <li><strong>Model dependency:</strong> Tier 1 should remain optional. Mitigation: the first usable version must work with no model calls after implementation.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Next Implementation Tasks</h2>
+      <ul>
+        <li>Implement a minimal packet writer.</li>
+        <li>Implement deterministic Tier 0 checks only.</li>
+        <li>Emit a decision summary with <code>validator_tier</code>, <code>ai_calls_used</code>, and <code>estimated_ai_cost</code>.</li>
+        <li>Run one pass case and one fail case.</li>
+        <li>Defer model judging, auto-escalation, and dashboard UI until the zero-runtime-AI path proves useful.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

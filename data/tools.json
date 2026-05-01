@@ -452,6 +452,35 @@
       ]
     },
     {
+      "id": "validator-tier0",
+      "name": "Validator Tier 0",
+      "lane": "agent ops",
+      "kind": "python",
+      "entrypoint": "./scripts/validator_tier0.py",
+      "description": "Create validation packets and run deterministic Tier 0 checks with mandatory timing and AI budget stats.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento validator-tier0 stories",
+        "cento validator-tier0 run workspace/runs/validator-tier0/e2e/sample-pass.json",
+        "cento validator-tier0 e2e"
+      ],
+      "outputs": [
+        "workspace/runs/validator-tier0/stories.json",
+        "workspace/runs/validator-tier0/*/validation-packet.json",
+        "workspace/runs/validator-tier0/*/validation-result.json",
+        "workspace/runs/validator-tier0/*/validation-summary.md",
+        "workspace/runs/validator-tier0/*/stats.json"
+      ],
+      "notes": [
+        "Tier 0 uses deterministic checks only: file_exists, command, and json_field.",
+        "Every run records total_duration_ms, per-check duration_ms, ai_calls_used, and estimated_ai_cost.",
+        "The e2e command creates one passing sample and one failing sample to prove the path end to end."
+      ]
+    },
+    {
       "id": "bluetooth-audio-doctor",
       "name": "Bluetooth Audio Doctor",
       "lane": "general ops",
