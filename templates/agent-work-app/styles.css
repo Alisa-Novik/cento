@@ -548,6 +548,25 @@ button:hover {
   gap: 0.65rem;
 }
 
+.factorySectionGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin: 0 0 0.85rem;
+}
+
+.factorySectionGrid span {
+  border: 1px solid rgba(168, 156, 145, 0.16);
+  min-height: 2.35rem;
+  padding: 0.45rem 0.55rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+}
+
 .factoryRunCard {
   padding: 0.85rem;
 }
@@ -621,6 +640,40 @@ button:hover {
 .factoryRunLinks a {
   color: var(--orange);
   font-weight: 900;
+}
+
+.factoryRunSections {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+
+.factoryMiniPanel {
+  border: 1px solid rgba(168, 156, 145, 0.14);
+  background: rgba(5, 5, 4, 0.34);
+  min-height: 7.5rem;
+  padding: 0.7rem;
+}
+
+.factoryMiniPanel h3 {
+  margin: 0 0 0.5rem;
+  color: var(--paper);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.factoryMiniPanel p,
+.factoryMiniPanel li {
+  margin: 0.25rem 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.factoryMiniPanel ul {
+  margin: 0;
+  padding-left: 1rem;
 }
 
 .factoryEmpty {
@@ -2964,6 +3017,8 @@ kbd {
   .workflowGrid,
   .sectionGrid,
   .factoryStats,
+  .factorySectionGrid,
+  .factoryRunSections,
   .formGrid {
     grid-template-columns: 1fr;
   }

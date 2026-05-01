@@ -198,9 +198,21 @@
             <div class="panelTitle">
               <div>
                 <h2>Factory Runs</h2>
-                <p>Requests become validated plans, story manifests, validation manifests, queue ledgers, dispatch plans, integration gates, and release evidence.</p>
+                <p>Requests become validated queues, owned-path leases, worktrees, prompt bundles, patch bundles, integration dry-runs, and release evidence.</p>
               </div>
-              <code>cento factory release RUN_DIR --json</code>
+              <code>cento factory dispatch RUN_ID --dry-run</code>
+            </div>
+            <div class="factorySectionGrid" aria-label="Factory dashboard sections">
+              <span>Factory Overview</span>
+              <span>Queue</span>
+              <span>Active Leases</span>
+              <span>Worktrees</span>
+              <span>Patch Queue</span>
+              <span>Integration Dry-Run</span>
+              <span>Validation Ladder</span>
+              <span>Cost &amp; Model Usage</span>
+              <span>Research Implementation Linkage</span>
+              <span>Release Packet</span>
             </div>
             <div class="factoryRunList" id="factoryRunList" aria-live="polite">
               <div class="factoryEmpty">Loading Factory runs...</div>

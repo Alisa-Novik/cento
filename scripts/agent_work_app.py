@@ -1098,13 +1098,30 @@ def factory_run_list() -> dict[str, Any]:
             if not plan:
                 continue
             validation = read_json_path(run_dir / "validation-summary.json")
+            evidence_validation = read_json_path(run_dir / "evidence" / "validation-summary.json")
+            if evidence_validation:
+                validation = evidence_validation
             delivery = read_json_path(run_dir / "delivery-status.json")
-            queue = read_json_path(run_dir / "queue" / "state.json")
+            queue = read_json_path(run_dir / "queue" / "queue.json") or read_json_path(run_dir / "queue" / "state.json")
+            leases = read_json_path(run_dir / "queue" / "leases.json")
             dispatch = read_json_path(run_dir / "dispatch-plan.json")
-            integration = read_json_path(run_dir / "integration-plan.json")
+            patch_collection = read_json_path(run_dir / "patch-collection-summary.json")
+            integration = read_json_path(run_dir / "integration" / "integration-plan.json") or read_json_path(run_dir / "integration-plan.json")
+            release_gates = read_json_path(run_dir / "integration" / "release-gates.json")
+            preflight = read_json_path(run_dir / "preflight-summary.json") or read_json_path(run_dir / "preflight.json")
             queue_stats = queue.get("stats") if isinstance(queue.get("stats"), dict) else {}
             delivery_stats = delivery.get("stats") if isinstance(delivery.get("stats"), dict) else {}
             validation_stats = validation.get("stats") if isinstance(validation.get("stats"), dict) else {}
+            queue_tasks_raw = queue.get("tasks") or []
+            queue_tasks = list(queue_tasks_raw.values()) if isinstance(queue_tasks_raw, dict) else queue_tasks_raw
+            queue_tasks = [item for item in queue_tasks if isinstance(item, dict)]
+            active_leases = [
+                item
+                for item in leases.get("leases", [])
+                if isinstance(item, dict) and item.get("status") in {"active", "running", "validating", "simulated"}
+            ]
+            patch_rows = patch_collection.get("patches") if isinstance(patch_collection.get("patches"), list) else []
+            validation_checks = validation.get("checks") if isinstance(validation.get("checks"), list) else []
             runs.append(
                 {
                     "run_id": run_dir.name,
@@ -1116,12 +1133,34 @@ def factory_run_list() -> dict[str, Any]:
                     "decision": str(delivery.get("decision") or validation.get("decision") or "incomplete"),
                     "validation_decision": str(validation.get("decision") or ""),
                     "queue": queue_stats,
+                    "queue_tasks": queue_tasks[:40],
+                    "leases": active_leases[:40],
+                    "patch_queue": patch_rows[:40],
                     "dispatch_selected": len(dispatch.get("selected") or []),
                     "integration_decision": str(integration.get("decision") or ""),
+                    "integration": {
+                        "merge_order": integration.get("merge_order") or [],
+                        "candidates": len(integration.get("candidates") or []),
+                        "rejected": len(integration.get("rejected") or []),
+                        "missing": len(integration.get("missing") or []),
+                        "conflicts": len(integration.get("conflicts") or []),
+                        "release_gate_status": str(release_gates.get("status") or ""),
+                    },
+                    "validation": {
+                        "checks": len(validation_checks),
+                        "passed": sum(1 for item in validation_checks if isinstance(item, dict) and item.get("passed")),
+                        "decision": str(validation.get("decision") or ""),
+                    },
+                    "preflight": {
+                        "status": "blocked" if preflight.get("blocked") else "passed" if preflight else "not_run",
+                        "reasons": preflight.get("reasons") or [],
+                    },
                     "ai_calls_used": int(delivery_stats.get("ai_calls_used", validation_stats.get("ai_calls_used", 0)) or 0),
+                    "estimated_cost_usd": float(validation.get("estimated_cost_usd", validation_stats.get("estimated_ai_cost_usd", 0)) or 0),
                     "total_duration_ms": float(delivery_stats.get("total_duration_ms", validation_stats.get("total_duration_ms", 0)) or 0),
                     "start_hub": str(run_dir.relative_to(ROOT_DIR) / "start-here.html") if (run_dir / "start-here.html").exists() else "",
                     "implementation_map": str(run_dir.relative_to(ROOT_DIR) / "implementation-map.html") if (run_dir / "implementation-map.html").exists() else "",
+                    "release_packet": str(run_dir.relative_to(ROOT_DIR) / "release-packet.md") if (run_dir / "release-packet.md").exists() else "",
                     "delivery_status": str(run_dir.relative_to(ROOT_DIR) / "delivery-status.json") if (run_dir / "delivery-status.json").exists() else "",
                     "updated_at": datetime.fromtimestamp(run_dir.stat().st_mtime, timezone.utc).isoformat(),
                 }
