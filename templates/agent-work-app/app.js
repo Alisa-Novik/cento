@@ -864,16 +864,25 @@ function setNavActive(route) {
   if (taskstreamNav) taskstreamNav.classList.toggle("hidden", activeMain !== "taskstream");
   document.body.classList.toggle("docsMode", activeMain === "docs");
   document.body.classList.toggle("researchMode", activeMain === "research");
+  if (activeMain !== "docs") document.body.classList.remove("docsAppPage");
 }
 
-function syncDocsHashNavigation() {
+function syncDocsHashNavigation(options = {}) {
   if (!docsHashLinks.length) return;
   const activeHash = location.hash || "#overview";
+  const isKanjiAppPage = activeHash.startsWith("#kanji");
+  document.body.classList.toggle("docsAppPage", isKanjiAppPage);
   docsHashLinks.forEach((link) => {
     const href = link.getAttribute("href") || "";
-    const isKanjiChild = activeHash.startsWith("#kanji-") && href === "#kanji-a-day";
-    link.classList.toggle("active", href === activeHash || isKanjiChild);
+    const isSidebarKanjiParent = href === "#kanji-a-day" && link.classList.contains("docsAppParentLink");
+    link.classList.toggle("active", href === activeHash && !isSidebarKanjiParent);
   });
+  if (options.scrollToHash && isKanjiAppPage) {
+    window.requestAnimationFrame(() => {
+      const target = document.querySelector(activeHash);
+      if (target) target.scrollIntoView({ block: "start" });
+    });
+  }
 }
 
 function refreshSavedQueryOptions() {
@@ -1671,7 +1680,7 @@ function showCentoSection(route) {
   }
   const hash = route === "docs" ? location.hash : "";
   history.replaceState(null, "", `/${route}${hash}`);
-  if (route === "docs") syncDocsHashNavigation();
+  if (route === "docs") syncDocsHashNavigation({ scrollToHash: true });
 }
 
 async function loadIssues() {
@@ -2115,7 +2124,7 @@ window.addEventListener("popstate", () => {
   }
 });
 
-window.addEventListener("hashchange", syncDocsHashNavigation);
+window.addEventListener("hashchange", () => syncDocsHashNavigation({ scrollToHash: true }));
 
 async function boot() {
   syncStateFromLocation();

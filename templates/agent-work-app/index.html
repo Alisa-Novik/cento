@@ -258,7 +258,7 @@
               </details>
               <details open>
                 <summary>Apps</summary>
-                <a href="#kanji-a-day"><span class="navIcon">日</span>Kanji a Day</a>
+                <a class="docsAppParentLink" href="#kanji-a-day"><span class="navIcon">日</span>Kanji a Day</a>
                 <div class="docsSubNav">
                   <a href="#kanji-a-day"><span class="navIcon">▸</span>Overview</a>
                   <a href="#kanji-user-guide"><span class="navIcon">▸</span>User Guide</a>
@@ -267,7 +267,7 @@
                 </div>
               </details>
             </nav>
-            <a class="docsHelpCard" href="#need-help" data-doc-section="help-card">
+            <a class="docsHelpCard docsOverviewOnly" href="#need-help" data-doc-section="help-card">
               <span class="docGlyph">▱</span>
               <strong>Need help?</strong>
               <small>Contact our support team</small>
@@ -276,18 +276,18 @@
           </aside>
 
           <article class="docsMain" aria-label="Cento Documentation">
-            <div class="docsBreadcrumb" aria-label="Breadcrumb">
+            <div class="docsBreadcrumb docsOverviewOnly" aria-label="Breadcrumb">
               <span>Docs</span>
               <b>›</b>
               <strong>Overview</strong>
             </div>
 
-            <header id="overview" class="docsHero" data-doc-section="hero">
+            <header id="overview" class="docsHero docsOverviewOnly" data-doc-section="hero">
               <h1>Cento Documentation</h1>
               <p>Operator-facing reference for running Cento, validating work, and finding the right command surface without leaving the console.</p>
             </header>
 
-            <section id="getting-started" class="docsSection" data-doc-section="explore">
+            <section id="getting-started" class="docsSection docsOverviewOnly" data-doc-section="explore">
               <h2>Explore by area</h2>
               <div class="docsExploreGrid">
                 <a class="docsAreaCard" href="#taskstream">
@@ -357,7 +357,15 @@
               </div>
             </section>
 
-            <section id="kanji-a-day" class="docsSection appDocSection appOverviewPage" data-doc-section="kanji-a-day">
+            <section id="kanji-a-day" class="docsSection appDocSection appOverviewPage docsAppOnly" data-doc-section="kanji-a-day">
+              <div class="docsBreadcrumb appBreadcrumb" aria-label="Breadcrumb">
+                <span>Docs</span>
+                <b>›</b>
+                <span>Apps</span>
+                <b>›</b>
+                <strong>Kanji a Day</strong>
+              </div>
+
               <div class="appOverviewHero">
                 <div class="appIdentity">
                   <span class="appIcon" aria-hidden="true">日</span>
@@ -507,7 +515,7 @@
               </section>
             </section>
 
-            <section id="updates" class="docsSection" data-doc-section="updates">
+            <section id="updates" class="docsSection docsOverviewOnly" data-doc-section="updates">
               <h2>Recent updates</h2>
               <div class="docsUpdates">
                 <div><strong>Kanji a Day docs page added</strong><time datetime="2026-05-01">May 1, 2026</time></div>
@@ -517,7 +525,7 @@
               </div>
             </section>
 
-            <section id="need-help" class="docsSupport" data-doc-section="support">
+            <section id="need-help" class="docsSupport docsOverviewOnly" data-doc-section="support">
               <span class="supportIcon">?</span>
               <div>
                 <h2>Can't find what you're looking for?</h2>
@@ -529,13 +537,13 @@
 
           <aside class="docsToc" data-doc-section="right-toc" aria-label="On this page">
             <h2>On this page</h2>
-            <a class="active" href="#overview">Overview</a>
-            <a href="#getting-started">Explore by area</a>
-            <a href="#kanji-a-day">Kanji a Day</a>
-            <a href="#kanji-architecture">Architecture</a>
-            <a href="#kanji-validation">Validation</a>
-            <a href="#updates">Recent updates</a>
-            <a href="#need-help">Support</a>
+            <a class="active docsOverviewOnly" href="#overview">Overview</a>
+            <a class="docsOverviewOnly" href="#getting-started">Explore by area</a>
+            <a class="docsAppOnly" href="#kanji-a-day">Kanji a Day</a>
+            <a class="docsAppOnly" href="#kanji-architecture">Architecture</a>
+            <a class="docsAppOnly" href="#kanji-validation">Validation</a>
+            <a class="docsOverviewOnly" href="#updates">Recent updates</a>
+            <a class="docsOverviewOnly" href="#need-help">Support</a>
           </aside>
         </section>
 

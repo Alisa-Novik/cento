@@ -717,6 +717,14 @@ body.researchMode .content {
     linear-gradient(180deg, rgba(7, 8, 8, 0.96), rgba(5, 5, 4, 0.98));
 }
 
+body.docsAppPage #docsView:not(.hidden) {
+  grid-template-columns: 246px minmax(0, 1fr);
+}
+
+body.docsAppPage #docsView > .docsToc {
+  display: none;
+}
+
 #researchView:not(.hidden) {
   display: grid;
   grid-template-columns: 246px minmax(460px, 1fr) minmax(560px, 1.25fr);
@@ -894,6 +902,27 @@ body.researchMode .content {
 .docsBreadcrumb strong {
   color: var(--text);
   min-width: 0;
+}
+
+.docsAppOnly {
+  display: none !important;
+}
+
+body.docsAppPage .docsOverviewOnly {
+  display: none !important;
+}
+
+body.docsAppPage .docsAppOnly {
+  display: block !important;
+}
+
+body.docsAppPage .docsBreadcrumb.docsAppOnly,
+body.docsAppPage .appOverviewPage .docsBreadcrumb {
+  display: flex !important;
+}
+
+body.docsAppPage .appOverviewPage {
+  margin-top: 0;
 }
 
 .researchHeader {
@@ -1278,7 +1307,7 @@ body.researchMode .content {
 
 .appOverviewHero {
   display: grid;
-  grid-template-columns: minmax(19rem, 1fr) minmax(13.5rem, 0.54fr) minmax(16rem, 0.64fr);
+  grid-template-columns: minmax(17rem, 1fr) minmax(12rem, 0.54fr) minmax(13rem, 0.64fr);
   gap: 1rem;
   align-items: stretch;
 }
@@ -1455,8 +1484,8 @@ body.researchMode .content {
 
 .appMetricGrid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 0;
+  grid-template-columns: repeat(auto-fit, minmax(7.35rem, 1fr));
+  gap: 0.75rem 0;
 }
 
 .appMetricGrid div {
@@ -1482,13 +1511,13 @@ body.researchMode .content {
 
 .appMetricGrid strong {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.45rem;
   margin-top: 0.55rem;
   min-height: 1.7rem;
   color: var(--text);
   font-size: 0.96rem;
-  white-space: nowrap;
+  white-space: normal;
   overflow-wrap: anywhere;
 }
 
@@ -3727,6 +3756,10 @@ kbd {
 
   #docsView:not(.hidden),
   #researchView:not(.hidden) {
+    grid-template-columns: 1fr;
+  }
+
+  body.docsAppPage #docsView:not(.hidden) {
     grid-template-columns: 1fr;
   }
 
