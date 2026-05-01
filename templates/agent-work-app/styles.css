@@ -106,7 +106,7 @@ button:hover {
   top: 0;
   z-index: 20;
   padding: 0.75rem 1.1rem;
-  background: rgba(5, 4, 3, 0.94);
+  background: #050403;
   box-shadow: 0 0 24px rgba(255, 90, 0, 0.12);
 }
 
@@ -808,6 +808,21 @@ body.researchMode .content {
   background: rgba(255, 90, 0, 0.16);
 }
 
+.docsSubNav {
+  margin: 0.2rem 0 0.15rem 1.2rem;
+}
+
+.docsSidebar nav .docsSubNav a {
+  min-height: 1.55rem;
+  padding-left: 0.45rem;
+  font-size: 0.84rem;
+}
+
+.docsSidebar nav .docsSubNav .navIcon {
+  color: var(--muted);
+  font-size: 0.66rem;
+}
+
 .navIcon {
   width: 1rem;
   color: var(--orange);
@@ -1172,7 +1187,7 @@ body.researchMode .content {
 }
 
 .appDocSection {
-  max-width: 860px;
+  max-width: none;
 }
 
 .appDocSection > p {
@@ -1248,6 +1263,409 @@ body.researchMode .content {
   display: block;
   margin-bottom: 0.45rem;
   color: var(--orange);
+}
+
+.appOverviewPage {
+  scroll-margin-top: 5.25rem;
+  color: var(--text);
+}
+
+.appOverviewPage h2 {
+  margin: 0.15rem 0 0.5rem;
+  font-size: clamp(2.05rem, 3vw, 2.7rem);
+  line-height: 1.02;
+}
+
+.appOverviewHero {
+  display: grid;
+  grid-template-columns: minmax(19rem, 1fr) minmax(13.5rem, 0.54fr) minmax(16rem, 0.64fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.appIdentity {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.appIcon {
+  width: 4.8rem;
+  height: 4.8rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 90, 0, 0.2);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle, rgba(255, 90, 0, 0.18) 0 36%, transparent 37%),
+    #f2eee8;
+  color: #090807;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 2.8rem;
+  font-weight: 900;
+  box-shadow: inset 0 0 0 0.48rem rgba(255, 90, 0, 0.08);
+}
+
+.appIdentity p {
+  max-width: 46rem;
+  margin: 0;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.appMetaRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+  color: var(--muted);
+}
+
+.versionPill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.55rem;
+  padding: 0 0.62rem;
+  border: 1px solid rgba(168, 156, 145, 0.22);
+  background: rgba(18, 18, 17, 0.9);
+  color: var(--text);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.appPreviewCard,
+.appControlCard,
+.appDashboardCard,
+.appInfoCard {
+  border: 1px solid rgba(168, 156, 145, 0.18);
+  border-radius: 6px;
+  background: rgba(17, 17, 16, 0.86);
+  box-shadow: 0 0 0 1px rgba(255, 90, 0, 0.02);
+}
+
+.appPreviewCard {
+  display: grid;
+  place-items: center;
+  min-height: 12rem;
+  margin: 0;
+  padding: 0.95rem;
+  overflow: hidden;
+}
+
+.miniWatch {
+  width: 8.8rem;
+  aspect-ratio: 0.78;
+  display: grid;
+  place-items: center;
+  border: 0.42rem solid #343b40;
+  border-radius: 2rem;
+  background: #010101;
+  box-shadow: 0 0 2rem rgba(255, 90, 0, 0.13);
+}
+
+.miniWatchScreen {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 1.2rem minmax(0, 1fr) 1.8rem;
+  gap: 0.25rem;
+  padding: 0.6rem 0.55rem 0.5rem;
+  overflow: hidden;
+}
+
+.miniWatchTop,
+.miniWatchButtons {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text);
+  font-size: 0.48rem;
+  font-weight: 900;
+}
+
+.miniWatchTop span:first-child {
+  color: #ff4f3d;
+}
+
+.miniKanji {
+  display: grid;
+  place-items: center;
+  color: #fff8f2;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 4.4rem;
+  line-height: 1;
+}
+
+.miniWatchButtons span,
+.miniWatchButtons strong {
+  min-width: 2.9rem;
+  padding: 0.32rem 0.3rem;
+  border-radius: 1rem;
+  background: #10100f;
+  text-align: center;
+}
+
+.miniWatchButtons strong {
+  background: #ff4937;
+  color: white;
+}
+
+.appControlCard {
+  display: grid;
+  align-content: center;
+  padding: 0.75rem 1rem;
+}
+
+.appControlCard a {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid rgba(168, 156, 145, 0.12);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.appControlCard a:last-child {
+  border-bottom: 0;
+}
+
+.appControlCard a:hover span {
+  color: var(--orange);
+}
+
+.appControlCard span {
+  color: #8fbfff;
+  overflow-wrap: anywhere;
+}
+
+.appDashboardCard,
+.appInfoCard {
+  margin-top: 1rem;
+  padding: 1.15rem 1.2rem;
+}
+
+.appDashboardCard h3,
+.appInfoCard h3 {
+  margin: 0 0 0.9rem;
+}
+
+.appMetricGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0;
+}
+
+.appMetricGrid div {
+  min-width: 0;
+  padding: 0.2rem 0.72rem 0.1rem;
+  border-left: 1px solid rgba(168, 156, 145, 0.14);
+}
+
+.appMetricGrid div:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.appMetricGrid span,
+.releaseFacts dt,
+.appFeatureGrid small,
+.appActionList small,
+.appArchitecture small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.appMetricGrid strong {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+  min-height: 1.7rem;
+  color: var(--text);
+  font-size: 0.96rem;
+  white-space: nowrap;
+  overflow-wrap: anywhere;
+}
+
+.metricDot {
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.appOverviewGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(15rem, 0.88fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.appMainColumn {
+  min-width: 0;
+}
+
+.appInfoCard p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.appFeatureGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.1rem 1rem;
+  margin-top: 1.15rem;
+}
+
+.appFeatureGrid div {
+  display: grid;
+  grid-template-columns: 1.35rem minmax(0, 1fr);
+  gap: 0.25rem 0.55rem;
+  align-items: center;
+}
+
+.appFeatureGrid small {
+  grid-column: 2;
+}
+
+.featureIcon,
+.archIcon {
+  color: var(--orange);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-weight: 900;
+}
+
+.appPrimaryLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 1.35rem;
+  min-height: 2.4rem;
+  padding: 0 0.95rem;
+  border: 1px solid var(--line-dim);
+  color: var(--orange);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.appPrimaryLink:hover,
+.appActionList a:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.releaseFacts {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0 0 0.95rem;
+}
+
+.releaseFacts div {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+.releaseFacts dd {
+  margin: 0;
+  color: var(--text);
+}
+
+.releaseLabel {
+  display: block;
+  margin: 0.25rem 0 0.55rem;
+}
+
+.releaseList {
+  margin: 0;
+  padding-left: 1rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.releaseList li + li {
+  margin-top: 0.25rem;
+}
+
+.releaseList li::marker {
+  color: var(--green);
+}
+
+.appArchitecture {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.appArchitecture > div {
+  min-height: 4.8rem;
+  display: grid;
+  grid-template-columns: 1.8rem minmax(0, 1fr);
+  gap: 0.25rem 0.65rem;
+  align-items: center;
+  padding: 0.9rem;
+  border: 1px solid rgba(168, 156, 145, 0.18);
+  background: rgba(8, 8, 7, 0.5);
+}
+
+.appArchitecture small {
+  grid-column: 2;
+}
+
+.appArchitecture > b {
+  justify-self: center;
+  margin: 0 -0.2rem;
+  color: var(--muted);
+  z-index: 1;
+}
+
+.appActionColumn {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  min-width: 0;
+}
+
+.appArchitectureCard {
+  grid-column: 1 / span 2;
+}
+
+.appActionList {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.appActionList a {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+  gap: 0.1rem 0.65rem;
+  align-items: center;
+  min-height: 3.25rem;
+  padding: 0.55rem 0;
+  border: 1px solid transparent;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.appActionList small {
+  grid-column: 2;
+}
+
+.appActionList b {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  color: var(--muted);
+}
+
+.compactFlow {
+  margin-top: 1rem;
+  font-size: 0.82rem;
 }
 
 .docGlyph {
@@ -3158,6 +3576,36 @@ kbd {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .appOverviewHero,
+  .appOverviewGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .appActionColumn,
+  .appArchitectureCard {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .appMetricGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem 0;
+  }
+
+  .appMetricGrid div:nth-child(3n + 1) {
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  .appArchitecture {
+    grid-template-columns: 1fr;
+  }
+
+  .appArchitecture > b {
+    margin: -0.55rem 0;
+    transform: rotate(90deg);
+  }
+
   .filterPanel {
     grid-template-columns: repeat(2, minmax(150px, 1fr));
   }
@@ -3178,6 +3626,10 @@ kbd {
 @media (max-width: 620px) {
   body {
     overflow-x: hidden;
+  }
+
+  .appOverviewPage {
+    scroll-margin-top: 12.5rem;
   }
 
   .topbar {
@@ -3348,6 +3800,76 @@ kbd {
 
   .docsExploreGrid {
     grid-template-columns: 1fr;
+  }
+
+  .appOverviewPage h2 {
+    font-size: 2rem;
+  }
+
+  .appIdentity {
+    grid-template-columns: 3.7rem minmax(0, 1fr);
+    gap: 0.9rem;
+  }
+
+  .appIcon {
+    width: 3.7rem;
+    height: 3.7rem;
+    border-radius: 14px;
+    font-size: 2.15rem;
+  }
+
+  .appMetaRow {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .appPreviewCard {
+    min-height: 10rem;
+  }
+
+  .miniWatch {
+    width: 7.8rem;
+  }
+
+  .appMetricGrid,
+  .appFeatureGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .appMetricGrid strong {
+    white-space: normal;
+  }
+
+  .appMetricGrid div,
+  .appMetricGrid div:nth-child(3n + 1) {
+    padding: 0.65rem 0 0.7rem;
+    border-left: 0;
+    border-top: 1px solid rgba(168, 156, 145, 0.14);
+  }
+
+  .appMetricGrid div:first-child {
+    border-top: 0;
+  }
+
+  .releaseFacts div {
+    grid-template-columns: 1fr;
+    gap: 0.18rem;
+  }
+
+  .appInfoCard,
+  .appDashboardCard {
+    padding: 1rem;
+  }
+
+  .compactFlow {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .compactFlow b {
+    justify-self: start;
+    transform: rotate(90deg);
   }
 
   .docsAreaCard,

@@ -32,6 +32,7 @@ const perPageButtons = document.querySelectorAll(".perPageButton");
 const countLinks = document.querySelectorAll("a[data-filter]");
 const mainNavLinks = document.querySelectorAll("[data-main-route]");
 const primaryNavLinks = document.querySelectorAll("[data-nav-route]");
+const docsHashLinks = document.querySelectorAll(".docsSidebar nav a[href^='#'], .docsToc a[href^='#']");
 const agentSummary = document.querySelector("#agentSummary");
 const agentCards = document.querySelector("#agentCards");
 const taskstreamNav = document.querySelector(".taskstreamNav");
@@ -865,6 +866,16 @@ function setNavActive(route) {
   document.body.classList.toggle("researchMode", activeMain === "research");
 }
 
+function syncDocsHashNavigation() {
+  if (!docsHashLinks.length) return;
+  const activeHash = location.hash || "#overview";
+  docsHashLinks.forEach((link) => {
+    const href = link.getAttribute("href") || "";
+    const isKanjiChild = activeHash.startsWith("#kanji-") && href === "#kanji-a-day";
+    link.classList.toggle("active", href === activeHash || isKanjiChild);
+  });
+}
+
 function refreshSavedQueryOptions() {
   if (!savedQuerySelect) return;
   const options = ['<option value="">Custom filters</option>'];
@@ -1660,6 +1671,7 @@ function showCentoSection(route) {
   }
   const hash = route === "docs" ? location.hash : "";
   history.replaceState(null, "", `/${route}${hash}`);
+  if (route === "docs") syncDocsHashNavigation();
 }
 
 async function loadIssues() {
@@ -2102,6 +2114,8 @@ window.addEventListener("popstate", () => {
     void withSpinner(loadIssues());
   }
 });
+
+window.addEventListener("hashchange", syncDocsHashNavigation);
 
 async function boot() {
   syncStateFromLocation();

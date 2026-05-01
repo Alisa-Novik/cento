@@ -1,25 +1,35 @@
 # Kanji a Day
 
-Kanji a Day is a watch-friendly local learning app for one daily kanji. The product loop is intentionally narrow:
+Kanji a Day is a watch-friendly local learning app for one daily kanji.
 
 ```text
 Today -> stroke practice -> meaning -> Got it -> history
 ```
 
-The current preview focuses on the ritual that makes the app distinct: learn the shape first, reveal the meaning second, then save the kanji into memory.
+The Docs route now treats the app page as a Product Control Surface, not a static article. It follows `app_overview_page_v1` so an operator or agent can understand state, open entry points, validate behavior, and continue work from one page.
 
-## User Flow
+## Current State
 
-- `Today`
-  Shows the current kanji, meaning, reading, and primary start action.
-- `Stroke practice`
-  Animates each stroke in order. Future strokes stay faint, completed strokes stay visible, and the current stroke draws in.
-- `Meaning`
-  Reveals the kanji, English meaning, reading, and one example word.
-- `Got it`
-  Records the kanji as learned for the day.
-- `History`
-  Shows learned kanji and gives the user a memory trail.
+- Status: `development`
+- Version: `0.3.0`
+- Updated: `2026-05-01`
+- Environment: local preview
+- Live preview: `http://127.0.0.1:47924/`
+- Taskstream epic: `1000110`
+- Implementation branch: `codex/kanji-pwa-learning-loop`
+
+## Page Contract
+
+The `/docs#kanji-a-day` page must include:
+
+- Header: app identity, description, status, version, updated date
+- Control Strip: live app, repository, and Taskstream links
+- Project Dashboard: status, version, environment, validation date, daily lesson count, kanji set size, subscription state
+- About: what the app does every day and the core mechanics
+- Current Release: actual version, build, date, and shipped notes
+- System Architecture: readable pipeline from PWA preview to local storage
+- Operations: Taskstream, preview, validation, and architecture entry points
+- Links + Entry Points: User Guide, Data Model, Changelog, and PR
 
 ## Product Rules
 
@@ -43,31 +53,37 @@ The embedded starter set is:
 
 Each item should include meaning, reading, example vocabulary, stroke count, and SVG stroke path data.
 
-## Local Surfaces
-
-- Product preview source: `workspace/runs/agent-work/1000104/public/`
-- WatchOS app source: `apps/watch/KanjiADay/`
-- Static repo preview: `apps/watch/KanjiADay/Preview/index.html`
-
-The active local preview has been tested at:
+## Architecture
 
 ```text
-http://127.0.0.1:47924/
+PWA Preview -> Stroke Player -> Kanji Dataset -> Local Storage
 ```
+
+- PWA Preview: watch-style compact UI under `workspace/runs/agent-work/1000104/public/`
+- Stroke Player: sequential SVG stroke playback and replay
+- Kanji Dataset: seven embedded beginner records
+- Local Storage: learned history, streak state, and current kanji progress
 
 ## Validation
 
-Use Firefox responsive design mode or Playwright to check:
+Use Firefox responsive design mode or screenshot automation to check:
 
-- 360px, 390px, 430px widths
+- `/docs#kanji-a-day` renders the Product Control Surface
+- desktop layout has dense operational cards and a right action column
+- 360px, 390px, and 430px widths have no horizontal clipping
 - Today screen has no overlapping header text
 - Stroke completion keeps Replay and Meaning fully inside the watch frame
 - Meaning screen centers the kanji and keeps `Got it` visible inside the watch frame
-- History has an empty state and learned cards
-- Normal mode contains no debug or MVP copy
+- Normal app mode contains no debug or MVP copy
 - `?debug=1` exposes debug-only controls when needed
 
-Recent visual evidence lives under:
+Reference screenshot:
+
+```text
+/home/alice/Downloads/kanji a day.png
+```
+
+Recent app visual evidence lives under:
 
 ```text
 workspace/runs/agent-work/1000104/screenshots/

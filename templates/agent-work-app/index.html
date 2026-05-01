@@ -259,6 +259,12 @@
               <details open>
                 <summary>Apps</summary>
                 <a href="#kanji-a-day"><span class="navIcon">日</span>Kanji a Day</a>
+                <div class="docsSubNav">
+                  <a href="#kanji-a-day"><span class="navIcon">▸</span>Overview</a>
+                  <a href="#kanji-user-guide"><span class="navIcon">▸</span>User Guide</a>
+                  <a href="#kanji-data-model"><span class="navIcon">▸</span>Data Model</a>
+                  <a href="#kanji-changelog"><span class="navIcon">▸</span>Changelog</a>
+                </div>
               </details>
             </nav>
             <a class="docsHelpCard" href="#need-help" data-doc-section="help-card">
@@ -351,54 +357,154 @@
               </div>
             </section>
 
-            <section id="kanji-a-day" class="docsSection appDocSection" data-doc-section="kanji-a-day">
-              <span class="eyebrow">App documentation</span>
-              <h2>Kanji a Day</h2>
-              <p>Kanji a Day is a compact learning app for one daily kanji. The experience is built around a product ritual: shape first, meaning second, memory third.</p>
+            <section id="kanji-a-day" class="docsSection appDocSection appOverviewPage" data-doc-section="kanji-a-day">
+              <div class="appOverviewHero">
+                <div class="appIdentity">
+                  <span class="appIcon" aria-hidden="true">日</span>
+                  <div>
+                    <span class="eyebrow">App control surface</span>
+                    <h2>Kanji a Day</h2>
+                    <p>One kanji per day with stroke order, meaning, local progress, and history.</p>
+                    <div class="appMetaRow" aria-label="Kanji a Day release state">
+                      <span class="statePill partial">Development</span>
+                      <span class="versionPill">v0.3.0</span>
+                      <time datetime="2026-05-01">Updated 2026-05-01</time>
+                    </div>
+                  </div>
+                </div>
 
-              <div class="docsDetailGrid">
-                <article>
-                  <h3>Core loop</h3>
-                  <p><strong>Today</strong> opens the daily kanji, <strong>Stroke practice</strong> teaches order, <strong>Meaning</strong> reveals reading and example vocabulary, and <strong>Got it</strong> saves the kanji into history.</p>
-                </article>
-                <article>
-                  <h3>Current surfaces</h3>
-                  <p>The active local preview runs from <code>workspace/runs/agent-work/1000104/public/</code>. The native watch source lives under <code>apps/watch/KanjiADay/</code>, with a static repo preview in <code>apps/watch/KanjiADay/Preview/index.html</code>.</p>
-                </article>
+                <figure class="appPreviewCard" aria-label="Kanji a Day watch preview">
+                  <div class="miniWatch">
+                    <div class="miniWatchScreen">
+                      <div class="miniWatchTop"><span>4/4</span><span>10:09</span></div>
+                      <div class="miniKanji">日</div>
+                      <div class="miniWatchButtons"><span>Replay</span><strong>Meaning</strong></div>
+                    </div>
+                  </div>
+                </figure>
+
+                <aside class="appControlCard" aria-label="Kanji a Day control strip">
+                  <a href="http://127.0.0.1:47924/" target="_blank" rel="noreferrer">
+                    <strong>Live App URL</strong>
+                    <span>http://127.0.0.1:47924/ ↗</span>
+                  </a>
+                  <a href="https://github.com/Alisa-Novik/cento/tree/codex/kanji-pwa-learning-loop" target="_blank" rel="noreferrer">
+                    <strong>Repository URL</strong>
+                    <span>Alisa-Novik/cento ↗</span>
+                  </a>
+                  <a href="/issues/1000110">
+                    <strong>Cento Dashboard</strong>
+                    <span>Open epic #1000110 ↗</span>
+                  </a>
+                </aside>
               </div>
 
-              <div class="docsFlow" aria-label="Kanji a Day flow">
-                <span>Today</span>
-                <b>→</b>
-                <span>Stroke practice</span>
-                <b>→</b>
-                <span>Meaning</span>
-                <b>→</b>
-                <span>Got it</span>
-                <b>→</b>
-                <span>History</span>
+              <section class="appDashboardCard" aria-labelledby="kanji-dashboard-title">
+                <h3 id="kanji-dashboard-title">Project Dashboard</h3>
+                <div class="appMetricGrid">
+                  <div><span>Status</span><strong><i class="metricDot"></i>Development</strong></div>
+                  <div><span>Version</span><strong>0.3.0</strong></div>
+                  <div><span>Environment</span><strong>local preview</strong></div>
+                  <div><span>Last Validation</span><strong>2026-05-01</strong></div>
+                  <div><span>Daily Lessons</span><strong>1</strong></div>
+                  <div><span>Kanji Set</span><strong>7</strong></div>
+                  <div><span>Subscriptions</span><strong>Not enabled</strong></div>
+                </div>
+              </section>
+
+              <div class="appOverviewGrid">
+                <div class="appMainColumn">
+                  <section class="appInfoCard" aria-labelledby="kanji-about-title">
+                    <h3 id="kanji-about-title">About Kanji a Day</h3>
+                    <p>Kanji a Day delivers one beginner kanji each day through a compact watch-style learning loop. The system teaches shape first, then meaning, then stores the lesson in local history.</p>
+                    <div class="appFeatureGrid">
+                      <div><span class="featureIcon">⌁</span><strong>Stroke Order</strong><small>Sequential SVG playback</small></div>
+                      <div><span class="featureIcon">▣</span><strong>Daily Learning</strong><small>One kanji per day</small></div>
+                      <div><span class="featureIcon">日</span><strong>Meaning Reveal</strong><small>Meaning, reading, example</small></div>
+                      <div><span class="featureIcon">◉</span><strong>Local-First</strong><small>Progress in localStorage</small></div>
+                      <div><span class="featureIcon">▤</span><strong>History</strong><small>Learned cards and detail view</small></div>
+                      <div><span class="featureIcon">⚙</span><strong>Debug Mode</strong><small>Controls behind ?debug=1</small></div>
+                    </div>
+                    <a class="appPrimaryLink" href="#kanji-user-guide">User Guide <span>→</span></a>
+                  </section>
+                </div>
+
+                <div class="appMainColumn">
+                  <section class="appInfoCard" aria-labelledby="kanji-release-title">
+                    <h3 id="kanji-release-title">Current Release</h3>
+                    <dl class="releaseFacts">
+                      <div><dt>Version</dt><dd>0.3.0</dd></div>
+                      <div><dt>Build</dt><dd>1000104</dd></div>
+                      <div><dt>Release Date</dt><dd>2026-05-01</dd></div>
+                    </dl>
+                    <strong class="releaseLabel">Release Notes</strong>
+                    <ul class="releaseList">
+                      <li>Watch-style daily kanji practice surface</li>
+                      <li>Stroke playback with replay and completion state</li>
+                      <li>Meaning reveal with reading and example word</li>
+                      <li>Local progression, streak, and learned history</li>
+                      <li>Normal mode hides internal debug controls</li>
+                    </ul>
+                    <a class="appPrimaryLink" href="#kanji-changelog">View Changelog <span>→</span></a>
+                  </section>
+
+                  <section id="kanji-data-model" class="appInfoCard" aria-labelledby="kanji-data-model-title">
+                    <h3 id="kanji-data-model-title">Data Model</h3>
+                    <p>The embedded starter set is <code>日</code>, <code>月</code>, <code>火</code>, <code>水</code>, <code>木</code>, <code>金</code>, and <code>土</code>. Each record carries meaning, reading, example vocabulary, stroke count, and SVG stroke paths.</p>
+                    <div class="docsFlow compactFlow" aria-label="Kanji a Day learning state machine">
+                      <span>not_started</span>
+                      <b>→</b>
+                      <span>practicing</span>
+                      <b>→</b>
+                      <span>stroke_complete</span>
+                      <b>→</b>
+                      <span>meaning_viewed</span>
+                      <b>→</b>
+                      <span>learned</span>
+                    </div>
+                  </section>
+                </div>
+
+                <section id="kanji-architecture" class="appInfoCard appArchitectureCard" aria-labelledby="kanji-architecture-title">
+                  <h3 id="kanji-architecture-title">System Architecture</h3>
+                  <div class="appArchitecture" aria-label="Kanji a Day system architecture">
+                    <div><span class="archIcon">▣</span><strong>PWA Preview</strong><small>watch-style UI</small></div>
+                    <b>→</b>
+                    <div><span class="archIcon">⌁</span><strong>Stroke Player</strong><small>SVG paths</small></div>
+                    <b>→</b>
+                    <div><span class="archIcon">日</span><strong>Kanji Dataset</strong><small>7 local records</small></div>
+                    <b>→</b>
+                    <div><span class="archIcon">▤</span><strong>Local Storage</strong><small>history + streak</small></div>
+                  </div>
+                </section>
+
+                <aside class="appActionColumn">
+                  <section class="appInfoCard" aria-labelledby="kanji-operations-title">
+                    <h3 id="kanji-operations-title">Operations</h3>
+                    <div class="appActionList">
+                      <a href="/issues/1000110"><span class="navIcon">▥</span><strong>Open in Taskstream</strong><small>Epic, tasks, validation notes</small><b>→</b></a>
+                      <a href="http://127.0.0.1:47924/" target="_blank" rel="noreferrer"><span class="navIcon">▣</span><strong>Open preview build</strong><small>Local live app</small><b>↗</b></a>
+                      <a href="#kanji-validation"><span class="navIcon">≣</span><strong>View validation</strong><small>Responsive screenshot targets</small><b>→</b></a>
+                      <a href="#kanji-architecture"><span class="navIcon">⊙</span><strong>Inspect architecture</strong><small>Data flow and storage</small><b>→</b></a>
+                    </div>
+                  </section>
+
+                  <section class="appInfoCard" aria-labelledby="kanji-links-title">
+                    <h3 id="kanji-links-title">Links + Entry Points</h3>
+                    <div class="appActionList supportList">
+                      <a id="kanji-user-guide" href="#kanji-a-day"><span class="navIcon">▧</span><strong>User Guide</strong><small>Today → strokes → meaning</small><b>→</b></a>
+                      <a href="#kanji-data-model"><span class="navIcon">▩</span><strong>Data Model</strong><small>Kanji content schema</small><b>→</b></a>
+                      <a id="kanji-changelog" href="#kanji-release-title"><span class="navIcon">▤</span><strong>Changelog</strong><small>Current release notes</small><b>→</b></a>
+                      <a href="https://github.com/Alisa-Novik/cento/pull/1" target="_blank" rel="noreferrer"><span class="navIcon">⌘</span><strong>Pull Request</strong><small>Implementation branch</small><b>↗</b></a>
+                    </div>
+                  </section>
+                </aside>
               </div>
 
-              <div class="docsDetailGrid">
-                <article>
-                  <h3>Product rules</h3>
-                  <ul>
-                    <li>Meaning stays locked until all strokes complete.</li>
-                    <li>Learned count increments only after the user taps <code>Got it</code>.</li>
-                    <li>Normal mode must not show MVP, PWA, AI-call, reset, localhost, or backend copy.</li>
-                    <li>Debug controls stay behind <code>?debug=1</code>.</li>
-                  </ul>
-                </article>
-                <article>
-                  <h3>Starter content</h3>
-                  <p>The embedded beginner set is <code>日</code>, <code>月</code>, <code>火</code>, <code>水</code>, <code>木</code>, <code>金</code>, and <code>土</code>. Each record should carry meaning, reading, example vocabulary, stroke count, and SVG stroke paths.</p>
-                </article>
-              </div>
-
-              <div class="docsCallout">
-                <strong>Validation focus</strong>
+              <section id="kanji-validation" class="docsCallout">
+                <strong>Validation Focus</strong>
                 <p>Check Firefox responsive widths at 360px, 390px, and 430px. The watch header must not overlap, controls must stay inside the rounded frame, and the Meaning screen must center the kanji while keeping <code>Got it</code> visible.</p>
-              </div>
+              </section>
             </section>
 
             <section id="updates" class="docsSection" data-doc-section="updates">
@@ -426,6 +532,8 @@
             <a class="active" href="#overview">Overview</a>
             <a href="#getting-started">Explore by area</a>
             <a href="#kanji-a-day">Kanji a Day</a>
+            <a href="#kanji-architecture">Architecture</a>
+            <a href="#kanji-validation">Validation</a>
             <a href="#updates">Recent updates</a>
             <a href="#need-help">Support</a>
           </aside>
