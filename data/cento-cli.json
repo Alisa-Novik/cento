@@ -162,7 +162,7 @@
     {
       "name": "factory",
       "summary": "Registered tool route for the no-model Cento Factory planning, dispatch dry-run, and Safe Integrator workflow.",
-      "usage": "cento factory <intake|plan|materialize|create-issues|preflight|queue|lease|dispatch|collect|validate|integrate|validate-integrated|release-candidate|sync-taskstream|release|render-hub|status|autopilot|autopilot-status|autopilot-render> [args...]",
+      "usage": "cento factory <intake|plan|materialize|create-issues|preflight|queue|lease|dispatch|collect|validate|integrate|validate-integrated|release-candidate|sync-taskstream|release|render-hub|status|autopilot|autopilot-status|autopilot-render|runtime> [args...]",
       "flags": [],
       "examples": [
         "cento factory intake \"develop me a career consulting module\" --dry-run --out workspace/runs/factory/factory-planning-e2e",
@@ -184,11 +184,17 @@
         "cento factory render-hub workspace/runs/factory/factory-planning-e2e",
         "cento factory autopilot factory-autopilot-runtime-e2e --dry-run --cycles 5",
         "cento factory autopilot-status factory-autopilot-runtime-e2e --json",
-        "cento factory autopilot-render factory-autopilot-runtime-e2e"
+        "cento factory autopilot-render factory-autopilot-runtime-e2e",
+        "cento factory runtime list --json",
+        "cento factory runtime prepare factory-runtime-adapters-e2e --task factory-runtime-task-01 --runtime noop --dry-run",
+        "cento factory runtime launch factory-runtime-adapters-e2e --task factory-runtime-task-01 --runtime noop --dry-run",
+        "cento factory runtime status factory-runtime-adapters-e2e --task factory-runtime-task-01 --json",
+        "cento factory runtime collect factory-runtime-adapters-e2e --task factory-runtime-task-01",
+        "cento factory runtime cancel factory-runtime-adapters-e2e --task factory-runtime-task-01 --dry-run"
       ],
       "details": [
         "This command is routed through data/tools.json and scripts/factory.py.",
-        "Factory defaults to deterministic no-model planning, queueing, lease simulation, dry-run dispatch, patch collection, Safe Integrator branch/apply/validate gates, rollback metadata, merge readiness, release evidence, and Autopilot dry-run control cycles. Live Taskstream creation requires --apply, while integration Taskstream sync is a dry-run preview by default."
+        "Factory defaults to deterministic no-model planning, queueing, lease simulation, dry-run dispatch, patch collection, Safe Integrator branch/apply/validate gates, rollback metadata, merge readiness, release evidence, Autopilot dry-run control cycles, and runtime adapter contracts. Live Taskstream creation requires --apply, while integration Taskstream sync is a dry-run preview by default."
       ]
     },
     {

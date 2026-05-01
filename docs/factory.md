@@ -32,6 +32,12 @@ cento factory create-issues workspace/runs/factory/factory-planning-e2e --dry-ru
 cento factory autopilot factory-autopilot-runtime-e2e --dry-run --cycles 5
 cento factory autopilot-status factory-autopilot-runtime-e2e --json
 cento factory autopilot-render factory-autopilot-runtime-e2e
+cento factory runtime list --json
+cento factory runtime prepare factory-runtime-adapters-e2e --task factory-runtime-task-01 --runtime noop --dry-run
+cento factory runtime launch factory-runtime-adapters-e2e --task factory-runtime-task-01 --runtime noop --dry-run
+cento factory runtime status factory-runtime-adapters-e2e --task factory-runtime-task-01 --json
+cento factory runtime collect factory-runtime-adapters-e2e --task factory-runtime-task-01
+cento factory runtime cancel factory-runtime-adapters-e2e --task factory-runtime-task-01 --dry-run
 ```
 
 ## Artifacts
@@ -99,6 +105,16 @@ Each run writes under `workspace/runs/factory/<run-id>/`:
 - `autopilot/metrics.json`
 - `autopilot/stop-reason.json`
 - `autopilot/autopilot-summary.md`
+- `runtime/<task-id>/adapter-run.json`
+- `runtime/<task-id>/launch-plan.json`
+- `runtime/<task-id>/worker-ledger.json`
+- `runtime/<task-id>/heartbeat.json`
+- `runtime/<task-id>/status.json`
+- `runtime/<task-id>/cost.json`
+- `runtime/<task-id>/stdout.log`
+- `runtime/<task-id>/stderr.log`
+- `runtime/<task-id>/patch/patch.json`
+- `runtime/<task-id>/collect-result.json`
 
 ## Guardrails
 
@@ -126,6 +142,8 @@ Generated story manifests are validated with `scripts/story_manifest.py`. Genera
 
 `autopilot --dry-run --cycles N` runs a deterministic control loop over an existing Factory run. Each cycle scans durable state, chooses exactly one safe action, runs one bounded dry-run command or hold/stop action, writes cycle evidence, updates `autopilot/factory-state.json`, and refreshes metrics. Storage pressure gates future live fanout but does not block dry-run cycles.
 
+`runtime` defines the adapter contract between Factory and worker runtimes. Runtime v1 is contract-first: `noop`, `local-shell-fixture`, and `codex-dry-run` can prepare, simulate launch, report status, collect artifacts, and simulate cancellation without enabling broad live execution.
+
 ## E2E
 
 ```bash
@@ -145,6 +163,9 @@ python3 scripts/factory_autopilot_runtime_e2e.py \
   --fixture complex-project \
   --tasks 50 \
   --out workspace/runs/factory/factory-autopilot-runtime-e2e
+
+python3 scripts/factory_runtime_adapters_e2e.py \
+  --out workspace/runs/factory/factory-runtime-adapters-e2e
 ```
 
 The E2E records mandatory timing stats per step and total stats in `validation-summary.json`. The expected AI usage for this slice is always:

@@ -229,7 +229,8 @@ def seed_backlogs(out: Path, plan: dict[str, Any]) -> None:
             "last_progress": False,
             "no_progress_cycles": 0,
             "simulated": {
-                "patch_backlog": 2,
+                "unvalidated_patch_backlog": 2,
+                "validated_patch_backlog": 0,
                 "validation_backlog": 3,
                 "integration_backlog": 2,
                 "validated_integrated_progress": 0,

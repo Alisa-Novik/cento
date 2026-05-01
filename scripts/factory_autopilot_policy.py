@@ -36,14 +36,14 @@ def default_policy(max_cycles: int) -> dict[str, Any]:
             "stop",
         ],
         "priority": [
-            "missing_factory_state",
-            "invalid_queue",
-            "patch_backlog",
-            "validation_backlog",
-            "integration_backlog",
-            "storage_hold_live_fanout",
-            "runnable_tasks",
-            "nothing_runnable",
+            "hard_safety_gates",
+            "recovery_collection",
+            "state_materialization",
+            "validation_first_for_unvalidated_outputs",
+            "integration_only_for_validated_candidates",
+            "evidence_render",
+            "dispatch_when_downstream_clear",
+            "hold_stop",
         ],
         "limits": {
             "dispatch_dry_run_max_tasks_per_cycle": 1,
@@ -85,12 +85,15 @@ def decide(scan: dict[str, Any], state: dict[str, Any], policy: dict[str, Any]) 
     elif not safety.get("passed", True) and safety.get("reasons") != ["queue_invalid"]:
         action = "hold"
         reasons.extend(str(item) for item in safety.get("reasons") or ["safety_gate_failed"])
-    elif int(backlogs.get("patch", 0) or 0) > 0:
-        action = "integrate_dry_run"
-        reasons.append("patch_backlog_before_more_dispatch")
+    elif int(backlogs.get("unvalidated_patch", 0) or 0) > 0:
+        action = "validate"
+        reasons.append("unvalidated_patch_backlog_before_integration")
     elif int(backlogs.get("validation", 0) or 0) > 0:
         action = "validate"
         reasons.append("validation_backlog_before_more_dispatch")
+    elif int(backlogs.get("validated_patch", 0) or 0) > 0:
+        action = "integrate_dry_run"
+        reasons.append("validated_patch_backlog_ready_for_integration")
     elif int(backlogs.get("integration", 0) or 0) > 0:
         action = "integrate_dry_run"
         reasons.append("integration_backlog_before_more_dispatch")

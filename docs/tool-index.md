@@ -569,7 +569,7 @@
 - `lane`: `planning`
 - `kind`: `python`
 - `entrypoint`: `./scripts/factory.py`
-- description: Manifest-driven factory workflow that turns a high-level request into intake artifacts, a validated factory-plan.json, story manifests, validation manifests, queue ledgers, owned-path leases, worktree metadata, prompt bundles, patch collection, integration dry-runs, isolated Safe Integrator branches, per-patch validation, rollback metadata, release candidates, release status, Autopilot dry-run control cycles, and static evidence hubs without default AI dispatch.
+- description: Manifest-driven factory workflow that turns a high-level request into intake artifacts, a validated factory-plan.json, story manifests, validation manifests, queue ledgers, owned-path leases, worktree metadata, prompt bundles, patch collection, integration dry-runs, isolated Safe Integrator branches, per-patch validation, rollback metadata, release candidates, release status, Autopilot dry-run control cycles, runtime adapter contracts, and static evidence hubs without default AI dispatch.
 - commands:
   - `cento factory intake "develop me a career consulting module" --dry-run --out workspace/runs/factory/factory-planning-e2e`
   - `cento factory plan workspace/runs/factory/factory-planning-e2e --no-model`
@@ -594,6 +594,12 @@
   - `cento factory autopilot factory-autopilot-runtime-e2e --dry-run --cycles 5`
   - `cento factory autopilot-status factory-autopilot-runtime-e2e --json`
   - `cento factory autopilot-render factory-autopilot-runtime-e2e`
+  - `cento factory runtime list --json`
+  - `cento factory runtime prepare factory-runtime-adapters-e2e --task factory-runtime-task-01 --runtime noop --dry-run`
+  - `cento factory runtime launch factory-runtime-adapters-e2e --task factory-runtime-task-01 --runtime noop --dry-run`
+  - `cento factory runtime status factory-runtime-adapters-e2e --task factory-runtime-task-01 --json`
+  - `cento factory runtime collect factory-runtime-adapters-e2e --task factory-runtime-task-01`
+  - `cento factory runtime cancel factory-runtime-adapters-e2e --task factory-runtime-task-01 --dry-run`
 
 ## Cento Storage
 

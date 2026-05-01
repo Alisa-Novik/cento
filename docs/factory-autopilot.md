@@ -28,14 +28,14 @@ The v1 priority order is:
 
 1. Missing factory state: materialize or stop with a clear reason.
 2. Invalid or missing queue: queue.
-3. Patch backlog: integrate dry-run before more dispatch.
+3. Unvalidated patch backlog: validate before integration.
 4. Validation backlog: validate before more dispatch.
-5. Integration backlog: integrate dry-run before more dispatch.
+5. Validated patch or integration backlog: integrate dry-run before more dispatch.
 6. Storage pressure: hold live fanout, but continue dry-run cycles.
 7. Runnable tasks and clear downstream: dispatch exactly one dry-run task.
 8. Nothing runnable: render summary or stop.
 
-The primary metric is validated integrated output per dollar. Because v1 is dry-run only, metrics report simulated validated integrated progress, blocked reasons, readiness for real execution, cycle decisions, and evidence completeness.
+The primary metric is validated integrated output per dollar. Because v1 is dry-run only, metrics report simulated validated integrated progress, blocked reasons, readiness for real execution, cycle decisions, action-effect deltas, and evidence completeness.
 
 ## Fixture
 

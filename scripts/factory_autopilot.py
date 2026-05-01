@@ -54,6 +54,7 @@ def command_for_action(run_dir: Path, action: str) -> list[str]:
 
 
 def write_cycle_summary(cycle_dir: Path, decision: dict[str, Any], result: dict[str, Any]) -> None:
+    effect = result.get("effect") if isinstance(result.get("effect"), dict) else {}
     lines = [
         f"# Autopilot Cycle {cycle_dir.name}",
         "",
@@ -66,34 +67,73 @@ def write_cycle_summary(cycle_dir: Path, decision: dict[str, Any], result: dict[
         "",
         *[f"- `{item}`" for item in decision.get("reasons") or []],
         "",
+        "## Effect",
+        "",
+        f"- Validation backlog: `{(effect.get('before') or {}).get('validation_backlog', 0)}` -> `{(effect.get('after') or {}).get('validation_backlog', 0)}`",
+        f"- Integration backlog: `{(effect.get('before') or {}).get('integration_backlog', 0)}` -> `{(effect.get('after') or {}).get('integration_backlog', 0)}`",
+        f"- Unvalidated patch backlog: `{(effect.get('before') or {}).get('unvalidated_patch_backlog', 0)}` -> `{(effect.get('after') or {}).get('unvalidated_patch_backlog', 0)}`",
+        f"- Validated patch backlog: `{(effect.get('before') or {}).get('validated_patch_backlog', 0)}` -> `{(effect.get('after') or {}).get('validated_patch_backlog', 0)}`",
+        "",
     ]
     (cycle_dir / "summary.md").write_text("\n".join(lines), encoding="utf-8")
 
 
-def update_simulated_state(state: dict[str, Any], scan: dict[str, Any], action: str, success: bool) -> bool:
+def effect_snapshot(state: dict[str, Any], scan: dict[str, Any]) -> dict[str, Any]:
     simulated = state.setdefault("simulated", {})
     backlogs = scan.get("backlogs") if isinstance(scan.get("backlogs"), dict) else {}
-    for key in ("patch", "validation", "integration"):
-        field = f"{key}_backlog"
+    defaults = {
+        "validation_backlog": int(backlogs.get("validation", 0) or 0),
+        "integration_backlog": int(backlogs.get("integration", 0) or 0),
+        "unvalidated_patch_backlog": int(backlogs.get("unvalidated_patch", 0) or 0),
+        "validated_patch_backlog": int(backlogs.get("validated_patch", 0) or 0),
+    }
+    for field, value in defaults.items():
         if simulated.get(field) is None:
-            simulated[field] = int(backlogs.get(key, 0) or 0)
-    before = json.dumps(simulated, sort_keys=True)
+            simulated[field] = value
+    return {
+        "validation_backlog": int(simulated.get("validation_backlog") or 0),
+        "integration_backlog": int(simulated.get("integration_backlog") or 0),
+        "unvalidated_patch_backlog": int(simulated.get("unvalidated_patch_backlog") or 0),
+        "validated_patch_backlog": int(simulated.get("validated_patch_backlog") or 0),
+        "ready_to_dispatch": int(backlogs.get("ready_to_dispatch", 0) or 0),
+        "blocked_reasons": [str(item) for item in simulated.get("blocked_reasons") or []],
+    }
+
+
+def update_simulated_state(state: dict[str, Any], scan: dict[str, Any], action: str, success: bool) -> dict[str, Any]:
+    simulated = state.setdefault("simulated", {})
+    before_snapshot = effect_snapshot(state, scan)
     if success and action == "integrate_dry_run":
-        if int(simulated.get("patch_backlog") or 0) > 0:
-            simulated["patch_backlog"] = max(0, int(simulated.get("patch_backlog") or 0) - 1)
+        if int(simulated.get("validated_patch_backlog") or 0) > 0:
+            simulated["validated_patch_backlog"] = max(0, int(simulated.get("validated_patch_backlog") or 0) - 1)
             simulated["integration_backlog"] = int(simulated.get("integration_backlog") or 0) + 1
         elif int(simulated.get("integration_backlog") or 0) > 0:
             simulated["integration_backlog"] = max(0, int(simulated.get("integration_backlog") or 0) - 1)
             simulated["validated_integrated_progress"] = int(simulated.get("validated_integrated_progress") or 0) + 1
     elif success and action == "validate":
-        if int(simulated.get("validation_backlog") or 0) > 0:
+        if int(simulated.get("unvalidated_patch_backlog") or 0) > 0:
+            simulated["unvalidated_patch_backlog"] = max(0, int(simulated.get("unvalidated_patch_backlog") or 0) - 1)
+            simulated["validated_patch_backlog"] = int(simulated.get("validated_patch_backlog") or 0) + 1
+        elif int(simulated.get("validation_backlog") or 0) > 0:
             simulated["validation_backlog"] = max(0, int(simulated.get("validation_backlog") or 0) - 1)
-            simulated["integration_backlog"] = int(simulated.get("integration_backlog") or 0) + 1
+            simulated["validated_patch_backlog"] = int(simulated.get("validated_patch_backlog") or 0) + 1
     elif success and action == "dispatch_dry_run":
-        simulated["validation_backlog"] = int(simulated.get("validation_backlog") or 0) + 1
+        simulated["unvalidated_patch_backlog"] = int(simulated.get("unvalidated_patch_backlog") or 0) + 1
     elif success and action in {"materialize", "queue", "render"}:
         simulated["last_framework_progress"] = action
-    return before != json.dumps(simulated, sort_keys=True)
+    after_snapshot = effect_snapshot(state, scan)
+    return {
+        "schema_version": "factory-autopilot-action-effect/v1",
+        "before": before_snapshot,
+        "after": after_snapshot,
+        "progress_made": before_snapshot != after_snapshot,
+        "action_effectiveness": {
+            "validation_backlog_delta": before_snapshot["validation_backlog"] - after_snapshot["validation_backlog"],
+            "integration_backlog_delta": before_snapshot["integration_backlog"] - after_snapshot["integration_backlog"],
+            "unvalidated_patch_backlog_delta": before_snapshot["unvalidated_patch_backlog"] - after_snapshot["unvalidated_patch_backlog"],
+            "validated_patch_backlog_delta": before_snapshot["validated_patch_backlog"] - after_snapshot["validated_patch_backlog"],
+        },
+    }
 
 
 def write_metrics(run_dir: Path, state: dict[str, Any], scan: dict[str, Any], decision: dict[str, Any]) -> dict[str, Any]:
@@ -168,7 +208,8 @@ def execute_cycle(run_dir: Path, max_cycles: int) -> dict[str, Any]:
     else:
         raw_result = run_command(command)
     success = int(raw_result["exit_code"]) == 0 or decision.get("action") in {"validate", "integrate_dry_run"}
-    progress = update_simulated_state(state, scan, str(decision.get("action") or ""), success)
+    effect = update_simulated_state(state, scan, str(decision.get("action") or ""), success)
+    progress = bool(effect.get("progress_made"))
     state["cycles_completed"] = cycle_no
     state["last_action"] = decision.get("action")
     state["last_progress"] = progress
@@ -182,6 +223,7 @@ def execute_cycle(run_dir: Path, max_cycles: int) -> dict[str, Any]:
         "action": decision.get("action"),
         "decision": "completed" if success else "failed",
         "progress": progress,
+        "effect": effect,
         "raw_result": raw_result,
         "ai_calls_used": 0,
         "estimated_cost_usd": 0,

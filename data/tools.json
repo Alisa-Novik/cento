@@ -1247,7 +1247,7 @@
       "lane": "planning",
       "kind": "python",
       "entrypoint": "./scripts/factory.py",
-      "description": "Manifest-driven factory workflow that turns a high-level request into intake artifacts, a validated factory-plan.json, story manifests, validation manifests, queue ledgers, owned-path leases, worktree metadata, prompt bundles, patch collection, integration dry-runs, isolated Safe Integrator branches, per-patch validation, rollback metadata, release candidates, release status, Autopilot dry-run control cycles, and static evidence hubs without default AI dispatch.",
+      "description": "Manifest-driven factory workflow that turns a high-level request into intake artifacts, a validated factory-plan.json, story manifests, validation manifests, queue ledgers, owned-path leases, worktree metadata, prompt bundles, patch collection, integration dry-runs, isolated Safe Integrator branches, per-patch validation, rollback metadata, release candidates, release status, Autopilot dry-run control cycles, runtime adapter contracts, and static evidence hubs without default AI dispatch.",
       "platforms": [
         "linux",
         "macos"
@@ -1275,7 +1275,13 @@
         "cento factory status workspace/runs/factory/factory-planning-e2e",
         "cento factory autopilot factory-autopilot-runtime-e2e --dry-run --cycles 5",
         "cento factory autopilot-status factory-autopilot-runtime-e2e --json",
-        "cento factory autopilot-render factory-autopilot-runtime-e2e"
+        "cento factory autopilot-render factory-autopilot-runtime-e2e",
+        "cento factory runtime list --json",
+        "cento factory runtime prepare factory-runtime-adapters-e2e --task factory-runtime-task-01 --runtime noop --dry-run",
+        "cento factory runtime launch factory-runtime-adapters-e2e --task factory-runtime-task-01 --runtime noop --dry-run",
+        "cento factory runtime status factory-runtime-adapters-e2e --task factory-runtime-task-01 --json",
+        "cento factory runtime collect factory-runtime-adapters-e2e --task factory-runtime-task-01",
+        "cento factory runtime cancel factory-runtime-adapters-e2e --task factory-runtime-task-01 --dry-run"
       ],
       "outputs": [
         "workspace/runs/factory/<run-id>/request.md",
@@ -1318,12 +1324,20 @@
         "workspace/runs/factory/<run-id>/autopilot/cycles/<cycle>/result.json",
         "workspace/runs/factory/<run-id>/autopilot/metrics.json",
         "workspace/runs/factory/<run-id>/autopilot/stop-reason.json",
-        "workspace/runs/factory/<run-id>/autopilot/autopilot-summary.md"
+        "workspace/runs/factory/<run-id>/autopilot/autopilot-summary.md",
+        "workspace/runs/factory/<run-id>/runtime/<task-id>/adapter-run.json",
+        "workspace/runs/factory/<run-id>/runtime/<task-id>/launch-plan.json",
+        "workspace/runs/factory/<run-id>/runtime/<task-id>/worker-ledger.json",
+        "workspace/runs/factory/<run-id>/runtime/<task-id>/heartbeat.json",
+        "workspace/runs/factory/<run-id>/runtime/<task-id>/status.json",
+        "workspace/runs/factory/<run-id>/runtime/<task-id>/cost.json",
+        "workspace/runs/factory/<run-id>/runtime/<task-id>/patch/patch.json",
+        "workspace/runs/factory/<run-id>/runtime/<task-id>/collect-result.json"
       ],
       "notes": [
         "Factory defaults to no-model dry-runs. Live Taskstream issue creation requires --apply, and AI dispatch is never launched by default.",
         "Every generated task has owned scope, expected outputs, validation commands, no-model eligibility, and dependency metadata.",
-        "Use factory-plan validation, story-manifest validation, validation-manifest validation, Agent Manager preflight, owned-path leases, patch collection, integration dry-run, Safe Integrator apply/validate gates, Autopilot cycle evidence, merge readiness, rollback metadata, and release status as required guardrails before worker dispatch or human merge review."
+        "Use factory-plan validation, story-manifest validation, validation-manifest validation, Agent Manager preflight, owned-path leases, runtime adapter contracts, patch collection, integration dry-run, Safe Integrator apply/validate gates, Autopilot cycle evidence, merge readiness, rollback metadata, and release status as required guardrails before worker dispatch or human merge review."
       ]
     },
     {

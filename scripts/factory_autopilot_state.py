@@ -71,7 +71,8 @@ def default_state(run_dir: Path) -> dict[str, Any]:
         "simulated": {
             "validation_backlog": None,
             "integration_backlog": None,
-            "patch_backlog": None,
+            "unvalidated_patch_backlog": None,
+            "validated_patch_backlog": None,
             "validated_integrated_progress": 0,
             "blocked_reasons": [],
         },
@@ -90,6 +91,10 @@ def load_state(run_dir: Path) -> dict[str, Any]:
     if state.get("schema_version") != AUTOPILOT_SCHEMA:
         state["schema_version"] = AUTOPILOT_SCHEMA
     state.setdefault("simulated", {})
+    simulated = state["simulated"]
+    if isinstance(simulated, dict) and "patch_backlog" in simulated and "unvalidated_patch_backlog" not in simulated:
+        simulated["unvalidated_patch_backlog"] = simulated.get("patch_backlog")
+        simulated["validated_patch_backlog"] = 0
     state.setdefault("artifacts", {})
     return state
 
@@ -133,7 +138,7 @@ def queue_status_counts(queue: dict[str, Any]) -> dict[str, int]:
 
 
 def patch_counts(run_dir: Path) -> dict[str, int]:
-    counts = {"candidate": 0, "missing": 0, "rejected": 0, "collected": 0, "total": 0}
+    counts = {"candidate": 0, "missing": 0, "rejected": 0, "collected": 0, "validated": 0, "unvalidated": 0, "total": 0}
     for path in sorted((run_dir / "patches").glob("*/patch.json")):
         try:
             payload = read_json(path)
@@ -146,6 +151,17 @@ def patch_counts(run_dir: Path) -> dict[str, int]:
             counts[integration_status] += 1
         if collection_state == "collected":
             counts["collected"] += 1
+        validation_status = ""
+        validation_path = path.parent / str(payload.get("validation_result") or "validation-result.json")
+        if validation_path.exists():
+            try:
+                validation_status = str(read_json(validation_path).get("status") or "")
+            except (OSError, ValueError, json.JSONDecodeError):
+                validation_status = ""
+        if collection_state == "collected" and integration_status == "candidate" and validation_status in {"passed", "pass", "ok"}:
+            counts["validated"] += 1
+        elif collection_state == "collected" and integration_status in {"candidate", "missing", "rejected"}:
+            counts["unvalidated"] += 1
     return counts
 
 
@@ -196,12 +212,16 @@ def scan(run_dir: Path, state: dict[str, Any] | None = None) -> dict[str, Any]:
     integration = integration_counts(run_dir)
     simulated = state.get("simulated") if isinstance(state.get("simulated"), dict) else {}
 
-    computed_validation = counts.get("validating", 0)
+    computed_validation = counts.get("validating", 0) + patches.get("unvalidated", 0)
     computed_integration = counts.get("ready_to_integrate", 0) + integration.get("candidates", 0)
-    computed_patch = patches.get("candidate", 0) + counts.get("collecting", 0)
+    computed_unvalidated_patch = patches.get("unvalidated", 0) + counts.get("collecting", 0)
+    computed_validated_patch = patches.get("validated", 0)
     validation_backlog = computed_validation if simulated.get("validation_backlog") is None else int(simulated.get("validation_backlog") or 0)
     integration_backlog = computed_integration if simulated.get("integration_backlog") is None else int(simulated.get("integration_backlog") or 0)
-    patch_backlog = computed_patch if simulated.get("patch_backlog") is None else int(simulated.get("patch_backlog") or 0)
+    unvalidated_patch_backlog = (
+        computed_unvalidated_patch if simulated.get("unvalidated_patch_backlog") is None else int(simulated.get("unvalidated_patch_backlog") or 0)
+    )
+    validated_patch_backlog = computed_validated_patch if simulated.get("validated_patch_backlog") is None else int(simulated.get("validated_patch_backlog") or 0)
 
     storage_pressure = load_storage_pressure()
     agent_manager = load_agent_manager_health()
@@ -227,10 +247,13 @@ def scan(run_dir: Path, state: dict[str, Any] | None = None) -> dict[str, Any]:
             "owned_path_conflicts": plan_owned_path_conflicts(plan),
         },
         "backlogs": {
-            "patch": patch_backlog,
+            "unvalidated_patch": unvalidated_patch_backlog,
+            "validated_patch": validated_patch_backlog,
+            "patch": unvalidated_patch_backlog + validated_patch_backlog,
             "validation": validation_backlog,
             "integration": integration_backlog,
             "blocked": counts.get("blocked", 0),
+            "ready_to_dispatch": counts.get("queued", 0),
         },
         "patches": patches,
         "integration": integration,

@@ -18,6 +18,7 @@ import factory_dispatch_core
 import factory_integrator_core
 import factory_autopilot
 import factory_autopilot_render
+import factory_runtime
 import factory_render
 import story_manifest
 import validation_manifest
@@ -888,6 +889,10 @@ def command_autopilot_render(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_runtime(args: argparse.Namespace) -> int:
+    return factory_runtime.main(args.runtime_args)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Cento Factory workflow for manifest-driven planning, queueing, dry-run dispatch, integration gates, and release evidence.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1019,6 +1024,10 @@ def build_parser() -> argparse.ArgumentParser:
     autopilot_render.add_argument("run_id")
     autopilot_render.add_argument("--json", action="store_true")
     autopilot_render.set_defaults(func=command_autopilot_render)
+
+    runtime = sub.add_parser("runtime", help="Run Factory runtime adapter contract commands.")
+    runtime.add_argument("runtime_args", nargs=argparse.REMAINDER)
+    runtime.set_defaults(func=command_runtime)
     return parser
 
 

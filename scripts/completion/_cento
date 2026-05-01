@@ -245,7 +245,22 @@ _cento() {
               'status[Show factory run artifact status]' \
               'autopilot[Run dry-run Autopilot control cycles]' \
               'autopilot-status[Show Autopilot runtime status]' \
-              'autopilot-render[Render Autopilot evidence]'
+              'autopilot-render[Render Autopilot evidence]' \
+              'runtime[Run runtime adapter contract commands]'
+          elif (( CURRENT == 4 )) && [[ "${words[3]:-}" == "runtime" ]]; then
+            _values 'runtime command' \
+              'list[List runtime adapters]' \
+              'prepare[Prepare an adapter run]' \
+              'launch[Launch or simulate an adapter run]' \
+              'status[Show adapter status]' \
+              'collect[Collect adapter output]' \
+              'cancel[Cancel or simulate cancellation]'
+          else
+            _arguments \
+              '--task[Factory task id]:task:' \
+              '--runtime[Runtime adapter]:runtime:(noop local-shell-fixture codex-dry-run)' \
+              '--dry-run[Do not execute real workers]' \
+              '--json[Print JSON]'
           fi
           ;;
         storage)
