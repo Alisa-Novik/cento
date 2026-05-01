@@ -32,6 +32,15 @@ def load_json(path: Path) -> dict[str, Any]:
     return payload
 
 
+def load_optional_json(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    try:
+        return load_json(path)
+    except SystemExit:
+        return {}
+
+
 def badge_class(status: str) -> str:
     value = status.lower().replace("_", "-").replace(" ", "-")
     if value in {"implemented", "existing-capability"}:
@@ -46,6 +55,32 @@ def badge_class(status: str) -> str:
 def render_start(plan: dict[str, Any], run_dir: Path) -> str:
     tasks = plan.get("tasks") or []
     request = plan.get("request") if isinstance(plan.get("request"), dict) else {}
+    queue = load_optional_json(run_dir / "queue" / "queue.json") or load_optional_json(run_dir / "queue" / "state.json")
+    leases = load_optional_json(run_dir / "queue" / "leases.json")
+    dispatch = load_optional_json(run_dir / "dispatch-plan.json")
+    patch_collection = load_optional_json(run_dir / "patch-collection-summary.json")
+    integration = load_optional_json(run_dir / "integration" / "integration-plan.json") or load_optional_json(run_dir / "integration-plan.json")
+    validation = load_optional_json(run_dir / "evidence" / "validation-summary.json") or load_optional_json(run_dir / "validation-summary.json")
+    queue_stats = queue.get("stats") if isinstance(queue.get("stats"), dict) else {}
+    active_leases = [item for item in leases.get("leases", []) if isinstance(item, dict) and item.get("status") in {"active", "running", "validating", "simulated"}]
+    patches = patch_collection.get("patches") if isinstance(patch_collection.get("patches"), list) else []
+    checks = validation.get("checks") if isinstance(validation.get("checks"), list) else []
+    section_cards = [
+        ("Factory Overview", f"{len(tasks)} tasks, mode {plan.get('mode') or 'dry_run'}"),
+        ("Queue", f"{queue_stats.get('queued', 0)} queued, {queue_stats.get('planned', queue_stats.get('waiting', 0))} planned"),
+        ("Active Leases", f"{len(active_leases)} active or simulated leases"),
+        ("Worktrees", f"{len(dispatch.get('selected') or [])} worktree allocations planned"),
+        ("Patch Queue", f"{len(patches)} patch bundle states collected"),
+        ("Integration Dry-Run", str(integration.get("decision") or "not run")),
+        ("Validation Ladder", f"{sum(1 for item in checks if isinstance(item, dict) and item.get('passed'))}/{len(checks)} checks passed"),
+        ("Cost & Model Usage", f"{validation.get('ai_calls_used', 0)} AI calls used"),
+        ("Research Implementation Linkage", "implementation-map.html"),
+        ("Release Packet", "release-packet.md"),
+    ]
+    section_html = "".join(
+        f"<article class=\"section\"><span>{html.escape(title)}</span><strong>{html.escape(detail)}</strong></article>"
+        for title, detail in section_cards
+    )
     rows = []
     for task in tasks:
         if not isinstance(task, dict):
@@ -75,10 +110,14 @@ def render_start(plan: dict[str, Any], run_dir: Path) -> str:
     h1 {{ margin: 0 0 8px; font-size: 36px; }}
     .sub {{ color: #b8aea4; margin: 0 0 28px; }}
     .grid {{ display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 24px 0; }}
+    .sections {{ display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 18px 0 24px; }}
     .card, table {{ border: 1px solid #33251d; background: #11100f; }}
     .card {{ padding: 16px; }}
     .card span {{ display: block; color: #b8aea4; font-size: 12px; text-transform: uppercase; }}
     .card strong {{ font-size: 24px; color: #ff5a00; }}
+    .section {{ border: 1px solid #33251d; background: #0f0e0d; min-height: 72px; padding: 12px; }}
+    .section span {{ display: block; color: #b8aea4; font-size: 11px; font-weight: 900; text-transform: uppercase; }}
+    .section strong {{ display: block; margin-top: 8px; color: #f4efe8; font-size: 14px; }}
     table {{ width: 100%; border-collapse: collapse; }}
     th, td {{ border-bottom: 1px solid #251d18; padding: 10px; text-align: left; vertical-align: top; }}
     th {{ color: #b8aea4; font-size: 12px; text-transform: uppercase; }}
@@ -99,15 +138,17 @@ def render_start(plan: dict[str, Any], run_dir: Path) -> str:
     </div>
     <div class="actions">
       <a href="factory-plan.json">factory-plan.json</a>
-      <a href="queue/state.json">queue</a>
+      <a href="queue/queue.json">queue</a>
       <a href="dispatch-plan.json">dispatch plan</a>
-      <a href="integration-plan.json">integration gate</a>
+      <a href="integration/integration-plan.json">integration dry-run</a>
+      <a href="release-packet.md">release packet</a>
       <a href="delivery-status.json">delivery status</a>
       <a href="implementation-map.html">Implementation Map</a>
       <a href="summary.md">summary.md</a>
       <a href="release-notes.md">release-notes.md</a>
       <a href="project-delivery.md">project-delivery.md</a>
     </div>
+    <section class="sections" aria-label="Factory dispatch sections">{section_html}</section>
     <table>
       <thead><tr><th>Task</th><th>Title</th><th>Lane</th><th>Risk</th><th>Story</th><th>Validation</th></tr></thead>
       <tbody>{''.join(rows)}</tbody>
@@ -224,17 +265,21 @@ def write_summary(plan: dict[str, Any], run_dir: Path) -> None:
         "## Outputs",
         "",
         "- `factory-plan.json`",
+        "- `queue/queue.json`",
+        "- `dispatch-plan.json`",
+        "- `integration/dry-run-summary.md`",
         "- `start-here.html`",
         "- `implementation-map.html`",
+        "- `release-packet.md`",
         "- `release-notes.md`",
     ]
     (run_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     (run_dir / "release-notes.md").write_text(
         "\n".join(
             [
-                "# Factory Planning V1 Release Notes",
+                "# Factory Dispatch V1 Release Notes",
                 "",
-                "Plan-only factory artifacts were generated with no worker dispatch.",
+                "Dry-run execution control-plane artifacts were generated with no live worker fanout.",
                 "",
                 f"- Generated at: `{datetime.now().astimezone().isoformat(timespec='seconds')}`",
                 f"- Package: `{plan.get('package')}`",

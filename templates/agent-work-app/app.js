@@ -1701,6 +1701,12 @@ function renderFactory(payload) {
   factoryRunList.innerHTML = runs
     .map((run) => {
       const queue = run.queue || {};
+      const integration = run.integration || {};
+      const validation = run.validation || {};
+      const preflight = run.preflight || {};
+      const queueTasks = Array.isArray(run.queue_tasks) ? run.queue_tasks : [];
+      const leases = Array.isArray(run.leases) ? run.leases : [];
+      const patches = Array.isArray(run.patch_queue) ? run.patch_queue : [];
       const decision = String(run.decision || "incomplete");
       const statusClassName = decision === "delivered" ? "good" : decision === "approve" ? "good" : "warn";
       const hubLink = run.start_hub
@@ -1709,6 +1715,22 @@ function renderFactory(payload) {
       const mapLink = run.implementation_map
         ? `<a href="${escapeHtml(`/api/artifacts?path=${encodeURIComponent(run.implementation_map)}`)}" target="_blank" rel="noreferrer">map</a>`
         : `<span>map missing</span>`;
+      const releaseLink = run.release_packet
+        ? `<a href="${escapeHtml(`/api/artifacts?path=${encodeURIComponent(run.release_packet)}`)}" target="_blank" rel="noreferrer">release packet</a>`
+        : `<span>release packet pending</span>`;
+      const queuePreview = queueTasks
+        .slice(0, 4)
+        .map((item) => `<li>${escapeHtml(item.task_id || "")}: ${escapeHtml(item.status || "")}</li>`)
+        .join("") || `<li>No queue entries yet</li>`;
+      const leasePreview = leases
+        .slice(0, 3)
+        .map((item) => `<li>${escapeHtml(item.task_id || "")}: ${escapeHtml(item.status || "")}</li>`)
+        .join("") || `<li>No active leases</li>`;
+      const patchPreview = patches
+        .slice(0, 4)
+        .map((item) => `<li>${escapeHtml(item.task_id || "")}: ${escapeHtml(item.state || item.integration_status || "")}</li>`)
+        .join("") || `<li>No patch bundles collected</li>`;
+      const preflightReason = Array.isArray(preflight.reasons) && preflight.reasons.length ? preflight.reasons[0] : "no blockers";
       return `
         <article class="factoryRunCard">
           <div class="factoryRunTop">
@@ -1723,13 +1745,46 @@ function renderFactory(payload) {
             <span>${escapeHtml(String(queue.queued || 0))} queued</span>
             <span>${escapeHtml(String(queue.waiting || 0))} waiting</span>
             <span>${escapeHtml(String(run.dispatch_selected || 0))} dispatch planned</span>
+            <span>${escapeHtml(String(preflight.status || "not_run"))} preflight</span>
+            <span>${escapeHtml(String(run.integration_decision || "not_run"))} integration</span>
             <span>${escapeHtml(String(run.ai_calls_used || 0))} AI calls</span>
+            <span>$${escapeHtml(String(Number(run.estimated_cost_usd || 0).toFixed(2)))} est.</span>
             <span>${escapeHtml(String(Math.round(Number(run.total_duration_ms || 0))))} ms</span>
+          </div>
+          <div class="factoryRunSections">
+            <section class="factoryMiniPanel">
+              <h3>Queue</h3>
+              <ul>${queuePreview}</ul>
+            </section>
+            <section class="factoryMiniPanel">
+              <h3>Active Leases</h3>
+              <ul>${leasePreview}</ul>
+            </section>
+            <section class="factoryMiniPanel">
+              <h3>Patch Queue</h3>
+              <ul>${patchPreview}</ul>
+            </section>
+            <section class="factoryMiniPanel">
+              <h3>Integration Dry-Run</h3>
+              <p>${escapeHtml(String(integration.candidates || 0))} candidates, ${escapeHtml(String(integration.rejected || 0))} rejected, ${escapeHtml(String(integration.conflicts || 0))} conflicts.</p>
+              <p>Release gates: ${escapeHtml(integration.release_gate_status || "pending")}</p>
+            </section>
+            <section class="factoryMiniPanel">
+              <h3>Validation Ladder</h3>
+              <p>${escapeHtml(String(validation.passed || 0))}/${escapeHtml(String(validation.checks || 0))} checks passed.</p>
+              <p>Preflight: ${escapeHtml(preflightReason)}</p>
+            </section>
+            <section class="factoryMiniPanel">
+              <h3>Cost & Model Usage</h3>
+              <p>${escapeHtml(String(run.ai_calls_used || 0))} AI calls used.</p>
+              <p>$${escapeHtml(String(Number(run.estimated_cost_usd || 0).toFixed(2)))} estimated cost.</p>
+            </section>
           </div>
           <div class="factoryRunLinks">
             <code>${escapeHtml(run.run_dir)}</code>
             ${hubLink}
             ${mapLink}
+            ${releaseLink}
           </div>
         </article>
       `;
