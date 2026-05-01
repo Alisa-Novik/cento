@@ -29,6 +29,9 @@ cento factory sync-taskstream factory-integration-e2e --dry-run
 cento factory release workspace/runs/factory/factory-planning-e2e --json
 cento factory render-hub workspace/runs/factory/factory-planning-e2e
 cento factory create-issues workspace/runs/factory/factory-planning-e2e --dry-run
+cento factory autopilot factory-autopilot-runtime-e2e --dry-run --cycles 5
+cento factory autopilot-status factory-autopilot-runtime-e2e --json
+cento factory autopilot-render factory-autopilot-runtime-e2e
 ```
 
 ## Artifacts
@@ -86,6 +89,16 @@ Each run writes under `workspace/runs/factory/<run-id>/`:
 - `validation-summary.json`, when the E2E runner is used
 - `delivery-status.json`
 - `project-delivery.md`
+- `autopilot/factory-state.json`
+- `autopilot/policy.json`
+- `autopilot/cycles/<cycle>/scan.json`
+- `autopilot/cycles/<cycle>/decision.json`
+- `autopilot/cycles/<cycle>/action.json`
+- `autopilot/cycles/<cycle>/result.json`
+- `autopilot/cycles/<cycle>/summary.md`
+- `autopilot/metrics.json`
+- `autopilot/stop-reason.json`
+- `autopilot/autopilot-summary.md`
 
 ## Guardrails
 
@@ -111,6 +124,8 @@ Generated story manifests are validated with `scripts/story_manifest.py`. Genera
 
 `release` writes `delivery-status.json`, `project-delivery.md`, and `release-packet.md`. A delivered run requires intake, plan, materialization, queue, dispatch plan, integration dry-run, evidence hub, implementation map, and validation summary.
 
+`autopilot --dry-run --cycles N` runs a deterministic control loop over an existing Factory run. Each cycle scans durable state, chooses exactly one safe action, runs one bounded dry-run command or hold/stop action, writes cycle evidence, updates `autopilot/factory-state.json`, and refreshes metrics. Storage pressure gates future live fanout but does not block dry-run cycles.
+
 ## E2E
 
 ```bash
@@ -125,6 +140,11 @@ python3 scripts/factory_dispatch_e2e.py \
 python3 scripts/factory_integration_e2e.py \
   --fixture career-consulting \
   --out workspace/runs/factory/factory-integration-e2e
+
+python3 scripts/factory_autopilot_runtime_e2e.py \
+  --fixture complex-project \
+  --tasks 50 \
+  --out workspace/runs/factory/factory-autopilot-runtime-e2e
 ```
 
 The E2E records mandatory timing stats per step and total stats in `validation-summary.json`. The expected AI usage for this slice is always:

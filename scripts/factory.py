@@ -16,6 +16,8 @@ from typing import Any
 import factory_plan
 import factory_dispatch_core
 import factory_integrator_core
+import factory_autopilot
+import factory_autopilot_render
 import factory_render
 import story_manifest
 import validation_manifest
@@ -865,6 +867,27 @@ def command_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_autopilot(args: argparse.Namespace) -> int:
+    run_dir = factory_dispatch_core.resolve_run_dir(args.run_id)
+    payload = factory_autopilot.run_autopilot(run_dir, cycles=args.cycles, dry_run=args.dry_run)
+    print(json.dumps(payload, indent=2, sort_keys=True) if args.json else payload["summary"])
+    return 0
+
+
+def command_autopilot_status(args: argparse.Namespace) -> int:
+    run_dir = factory_dispatch_core.resolve_run_dir(args.run_id)
+    payload = factory_autopilot.status(run_dir)
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0
+
+
+def command_autopilot_render(args: argparse.Namespace) -> int:
+    run_dir = factory_dispatch_core.resolve_run_dir(args.run_id)
+    payload = factory_autopilot_render.render(run_dir)
+    print(json.dumps(payload, indent=2, sort_keys=True) if args.json else payload["summary"])
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Cento Factory workflow for manifest-driven planning, queueing, dry-run dispatch, integration gates, and release evidence.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -979,6 +1002,23 @@ def build_parser() -> argparse.ArgumentParser:
     status.add_argument("run_dir")
     status.add_argument("--json", action="store_true")
     status.set_defaults(func=command_status)
+
+    autopilot = sub.add_parser("autopilot", help="Run deterministic dry-run Factory Autopilot control cycles.")
+    autopilot.add_argument("run_id")
+    autopilot.add_argument("--dry-run", action="store_true", default=True)
+    autopilot.add_argument("--cycles", type=int, default=5)
+    autopilot.add_argument("--json", action="store_true")
+    autopilot.set_defaults(func=command_autopilot)
+
+    autopilot_status = sub.add_parser("autopilot-status", help="Show Factory Autopilot runtime status.")
+    autopilot_status.add_argument("run_id")
+    autopilot_status.add_argument("--json", action="store_true")
+    autopilot_status.set_defaults(func=command_autopilot_status)
+
+    autopilot_render = sub.add_parser("autopilot-render", help="Render Factory Autopilot Markdown and HTML evidence.")
+    autopilot_render.add_argument("run_id")
+    autopilot_render.add_argument("--json", action="store_true")
+    autopilot_render.set_defaults(func=command_autopilot_render)
     return parser
 
 

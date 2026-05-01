@@ -28,7 +28,7 @@ This file is generated from `data/tools.json`.
 | `daily` | yes | yes | Bubble Tea execution cockpit for morning brief, midday recalibration, evening wrap-up, and local continuity. |
 | `dashboard` | no | yes | Run a localhost web dashboard with current state, recent cento activity, aliases, tools, and repo progress. |
 | `display-layout-fix` | no | yes | Detect two connected monitors, stack them vertically, and refresh wallpaper plus polybar. |
-| `factory` | yes | yes | Manifest-driven factory workflow that turns a high-level request into intake artifacts, a validated factory-plan.json, story manifests, validation manifests, queue ledgers, owned-path leases, worktree metadata, prompt bundles, patch collection, integration dry-runs, isolated Safe Integrator branches, per-patch validation, rollback metadata, release candidates, release status, and static evidence hubs without default AI dispatch. |
+| `factory` | yes | yes | Manifest-driven factory workflow that turns a high-level request into intake artifacts, queue state, integration gates, Autopilot dry-run control cycles, and static evidence hubs without default AI dispatch. |
 | `gather-context` | yes | yes | Gather AI-ready local and remote Cento context including platform support, repo state, command paths, MCP hints, and SSH connectivity. |
 | `i3reorg` | no | yes | Move numeric i3 workspaces to the bottom monitor, apply the preferred app map, and optionally place the Abao/Tokyo study YouTube window on top workspace L2 fullscreen. |
 | `incident` | yes | no | Bounded incident checks for Cento control-plane failures, with guarded SEV2 agent-work escalation for iPhone ce ingress failures. |

@@ -242,7 +242,10 @@ _cento() {
               'sync-taskstream[Preview Taskstream transitions from integration results]' \
               'release[Write delivery status]' \
               'render-hub[Render start-here and implementation map]' \
-              'status[Show factory run artifact status]'
+              'status[Show factory run artifact status]' \
+              'autopilot[Run dry-run Autopilot control cycles]' \
+              'autopilot-status[Show Autopilot runtime status]' \
+              'autopilot-render[Render Autopilot evidence]'
           fi
           ;;
         storage)
