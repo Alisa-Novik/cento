@@ -150,13 +150,31 @@
     },
     {
       "name": "run",
-      "summary": "Run a registered tool by id.",
-      "usage": "cento run TOOL [args...]",
-      "flags": [],
+      "summary": "Run a registered tool by id, or create a fast/standard/thorough execution contract.",
+      "usage": "cento run TOOL [args...] | cento run fast|standard|thorough --task TEXT [--write PATH]",
+      "flags": [
+        {
+          "name": "--mode fast|standard|thorough",
+          "summary": "Create an execution-mode contract without using the positional mode form.",
+          "usage": "cento run --mode fast --task \"Fix app docs page\" --write apps/foo/index.html"
+        },
+        {
+          "name": "--task TEXT",
+          "summary": "Operator task statement for execution-mode contracts.",
+          "usage": "cento run fast --task \"Fix app docs page\""
+        },
+        {
+          "name": "--write PATH",
+          "summary": "Owned writable path for the generated contract. Repeatable.",
+          "usage": "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html"
+        }
+      ],
       "examples": [
         "cento run scan --query \"mcp\"",
         "cento run crm docs",
-        "cento run factory status workspace/runs/factory/factory-planning-e2e"
+        "cento run factory status workspace/runs/factory/factory-planning-e2e",
+        "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html --route /docs/foo",
+        "cento run --mode standard --task \"Polish Kanji docs\" --write templates/agent-work-app/index.html --validation focused"
       ]
     },
     {

@@ -45,6 +45,8 @@ Built-ins:
   install [all|zsh|tmux]
                        Install cento shell and tmux integration
   run TOOL [args...]   Run a registered tool by id
+  run fast|standard|thorough --task TEXT [--write PATH]
+                       Create an execution-mode contract and Codex prompt
 
 Routing:
   cento TOOL [args...]    Run a registered tool directly
@@ -65,6 +67,7 @@ Examples:
   cento install all
   cento install zsh
   cento install tmux
+  cento run fast --task "Fix app docs page" --write apps/foo/index.html
   cento mcp doctor
   cento mcp docs
   cento scan --query "mcp"
@@ -560,6 +563,11 @@ main() {
             ;;
         run)
             [[ $# -gt 0 ]] || cento_die "Usage: cento run TOOL [args...]"
+            case "${1:-}" in
+                --mode|fast|standard|thorough)
+                    exec python3 "$ROOT_DIR/scripts/cento_run_mode.py" "$@"
+                    ;;
+            esac
             local tool_id=$1
             shift
             run_tool "$tool_id" "$@"
