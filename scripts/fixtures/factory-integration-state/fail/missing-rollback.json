@@ -1,0 +1,10 @@
+{
+  "schema_version": "factory-integration-state/v1",
+  "run_id": "fail-run",
+  "base_sha": "abc123",
+  "branch": {},
+  "applied_patches": [],
+  "rejected_patches": [],
+  "validation_after_each_patch": {},
+  "merge_readiness": {}
+}

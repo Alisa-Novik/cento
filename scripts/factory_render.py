@@ -60,11 +60,21 @@ def render_start(plan: dict[str, Any], run_dir: Path) -> str:
     dispatch = load_optional_json(run_dir / "dispatch-plan.json")
     patch_collection = load_optional_json(run_dir / "patch-collection-summary.json")
     integration = load_optional_json(run_dir / "integration" / "integration-plan.json") or load_optional_json(run_dir / "integration-plan.json")
+    integration_state = load_optional_json(run_dir / "integration" / "integration-state.json")
+    merge_readiness = load_optional_json(run_dir / "integration" / "merge-readiness.json")
+    applied_patches = load_optional_json(run_dir / "integration" / "applied-patches.json")
+    rejected_patches = load_optional_json(run_dir / "integration" / "rejected-patches.json")
+    validation_after_each = load_optional_json(run_dir / "integration" / "validation-after-each-patch.json")
     validation = load_optional_json(run_dir / "evidence" / "validation-summary.json") or load_optional_json(run_dir / "validation-summary.json")
     queue_stats = queue.get("stats") if isinstance(queue.get("stats"), dict) else {}
     active_leases = [item for item in leases.get("leases", []) if isinstance(item, dict) and item.get("status") in {"active", "running", "validating", "simulated"}]
     patches = patch_collection.get("patches") if isinstance(patch_collection.get("patches"), list) else []
     checks = validation.get("checks") if isinstance(validation.get("checks"), list) else []
+    applied_rows = applied_patches.get("patches") if isinstance(applied_patches.get("patches"), list) else integration_state.get("applied_patches") or []
+    rejected_rows = rejected_patches.get("patches") if isinstance(rejected_patches.get("patches"), list) else integration_state.get("rejected_patches") or []
+    per_patch_validations = validation_after_each.get("validations") if isinstance(validation_after_each.get("validations"), list) else (integration_state.get("validation_after_each_patch") or {}).get("validations") or []
+    readiness = merge_readiness or integration_state.get("merge_readiness") or {}
+    branch = integration_state.get("branch") if isinstance(integration_state.get("branch"), dict) else {}
     section_cards = [
         ("Factory Overview", f"{len(tasks)} tasks, mode {plan.get('mode') or 'dry_run'}"),
         ("Queue", f"{queue_stats.get('queued', 0)} queued, {queue_stats.get('planned', queue_stats.get('waiting', 0))} planned"),
@@ -72,6 +82,11 @@ def render_start(plan: dict[str, Any], run_dir: Path) -> str:
         ("Worktrees", f"{len(dispatch.get('selected') or [])} worktree allocations planned"),
         ("Patch Queue", f"{len(patches)} patch bundle states collected"),
         ("Integration Dry-Run", str(integration.get("decision") or "not run")),
+        ("Safe Integrator", f"{len(applied_rows)} applied, {len(rejected_rows)} rejected"),
+        ("Integration Branch", str(branch.get("branch") or "not prepared")),
+        ("Validation After Each", f"{len(per_patch_validations)} per-patch checks recorded"),
+        ("Merge Readiness", str(readiness.get("decision") or "pending")),
+        ("Rollback", f"{len((load_optional_json(run_dir / 'integration' / 'rollback-plan.json')).get('patches') or [])} reverse commands ready"),
         ("Validation Ladder", f"{sum(1 for item in checks if isinstance(item, dict) and item.get('passed'))}/{len(checks)} checks passed"),
         ("Cost & Model Usage", f"{validation.get('ai_calls_used', 0)} AI calls used"),
         ("Research Implementation Linkage", "implementation-map.html"),
@@ -141,6 +156,9 @@ def render_start(plan: dict[str, Any], run_dir: Path) -> str:
       <a href="queue/queue.json">queue</a>
       <a href="dispatch-plan.json">dispatch plan</a>
       <a href="integration/integration-plan.json">integration dry-run</a>
+      <a href="integration/integration-state.json">integration state</a>
+      <a href="integration/merge-readiness.json">merge readiness</a>
+      <a href="integration/release-candidate.md">release candidate</a>
       <a href="release-packet.md">release packet</a>
       <a href="delivery-status.json">delivery status</a>
       <a href="implementation-map.html">Implementation Map</a>

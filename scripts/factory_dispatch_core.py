@@ -1294,7 +1294,7 @@ def release_packet(run_dir: Path) -> dict[str, Any]:
         "## Deferred",
         "",
         "- Live runtime execution adapter.",
-        "- Actual patch application to an integration branch.",
+        "- Automatic merge to main.",
         "- Cross-node build farm validation.",
         "- Strong-model review automation.",
         "",
@@ -1309,6 +1309,8 @@ def status(run_dir: Path) -> dict[str, Any]:
     validation = read_json(run_dir / "evidence" / "validation-summary.json") if (run_dir / "evidence" / "validation-summary.json").exists() else {}
     preflight_payload = read_json(run_dir / "preflight-summary.json") if (run_dir / "preflight-summary.json").exists() else {}
     integration = read_json(run_dir / "integration" / "integration-plan.json") if (run_dir / "integration" / "integration-plan.json").exists() else {}
+    integration_state = read_json(run_dir / "integration" / "integration-state.json") if (run_dir / "integration" / "integration-state.json").exists() else {}
+    merge_readiness = read_json(run_dir / "integration" / "merge-readiness.json") if (run_dir / "integration" / "merge-readiness.json").exists() else {}
     tasks = normalize_queue_tasks(queue) if queue else []
     no_model = [item for item in tasks if item.get("no_model_eligible")]
     return {
@@ -1325,12 +1327,24 @@ def status(run_dir: Path) -> dict[str, Any]:
         "preflight_status": "blocked" if preflight_payload.get("blocked") else "passed" if preflight_payload else "not_run",
         "validation_decision": validation.get("decision", ""),
         "integration_decision": integration.get("decision", ""),
+        "safe_integrator": {
+            "state": bool(integration_state),
+            "branch": (integration_state.get("branch") or {}).get("branch", "") if isinstance(integration_state.get("branch"), dict) else "",
+            "applied_patches": len(integration_state.get("applied_patches") or []),
+            "rejected_patches": len(integration_state.get("rejected_patches") or []),
+            "merge_readiness": merge_readiness.get("decision", ""),
+            "rollback_plan": bool(integration_state.get("rollback_plan")),
+            "release_candidate": bool(integration_state.get("release_candidate")),
+        },
         "artifacts": {
             "queue": (queue_dir(run_dir) / "queue.json").exists(),
             "leases": (queue_dir(run_dir) / "leases.json").exists(),
             "dispatch_plan": (run_dir / "dispatch-plan.json").exists(),
             "patch_collection": (run_dir / "patch-collection-summary.json").exists(),
             "integration": (run_dir / "integration" / "integration-plan.json").exists(),
+            "integration_state": (run_dir / "integration" / "integration-state.json").exists(),
+            "merge_readiness": (run_dir / "integration" / "merge-readiness.json").exists(),
+            "release_candidate": (run_dir / "integration" / "release-candidate.md").exists(),
             "validation_summary": (run_dir / "evidence" / "validation-summary.json").exists(),
             "start_hub": (run_dir / "start-here.html").exists(),
             "release_packet": (run_dir / "release-packet.md").exists(),

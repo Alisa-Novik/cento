@@ -15,6 +15,7 @@ from typing import Any
 
 import factory_plan
 import factory_dispatch_core
+import factory_integrator_core
 import factory_render
 import story_manifest
 import validation_manifest
@@ -752,9 +753,53 @@ def command_validate(args: argparse.Namespace) -> int:
 
 def command_integrate(args: argparse.Namespace) -> int:
     run_dir = factory_dispatch_core.resolve_run_dir(args.run_dir)
+    if getattr(args, "plan", False):
+        payload = factory_integrator_core.create_apply_plan(run_dir)
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0
+    if getattr(args, "prepare_branch", False):
+        payload = factory_integrator_core.prepare_branch(
+            run_dir,
+            branch=args.branch,
+            worktree=args.worktree or None,
+            dry_run=args.dry_run,
+        )
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0 if payload["status"] != "failed" else 1
+    if getattr(args, "apply", False):
+        payload = factory_integrator_core.apply_patches(
+            run_dir,
+            worktree=args.worktree or None,
+            branch=args.branch,
+            limit=args.limit,
+            validate_each=args.validate_each,
+        )
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0 if not payload.get("rejected") else 1
     integration = factory_dispatch_core.integration_dry_run(run_dir)
     print(json.dumps(integration, indent=2, sort_keys=True))
     return 0 if integration["decision"] != "blocked" else 1
+
+
+def command_validate_integrated(args: argparse.Namespace) -> int:
+    run_dir = factory_dispatch_core.resolve_run_dir(args.run_dir)
+    payload = factory_integrator_core.validate_integrated(run_dir)
+    print(json.dumps(payload, indent=2, sort_keys=True) if args.json else rel(run_dir / "integration" / "integrated-validation.json"))
+    return 0 if payload["decision"] == "approve" else 1
+
+
+def command_release_candidate(args: argparse.Namespace) -> int:
+    run_dir = factory_dispatch_core.resolve_run_dir(args.run_dir)
+    payload = factory_integrator_core.render_release_candidate(run_dir)
+    print(json.dumps(payload, indent=2, sort_keys=True) if args.json else payload["release_candidate"])
+    return 0
+
+
+def command_sync_taskstream(args: argparse.Namespace) -> int:
+    run_dir = factory_dispatch_core.resolve_run_dir(args.run_dir)
+    payload = factory_integrator_core.taskstream_sync_preview(run_dir)
+    print(json.dumps(payload, indent=2, sort_keys=True) if args.json else rel(run_dir / "integration" / "taskstream-sync-preview.json"))
+    return 0
 
 
 def delivery_status(run_dir: Path) -> dict[str, Any]:
@@ -892,10 +937,33 @@ def build_parser() -> argparse.ArgumentParser:
     validate.add_argument("--json", action="store_true")
     validate.set_defaults(func=command_validate)
 
-    integrate = sub.add_parser("integrate", help="Write patch queue integration plan and release gate metadata.")
+    integrate = sub.add_parser("integrate", help="Plan, prepare, or apply Factory patches in an isolated integration worktree.")
     integrate.add_argument("run_dir")
-    integrate.add_argument("--dry-run", action="store_true", default=True)
+    integrate.add_argument("--plan", action="store_true", help="Create dependency-aware apply-plan.json.")
+    integrate.add_argument("--prepare-branch", action="store_true", help="Create an isolated integration worktree and branch.")
+    integrate.add_argument("--branch", default="", help="Integration branch name.")
+    integrate.add_argument("--worktree", default="", help="Integration worktree path.")
+    integrate.add_argument("--apply", action="store_true", help="Apply candidate patches into the integration worktree.")
+    integrate.add_argument("--validate-each", action="store_true", help="Run per-task validation after each patch.")
+    integrate.add_argument("--limit", type=int, default=0, help="Maximum candidate patches to apply. 0 means all.")
+    integrate.add_argument("--dry-run", action="store_true", default=False)
     integrate.set_defaults(func=command_integrate)
+
+    validate_integrated = sub.add_parser("validate-integrated", help="Validate integration-state and merge readiness.")
+    validate_integrated.add_argument("run_dir")
+    validate_integrated.add_argument("--json", action="store_true")
+    validate_integrated.set_defaults(func=command_validate_integrated)
+
+    release_candidate = sub.add_parser("release-candidate", help="Render integration release-candidate.md and summary HTML.")
+    release_candidate.add_argument("run_dir")
+    release_candidate.add_argument("--json", action="store_true")
+    release_candidate.set_defaults(func=command_release_candidate)
+
+    sync_taskstream = sub.add_parser("sync-taskstream", help="Preview Taskstream updates from integration results.")
+    sync_taskstream.add_argument("run_dir")
+    sync_taskstream.add_argument("--dry-run", action="store_true", default=True)
+    sync_taskstream.add_argument("--json", action="store_true")
+    sync_taskstream.set_defaults(func=command_sync_taskstream)
 
     release = sub.add_parser("release", help="Write final delivery status and project-delivery.md.")
     release.add_argument("run_dir")

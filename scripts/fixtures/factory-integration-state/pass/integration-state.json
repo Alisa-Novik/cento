@@ -1,0 +1,44 @@
+{
+  "schema_version": "factory-integration-state/v1",
+  "run_id": "pass-run",
+  "base_sha": "abc123",
+  "branch": {
+    "schema_version": "factory-integration-branch/v1",
+    "branch": "factory/pass-run/integration",
+    "worktree": "workspace/factory-integration-worktrees/pass-run",
+    "status": "prepared"
+  },
+  "apply_plan": "integration/apply-plan.json",
+  "applied_patches": [
+    {
+      "task_id": "task-a",
+      "changed_files": [
+        "workspace/runs/factory/pass-run/module/task-a.txt"
+      ]
+    }
+  ],
+  "rejected_patches": [],
+  "validation_after_each_patch": {
+    "schema_version": "factory-validation-after-each-patch/v1",
+    "validations": [
+      {
+        "task_id": "task-a",
+        "decision": "passed"
+      }
+    ]
+  },
+  "rollback_plan": "integration/rollback-plan.json",
+  "merge_readiness": {
+    "schema_version": "factory-merge-readiness/v1",
+    "decision": "ready_for_human_merge_review",
+    "blockers": []
+  },
+  "taskstream_sync_preview": {
+    "schema_version": "factory-taskstream-sync-preview/v1",
+    "dry_run": true,
+    "transitions": []
+  },
+  "release_candidate": "integration/release-candidate.md",
+  "residual_risks": "integration/residual-risks.md",
+  "ai_calls_used": 0
+}

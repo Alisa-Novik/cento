@@ -69,8 +69,9 @@ def capture(run_dir: Path, port: int) -> dict[str, Any]:
             page = browser.new_page(viewport={"width": 1440, "height": 980})
             page.goto(f"http://127.0.0.1:{port}/factory", wait_until="networkidle")
             text = page.locator("body").inner_text(timeout=5000)
-            for expected in ("Factory", "Factory Runs", run_dir.name):
-                checks.append({"text": expected, "present": expected in text})
+            text_lower = text.lower()
+            for expected in ("Factory", "Factory Runs", run_dir.name, "Safe Integrator", "Merge Readiness", "release candidate"):
+                checks.append({"text": expected, "present": expected.lower() in text_lower})
             page.screenshot(path=str(overview), full_page=True)
             page.screenshot(path=str(queue), full_page=True)
             page.screenshot(path=str(integration), full_page=True)
