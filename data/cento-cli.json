@@ -191,13 +191,14 @@
     {
       "name": "storage",
       "summary": "Registered tool route for the no-delete Cento artifact catalog and retention planner.",
-      "usage": "cento storage <scan|catalog|plan|query|report|verify|normalize|compress|snapshot-db|restore-test> [args...]",
+      "usage": "cento storage <scan|catalog|plan|query|report|pressure|verify|normalize|compress|snapshot-db|restore-test> [args...]",
       "flags": [],
       "examples": [
         "cento storage scan --root workspace/runs --db workspace/storage/catalog.sqlite",
         "cento storage plan --dry-run",
         "cento storage query --largest --limit 20",
         "cento storage query --class screenshot_raw",
+        "cento storage pressure --json",
         "cento storage normalize screenshots --dry-run",
         "cento storage compress logs --dry-run",
         "cento storage snapshot-db --path workspace/storage/catalog.sqlite --out workspace/storage/db-snapshots/catalog-snapshot.db",

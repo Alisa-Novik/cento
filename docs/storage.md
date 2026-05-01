@@ -19,6 +19,7 @@ cento storage scan --root workspace/runs --db workspace/storage/catalog.sqlite
 cento storage plan --dry-run
 cento storage query --largest --limit 20
 cento storage query --class screenshot_raw
+cento storage pressure --json
 cento storage normalize screenshots --dry-run
 cento storage compress logs --dry-run
 cento storage snapshot-db --path workspace/storage/catalog.sqlite --out workspace/storage/db-snapshots/catalog-snapshot.db
@@ -100,12 +101,15 @@ Useful future Autopilot gates:
 - catalog integrity failures
 - storage pressure from largest artifacts
 
+`cento storage pressure --json` emits the first Autopilot-friendly pressure packet. It does not mutate anything. The first version reports catalog integrity, artifact bytes, raw XWD count/bytes, private artifact count, SQLite artifact count, and whether fanout should increase, hold, or pause.
+
 ## Validation
 
 ```bash
 python3 scripts/storage_e2e.py --fixture mixed-artifacts --out workspace/runs/storage/cento-storage-v1
 grep -q "AI calls used: 0" workspace/runs/storage/cento-storage-v1/e2e-summary.md
 sqlite3 workspace/runs/storage/cento-storage-v1/catalog.sqlite "PRAGMA integrity_check;"
+python3 -m json.tool workspace/runs/storage/cento-storage-v1/storage-pressure.json
 python3 scripts/no_model_validation_e2e.py
 make check
 ```

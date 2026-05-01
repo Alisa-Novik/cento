@@ -253,6 +253,7 @@ _cento() {
               'plan[Write a no-delete retention dry-run plan]' \
               'query[Query cataloged artifacts]' \
               'report[Render a Markdown storage summary]' \
+              'pressure[Emit Autopilot-friendly storage pressure JSON]' \
               'verify[Verify catalog hashes]' \
               'normalize[Plan additive screenshot normalization]' \
               'compress[Plan additive log compression]' \

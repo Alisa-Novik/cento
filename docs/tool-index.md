@@ -604,6 +604,7 @@
   - `cento storage plan --dry-run`
   - `cento storage query --largest --limit 20`
   - `cento storage query --class screenshot_raw`
+  - `cento storage pressure --json`
   - `cento storage normalize screenshots --dry-run`
   - `cento storage compress logs --dry-run`
   - `cento storage snapshot-db --path workspace/storage/catalog.sqlite --out workspace/storage/db-snapshots/catalog-snapshot.db`

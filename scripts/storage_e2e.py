@@ -109,6 +109,8 @@ def run_e2e(out: Path, fixture: str) -> dict[str, Any]:
     write_json(out / "verify-report.json", verify)
     snapshot = storage.snapshot_sqlite(db_path, out / "db-snapshots" / "catalog-snapshot.db")
     restore = storage.restore_sample(db_path, out / "restore-tests" / "sample")
+    pressure = storage.compute_pressure(db_path)
+    write_json(out / "storage-pressure.json", pressure)
     (out / "storage-summary.md").write_text(storage.render_markdown_report(db_path, plan), encoding="utf-8")
     storage.screenshot_plan(db_path, reports / "screenshot-normalization-plan.json")
     storage.log_compression_plan(db_path, reports / "log-compression-plan.json")
@@ -122,6 +124,7 @@ def run_e2e(out: Path, fixture: str) -> dict[str, Any]:
         "verify": verify["summary"],
         "snapshot": snapshot,
         "restore": restore["summary"],
+        "storage_pressure": pressure["storage_pressure"],
         "sqlite_integrity": sqlite_integrity(db_path),
         "ai_calls_used": 0,
         "estimated_ai_cost_usd": 0,
@@ -138,6 +141,7 @@ def run_e2e(out: Path, fixture: str) -> dict[str, Any]:
         f"- sqlite integrity: `{summary['sqlite_integrity']}`",
         f"- snapshot integrity: `{snapshot['integrity_check']}`",
         f"- restore passed: `{restore['summary']['passed']}`",
+        f"- storage pressure: `{pressure['storage_pressure']}`",
         "- destructive actions: `0`",
         "- AI calls used: 0",
         "",
@@ -147,6 +151,7 @@ def run_e2e(out: Path, fixture: str) -> dict[str, Any]:
         f"- `{storage.rel(out / 'verify-report.json')}`",
         f"- `{storage.rel(out / 'db-snapshots' / 'catalog-snapshot.db')}`",
         f"- `{storage.rel(out / 'restore-tests' / 'sample' / 'restore-test-report.json')}`",
+        f"- `{storage.rel(out / 'storage-pressure.json')}`",
         f"- `{storage.rel(out / 'storage-summary.md')}`",
         f"- `{storage.rel(reports / 'screenshot-normalization-plan.json')}`",
         f"- `{storage.rel(reports / 'log-compression-plan.json')}`",

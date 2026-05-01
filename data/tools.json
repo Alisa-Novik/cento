@@ -1330,6 +1330,7 @@
         "cento storage plan --dry-run",
         "cento storage query --largest --limit 20",
         "cento storage query --class screenshot_raw",
+        "cento storage pressure --json",
         "cento storage normalize screenshots --dry-run",
         "cento storage compress logs --dry-run",
         "cento storage snapshot-db --path workspace/storage/catalog.sqlite --out workspace/storage/db-snapshots/catalog-snapshot.db",
@@ -1343,6 +1344,7 @@
         "workspace/storage/reports/storage-summary.md",
         "workspace/storage/reports/retention-plan.json",
         "workspace/storage/reports/verify-report.json",
+        "workspace/storage/reports/storage-pressure.json",
         "workspace/storage/reports/screenshot-normalization-plan.json",
         "workspace/storage/reports/log-compression-plan.json",
         "workspace/storage/db-snapshots/catalog-snapshot.db",
@@ -1350,6 +1352,7 @@
         "workspace/runs/storage/cento-storage-v1/e2e-summary.md",
         "workspace/runs/storage/cento-storage-v1/catalog.sqlite",
         "workspace/runs/storage/cento-storage-v1/retention-plan.json",
+        "workspace/runs/storage/cento-storage-v1/storage-pressure.json",
         "workspace/runs/storage/cento-storage-v1/verify-report.json"
       ],
       "notes": [

@@ -816,6 +816,84 @@ def render_markdown_report(db_path: Path, plan: dict[str, Any]) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+def compute_pressure(db_path: Path) -> dict[str, Any]:
+    if not db_path.exists():
+        return {
+            "schema_version": "cento-storage-pressure/v1",
+            "generated_at": now_iso(),
+            "db": rel(db_path),
+            "storage_pressure": "critical",
+            "catalog_integrity": "missing",
+            "metrics": {},
+            "recommendation": "run_storage_scan",
+            "reasons": ["catalog database is missing"],
+        }
+    conn = connect(db_path)
+    try:
+        integrity_row = conn.execute("PRAGMA integrity_check;").fetchone()
+        integrity = str(integrity_row[0]) if integrity_row else "missing"
+        metrics = {
+            "artifact_count": int(conn.execute("SELECT COUNT(*) FROM artifacts").fetchone()[0] or 0),
+            "total_size_bytes": int(conn.execute("SELECT COALESCE(SUM(size_bytes), 0) FROM artifacts").fetchone()[0] or 0),
+            "raw_xwd_count": int(conn.execute("SELECT COUNT(*) FROM artifacts WHERE class='screenshot_raw'").fetchone()[0] or 0),
+            "raw_xwd_bytes": int(conn.execute("SELECT COALESCE(SUM(size_bytes), 0) FROM artifacts WHERE class='screenshot_raw'").fetchone()[0] or 0),
+            "private_artifacts": int(
+                conn.execute("SELECT COUNT(*) FROM artifacts WHERE sensitivity IN ('private', 'client_sensitive', 'secret_risk')").fetchone()[0]
+                or 0
+            ),
+            "sqlite_artifacts": int(
+                conn.execute("SELECT COUNT(*) FROM artifacts WHERE class IN ('sqlite_db', 'sqlite_wal')").fetchone()[0] or 0
+            ),
+            "delete_candidates_dry_run": int(
+                conn.execute("SELECT COUNT(*) FROM artifacts WHERE deletion_reason IS NOT NULL").fetchone()[0] or 0
+            ),
+        }
+    finally:
+        conn.close()
+
+    reasons: list[str] = []
+    pressure = "low"
+    recommendation = "storage_ok"
+    if integrity != "ok":
+        pressure = "critical"
+        recommendation = "repair_catalog_before_fanout"
+        reasons.append(f"catalog integrity check is {integrity}")
+    if metrics["total_size_bytes"] >= 10 * 1024 * 1024 * 1024:
+        pressure = "high" if pressure != "critical" else pressure
+        recommendation = "pause_dispatch_and_run_storage_report"
+        reasons.append("cataloged artifacts exceed 10 GiB")
+    elif metrics["total_size_bytes"] >= 1 * 1024 * 1024 * 1024:
+        pressure = "medium" if pressure == "low" else pressure
+        recommendation = "review_storage_report_before_increasing_fanout"
+        reasons.append("cataloged artifacts exceed 1 GiB")
+    if metrics["raw_xwd_count"] > 0:
+        pressure = "medium" if pressure == "low" else pressure
+        recommendation = "plan_screenshot_normalization_before_large_fanout"
+        reasons.append(f"{metrics['raw_xwd_count']} raw XWD screenshots need normalized derivative review")
+    if metrics["raw_xwd_bytes"] >= 1 * 1024 * 1024 * 1024:
+        pressure = "high" if pressure != "critical" else pressure
+        recommendation = "pause_dispatch_and_normalize_raw_screenshots"
+        reasons.append("raw XWD screenshots exceed 1 GiB")
+    if not reasons:
+        reasons.append("storage catalog is below initial pressure thresholds")
+
+    return {
+        "schema_version": "cento-storage-pressure/v1",
+        "generated_at": now_iso(),
+        "db": rel(db_path),
+        "storage_pressure": pressure,
+        "catalog_integrity": integrity,
+        "metrics": metrics,
+        "recommendation": recommendation,
+        "reasons": reasons,
+        "fanout_gate": {
+            "may_increase_fanout": pressure in {"low"},
+            "should_hold_fanout": pressure == "medium",
+            "should_pause_dispatch": pressure in {"high", "critical"},
+        },
+    }
+
+
 def screenshot_plan(db_path: Path, out: Path) -> dict[str, Any]:
     rows = [row for row in load_artifact_rows(db_path) if row["class"] == "screenshot_raw"]
     items = []
@@ -915,6 +993,15 @@ def command_report(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_pressure(args: argparse.Namespace) -> int:
+    payload = compute_pressure(repo_path(args.db))
+    out = repo_path(args.out) if args.out else None
+    if out:
+        write_json(out, payload)
+    print(json.dumps(payload, indent=2, sort_keys=True) if args.json or not out else rel(out))
+    return 0 if payload["storage_pressure"] != "critical" else 1
+
+
 def command_verify(args: argparse.Namespace) -> int:
     db_path = repo_path(args.db)
     report = verify_artifacts(db_path, all_rows=args.all, sample=args.sample)
@@ -988,6 +1075,12 @@ def build_parser() -> argparse.ArgumentParser:
     report.add_argument("--db", default=str(DEFAULT_DB), help="SQLite catalog path.")
     report.add_argument("--out", help="Markdown report path.")
     report.set_defaults(func=command_report)
+
+    pressure = subparsers.add_parser("pressure", help="Emit Autopilot-friendly storage pressure JSON.")
+    pressure.add_argument("--db", default=str(DEFAULT_DB), help="SQLite catalog path.")
+    pressure.add_argument("--out", help="JSON pressure report path.")
+    pressure.add_argument("--json", action="store_true", help="Print JSON.")
+    pressure.set_defaults(func=command_pressure)
 
     verify = subparsers.add_parser("verify", help="Verify catalog hashes against files on disk.")
     verify.add_argument("--db", default=str(DEFAULT_DB), help="SQLite catalog path.")
