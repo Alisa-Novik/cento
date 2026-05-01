@@ -1120,6 +1120,20 @@ body.researchMode .content {
   font-size: 1.16rem;
 }
 
+.docsSection h3 {
+  margin: 0 0 0.55rem;
+  font-size: 0.98rem;
+}
+
+.docsSection code {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--panel-line);
+  padding: 0.08rem 0.32rem;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.92em;
+}
+
 .docsExploreGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1155,6 +1169,85 @@ body.researchMode .content {
   align-self: end;
   color: var(--orange);
   font-size: 1.15rem;
+}
+
+.appDocSection {
+  max-width: 860px;
+}
+
+.appDocSection > p {
+  max-width: 740px;
+  margin: 0 0 1.1rem;
+  color: var(--muted);
+  line-height: 1.58;
+}
+
+.docsDetailGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.docsDetailGrid article,
+.docsCallout {
+  border: 1px solid var(--panel-line);
+  background: linear-gradient(180deg, rgba(17, 17, 16, 0.96), rgba(11, 11, 10, 0.98));
+  padding: 1.1rem;
+}
+
+.docsDetailGrid p,
+.docsDetailGrid li,
+.docsCallout p {
+  color: var(--muted);
+  line-height: 1.52;
+}
+
+.docsDetailGrid p,
+.docsCallout p {
+  margin: 0;
+}
+
+.docsDetailGrid ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.docsDetailGrid li + li {
+  margin-top: 0.35rem;
+}
+
+.docsFlow {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--panel-line);
+  background: rgba(255, 90, 0, 0.05);
+}
+
+.docsFlow span {
+  border: 1px solid var(--line-dim);
+  padding: 0.42rem 0.62rem;
+  color: var(--text);
+  font-weight: 900;
+}
+
+.docsFlow b {
+  color: var(--orange);
+}
+
+.docsCallout {
+  margin-top: 1rem;
+  border-color: rgba(255, 90, 0, 0.28);
+}
+
+.docsCallout strong {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: var(--orange);
 }
 
 .docGlyph {

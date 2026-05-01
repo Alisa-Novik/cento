@@ -256,6 +256,10 @@
                 <a href="#engagements"><span class="navIcon">◉</span>Engagements</a>
                 <a href="#reports"><span class="navIcon">▧</span>Reports</a>
               </details>
+              <details open>
+                <summary>Apps</summary>
+                <a href="#kanji-a-day"><span class="navIcon">日</span>Kanji a Day</a>
+              </details>
             </nav>
             <a class="docsHelpCard" href="#need-help" data-doc-section="help-card">
               <span class="docGlyph">▱</span>
@@ -336,12 +340,71 @@
                   </div>
                   <b>↗</b>
                 </a>
+                <a class="docsAreaCard" href="#kanji-a-day">
+                  <span class="docGlyph">日</span>
+                  <div>
+                    <h3>Kanji a Day</h3>
+                    <p>Watch-friendly daily kanji app with stroke practice, meaning reveal, local progress, and history.</p>
+                  </div>
+                  <b>↗</b>
+                </a>
+              </div>
+            </section>
+
+            <section id="kanji-a-day" class="docsSection appDocSection" data-doc-section="kanji-a-day">
+              <span class="eyebrow">App documentation</span>
+              <h2>Kanji a Day</h2>
+              <p>Kanji a Day is a compact learning app for one daily kanji. The experience is built around a product ritual: shape first, meaning second, memory third.</p>
+
+              <div class="docsDetailGrid">
+                <article>
+                  <h3>Core loop</h3>
+                  <p><strong>Today</strong> opens the daily kanji, <strong>Stroke practice</strong> teaches order, <strong>Meaning</strong> reveals reading and example vocabulary, and <strong>Got it</strong> saves the kanji into history.</p>
+                </article>
+                <article>
+                  <h3>Current surfaces</h3>
+                  <p>The active local preview runs from <code>workspace/runs/agent-work/1000104/public/</code>. The native watch source lives under <code>apps/watch/KanjiADay/</code>, with a static repo preview in <code>apps/watch/KanjiADay/Preview/index.html</code>.</p>
+                </article>
+              </div>
+
+              <div class="docsFlow" aria-label="Kanji a Day flow">
+                <span>Today</span>
+                <b>→</b>
+                <span>Stroke practice</span>
+                <b>→</b>
+                <span>Meaning</span>
+                <b>→</b>
+                <span>Got it</span>
+                <b>→</b>
+                <span>History</span>
+              </div>
+
+              <div class="docsDetailGrid">
+                <article>
+                  <h3>Product rules</h3>
+                  <ul>
+                    <li>Meaning stays locked until all strokes complete.</li>
+                    <li>Learned count increments only after the user taps <code>Got it</code>.</li>
+                    <li>Normal mode must not show MVP, PWA, AI-call, reset, localhost, or backend copy.</li>
+                    <li>Debug controls stay behind <code>?debug=1</code>.</li>
+                  </ul>
+                </article>
+                <article>
+                  <h3>Starter content</h3>
+                  <p>The embedded beginner set is <code>日</code>, <code>月</code>, <code>火</code>, <code>水</code>, <code>木</code>, <code>金</code>, and <code>土</code>. Each record should carry meaning, reading, example vocabulary, stroke count, and SVG stroke paths.</p>
+                </article>
+              </div>
+
+              <div class="docsCallout">
+                <strong>Validation focus</strong>
+                <p>Check Firefox responsive widths at 360px, 390px, and 430px. The watch header must not overlap, controls must stay inside the rounded frame, and the Meaning screen must center the kanji while keeping <code>Got it</code> visible.</p>
               </div>
             </section>
 
             <section id="updates" class="docsSection" data-doc-section="updates">
               <h2>Recent updates</h2>
               <div class="docsUpdates">
+                <div><strong>Kanji a Day docs page added</strong><time datetime="2026-05-01">May 1, 2026</time></div>
                 <div><strong>Factory runtime adapters v1</strong><time datetime="2026-05-01">May 1, 2026</time></div>
                 <div><strong>Factory autopilot control loop v1</strong><time datetime="2026-05-01">May 1, 2026</time></div>
                 <div><strong>Docs and Research Center routes split</strong><time datetime="2026-05-01">May 1, 2026</time></div>
@@ -362,6 +425,7 @@
             <h2>On this page</h2>
             <a class="active" href="#overview">Overview</a>
             <a href="#getting-started">Explore by area</a>
+            <a href="#kanji-a-day">Kanji a Day</a>
             <a href="#updates">Recent updates</a>
             <a href="#need-help">Support</a>
           </aside>
