@@ -4,7 +4,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shlex
 import subprocess
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -18,6 +20,11 @@ ACTIVE_STATUSES = {"planned", "launching", "running"}
 ENDED_STATUSES = {"dry_run", "succeeded", "failed", "blocked", "stale", "exited_unknown"}
 LANES = ("validator", "small", "builder", "coordinator")
 SMALL_TOKENS = ("screenshot", "evidence", "strict review", "template", "fixture", "docs", "process", "heartbeat", "stale", "cron", "pool")
+VALIDATION_MODES = ("no-model", "cheap-model", "strong-model")
+DEFAULT_CHEAP_VALIDATOR_MODEL = DEFAULT_CODEX_MODEL
+DEFAULT_STRONG_VALIDATOR_MODEL = os.environ.get("CENTO_POOL_STRONG_VALIDATOR_MODEL", "gpt-5.3-codex-spark")
+MANUAL_VALIDATION_MODES = {"manual-planning", "manual-review"}
+HIGH_RISK_VALUES = {"high", "critical"}
 
 
 def run_json(command: list[str], timeout: int = 25) -> dict[str, Any]:
@@ -97,6 +104,153 @@ def issue_is_candidate(issue: dict[str, Any], lane: str) -> bool:
     return False
 
 
+def story_manifest_path(issue_id: int) -> Path:
+    return ROOT / "workspace" / "runs" / "agent-work" / str(issue_id) / "story.json"
+
+
+def load_story_manifest(issue_id: int) -> tuple[dict[str, Any] | None, Path, str]:
+    path = story_manifest_path(issue_id)
+    if not path.exists():
+        return None, path, "missing story manifest"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        return None, path, f"invalid story manifest JSON: {exc}"
+    if not isinstance(payload, dict):
+        return None, path, "story manifest is not an object"
+    return payload, path, ""
+
+
+def _string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if str(item or "").strip()]
+
+
+def planned_validation_route(issue: dict[str, Any]) -> dict[str, Any]:
+    issue_id = int(issue.get("id") or 0)
+    story, story_path, story_error = load_story_manifest(issue_id)
+    if story_error:
+        return {
+            "mode": "strong-model",
+            "route": "ai-validator",
+            "reason": story_error,
+            "story_manifest": str(story_path),
+            "validation_manifest": "",
+            "risk": "unknown",
+            "no_model_eligible": False,
+        }
+
+    validation = story.get("validation") if isinstance(story.get("validation"), dict) else {}
+    handoff = story.get("handoff") if isinstance(story.get("handoff"), dict) else {}
+    validation_manifest = str(validation.get("manifest") or "").strip()
+    validation_mode = str(validation.get("mode") or "").strip().lower()
+    risk = str(validation.get("risk") or "").strip().lower() or "unknown"
+    no_model_eligible = bool(validation.get("no_model_eligible"))
+    command_count = len(_string_list(validation.get("commands")))
+    human_steps = _string_list(handoff.get("human_steps"))
+    device_access = str(handoff.get("device_access") or "").strip().lower()
+
+    strong_reasons: list[str] = []
+    if not validation_manifest:
+        strong_reasons.append("missing validation manifest")
+    if risk not in {"low", "medium"}:
+        strong_reasons.append(f"risk={risk}")
+    if validation_mode in MANUAL_VALIDATION_MODES:
+        strong_reasons.append(f"validation.mode={validation_mode}")
+    if command_count == 0:
+        strong_reasons.append("no deterministic validation commands")
+    if human_steps:
+        strong_reasons.append("human handoff required")
+    if device_access and device_access != "none":
+        strong_reasons.append(f"device_access={device_access}")
+
+    if strong_reasons:
+        return {
+            "mode": "strong-model",
+            "route": "ai-validator",
+            "reason": "; ".join(strong_reasons),
+            "story_manifest": str(story_path),
+            "validation_manifest": validation_manifest,
+            "risk": risk,
+            "no_model_eligible": no_model_eligible,
+        }
+    if no_model_eligible:
+        return {
+            "mode": "no-model",
+            "route": "local validate-run",
+            "reason": f"validation manifest present; no_model_eligible=true; risk={risk}",
+            "story_manifest": str(story_path),
+            "validation_manifest": validation_manifest,
+            "risk": risk,
+            "no_model_eligible": no_model_eligible,
+        }
+    return {
+        "mode": "cheap-model",
+        "route": "ai-validator",
+        "reason": f"validation manifest present; no_model_eligible=false; risk={risk}",
+        "story_manifest": str(story_path),
+        "validation_manifest": validation_manifest,
+        "risk": risk,
+        "no_model_eligible": no_model_eligible,
+    }
+
+
+def local_validation_command(issue_id: int, route: dict[str, Any], *, node: str, agent: str) -> list[str]:
+    command = [
+        sys.executable,
+        "scripts/agent_work.py",
+        "validate-run",
+        str(issue_id),
+        "--manifest",
+        str(route["validation_manifest"]),
+        "--story-manifest",
+        str(route["story_manifest"]),
+        "--node",
+        node,
+        "--agent",
+        agent,
+    ]
+    return command
+
+
+def launch_local_validation(issue: dict[str, Any], route: dict[str, Any], *, dry_run: bool) -> dict[str, Any]:
+    issue_id = int(issue["id"])
+    node = "linux"
+    agent = "validator-pool"
+    command = local_validation_command(issue_id, route, node=node, agent=agent)
+    record: dict[str, Any] = {
+        "issue": issue_id,
+        "lane": "validator",
+        "agent": agent,
+        "role": "validator",
+        "runtime": "local",
+        "action": "validate-run",
+        "validation_mode": route["mode"],
+        "planned_validation_mode": route["mode"],
+        "planned_validation_route": route["route"],
+        "planned_validation_reason": route["reason"],
+        "story_manifest": route["story_manifest"],
+        "validation_manifest": route["validation_manifest"],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "",
+    }
+    if dry_run:
+        record["command"] = shlex.join(command)
+        return record
+    result = run(command, timeout=300)
+    record.update(
+        {
+            "command": shlex.join(command),
+            "returncode": result.returncode,
+            "stdout": result.stdout.strip(),
+            "stderr": result.stderr.strip(),
+        }
+    )
+    return record
+
+
 def lane_stats(all_issues: list[dict[str, Any]], lane: str, blocked: set[int]) -> dict[str, int]:
     stats = {
         "matching": 0,
@@ -125,6 +279,23 @@ def lane_stats(all_issues: list[dict[str, Any]], lane: str, blocked: set[int]) -
             stats["validating"] += 1
         if issue_is_candidate(issue, lane) and issue_id not in blocked:
             stats["eligible"] += 1
+    if lane == "validator":
+        planned_modes = {mode: 0 for mode in VALIDATION_MODES}
+        planned_reasons: list[str] = []
+        planned_route = ""
+        planned_mode = "none"
+        for issue in candidates(all_issues, lane, blocked):
+            route = planned_validation_route(issue)
+            mode = str(route.get("mode") or "strong-model")
+            planned_modes[mode] = planned_modes.get(mode, 0) + 1
+            planned_reasons.append(str(route.get("reason") or ""))
+            if planned_mode == "none":
+                planned_mode = mode
+                planned_route = str(route.get("route") or "")
+        stats["planned_validation_mode"] = planned_mode  # type: ignore[assignment]
+        stats["planned_validation_route"] = planned_route  # type: ignore[assignment]
+        stats["planned_validation_reason"] = planned_reasons[0] if planned_reasons else ""  # type: ignore[assignment]
+        stats["planned_validation_modes"] = planned_modes  # type: ignore[assignment]
     return stats
 
 
@@ -201,6 +372,11 @@ def reason_text(reason: str) -> tuple[str, str]:
             "No workers launched because the dispatch attempt hit a runtime/model version skew.",
             "Requeue the stale model work or align the runtime/model mapping, then rerun the pool.",
         )
+    if reason == "validation_failed":
+        return (
+            "Local no-model validation ran but did not pass.",
+            "Inspect the validation report, fix the missing evidence or failing checks, then rerun the pool.",
+        )
     if reason == "runtime_missing":
         return (
             "No workers launched because the requested runtime or runtime registry could not be resolved.",
@@ -229,6 +405,7 @@ def build_reason_summary(
     successful_launches = [item for item in launched if item.get("returncode", 0) == 0 and not dry_run]
     failed_launches = [item for item in launched if item.get("returncode", 0) not in (0, None)]
     lane_snapshots: list[dict[str, Any]] = []
+    validation_mode_counts: dict[str, int] = {mode: 0 for mode in VALIDATION_MODES}
     for lane in LANES:
         snapshot = {
             "lane": lane,
@@ -238,32 +415,42 @@ def build_reason_summary(
         }
         snapshot.update(lane_stats(all_issues, lane, blocked))
         snapshot["reason"] = summarize_lane_reason(snapshot)
+        planned_modes = snapshot.get("planned_validation_modes")
+        if isinstance(planned_modes, dict):
+            for mode, count in planned_modes.items():
+                try:
+                    validation_mode_counts[str(mode)] = validation_mode_counts.get(str(mode), 0) + int(count)
+                except (TypeError, ValueError):
+                    continue
         lane_snapshots.append(snapshot)
     if dry_run and launched:
         reason = "dry_run"
     elif successful_launches:
         reason = "launched"
     else:
-        failure_reasons = [classify_dispatch_failure(str(item.get("stderr") or ""), str(item.get("stdout") or "")) for item in failed_launches]
-        if "runtime_missing" in failure_reasons:
-            reason = "runtime_missing"
-        elif "version_skew" in failure_reasons:
-            reason = "version_skew"
-        elif failed_launches:
-            reason = "dispatch_failures"
-        elif lane_snapshots and all(snapshot["reason"] == "active_target_already_met" for snapshot in lane_snapshots):
-            reason = "active_target_already_met"
-        elif any(snapshot["reason"] == "all_candidates_blocked_review" for snapshot in lane_snapshots):
-            reason = "all_candidates_blocked_review"
+        if any(str(item.get("action") or "") == "validate-run" for item in failed_launches):
+            reason = "validation_failed"
         else:
-            reason = "no_candidates"
+            failure_reasons = [classify_dispatch_failure(str(item.get("stderr") or ""), str(item.get("stdout") or "")) for item in failed_launches]
+            if "runtime_missing" in failure_reasons:
+                reason = "runtime_missing"
+            elif "version_skew" in failure_reasons:
+                reason = "version_skew"
+            elif failed_launches:
+                reason = "dispatch_failures"
+            elif lane_snapshots and all(snapshot["reason"] == "active_target_already_met" for snapshot in lane_snapshots):
+                reason = "active_target_already_met"
+            elif any(snapshot["reason"] == "all_candidates_blocked_review" for snapshot in lane_snapshots):
+                reason = "all_candidates_blocked_review"
+            else:
+                reason = "no_candidates"
     summary, next_action = reason_text(reason)
     dispatch_failures = [
         {
             "issue": int(item.get("issue") or 0),
             "lane": item.get("lane"),
             "returncode": int(item.get("returncode") or 0),
-            "reason": classify_dispatch_failure(str(item.get("stderr") or ""), str(item.get("stdout") or "")),
+            "reason": "validation_failed" if str(item.get("action") or "") == "validate-run" else classify_dispatch_failure(str(item.get("stderr") or ""), str(item.get("stdout") or "")),
             "stderr": str(item.get("stderr") or ""),
         }
         for item in failed_launches
@@ -277,11 +464,12 @@ def build_reason_summary(
         "success_count": len(successful_launches),
         "failure_count": len(failed_launches),
         "lanes": lane_snapshots,
+        "validation_modes": validation_mode_counts,
         "dispatch_failures": dispatch_failures,
     }
 
 
-def dispatch(issue: dict[str, Any], lane: str) -> dict[str, Any]:
+def dispatch(issue: dict[str, Any], lane: str, *, model_override: str | None = None) -> dict[str, Any]:
     issue_id = str(issue["id"])
     if lane == "small":
         role = "builder"
@@ -299,6 +487,7 @@ def dispatch(issue: dict[str, Any], lane: str) -> dict[str, Any]:
         role = "builder"
         agent = "builder-pool"
         runtime = "codex"
+    model = model_override or DEFAULT_CHEAP_VALIDATOR_MODEL
     command = [
         "./scripts/cento.sh",
         "agent-work",
@@ -313,8 +502,8 @@ def dispatch(issue: dict[str, Any], lane: str) -> dict[str, Any]:
         "--runtime",
         runtime,
     ]
-    if runtime == "codex" and DEFAULT_CODEX_MODEL:
-        command.extend(["--model", DEFAULT_CODEX_MODEL])
+    if runtime == "codex" and model:
+        command.extend(["--model", model])
     result = run(command, timeout=90)
     return {
         "issue": int(issue_id),
@@ -322,6 +511,7 @@ def dispatch(issue: dict[str, Any], lane: str) -> dict[str, Any]:
         "agent": agent,
         "role": role,
         "runtime": runtime,
+        "model": model,
         "returncode": result.returncode,
         "stdout": result.stdout.strip(),
         "stderr": result.stderr.strip(),
@@ -361,8 +551,26 @@ def main() -> int:
                 "subject": issue.get("subject"),
                 "dry_run": args.dry_run,
             }
-            if not args.dry_run:
-                record.update(dispatch(issue, lane))
+            if lane == "validator":
+                validation_route = planned_validation_route(issue)
+                record.update(
+                    {
+                        "validation_mode": validation_route["mode"],
+                        "planned_validation_mode": validation_route["mode"],
+                        "planned_validation_route": validation_route["route"],
+                        "planned_validation_reason": validation_route["reason"],
+                        "story_manifest": validation_route["story_manifest"],
+                        "validation_manifest": validation_route["validation_manifest"],
+                    }
+                )
+                if not args.dry_run:
+                    if validation_route["mode"] == "no-model":
+                        record.update(launch_local_validation(issue, validation_route, dry_run=False))
+                    else:
+                        model_override = DEFAULT_CHEAP_VALIDATOR_MODEL if validation_route["mode"] == "cheap-model" else DEFAULT_STRONG_VALIDATOR_MODEL
+                        record.update(dispatch(issue, lane, model_override=model_override))
+            elif not args.dry_run:
+                record.update(dispatch(issue, lane, model_override=None))
             launched.append(record)
             reserved.add(int(issue["id"]))
         if len(launched) >= args.max_launch:

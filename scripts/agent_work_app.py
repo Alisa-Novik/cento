@@ -291,7 +291,7 @@ def run_server(args: argparse.Namespace) -> int:
     db_path = Path(args.db)
     with connect(db_path) as conn:
         init_db(conn)
-        if args.sync or conn.execute("select count(*) from issues").fetchone()[0] == 0:
+        if args.sync:
             sync_from_agent_work(conn)
     port = args.port if args.exact_port else find_port(args.host, args.port)
     url = app_url(args.host, port)
@@ -1245,6 +1245,75 @@ def row_dict(row: sqlite3.Row) -> dict[str, Any]:
     return dict(row)
 
 
+def relative_path(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(ROOT_DIR))
+    except ValueError:
+        return str(path)
+
+
+def issue_validation_state(issue_id: int) -> dict[str, Any]:
+    story_path = ROOT_DIR / "workspace" / "runs" / "agent-work" / str(issue_id) / "story.json"
+    state: dict[str, Any] = {
+        "mode": "unknown",
+        "risk": "",
+        "no_model_eligible": False,
+        "escalation_state": "missing-story",
+        "story_manifest": relative_path(story_path),
+        "validation_manifest": "",
+        "automation_coverage_percent": 0,
+        "manual_review_count": 0,
+    }
+    if not story_path.exists():
+        return state
+    state["escalation_state"] = "missing-validation"
+    try:
+        story = json.loads(story_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        state["escalation_state"] = "invalid-story"
+        return state
+    validation = story.get("validation") if isinstance(story.get("validation"), dict) else {}
+    paths = story.get("paths") if isinstance(story.get("paths"), dict) else {}
+    state.update(
+        {
+            "mode": str(validation.get("mode") or "manual-planning"),
+            "risk": str(validation.get("risk") or ""),
+            "no_model_eligible": bool(validation.get("no_model_eligible")),
+            "escalation_triggers": validation.get("escalation_triggers") or [],
+        }
+    )
+    manifest_value = str(validation.get("manifest") or "")
+    if not manifest_value:
+        run_dir_value = str(paths.get("run_dir") or story_path.parent)
+        manifest_value = str(Path(run_dir_value) / "validation.json")
+    validation_path = Path(manifest_value)
+    if not validation_path.is_absolute():
+        validation_path = ROOT_DIR / manifest_value
+    state["validation_manifest"] = relative_path(validation_path)
+    if not validation_path.exists():
+        return state
+    try:
+        validation_payload = json.loads(validation_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        state["escalation_state"] = "invalid-validation"
+        return state
+    coverage = validation_payload.get("coverage") if isinstance(validation_payload.get("coverage"), dict) else {}
+    manual_review = validation_payload.get("manual_review") if isinstance(validation_payload.get("manual_review"), list) else []
+    state["automation_coverage_percent"] = coverage.get("automation_coverage_percent") or 0
+    state["manual_review_count"] = len(manual_review)
+    unresolved = [
+        item for item in manual_review
+        if isinstance(item, dict) and str(item.get("status") or "").lower() not in {"accepted", "covered", "waived"}
+    ]
+    if unresolved:
+        state["escalation_state"] = "manual-review"
+    elif float(state["automation_coverage_percent"] or 0) < 95:
+        state["escalation_state"] = "low-coverage"
+    else:
+        state["escalation_state"] = "ready"
+    return state
+
+
 def issue_list(
     conn: sqlite3.Connection,
     *,
@@ -1291,6 +1360,7 @@ def issue_list(
         rows = [row_dict(row) for row in conn.execute(query + " limit ? offset ?", params + [limit, offset])]
     for item in rows:
         item.update(issue_test_artifact_metadata(item))
+        item["validation_state"] = issue_validation_state(int(item["id"]))
     counts = {
         row["tracker"]: row["count"]
         for row in conn.execute(
@@ -1329,8 +1399,10 @@ def issue_detail(conn: sqlite3.Connection, issue_id: int) -> dict[str, Any]:
         validation_evidences=issue_validation_evidences(conn, issue_id),
         journals=journals,
     )
+    issue_payload = {**row_dict(row), **test_artifact}
+    issue_payload["validation_state"] = issue_validation_state(issue_id)
     return {
-        "issue": {**row_dict(row), **test_artifact},
+        "issue": issue_payload,
         "journals": journals,
         "attachments": attachments,
         "custom_fields": issue_custom_fields_for_issue(conn, issue_id),
@@ -1637,6 +1709,7 @@ def review_queue(conn: sqlite3.Connection) -> dict[str, Any]:
     items = []
     for issue in rows:
         issue_id = int(issue["id"])
+        issue["validation_state"] = issue_validation_state(issue_id)
         artifacts = issue_artifacts(conn, int(issue["id"]))
         journals = [
             row_dict(item)
@@ -1883,7 +1956,7 @@ def add_local_attachment(conn: sqlite3.Connection, issue_id: int, payload: dict[
 
 def safe_static_path(raw_path: str) -> Path:
     route = raw_path.split("?", 1)[0].split("#", 1)[0]
-    if route in ("", "/") or route == "/review" or route.startswith("/issues/"):
+    if route in ("", "/") or route in {"/review", "/cluster", "/consulting", "/docs", "/research-center"} or route.startswith("/issues/"):
         route = "/index.html"
     path = (TEMPLATE_DIR / route.lstrip("/")).resolve()
     template_root = TEMPLATE_DIR.resolve()

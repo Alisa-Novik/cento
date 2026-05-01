@@ -22,9 +22,11 @@
         <a class="active" href="/" data-main-route="taskstream">Taskstream</a>
         <a href="/cluster" data-main-route="cluster">Cluster</a>
         <a href="/consulting" data-main-route="consulting">Consulting</a>
+        <a href="/research-center" data-main-route="research">Research Center</a>
         <a href="/docs" data-main-route="docs">Docs</a>
       </nav>
       <div class="headerActions" aria-label="Cento actions">
+        <a class="headerImplementationLink" href="/research-center">Research Center</a>
         <a href="/review?status=open">Review queue</a>
         <button id="headerNewIssueButton" type="button">New issue</button>
       </div>
@@ -35,6 +37,13 @@
         <section>
           <h2>Project</h2>
           <button class="selectProject">▣ Industrial OS <span>⌄</span></button>
+        </section>
+        <section class="consoleShortcuts">
+          <h2>Console</h2>
+          <a class="implementationShortcut" href="/research-center">
+            Research Center
+            <span>↗</span>
+          </a>
         </section>
         <section>
           <h2>Trackers</h2>
@@ -64,8 +73,25 @@
               <span class="eyebrow">Cluster</span>
               <h1>Nodes, processes, and agent runtime health</h1>
             </div>
-            <a class="sectionAction" href="/docs#cluster">Open cluster docs</a>
+            <div class="sectionActions">
+              <a class="sectionAction primaryAction" href="/research-center">Research Center</a>
+              <a class="sectionAction" href="/docs#cluster">Cluster docs</a>
+            </div>
           </div>
+          <a class="implementationCallout" href="/research-center">
+            <span class="calloutGlyph">▣</span>
+            <span class="calloutCopy">
+              <small>Research Center</small>
+              <strong>Deep research center</strong>
+              <em>Map recommendations to Cento issues, coverage, gaps, and shipped implementation evidence.</em>
+            </span>
+            <span class="calloutStats" aria-label="Implementation status summary">
+              <b>8 implemented</b>
+              <b>3 partial</b>
+              <b>2 missing</b>
+            </span>
+            <span class="calloutAction">Open center ↗</span>
+          </a>
           <div class="sectionGrid">
             <article class="sectionCard">
               <span>Live agents</span>
@@ -94,8 +120,25 @@
               <span class="eyebrow">Consulting</span>
               <h1>CRM, career intake, and client deliverables</h1>
             </div>
-            <a class="sectionAction" href="/docs#consulting">Open consulting docs</a>
+            <div class="sectionActions">
+              <a class="sectionAction primaryAction" href="/research-center">Research Center</a>
+              <a class="sectionAction" href="/docs#consulting">Consulting docs</a>
+            </div>
           </div>
+          <a class="implementationCallout" href="/research-center">
+            <span class="calloutGlyph">▣</span>
+            <span class="calloutCopy">
+              <small>Research Center</small>
+              <strong>Turn deep research into Cento modules</strong>
+              <em>Use the same implementation map for consulting features, docs, related issues, and validation evidence.</em>
+            </span>
+            <span class="calloutStats" aria-label="Implementation status summary">
+              <b>13 sections</b>
+              <b>65% active slice</b>
+              <b>2 open gaps</b>
+            </span>
+            <span class="calloutAction">Open center ↗</span>
+          </a>
           <div class="sectionGrid">
             <article class="sectionCard">
               <span>CRM</span>
@@ -119,33 +162,232 @@
         </section>
 
         <section id="docsView" class="view hidden">
-          <div class="sectionHeader">
-            <div>
-              <span class="eyebrow">Docs</span>
-              <h1>Cento operating documentation</h1>
+          <aside class="docsSidebar" data-doc-section="left-nav" aria-label="Documentation navigation">
+            <nav>
+              <details open>
+                <summary>Documentation</summary>
+                <a href="#overview"><span class="navIcon">⌂</span>Overview</a>
+                <a href="#getting-started"><span class="navIcon">◉</span>Getting started</a>
+              </details>
+              <details open>
+                <summary>Research</summary>
+                <a class="active" href="#research-implementation"><span class="navIcon">▣</span>Research Center</a>
+                <a href="#all-research"><span class="navIcon">▤</span>All research</a>
+              </details>
+              <details open>
+                <summary>Taskstream</summary>
+                <a href="#taskstream"><span class="navIcon">▥</span>Overview</a>
+                <a href="#agent"><span class="navIcon">◫</span>Agent</a>
+                <a href="#issues"><span class="navIcon">▤</span>Issues</a>
+                <a href="#review"><span class="navIcon">▥</span>Review</a>
+                <a href="#logs"><span class="navIcon">≣</span>Logs</a>
+                <a href="#decision"><span class="navIcon">⌁</span>Decision</a>
+                <a href="#webhooks"><span class="navIcon">⊙</span>Webhooks</a>
+                <a href="#api-reference"><span class="navIcon">⌘</span>API Reference</a>
+              </details>
+              <details open>
+                <summary>Cluster</summary>
+                <a href="#cluster"><span class="navIcon">▧</span>Overview</a>
+                <a href="#nodes"><span class="navIcon">⊙</span>Nodes</a>
+                <a href="#packages"><span class="navIcon">▩</span>Packages</a>
+                <a href="#updates"><span class="navIcon">▣</span>Updates</a>
+                <a href="#configuration"><span class="navIcon">◧</span>Configuration</a>
+              </details>
+              <details open>
+                <summary>Consulting</summary>
+                <a href="#consulting"><span class="navIcon">♙</span>Overview</a>
+                <a href="#services"><span class="navIcon">⊚</span>Services</a>
+                <a href="#engagements"><span class="navIcon">◉</span>Engagements</a>
+                <a href="#reports"><span class="navIcon">▧</span>Reports</a>
+              </details>
+            </nav>
+            <a class="docsHelpCard" href="#need-help" data-doc-section="help-card">
+              <span class="docGlyph">▱</span>
+              <strong>Need help?</strong>
+              <small>Contact our support team</small>
+              <b>↗</b>
+            </a>
+          </aside>
+
+          <article class="docsMain" aria-label="Cento Documentation">
+            <div class="docsBreadcrumb" aria-label="Breadcrumb">
+              <span>Docs</span>
+              <b>›</b>
+              <span>Research</span>
+              <b>›</b>
+              <span>Implementations</span>
+              <b>›</b>
+              <strong>Deep Research: Multi-Agent Observability Best Practices</strong>
             </div>
-            <a class="sectionAction" href="/docs/agent-work.md">Open Taskstream docs</a>
-          </div>
-          <div class="sectionGrid">
-            <article id="cluster" class="sectionCard">
-              <span>Cluster</span>
-              <strong>Node operations</strong>
-              <p>Bridge, mesh, gather-context, agent process, and runtime docs for Mac/Linux operations.</p>
-              <code>docs/agent-run-ledger.md</code>
+
+            <header id="research-implementation" class="researchHeader" data-doc-section="hero">
+              <a class="researchBack" href="#all-research" aria-label="Back to research list">‹</a>
+              <div>
+                <h1>Deep Research: Multi-Agent Observability Best Practices</h1>
+                <nav class="researchTabs" aria-label="Research sections">
+                  <a class="active" href="#research-report">Research Report</a>
+                  <a href="#key-findings">Key Findings</a>
+                  <a href="#sources">Sources (32)</a>
+                  <a href="#notes">Notes</a>
+                </nav>
+              </div>
+              <div class="researchMeta">
+                <span class="statePill complete">Completed</span>
+                <time datetime="2026-04-28">Completed on Apr 28, 2026</time>
+              </div>
+            </header>
+
+            <section id="research-report" class="researchDocument" data-doc-section="research-report">
+              <div class="documentToolbar" aria-label="Research report controls">
+                <button type="button"><span class="navIcon">▧</span>Research Report (PDF)</button>
+                <button class="iconButton" type="button" aria-label="Download report">↓</button>
+                <button class="iconButton ghost" type="button" aria-label="Previous page">‹</button>
+                <span class="pageIndicator">12 / 38</span>
+                <span class="toolbarSpacer"></span>
+                <button class="iconButton ghost" type="button" aria-label="Zoom out">−</button>
+                <span class="zoomIndicator">100%</span>
+                <button class="iconButton ghost" type="button" aria-label="Zoom in">+</button>
+                <button class="iconButton ghost" type="button" aria-label="Fullscreen">⛶</button>
+              </div>
+              <div class="pdfStage">
+                <article class="pdfPage">
+                  <span class="pageNumber">12</span>
+                  <h2>4. Best Practices for Multi-Agent Observability</h2>
+                  <p>Based on the analysis of leading frameworks and industry adoption, we identified the following best practices for implementing observability in multi-agent systems.</p>
+                  <h3>4.1 Unified Trace Context Propagation</h3>
+                  <p class="selectedText">Implement end-to-end trace context propagation across all agents and tools using W3C Trace Context standard to enable complete request flow visibility.</p>
+                  <p>Implementation guidance:</p>
+                  <ul>
+                    <li>Use standardized trace headers (traceparent, tracestate)</li>
+                    <li>Propagate context across agent handoffs and tool calls</li>
+                    <li>Maintain trace continuity through async operations</li>
+                  </ul>
+                  <h3>4.2 Semantic Conventions for AI Workloads</h3>
+                  <p>Adopt semantic conventions specifically designed for AI/LLM applications to ensure consistent telemetry data across your observability stack.</p>
+                  <p>Key conventions include:</p>
+                  <ul>
+                    <li>gen_ai.request.model</li>
+                    <li>gen_ai.response.tokens</li>
+                    <li>gen_ai.tool.name</li>
+                    <li>gen_ai.agent.name</li>
+                  </ul>
+                </article>
+              </div>
+            </section>
+          </article>
+
+          <aside class="docsToc implementationPanel" data-doc-section="implementation-map" aria-label="Implementation mapping">
+            <div class="panelHeader">
+              <div>
+                <h2>Implementation Mapping</h2>
+                <p>See how research recommendations map to our implementation.</p>
+              </div>
+              <div class="statusCards" aria-label="Implementation totals">
+                <div class="statusCard implemented"><strong>8</strong><span>Implemented</span></div>
+                <div class="statusCard partial"><strong>3</strong><span>Partial</span></div>
+                <div class="statusCard missing"><strong>2</strong><span>Not implemented</span></div>
+                <div class="statusCard"><strong>13</strong><span>Total</span></div>
+              </div>
+            </div>
+
+            <div class="mappingControls">
+              <div class="segmentedControl" role="tablist" aria-label="Mapping mode">
+                <button class="active" type="button">By section</button>
+                <button type="button">By recommendation</button>
+              </div>
+              <button class="filterButton" type="button">Filter <span>⌄</span></button>
+            </div>
+
+            <div class="mappingTable" role="table" aria-label="Implementation coverage">
+              <div class="mappingHead" role="row">
+                <span>Research section</span>
+                <span>Implementation status</span>
+                <span>Coverage</span>
+                <span></span>
+              </div>
+              <div class="mappingRow implemented" role="row">
+                <div><strong>4.1 Unified Trace Context Propagation</strong><small>End-to-end trace context across agents and tools</small></div>
+                <span class="mappingStatus good">Implemented</span>
+                <span class="coverage"><b>100%</b><i style="--coverage: 100%"></i></span>
+                <button class="rowToggle" type="button">⌄</button>
+              </div>
+              <div class="mappingRow implemented" role="row">
+                <div><strong>4.2 Semantic Conventions for AI Workloads</strong><small>AI-specific semantic conventions</small></div>
+                <span class="mappingStatus good">Implemented</span>
+                <span class="coverage"><b>100%</b><i style="--coverage: 100%"></i></span>
+                <button class="rowToggle" type="button">⌄</button>
+              </div>
+              <div class="mappingRow partial active" role="row">
+                <div><strong>4.3 Standardized Instrumentation</strong><small>OpenTelemetry for consistent metrics and logs</small></div>
+                <span class="mappingStatus warn">Partial</span>
+                <span class="coverage"><b>65%</b><i style="--coverage: 65%"></i></span>
+                <button class="rowToggle" type="button">⌄</button>
+              </div>
+              <div class="mappingRow implemented" role="row">
+                <div><strong>4.4 Agent Performance Monitoring</strong><small>Latency, throughput, and error tracking</small></div>
+                <span class="mappingStatus good">Implemented</span>
+                <span class="coverage"><b>90%</b><i style="--coverage: 90%"></i></span>
+                <button class="rowToggle" type="button">⌄</button>
+              </div>
+              <div class="mappingRow partial" role="row">
+                <div><strong>4.5 Tool &amp; Dependency Observability</strong><small>External calls and tool usage tracking</small></div>
+                <span class="mappingStatus warn">Partial</span>
+                <span class="coverage"><b>50%</b><i style="--coverage: 50%"></i></span>
+                <button class="rowToggle" type="button">⌄</button>
+              </div>
+              <div class="mappingRow missing" role="row">
+                <div><strong>4.6 Cost &amp; Token Usage Tracking</strong><small>Monitor LLM costs and token consumption</small></div>
+                <span class="mappingStatus bad">Not implemented</span>
+                <span class="coverage"><b>0%</b><i style="--coverage: 0%"></i></span>
+                <button class="rowToggle" type="button">⌄</button>
+              </div>
+              <div class="mappingRow missing" role="row">
+                <div><strong>4.7 Evaluation &amp; Quality Metrics</strong><small>Response quality and evaluation tracking</small></div>
+                <span class="mappingStatus bad">Not implemented</span>
+                <span class="coverage"><b>0%</b><i style="--coverage: 0%"></i></span>
+                <button class="rowToggle" type="button">⌄</button>
+              </div>
+            </div>
+
+            <article class="implementationDetail">
+              <header>
+                <h3>4.3 Standardized Instrumentation</h3>
+                <span class="statePill partial">Partial</span>
+              </header>
+              <div class="detailGrid">
+                <section>
+                  <h4>Research recommendation</h4>
+                  <p>Use OpenTelemetry for collecting and exporting metrics, logs, and traces with consistent instrumentation across all components.</p>
+                </section>
+                <section>
+                  <h4>What we have</h4>
+                  <ul class="checkList">
+                    <li>OpenTelemetry SDK integrated</li>
+                    <li>Trace collection implemented</li>
+                    <li>Basic metrics exported</li>
+                    <li>Log correlation enabled</li>
+                  </ul>
+                </section>
+                <section>
+                  <h4>Gap / Next steps</h4>
+                  <ul class="gapList">
+                    <li>Custom AI semantic conventions</li>
+                    <li>Exception tracking</li>
+                    <li>Span attributes for tools</li>
+                    <li>Sampling configuration</li>
+                  </ul>
+                </section>
+              </div>
+              <footer>
+                <div>
+                  <span>Related issues</span>
+                  <a href="/issues/1000075">#1000075</a>
+                  <a href="/issues/1000123">#1000123</a>
+                </div>
+                <a class="implementationLink" href="/issues/1000075">View implementation <span>↗</span></a>
+              </footer>
             </article>
-            <article id="consulting" class="sectionCard">
-              <span>Consulting</span>
-              <strong>CRM and intake</strong>
-              <p>Consulting app, career intake workflow, and funnel documentation.</p>
-              <code>docs/crm-module.md</code>
-            </article>
-            <article class="sectionCard">
-              <span>Taskstream</span>
-              <strong>Agent work</strong>
-              <p>Issue lifecycle, dispatch, review, validation, and deliverables hub contracts.</p>
-              <code>docs/agent-work.md</code>
-            </article>
-          </div>
+          </aside>
         </section>
 
         <section id="reviewView" class="view hidden">
@@ -346,6 +588,7 @@
                   <th>#</th>
                   <th>Tracker</th>
                   <th>Status</th>
+                  <th>Validation</th>
                   <th>Priority</th>
                   <th>Subject</th>
                   <th>Assignee</th>

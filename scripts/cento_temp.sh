@@ -76,17 +76,51 @@ validate_replacement() {
   (
     cd "$ROOT_DIR"
     export CENTO_AGENT_WORK_BACKEND=replacement
-    local title evidence_path created_json issue_id done_json status
+    local title evidence_path story_path created_json issue_id done_json status
     title="Cento Replacement-Only Cutover Smoke $(date +%Y%m%d-%H%M%S)"
     evidence_path="$RUN_DIR/operator-replacement-e2e-evidence.txt"
+    story_path="$RUN_DIR/operator-replacement-e2e-story.json"
     cat > "$evidence_path" <<EOF
 replacement-only cutover smoke
 status: running
 backend: replacement
 redmine: stopped
 EOF
+    cat > "$story_path" <<EOF
+{
+  "schema_version": "1.0",
+  "issue": {
+    "id": 0,
+    "title": "$title",
+    "package": "redmine-retirement-e2e-v1"
+  },
+  "lane": {
+    "owner": "temp-cutover",
+    "node": "linux",
+    "agent": "temp-cutover",
+    "role": "validator"
+  },
+  "paths": {
+    "run_dir": "workspace/runs/agent-work/replacement-only-draft"
+  },
+  "scope": {
+    "acceptance": [
+      "replacement-only task creation requires and canonicalizes this story manifest"
+    ]
+  },
+  "expected_outputs": [
+    {
+      "path": "${evidence_path#$ROOT_DIR/}",
+      "description": "Replacement-only validation evidence",
+      "required": true,
+      "owner": "temp-cutover"
+    }
+  ]
+}
+EOF
     created_json=$(python3 scripts/agent_work.py create \
       --title "$title" \
+      --manifest "$story_path" \
       --description "Replacement-only smoke while Redmine is stopped. This intentionally does not run bootstrap." \
       --node linux \
       --agent temp-cutover \

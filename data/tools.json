@@ -437,7 +437,8 @@
       "commands": [
         "cento validator-tier0 stories",
         "cento validator-tier0 run workspace/runs/validator-tier0/e2e/sample-pass.json",
-        "cento validator-tier0 e2e"
+        "cento validator-tier0 e2e",
+        "cento validator-tier0 run workspace/runs/agent-work/no-model-validation-e2e/validation.json --run-dir workspace/runs/agent-work/no-model-validation-e2e/tier0"
       ],
       "outputs": [
         "workspace/runs/validator-tier0/stories.json",
@@ -447,9 +448,110 @@
         "workspace/runs/validator-tier0/*/stats.json"
       ],
       "notes": [
-        "Tier 0 uses deterministic checks only: file_exists, command, and json_field.",
-        "Every run records total_duration_ms, per-check duration_ms, ai_calls_used, and estimated_ai_cost.",
+        "Tier 0 uses deterministic checks only: file_exists, command, json_field, contains_text, http_status, and image_nonblank.",
+        "Every run records total_duration_ms, per-check duration_ms, manual_review_count, automation_coverage_percent, ai_calls_used, and estimated_ai_cost.",
         "The e2e command creates one passing sample and one failing sample to prove the path end to end."
+      ]
+    },
+    {
+      "id": "story-manifest",
+      "name": "Story Manifest",
+      "lane": "agent ops",
+      "kind": "python",
+      "entrypoint": "./scripts/story_manifest.py",
+      "description": "Validate, draft, and render Cento agent-work story.json manifests.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento story-manifest draft --title \"Fix dashboard\" --package app --expected-output workspace/runs/agent-work/drafts/fix-dashboard/evidence.md",
+        "cento story-manifest validate workspace/runs/agent-work/no-model-validation-e2e/story.json",
+        "cento story-manifest render-hub workspace/runs/agent-work/1000086/story.json"
+      ],
+      "outputs": [
+        "workspace/runs/agent-work/*/story.json",
+        "workspace/runs/agent-work/*/deliverables.json",
+        "workspace/runs/agent-work/*/start-here.html"
+      ],
+      "notes": [
+        "Draft manifests use issue.id=0 before agent-work create canonicalizes the real issue id.",
+        "No-model drafts include explicit escalation triggers and deterministic validation inputs."
+      ]
+    },
+    {
+      "id": "validation-manifest",
+      "name": "Validation Manifest",
+      "lane": "agent ops",
+      "kind": "python",
+      "entrypoint": "./scripts/validation_manifest.py",
+      "description": "Generate deterministic validation.json checks from story.json and enforce no-model coverage guardrails.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento validation-manifest draft workspace/runs/agent-work/no-model-validation-e2e/story.json --output workspace/runs/agent-work/no-model-validation-e2e/validation.json",
+        "cento validation-manifest validate workspace/runs/agent-work/no-model-validation-e2e/validation.json"
+      ],
+      "outputs": [
+        "workspace/runs/agent-work/*/validation.json"
+      ],
+      "notes": [
+        "Only explicit artifacts, commands, text assertions, JSON fields, URLs, and screenshots become deterministic checks.",
+        "Unresolved manual_review items block preflight until accepted, covered, or waived."
+      ]
+    },
+    {
+      "id": "no-model-validation-e2e",
+      "name": "No-model Validation E2E",
+      "lane": "agent ops",
+      "kind": "python",
+      "entrypoint": "./scripts/no_model_validation_e2e.py",
+      "description": "Run generated story manifest, generated validation manifest, agent-work preflight, and Tier 0 validation in one zero-AI evidence loop.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento no-model-validation-e2e",
+        "cento no-model-validation-e2e --run-dir workspace/runs/agent-work/no-model-validation-e2e"
+      ],
+      "outputs": [
+        "workspace/runs/agent-work/no-model-validation-e2e/story.json",
+        "workspace/runs/agent-work/no-model-validation-e2e/validation.json",
+        "workspace/runs/agent-work/no-model-validation-e2e/preflight.json",
+        "workspace/runs/agent-work/no-model-validation-e2e/tier0/validation-result.json",
+        "workspace/runs/agent-work/no-model-validation-e2e/e2e-summary.json"
+      ],
+      "notes": [
+        "The run records command duration, total duration, automation coverage, manual review count, ai_calls_used, and estimated_ai_cost.",
+        "The target no-model path is 95%+ automatic; the current generated-fixture E2E is 100% automatic."
+      ]
+    },
+    {
+      "id": "manifest-validate",
+      "name": "Manifest Validate",
+      "lane": "agent ops",
+      "kind": "python",
+      "entrypoint": "./scripts/manifest_validate.py",
+      "description": "Deterministically validate story.json and validation.json pairs, including evidence paths, API specs, and allowlisted commands without AI.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento manifest-validate --story workspace/runs/agent-work/1000088/story.json --validation workspace/runs/agent-work/1000088/validation.json --json --report workspace/runs/agent-work/1000088/validation-report.md",
+        "python3 ./scripts/manifest_validate.py --story workspace/runs/agent-work/1000088/story.json --json"
+      ],
+      "outputs": [
+        "workspace/runs/agent-work/<issue-id>/validation-report.md",
+        "workspace/runs/agent-work/<issue-id>/validation-report.json"
+      ],
+      "notes": [
+        "Uses story.json and validation.json as deterministic inputs.",
+        "Command checks fail on non-zero exits and escalate when a command is not allowlisted.",
+        "The default report lives next to the validation manifest unless overridden with --report."
       ]
     },
     {
@@ -1051,8 +1153,9 @@
       ],
       "commands": [
         "cento agent-work bootstrap",
-        "cento agent-work create --title \"Fix dashboard\" --node linux --agent codex",
-        "CENTO_AGENT_WORK_BACKEND=dual cento agent-work create --title \"Validate parity\" --node linux --agent codex",
+        "cento agent-work create --title \"Fix dashboard\" --manifest workspace/runs/agent-work/drafts/fix-dashboard/story.json --node linux --agent codex",
+        "CENTO_AGENT_WORK_BACKEND=dual cento agent-work create --title \"Validate parity\" --manifest workspace/runs/agent-work/drafts/validate-parity/story.json --node linux --agent codex",
+        "cento agent-work preflight workspace/runs/agent-work/no-model-validation-e2e/story.json --validation-manifest workspace/runs/agent-work/no-model-validation-e2e/validation.json",
         "cento agent-work split --title \"Improve mission control\" --nodes linux,macos --task \"Backend status\" --task \"Mac tile view\"",
         "cento agent-work list",
         "cento agent-work show 123",
@@ -1083,6 +1186,9 @@
         "docs/agent-run-ledger.md",
         "Project identifier cento-agent-work",
         "workspace/runs/agent-runs/<run-id>/run.json",
+        "workspace/runs/agent-work/<issue-id>/story.json",
+        "workspace/runs/agent-work/<issue-id>/preflight.json",
+        "workspace/runs/agent-work/<issue-id>/preflight.md",
         "workspace/runs/agent-work/<run-id>/prompt.md",
         "workspace/runs/agent-work/<run-id>/dispatch.json",
         "workspace/runs/agent-work/<run-id>/codex.log",
@@ -1093,6 +1199,8 @@
       ],
       "notes": [
         "The active path uses Cento Taskstream; migration, archive, backup, and rollback drills stay separate from active task flow.",
+        "Task creation requires a valid story manifest; preflight requires a validation manifest, 95%+ automation coverage, and no unresolved manual_review items.",
+        "Dispatch runs preflight by default and blocks AI launch unless --skip-preflight is used for explicit legacy/manual dispatch.",
         "Set `CENTO_AGENT_WORK_BACKEND=dual` for migration dual-write/dual-read parity checks between the migration source and replacement before cutover finalization.",
         "Use `make agent-work-dual-backend-stress` to exercise concurrent UI reads, `/api/sync`, dual-backend writes, and cutover parity against an isolated replacement SQLite database.",
         "Use split to create one package with node-assigned work items, then dispatch or hand the generated prompt to an agent.",
@@ -1131,6 +1239,42 @@
         "Default management actions are dry-run unless --apply is passed.",
         "The scanner correlates agent-work run ledgers, issue state, tmux sessions, process trees, logs, and pool state.",
         "The Agent Processes TUI consumes the manager summary to surface risk, stuck, stale, and manual counts."
+      ]
+    },
+    {
+      "id": "factory",
+      "name": "Cento Factory",
+      "lane": "planning",
+      "kind": "python",
+      "entrypoint": "./scripts/factory.py",
+      "description": "Plan-only factory workflow that turns a high-level request into intake artifacts, a validated factory-plan.json, story manifests, validation manifests, and static evidence hubs without dispatching AI workers.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento factory intake \"develop me a career consulting module\" --dry-run --out workspace/runs/factory/factory-planning-e2e",
+        "cento factory plan workspace/runs/factory/factory-planning-e2e --no-model",
+        "cento factory materialize workspace/runs/factory/factory-planning-e2e",
+        "cento factory create-issues workspace/runs/factory/factory-planning-e2e --dry-run",
+        "cento factory preflight workspace/runs/factory/factory-planning-e2e --json",
+        "cento factory render-hub workspace/runs/factory/factory-planning-e2e",
+        "cento factory status workspace/runs/factory/factory-planning-e2e"
+      ],
+      "outputs": [
+        "workspace/runs/factory/<run-id>/request.md",
+        "workspace/runs/factory/<run-id>/intake.json",
+        "workspace/runs/factory/<run-id>/factory-plan.json",
+        "workspace/runs/factory/<run-id>/tasks/<task-id>/story.json",
+        "workspace/runs/factory/<run-id>/tasks/<task-id>/validation.json",
+        "workspace/runs/factory/<run-id>/start-here.html",
+        "workspace/runs/factory/<run-id>/implementation-map.html",
+        "workspace/runs/factory/<run-id>/validation-summary.json"
+      ],
+      "notes": [
+        "factory-planning-v1 is no-model and plan-only; live dispatch and patch integration are deliberately deferred.",
+        "Every generated task has owned scope, expected outputs, validation commands, no-model eligibility, and dependency metadata.",
+        "Use factory-plan validation, story-manifest validation, and validation-manifest validation as the required guardrails before any future Taskstream creation or worker dispatch."
       ]
     },
     {

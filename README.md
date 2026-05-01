@@ -79,6 +79,8 @@ The bias is toward low-dependency tooling that works well from a terminal and ca
   Scan cento content and generate an archived HTML one-pager.
 - `story_screenshot_runner.py`
   Capture desktop and mobile screenshots from `story.json` with deterministic evidence and an index.
+- `manifest_validate.py`
+  Deterministically validate `story.json` and `validation.json` pairs, including evidence paths, API specs, and allowlisted commands without AI.
 - `kitty_theme_manager.sh`
   Sync custom Kitty themes, present theme choices interactively, and reload Kitty plus tmux context.
 - `wallpaper_manager.sh`
@@ -101,6 +103,8 @@ The bias is toward low-dependency tooling that works well from a terminal and ca
   Turn codebase or filesystem searches into a Markdown report.
 - `tool_index.py`
   Generate `docs/tool-index.md` from the central registry.
+- `factory.py`
+  Create no-model, plan-only Factory runs with intake artifacts, validated `factory-plan.json`, story manifests, validation manifests, and static evidence hubs.
 
 ## Common commands
 
@@ -151,6 +155,10 @@ make agent-work-app-sync
 make agent-work-app-stop
 make agent-manager ARGS="scan"
 make agent-manager ARGS="recommend --limit 10"
+make cento ARGS='factory intake "develop me a career consulting module" --dry-run --out workspace/runs/factory/factory-planning-e2e'
+make cento ARGS="factory plan workspace/runs/factory/factory-planning-e2e --no-model"
+make cento ARGS="factory materialize workspace/runs/factory/factory-planning-e2e"
+make cento ARGS="factory render-hub workspace/runs/factory/factory-planning-e2e"
 make funnel ARGS="init"
 make funnel ARGS="sources"
 make funnel ARGS="report"
@@ -213,6 +221,8 @@ go run ./scripts/telegram_tui.go
 ./scripts/agent_work.py cutover-status
 ./scripts/agent_work.py cutover-verify --run-dir workspace/runs/agent-work/cutover/e2e-check
 ./scripts/agent_work.py cutover-finalize --force
+./scripts/manifest_validate.py --story workspace/runs/agent-work/1000088/story.json --validation workspace/runs/agent-work/1000088/validation.json --json --report workspace/runs/agent-work/1000088/validation-report.md
+./scripts/factory_e2e.py --fixture career-consulting --out workspace/runs/factory/factory-planning-e2e
 ./scripts/funnel_module.py init
 ./scripts/funnel_module.py report
 ./scripts/burp_suite_community.sh setup

@@ -5,7 +5,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +16,18 @@ import deliverables_hub
 
 ROOT = Path(__file__).resolve().parents[1]
 VALID_ROLES = {"builder", "validator", "coordinator", "docs-evidence"}
+VALIDATION_MODES = ("manual-planning", "no-model", "cheap-model", "strong-model")
+VALIDATION_MODE_SET = set(VALIDATION_MODES)
+VALIDATION_RISKS = ("low", "medium", "high")
+VALIDATION_RISK_SET = set(VALIDATION_RISKS)
+VALIDATION_ESCALATION_TRIGGERS = (
+    "missing_manifest",
+    "high_risk",
+    "ux_judgment",
+    "failed_deterministic_command",
+    "ambiguity",
+)
+VALIDATION_ESCALATION_TRIGGER_SET = set(VALIDATION_ESCALATION_TRIGGERS)
 
 
 class StoryManifestError(Exception):
@@ -42,6 +56,156 @@ def local_ref_value(value: str) -> str:
     if value.startswith(f"file://{ROOT}/"):
         return value[len("file://") :]
     return value
+
+
+def now_iso() -> str:
+    return datetime.now().astimezone().isoformat(timespec="seconds")
+
+
+def slugify(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    return slug or "story"
+
+
+def parse_bool(value: str) -> bool:
+    return str(value).strip().lower() not in {"0", "false", "no", "off"}
+
+
+def parse_json_value(value: str) -> Any:
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError:
+        return value
+
+
+def parse_key_value_spec(value: str, fields: list[str]) -> dict[str, Any]:
+    if value.strip().startswith("{"):
+        parsed = json.loads(value)
+        if not isinstance(parsed, dict):
+            raise StoryManifestError(f"JSON spec must be an object: {value}")
+        return parsed
+    parts = value.split("::")
+    item: dict[str, Any] = {}
+    for index, field in enumerate(fields):
+        if index < len(parts) and parts[index] != "":
+            item[field] = parts[index]
+    if len(parts) > len(fields):
+        item[fields[-1]] = "::".join(parts[len(fields) - 1 :])
+    return item
+
+
+def parse_expected_output(value: str, default_owner: str) -> dict[str, Any]:
+    if value.strip().startswith("{"):
+        item = json.loads(value)
+        if not isinstance(item, dict):
+            raise StoryManifestError(f"expected output JSON must be an object: {value}")
+    else:
+        parts = value.split("::")
+        item = {"path": parts[0]}
+        if len(parts) >= 2 and parts[1]:
+            item["description"] = parts[1]
+        if len(parts) >= 3 and parts[2]:
+            item["required"] = parse_bool(parts[2])
+    if not item.get("path"):
+        raise StoryManifestError("expected output requires a path")
+    item.setdefault("owner", default_owner)
+    item.setdefault("required", True)
+    return item
+
+
+def build_draft_manifest(args: argparse.Namespace) -> dict[str, Any]:
+    title = args.title.strip()
+    if not title:
+        raise StoryManifestError("--title is required")
+    package = args.package.strip() or "default"
+    owner = args.owner.strip() or args.role
+    run_dir = args.run_dir.strip() or f"workspace/runs/agent-work/drafts/{slugify(package + '-' + title)}"
+    validation_manifest = args.validation_manifest.strip() or f"{run_dir}/validation.json"
+    deliverables_manifest = args.deliverables_manifest.strip() or f"{run_dir}/deliverables.json"
+    deliverables_hub = args.deliverables_hub.strip() or f"{run_dir}/start-here.html"
+
+    acceptance = [item.strip() for item in args.acceptance if item.strip()]
+    if not acceptance:
+        acceptance = ["Explicit expected outputs and validation checks are produced."]
+    expected_outputs = [parse_expected_output(item, owner) for item in args.expected_output]
+    if not expected_outputs:
+        raise StoryManifestError("at least one --expected-output is required")
+
+    validation: dict[str, Any] = {
+        "manifest": validation_manifest,
+        "mode": "no-model",
+        "no_model_eligible": True,
+        "risk": args.risk,
+        "escalation_triggers": args.escalation_trigger
+        or ["missing_manifest", "failed_deterministic_command", "ambiguity"],
+    }
+    validation["commands"] = [
+        item.strip()
+        for item in (
+            args.validation_command
+            or [f"python3 -m json.tool {{root}}/{validation_manifest}"]
+        )
+        if item.strip()
+    ]
+    if args.required_text:
+        validation["required_text"] = [
+            parse_key_value_spec(item, ["path", "text", "name"]) for item in args.required_text if item.strip()
+        ]
+    if args.json_field:
+        fields = []
+        for item in args.json_field:
+            parsed = parse_key_value_spec(item, ["path", "field", "expected"])
+            if "expected" in parsed:
+                parsed["expected"] = parse_json_value(str(parsed["expected"]))
+            fields.append(parsed)
+        validation["json_fields"] = fields
+    if args.url:
+        validation["urls"] = [parse_key_value_spec(item, ["url", "expected_status", "name"]) for item in args.url if item.strip()]
+
+    screenshots = []
+    for item in args.screenshot:
+        parsed = parse_key_value_spec(item, ["output", "name", "viewport"])
+        if parsed.get("output"):
+            screenshots.append(parsed)
+
+    manifest = {
+        "schema_version": "1.0",
+        "issue": {
+            "id": int(args.issue_id),
+            "title": title,
+            "package": package,
+        },
+        "lane": {
+            "owner": owner,
+            "node": args.node.strip() or "unassigned",
+            "agent": args.agent.strip(),
+            "role": args.role,
+        },
+        "paths": {
+            "run_dir": run_dir,
+        },
+        "scope": {
+            "goal": args.goal.strip() or title,
+            "acceptance": acceptance,
+        },
+        "expected_outputs": expected_outputs,
+        "validation": validation,
+        "deliverables": {
+            "manifest": deliverables_manifest,
+            "hub": deliverables_hub,
+        },
+        "review_gate": {
+            "required_sections": ["Delivered", "Validation", "Evidence", "Residual risk"],
+            "residual_risk_required": True,
+        },
+        "metadata": {
+            "drafted_at": now_iso(),
+            "draft_policy": "deterministic checks only; unresolved subjective criteria must stay in manual_review",
+        },
+    }
+    if screenshots:
+        manifest["screenshots"] = screenshots
+    return manifest
 
 
 def href_for(value: str, base_dir: Path) -> str:
@@ -108,6 +272,97 @@ def require_list(payload: dict[str, Any], path: str) -> list[Any]:
     return cursor
 
 
+def normalize_validation_commands(value: Any, errors: list[str]) -> list[str]:
+    if value is None:
+        errors.append("missing field: validation.commands")
+        return []
+    if not isinstance(value, list):
+        errors.append("field must be a list: validation.commands")
+        return []
+
+    commands: list[str] = []
+    for index, item in enumerate(value):
+        if isinstance(item, str):
+            command = item.strip()
+            if command:
+                commands.append(command)
+            else:
+                errors.append(f"field must be non-empty text: validation.commands[{index}]")
+            continue
+        if isinstance(item, dict):
+            name = item.get("name")
+            if name is not None and (not isinstance(name, str) or not name.strip()):
+                errors.append(f"field must be non-empty text: validation.commands[{index}].name")
+            command = item.get("command")
+            if isinstance(command, str) and command.strip():
+                commands.append(command.strip())
+            else:
+                errors.append(f"field must be non-empty text: validation.commands[{index}].command")
+            continue
+        errors.append(f"validation.commands entries must be strings or objects with a command field: index {index}")
+    return commands
+
+
+def normalize_validation_triggers(value: Any, errors: list[str]) -> list[str]:
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        errors.append("field must be a list: validation.escalation_triggers")
+        return []
+
+    triggers: list[str] = []
+    allowed = ", ".join(VALIDATION_ESCALATION_TRIGGERS)
+    for index, item in enumerate(value):
+        if not isinstance(item, str) or not item.strip():
+            errors.append(f"field must be non-empty text: validation.escalation_triggers[{index}]")
+            continue
+        trigger = item.strip()
+        if trigger not in VALIDATION_ESCALATION_TRIGGER_SET:
+            errors.append(f"validation.escalation_triggers entries must be one of {allowed}: {trigger}")
+            continue
+        triggers.append(trigger)
+    return triggers
+
+
+def validate_validation_policy(validation: dict[str, Any], errors: list[str]) -> None:
+    mode = str(validation.get("mode") or "").strip()
+    if not mode:
+        errors.append("missing field: validation.mode")
+    elif mode not in VALIDATION_MODE_SET:
+        errors.append(f"validation.mode must be one of {', '.join(VALIDATION_MODES)}: {mode}")
+
+    risk = str(validation.get("risk") or "").strip()
+    if not risk:
+        errors.append("missing field: validation.risk")
+    elif risk not in VALIDATION_RISK_SET:
+        errors.append(f"validation.risk must be one of {', '.join(VALIDATION_RISKS)}: {risk}")
+
+    no_model_eligible = validation.get("no_model_eligible")
+    if not isinstance(no_model_eligible, bool):
+        errors.append("field must be boolean: validation.no_model_eligible")
+    elif no_model_eligible is True and mode != "no-model":
+        errors.append(f"validation.no_model_eligible must be false unless validation.mode is no-model: {mode}")
+
+    commands = normalize_validation_commands(validation.get("commands"), errors)
+    escalation_triggers = normalize_validation_triggers(validation.get("escalation_triggers"), errors)
+
+    if mode == "manual-planning":
+        return
+
+    if not commands:
+        errors.append("validation.commands must include at least one command when validation.mode is not manual-planning")
+    if not escalation_triggers:
+        errors.append("validation.escalation_triggers must be present when validation.mode is not manual-planning")
+
+    if mode == "no-model":
+        if no_model_eligible is not True:
+            errors.append("validation.no_model_eligible must be true when validation.mode is no-model")
+        if risk == "high":
+            errors.append("validation.risk must be low or medium when validation.mode is no-model")
+    elif risk == "high" and mode != "strong-model":
+        errors.append("validation.mode must be strong-model when validation.risk is high")
+
+
 def validate_local_reference(path: str, label: str, errors: list[str]) -> None:
     if not path or path.startswith(("http://", "https://", "file://", "#")):
         return
@@ -142,6 +397,7 @@ def validate_manifest(payload: dict[str, Any], *, check_links: bool = False) -> 
         manifest = str(validation.get("manifest") or "")
         if check_links and manifest:
             validate_local_reference(manifest, "validation manifest", errors)
+        validate_validation_policy(validation, errors)
 
     deliverables = payload.get("deliverables")
     if isinstance(deliverables, dict):
@@ -187,7 +443,15 @@ def short_text(value: str, limit: int = 96) -> str:
     return value[: limit - 1].rstrip() + "..."
 
 
-def card(title: str, href: str, description: str, *, code: str = "", primary: bool = False) -> dict[str, Any]:
+def card(
+    title: str,
+    href: str,
+    description: str,
+    *,
+    code: str = "",
+    primary: bool = False,
+    badge: str = "",
+) -> dict[str, Any]:
     item: dict[str, Any] = {
         "title": title,
         "href": href,
@@ -197,7 +461,138 @@ def card(title: str, href: str, description: str, *, code: str = "", primary: bo
         item["code"] = code
     if primary:
         item["primary"] = True
+    if badge:
+        item["badge"] = badge
     return item
+
+
+def coerce_report_spec(value: Any) -> dict[str, Any] | None:
+    if isinstance(value, str):
+        path = value.strip()
+        if not path:
+            return None
+        return {"path": path}
+    if not isinstance(value, dict):
+        return None
+    path = str(value.get("path") or value.get("href") or value.get("report") or "").strip()
+    if not path:
+        return None
+    spec: dict[str, Any] = {"path": path}
+    for key in ("json", "report_json", "result", "status", "badge", "label", "title", "description"):
+        raw = value.get(key)
+        if raw is not None and str(raw).strip():
+            spec[key] = raw
+    return spec
+
+
+def validation_result_cards(spec: dict[str, Any], base_dir: Path) -> list[dict[str, Any]]:
+    def report_title(companion: bool = False) -> str:
+        label = str(spec.get("title") or spec.get("label") or "").strip()
+        if label:
+            return f"{label} JSON" if companion else label
+        stem = Path(path).stem.lower()
+        if "no-model" in stem:
+            title = "No-model validation report"
+        elif "validation" in stem or "report" in stem:
+            title = "Validation report"
+        else:
+            title = Path(path).name
+        return f"{title} JSON" if companion else title
+
+    def report_description(companion: bool = False) -> str:
+        description = str(spec.get("description") or "").strip()
+        if description and not companion:
+            return description
+        if description:
+            return f"{description} Machine-readable companion."
+        return "Machine-readable companion validation report." if companion else "Validation report for review handoff."
+
+    path = str(spec.get("path") or "").strip()
+    if not path:
+        return []
+
+    badge = str(spec.get("badge") or spec.get("result") or spec.get("status") or "").strip()
+    json_path = str(spec.get("json") or spec.get("report_json") or "").strip()
+    if not json_path and not spec.get("skip_json_companion"):
+        candidate = Path(path)
+        json_path = str(candidate.with_suffix(".json")) if candidate.suffix else f"{path}.json"
+
+    cards: list[dict[str, Any]] = [
+        card(
+            report_title(),
+            href_for(path, base_dir),
+            report_description(),
+            code=path,
+            badge=badge or None,
+        )
+    ]
+
+    if json_path and json_path != path:
+        cards.append(
+            card(
+                report_title(companion=True),
+                href_for(json_path, base_dir),
+                report_description(companion=True),
+                code=json_path,
+                badge=badge or None,
+            )
+        )
+
+    return cards
+
+
+def validation_results_from_story(payload: dict[str, Any], deliverables_path: Path) -> list[dict[str, Any]]:
+    validation = payload.get("validation") or {}
+    specs: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    for raw in (validation.get("report"),):
+        spec = coerce_report_spec(raw)
+        if spec and spec["path"] not in seen:
+            specs.append(spec)
+            seen.add(spec["path"])
+
+    manifest_path = str(validation.get("manifest") or "").strip()
+    if manifest_path:
+        validation_manifest_path = repo_path(manifest_path)
+        if validation_manifest_path.exists():
+            validation_manifest = load_manifest(validation_manifest_path)
+            spec = coerce_report_spec(validation_manifest.get("report"))
+            if spec and spec["path"] not in seen:
+                specs.append(spec)
+                seen.add(spec["path"])
+
+    for item in payload.get("expected_outputs") or []:
+        if not isinstance(item, dict):
+            continue
+        path = str(item.get("path") or "").strip()
+        if not path or path in seen:
+            continue
+        owner = str(item.get("owner") or "").strip().lower()
+        description = str(item.get("description") or "").strip()
+        path_lower = Path(path).name.lower()
+        description_lower = description.lower()
+        if owner != "validator" and "validation" not in path_lower and "validation" not in description_lower and "report" not in path_lower:
+            continue
+        spec: dict[str, Any] = {
+            "path": path,
+            "badge": "report",
+            "title": description or Path(path).name,
+            "description": description or "Linked expected output.",
+            "skip_json_companion": True,
+        }
+        candidate = Path(path)
+        json_path = str(candidate.with_suffix(".json")) if candidate.suffix else f"{path}.json"
+        if repo_path(json_path).exists():
+            spec["json"] = json_path
+            spec.pop("skip_json_companion", None)
+        specs.append(spec)
+        seen.add(path)
+
+    cards: list[dict[str, Any]] = []
+    for spec in specs:
+        cards.extend(validation_result_cards(spec, deliverables_path.parent))
+    return cards
 
 
 def generated_deliverables(payload: dict[str, Any], story_path: Path, deliverables_path: Path) -> dict[str, Any]:
@@ -267,6 +662,7 @@ def generated_deliverables(payload: dict[str, Any], story_path: Path, deliverabl
             )
         )
     use_first.extend(output_cards[:8])
+    validation_results = validation_results_from_story(payload, deliverables_path)
 
     screenshot_cards = []
     for item in payload.get("screenshots") or []:
@@ -322,6 +718,7 @@ def generated_deliverables(payload: dict[str, Any], story_path: Path, deliverabl
             {"label": "Run Dir", "description": str(paths.get("run_dir") or "-")},
         ],
         "commands": commands,
+        "validation_results": validation_results,
         "screenshots": screenshot_cards,
         "review": review or ["Review story.json acceptance criteria and linked evidence."],
     }
@@ -383,6 +780,32 @@ def command_render_hub(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_draft(args: argparse.Namespace) -> int:
+    try:
+        manifest = build_draft_manifest(args)
+    except (StoryManifestError, json.JSONDecodeError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+
+    errors = validate_manifest(manifest, check_links=False)
+    if errors:
+        for error in errors:
+            print(f"ERROR: {error}", file=sys.stderr)
+        return 1
+
+    output = repo_path(args.output) if args.output else repo_path(str(manifest["paths"]["run_dir"])) / "story.json"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    if not args.check_only:
+        output.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    if args.json:
+        print(json.dumps({"ok": True, "story_manifest": display_path(output), "manifest": manifest}, indent=2, sort_keys=True))
+    else:
+        print(f"story_manifest: {display_path(output)}")
+        print(f"validation_manifest: {manifest['validation']['manifest']}")
+        print("status: ok")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Validate Cento agent-work story.json manifests and generate story hubs.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -401,6 +824,44 @@ def build_parser() -> argparse.ArgumentParser:
     render_hub.add_argument("--check-only", action="store_true", help="Validate without writing deliverables or HTML files.")
     render_hub.add_argument("--json", action="store_true", help="Print machine-readable result.")
     render_hub.set_defaults(func=command_render_hub)
+
+    draft = sub.add_parser("draft", help="Create a conservative draft story.json from interpreted task fields.")
+    draft.add_argument("--title", required=True)
+    draft.add_argument("--package", default="default")
+    draft.add_argument("--goal", default="")
+    draft.add_argument("--issue-id", type=int, default=0, help="Use 0 before agent-work create; real issue ids are canonicalized later.")
+    draft.add_argument("--owner", default="builder")
+    draft.add_argument("--node", default="unassigned")
+    draft.add_argument("--agent", default="")
+    draft.add_argument("--role", choices=sorted(VALID_ROLES), default="builder")
+    draft.add_argument("--risk", choices=["low", "medium", "high"], default="low")
+    draft.add_argument("--run-dir", default="")
+    draft.add_argument("--validation-manifest", default="")
+    draft.add_argument("--deliverables-manifest", default="")
+    draft.add_argument("--deliverables-hub", default="")
+    draft.add_argument("--acceptance", action="append", default=[], help="Acceptance bullet. Repeat for multiple criteria.")
+    draft.add_argument(
+        "--expected-output",
+        action="append",
+        required=True,
+        help="Expected artifact as PATH or PATH::DESCRIPTION::REQUIRED. JSON object is also accepted.",
+    )
+    draft.add_argument("--validation-command", action="append", default=[], help="Deterministic command to include in validation draft input.")
+    draft.add_argument(
+        "--escalation-trigger",
+        action="append",
+        choices=sorted(VALIDATION_ESCALATION_TRIGGERS),
+        default=[],
+        help="Reason to leave the no-model path. Repeat for multiple triggers.",
+    )
+    draft.add_argument("--required-text", action="append", default=[], help="Contains-text input as PATH::TEXT::NAME or JSON object.")
+    draft.add_argument("--json-field", action="append", default=[], help="JSON-field input as PATH::FIELD::EXPECTED_JSON or JSON object.")
+    draft.add_argument("--url", action="append", default=[], help="HTTP status input as URL::EXPECTED_STATUS::NAME or JSON object.")
+    draft.add_argument("--screenshot", action="append", default=[], help="Screenshot artifact as OUTPUT::NAME::VIEWPORT or JSON object.")
+    draft.add_argument("--output", default="", help="Output story.json path. Defaults to <run_dir>/story.json.")
+    draft.add_argument("--check-only", action="store_true", help="Build and validate without writing the draft.")
+    draft.add_argument("--json", action="store_true", help="Print machine-readable result.")
+    draft.set_defaults(func=command_draft)
     return parser
 
 

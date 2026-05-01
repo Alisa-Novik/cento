@@ -11,6 +11,7 @@ export CENTO_AGENT_WORK_BACKEND="${CENTO_AGENT_WORK_BACKEND:-replacement}"
 
 title="Cento Agent Work E2E $(date +%Y%m%d-%H%M%S)"
 evidence_path="$ROOT_DIR/workspace/runs/agent-work/e2e-validation-${title// /-}.txt"
+story_path="$ROOT_DIR/workspace/runs/agent-work/e2e-story-${title// /-}.json"
 
 mkdir -p "$ROOT_DIR/workspace/runs/agent-work"
 cat > "$evidence_path" <<EOD
@@ -18,12 +19,45 @@ agent-work e2e evidence placeholder
 status: running
 backend: ${CENTO_AGENT_WORK_BACKEND}
 EOD
+cat > "$story_path" <<EOD
+{
+  "schema_version": "1.0",
+  "issue": {
+    "id": 0,
+    "title": "$title",
+    "package": "e2e"
+  },
+  "lane": {
+    "owner": "e2e",
+    "node": "linux",
+    "agent": "e2e",
+    "role": "builder"
+  },
+  "paths": {
+    "run_dir": "workspace/runs/agent-work/e2e-draft"
+  },
+  "scope": {
+    "acceptance": [
+      "agent-work create requires and canonicalizes this story manifest"
+    ]
+  },
+  "expected_outputs": [
+    {
+      "path": "${evidence_path#$ROOT_DIR/}",
+      "description": "E2E validation evidence placeholder",
+      "required": true,
+      "owner": "e2e"
+    }
+  ]
+}
+EOD
 
 "$CENTO" agent-work bootstrap >/dev/null
 
 created_json=$(
   "$CENTO" agent-work create \
     --title "$title" \
+    --manifest "$story_path" \
     --description "E2E probe for the Cento agent work tracker." \
     --node linux \
     --agent e2e \

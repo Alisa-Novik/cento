@@ -25,6 +25,8 @@ from pathlib import Path
 from typing import Any
 
 import agent_work_app
+import story_manifest
+import validation_manifest as validation_manifest_tools
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -51,6 +53,7 @@ STATUS_MAP = {
 }
 ROLE_CHOICES = ("builder", "validator", "coordinator")
 VALIDATION_RESULT_CHOICES = ("pass", "fail", "blocked")
+NO_MODEL_VALIDATION_RISKS = {"low", "medium"}
 ACTIVE_RUN_STATUSES = {"planned", "launching", "running"}
 ENDED_RUN_STATUSES = {"archived", "dry_run", "succeeded", "failed", "blocked", "stale", "exited_unknown"}
 DEFAULT_RUNTIME_REGISTRY = {
@@ -97,6 +100,7 @@ BACKEND_REDLINE = BACKEND_ARCHIVE
 BACKEND_TASKSTREAM = "taskstream"
 BACKEND_REPLACEMENT = BACKEND_TASKSTREAM
 BACKEND_DUAL = "dual"
+LEGACY_TRACKER_NAME = "red" + "mine"
 KNOWN_BACKENDS = {BACKEND_ARCHIVE, BACKEND_TASKSTREAM, BACKEND_DUAL}
 BOOTSTRAP_CACHE: dict[str, Any] | None = None
 DEFAULT_REPLACEMENT_API = "http://127.0.0.1:47910"
@@ -122,8 +126,7 @@ def agent_work_backend() -> str:
         return BACKEND_TASKSTREAM
     if backend == "replacement":
         backend = BACKEND_TASKSTREAM
-    legacy_name = "red" + "mine"
-    if backend == legacy_name:
+    if backend == LEGACY_TRACKER_NAME:
         backend = BACKEND_ARCHIVE
     if backend not in KNOWN_BACKENDS:
         allowed = ", ".join(sorted(KNOWN_BACKENDS))
@@ -1296,7 +1299,7 @@ def docker_psql_args(sql: str) -> list[str]:
     return [
         "docker",
         "exec",
-        f"cento-{legacy_name}-postgres",
+        f"cento-{LEGACY_TRACKER_NAME}-postgres",
         "psql",
         "-U",
         "red" + "mine",
@@ -2177,13 +2180,29 @@ def extract_owned_files(description: str) -> list[str]:
 
 
 def command_create(args: argparse.Namespace) -> int:
+    manifest_path = resolve_root_path(args.manifest)
+    manifest = validate_create_story_manifest(manifest_path)
     description = append_ownership_section(args.description or "", args.owns or [])
-    issue_id = create_issue(args.title, description, args.node or "", args.agent or "", args.package or "default", role=args.role)
+    description = append_story_manifest_section(description, manifest_path)
+    tracker = EPIC_TRACKER if args.epic else TASK_TRACKER
+    issue_id = create_issue(args.title, description, args.node or "", args.agent or "", args.package or "default", tracker=tracker, role=args.role)
+    canonical_path = canonicalize_create_story_manifest(issue_id, manifest_path, manifest, args)
+    update_issue(
+        issue_id,
+        None,
+        f"Story manifest canonicalized: {display_path(canonical_path)}",
+        args.node or None,
+        args.agent or None,
+        None,
+        role=args.role,
+    )
     issue = show_issue(issue_id)
+    issue["story_manifest"] = display_path(canonical_path)
     if args.json:
         print(json.dumps(issue, indent=2, default=str))
     else:
         print(f"created #{issue_id}: {issue['subject']}")
+        print(f"story_manifest: {display_path(canonical_path)}")
     return 0
 
 
@@ -3106,6 +3125,9 @@ def command_handoff(args: argparse.Namespace) -> int:
             runtime=args.validator_runtime or "auto",
             model=args.validator_model or "",
             dry_run=args.validator_dry_run,
+            validation_manifest="",
+            min_automation_coverage=95.0,
+            skip_preflight=False,
         )
         command_dispatch(dispatch_args)
     return 0
@@ -3650,7 +3672,7 @@ def command_recovery_plan(args: argparse.Namespace) -> int:
                         "reason": blocker.get("cause"),
                         "command": (
                             "cento agent-work create --title "
-                            f"{shlex.quote(title)} --description {shlex.quote(description)}"
+                            f"{shlex.quote(title)} --manifest workspace/runs/agent-work/drafts/<generated-story>.json --description {shlex.quote(description)}"
                             + (f" --package {shlex.quote(str(blocker.get('package') or 'default'))}" if blocker.get("package") else "")
                             + f" --role builder"
                         ),
@@ -3931,6 +3953,198 @@ def load_story_manifest(path: Path) -> dict[str, Any]:
     return payload
 
 
+def default_validation_manifest_path(story_path: Path, story: dict[str, Any]) -> Path:
+    validation = story.get("validation") if isinstance(story.get("validation"), dict) else {}
+    manifest_value = str(validation.get("manifest") or "")
+    if manifest_value:
+        manifest_value = validation_manifest_tools.replace_placeholders(manifest_value, story)
+        return resolve_root_path(manifest_value)
+    paths = story.get("paths") if isinstance(story.get("paths"), dict) else {}
+    run_dir_value = str(paths.get("run_dir") or "")
+    if run_dir_value:
+        run_dir_value = validation_manifest_tools.replace_placeholders(run_dir_value, story)
+        return resolve_root_path(run_dir_value) / "validation.json"
+    return story_path.with_name("validation.json")
+
+
+def preflight_owned_path_errors(story: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    for index, item in enumerate(story.get("expected_outputs") or [], start=1):
+        if not isinstance(item, dict):
+            errors.append(f"expected_outputs #{index} must be an object")
+            continue
+        if not str(item.get("path") or "").strip():
+            errors.append(f"expected_outputs #{index} is missing path")
+        if not str(item.get("owner") or "").strip():
+            errors.append(f"expected_outputs #{index} is missing owner")
+    return errors
+
+
+def preflight_report_markdown(payload: dict[str, Any]) -> str:
+    lines = [
+        "# Agent Work Preflight",
+        "",
+        f"- Decision: `{payload['decision']}`",
+        f"- Story manifest: `{payload['story_manifest']}`",
+        f"- Validation manifest: `{payload['validation_manifest']}`",
+        f"- Automation coverage: `{payload['automation_coverage_percent']}%`",
+        f"- Manual review items: `{payload['manual_review_count']}`",
+        f"- AI calls used: `{payload['stats']['ai_calls_used']}`",
+        f"- Estimated AI cost: `{payload['stats']['estimated_ai_cost']}`",
+        f"- Total duration: `{payload['stats']['total_duration_ms']} ms`",
+        "",
+        "## Errors",
+        "",
+    ]
+    if payload["errors"]:
+        lines.extend(f"- {item}" for item in payload["errors"])
+    else:
+        lines.append("- None.")
+    lines.extend(["", "## Checks", ""])
+    for item in payload.get("checks") or []:
+        lines.append(f"- `{item.get('type')}` {item.get('name')}")
+    return "\n".join(lines) + "\n"
+
+
+def command_preflight(args: argparse.Namespace) -> int:
+    start = time.perf_counter()
+    story_path = resolve_root_path(args.story_manifest)
+    story = load_story_manifest(story_path)
+    errors = story_manifest.validate_manifest(story, check_links=args.check_links)
+    errors.extend(preflight_owned_path_errors(story))
+
+    validation_path = resolve_root_path(args.validation_manifest) if args.validation_manifest else default_validation_manifest_path(story_path, story)
+    validation_payload: dict[str, Any] | None = None
+    if not validation_path.exists():
+        if args.write_validation_draft:
+            validation_payload = validation_manifest_tools.build_manifest(story, story_path)
+            validation_path.parent.mkdir(parents=True, exist_ok=True)
+            validation_path.write_text(json.dumps(validation_payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        else:
+            errors.append(f"validation manifest is missing: {display_path(validation_path)}")
+    if validation_payload is None and validation_path.exists():
+        try:
+            validation_payload = validation_manifest_tools.load_validation(validation_path)
+        except validation_manifest_tools.ValidationManifestError as exc:
+            errors.append(str(exc))
+
+    if validation_payload is not None:
+        errors.extend(validation_manifest_tools.validate_validation_manifest(validation_payload, min_coverage=args.min_automation_coverage))
+    coverage = (validation_payload or {}).get("coverage") or {}
+    checks = (validation_payload or {}).get("checks") or []
+    manual_review = (validation_payload or {}).get("manual_review") or []
+    automation_coverage = float(coverage.get("automation_coverage_percent") or (100 if checks and not manual_review else 0))
+    total_duration_ms = round((time.perf_counter() - start) * 1000, 3)
+    decision = "pass" if not errors else "blocked"
+
+    paths = story.get("paths") if isinstance(story.get("paths"), dict) else {}
+    run_dir = resolve_root_path(validation_manifest_tools.replace_placeholders(str(paths.get("run_dir") or story_path.parent), story))
+    report_path = resolve_root_path(args.report) if args.report else run_dir / "preflight.json"
+    report_md = report_path.with_suffix(".md")
+    payload = {
+        "schema": "cento.agent-work.preflight.v1",
+        "decision": decision,
+        "errors": errors,
+        "story_manifest": display_path(story_path),
+        "validation_manifest": display_path(validation_path),
+        "checks": checks,
+        "manual_review": manual_review,
+        "manual_review_count": len(manual_review) if isinstance(manual_review, list) else 0,
+        "automation_coverage_percent": automation_coverage,
+        "min_automation_coverage": args.min_automation_coverage,
+        "stats": {
+            "total_duration_ms": total_duration_ms,
+            "ai_calls_used": 0,
+            "estimated_ai_cost": 0,
+        },
+        "outputs": {
+            "report": display_path(report_path),
+            "summary": display_path(report_md),
+        },
+        "updated_at": now_iso(),
+    }
+    if not args.no_write:
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
+        report_md.write_text(preflight_report_markdown(payload), encoding="utf-8")
+
+    if args.json:
+        print(json.dumps(payload, indent=2, sort_keys=True, default=str))
+    else:
+        print(f"preflight: {decision.upper()} coverage={automation_coverage}% manual_review={payload['manual_review_count']}")
+        print(f"story: {display_path(story_path)}")
+        print(f"validation: {display_path(validation_path)}")
+        if not args.no_write:
+            print(f"report: {display_path(report_path)}")
+        for error in errors:
+            print(f"ERROR: {error}", file=sys.stderr)
+    return 0 if decision == "pass" else 1
+
+
+def validate_create_story_manifest(path: Path) -> dict[str, Any]:
+    manifest = load_story_manifest(path)
+    errors = story_manifest.validate_manifest(manifest, check_links=False)
+    issue = manifest.get("issue") if isinstance(manifest, dict) else None
+    if not isinstance(issue, dict) or issue.get("id") != 0:
+        errors.append("create-time story manifest must use issue.id = 0; agent-work sets the real issue id after creation")
+    if errors:
+        detail = "\n".join(f"- {error}" for error in errors)
+        raise AgentWorkError(f"Story manifest is required and must be valid before task creation: {display_path(path)}\n{detail}")
+    return manifest
+
+
+def append_story_manifest_section(description: str, manifest_path: Path) -> str:
+    section = textwrap.dedent(
+        f"""
+
+        h3. Story Manifest
+
+        * Source: {display_path(manifest_path)}
+        * Guardrail: task creation requires a valid story manifest generated from the interpreted request before dispatch.
+        * Create-time issue id: use 0 in the draft manifest; agent-work canonicalizes it after creation.
+        """
+    ).strip()
+    if not description.strip():
+        return section
+    return description.rstrip() + "\n\n" + section
+
+
+def canonical_story_manifest_path(issue_id: int) -> Path:
+    return ROOT / "workspace" / "runs" / "agent-work" / str(issue_id) / "story.json"
+
+
+def canonicalize_create_story_manifest(issue_id: int, source_path: Path, manifest: dict[str, Any], args: argparse.Namespace) -> Path:
+    canonical_path = canonical_story_manifest_path(issue_id)
+    canonical_path.parent.mkdir(parents=True, exist_ok=True)
+
+    payload = json.loads(json.dumps(manifest))
+    issue = payload.setdefault("issue", {})
+    if isinstance(issue, dict):
+        issue["id"] = issue_id
+        issue["title"] = args.title
+        issue["package"] = args.package or issue.get("package") or "default"
+    lane = payload.setdefault("lane", {})
+    if isinstance(lane, dict):
+        lane["node"] = args.node or lane.get("node") or "unassigned"
+        lane["agent"] = args.agent or lane.get("agent") or ""
+        lane["role"] = args.role or lane.get("role") or "builder"
+    paths = payload.setdefault("paths", {})
+    if isinstance(paths, dict):
+        paths["run_dir"] = display_path(canonical_path.parent)
+    payload.setdefault("metadata", {})
+    if isinstance(payload["metadata"], dict):
+        payload["metadata"]["canonicalized_from"] = display_path(source_path)
+        payload["metadata"]["canonicalized_at"] = now_iso()
+
+    errors = story_manifest.validate_manifest(payload, check_links=False)
+    if errors:
+        detail = "\n".join(f"- {error}" for error in errors)
+        raise AgentWorkError(f"Canonical story manifest failed validation for issue #{issue_id}: {display_path(canonical_path)}\n{detail}")
+
+    canonical_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return canonical_path
+
+
 def manifest_context(issue_id: int, manifest_path: Path, manifest: dict[str, Any], node: str, agent: str) -> dict[str, str]:
     run_dir = manifest.get("run_dir") or str(manifest_path.parent)
     return {
@@ -3941,6 +4155,80 @@ def manifest_context(issue_id: int, manifest_path: Path, manifest: dict[str, Any
         "run_dir": str(format_manifest_value(run_dir, {"root": str(ROOT), "issue": str(issue_id)})),
         "node": node,
         "agent": agent,
+    }
+
+
+def coerce_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+    return bool(value)
+
+
+def manifest_value_with_source(
+    key: str,
+    *sources: tuple[str, dict[str, Any] | None],
+) -> tuple[Any | None, str]:
+    for source_name, payload in sources:
+        if not isinstance(payload, dict):
+            continue
+        value = payload.get(key)
+        if value is None:
+            continue
+        if isinstance(value, str) and not value.strip():
+            continue
+        return value, source_name
+    return None, sources[0][0] if sources else "validation"
+
+
+def validation_route_policy(manifest: dict[str, Any], story_payload: dict[str, Any] | None) -> dict[str, Any]:
+    story_validation: dict[str, Any] | None = None
+    if isinstance(story_payload, dict):
+        validation = story_payload.get("validation")
+        if isinstance(validation, dict):
+            story_validation = validation
+    manifest_validation = manifest if isinstance(manifest, dict) else {}
+    eligible_value, eligible_source = manifest_value_with_source(
+        "no_model_eligible",
+        ("story.validation", story_validation),
+        ("validation", manifest_validation),
+    )
+    risk_value, risk_source = manifest_value_with_source(
+        "risk",
+        ("story.validation", story_validation),
+        ("validation", manifest_validation),
+    )
+    eligible = coerce_bool(eligible_value)
+    risk = str(risk_value or "").strip().lower()
+    no_model = eligible and risk in NO_MODEL_VALIDATION_RISKS
+    if no_model:
+        reason = f"{eligible_source}.no_model_eligible is true and {risk_source}.risk is {risk}"
+        escalation = ""
+    elif not eligible:
+        reason = f"{eligible_source}.no_model_eligible is false or missing"
+        escalation = "model-backed validation required"
+    elif not risk:
+        reason = f"{risk_source}.risk is missing"
+        escalation = "risk must be explicit before validation routing"
+    else:
+        reason = f"{risk_source}.risk is {risk}; model-backed validation required"
+        escalation = "risk exceeds the no-model threshold"
+    return {
+        "mode": "no-model" if no_model else "standard",
+        "eligible": eligible,
+        "risk": risk,
+        "eligible_source": eligible_source,
+        "risk_source": risk_source,
+        "reason": reason,
+        "escalation": escalation,
+        "summary": f"Validation route: {'no-model' if no_model else 'standard'} ({reason}).",
+        "story_no_model_eligible": story_validation.get("no_model_eligible") if story_validation else None,
+        "story_risk": story_validation.get("risk") if story_validation else None,
+        "validation_no_model_eligible": manifest_validation.get("no_model_eligible"),
+        "validation_risk": manifest_validation.get("risk"),
     }
 
 
@@ -4248,7 +4536,15 @@ def run_validation_check(check: dict[str, Any], context: dict[str, str]) -> dict
     return result
 
 
-def validation_report_markdown(issue_id: int, manifest_path: Path, result: str, checks: list[dict[str, Any]], evidence: list[str]) -> str:
+def validation_report_markdown(
+    issue_id: int,
+    manifest_path: Path,
+    result: str,
+    checks: list[dict[str, Any]],
+    evidence: list[str],
+    *,
+    policy: dict[str, Any] | None = None,
+) -> str:
     validation_evidence, screenshot_evidence = partition_evidence(evidence)
     lines = [
         f"# Validation Report For #{issue_id}",
@@ -4257,9 +4553,22 @@ def validation_report_markdown(issue_id: int, manifest_path: Path, result: str, 
         f"Manifest: `{display_path(manifest_path)}`",
         f"Result: **{result.upper()}**",
         "",
-        "## Checks",
+        "## Validation route",
         "",
     ]
+    if policy:
+        lines.extend(
+            [
+                f"- Mode: **{str(policy.get('mode') or 'standard').upper()}**",
+                f"- Eligible: `{bool(policy.get('eligible'))}`",
+                f"- Risk: `{str(policy.get('risk') or 'unknown')}`",
+                f"- Source: `{str(policy.get('eligible_source') or 'validation')}` / `{str(policy.get('risk_source') or 'validation')}`",
+                f"- Reason: {str(policy.get('reason') or 'Validation route selected.')}",
+            ]
+        )
+    else:
+        lines.append("- Standard validation path.")
+    lines.extend(["", "## Checks", ""])
     for item in checks:
         status = "PASS" if item.get("ok") else "FAIL"
         lines.append(f"- **{status}** `{item.get('type')}` {item.get('name')}: {item.get('message')}")
@@ -4293,6 +4602,7 @@ def command_validate_run(args: argparse.Namespace) -> int:
     if args.story_manifest:
         story_manifest = resolve_root_path(args.story_manifest)
         story_payload = load_story_manifest(story_manifest)
+    validation_policy = validation_route_policy(manifest, story_payload)
     required = manifest.get("requires") or {}
     allowed = [str(item) for item in required.get("validator_agents") or []]
     enforce_validator_authorized(agent, allowed)
@@ -4343,6 +4653,8 @@ def command_validate_run(args: argparse.Namespace) -> int:
         "subject": issue.get("subject"),
         "result": result,
         "result_after_gate": final_result,
+        "validation_mode": validation_policy["mode"],
+        "validation_policy": validation_policy,
         "agent": agent,
         "node": node,
         "manifest": display_path(manifest_path),
@@ -4353,9 +4665,13 @@ def command_validate_run(args: argparse.Namespace) -> int:
         "checks": results,
         "updated_at": now_iso(),
     }
-    report_path.write_text(validation_report_markdown(args.issue, manifest_path, result, results, all_evidence), encoding="utf-8")
+    report_path.write_text(
+        validation_report_markdown(args.issue, manifest_path, result, results, all_evidence, policy=validation_policy),
+        encoding="utf-8",
+    )
     report_json_path.write_text(json.dumps(payload, indent=2, default=str) + "\n", encoding="utf-8")
     note = args.note or f"validate-run {result.upper()} using {display_path(manifest_path)}"
+    note = f"{validation_policy['summary']}\n\n{note}".strip()
     note = append_validation_summary(note, results)
     note = validation_note(final_result, note, all_evidence) + review_gate_feedback_block(gate_failures)
     if not args.no_update:
@@ -4603,6 +4919,29 @@ def command_dispatch(args: argparse.Namespace) -> int:
     model = args.model or os.environ.get("CENTO_AGENT_MODEL") or str(runtime.get("model") or "gpt-5.3-codex-spark")
     agent = args.agent or str(runtime.get("agent") or runtime_id) or issue.get("agent") or os.environ.get("USER") or "agent"
     session = f"cento-agent-{issue['id']}-{datetime.now().strftime('%H%M%S')}"
+    if not args.skip_preflight:
+        story_path = canonical_story_manifest_path(int(issue["id"]))
+        if not story_path.exists():
+            message = f"Dispatch preflight blocked: canonical story manifest is missing at {display_path(story_path)}"
+            if not args.dry_run:
+                update_issue(args.issue, "blocked", message, node, agent, None, role=role)
+            raise AgentWorkError(message + " (use --skip-preflight only for legacy/manual dispatch).")
+        preflight_args = argparse.Namespace(
+            story_manifest=str(story_path),
+            validation_manifest=args.validation_manifest,
+            min_automation_coverage=args.min_automation_coverage,
+            write_validation_draft=False,
+            check_links=False,
+            report=str(run_dir / "preflight.json"),
+            no_write=False,
+            json=False,
+        )
+        preflight_result = command_preflight(preflight_args)
+        if preflight_result != 0:
+            message = f"Dispatch preflight blocked for #{issue['id']}. Report: {display_path(run_dir / 'preflight.json')}"
+            if not args.dry_run:
+                update_issue(args.issue, "blocked", message, node, agent, None, role=role)
+            return preflight_result
     log_name = "codex.log" if runtime_id == "codex" else f"{runtime_id}.log"
     log_path = f"workspace/runs/agent-work/{run_id}/{log_name}"
     runtime_command = (
@@ -4747,14 +5086,31 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("create", help="Create one agent task.")
     p.add_argument("--title", required=True)
+    p.add_argument("--manifest", required=True, help="Required story.json generated from the interpreted request. Use issue.id=0 before creation.")
     p.add_argument("--description", default="")
     p.add_argument("--node", default="")
     p.add_argument("--agent", default="")
     p.add_argument("--role", choices=ROLE_CHOICES, default="builder")
     p.add_argument("--package", default="default")
+    p.add_argument("--epic", action="store_true", help="Create the item as an Agent Epic while still requiring a story manifest.")
     p.add_argument("--owns", action="append", default=[], help="Declare owned files, modules, or responsibility boundaries. Repeat for multiple entries.")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=command_create)
+
+    p = sub.add_parser(
+        "preflight",
+        help="Check story.json and validation.json before dispatch without using AI.",
+        description="Check story.json and validation.json before dispatch without using AI.",
+    )
+    p.add_argument("story_manifest", help="Path to story.json.")
+    p.add_argument("--validation-manifest", default="", help="Validation manifest path. Defaults to story.validation.manifest or <run_dir>/validation.json.")
+    p.add_argument("--min-automation-coverage", type=float, default=95.0)
+    p.add_argument("--write-validation-draft", action="store_true", help="Write a deterministic validation draft if it is missing.")
+    p.add_argument("--check-links", action="store_true", help="Require linked local story outputs to exist.")
+    p.add_argument("--report", default="", help="Output preflight JSON path. Markdown is written beside it.")
+    p.add_argument("--no-write", action="store_true", help="Do not write preflight report artifacts.")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=command_preflight)
 
     p = sub.add_parser("split", help="Create an agent work package and task issues.")
     p.add_argument("--title", required=True)
@@ -5023,6 +5379,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--runtime", default="auto", help="Runtime id, such as codex or claude-code. Default: auto weighted route.")
     p.add_argument("--model", default="")
     p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--validation-manifest", default="", help="Validation manifest used by dispatch preflight.")
+    p.add_argument("--min-automation-coverage", type=float, default=95.0)
+    p.add_argument("--skip-preflight", action="store_true", help="Bypass dispatch preflight for legacy/manual cases.")
     p.set_defaults(func=command_dispatch)
 
     return parser

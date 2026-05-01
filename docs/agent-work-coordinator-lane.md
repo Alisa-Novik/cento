@@ -20,6 +20,8 @@ Combine related work only when the stories can share the same acceptance contrac
 
 Every split task must declare owned files, modules, or responsibility boundaries. Use `cento agent-work create --owns PATH_OR_SCOPE` or `cento agent-work split --owns PATH_OR_SCOPE` so builder and validator prompts show the ownership boundary. Do not dispatch two builders with overlapping owned paths unless one is explicitly a read-only validator or docs/evidence worker.
 
+Every created task must start from a generated story manifest. For `cento agent-work create`, interpret the request first, write a draft `story.json` with `issue.id: 0`, then pass it with `--manifest`. Taskstream creation without a manifest is intentionally blocked.
+
 Assign lanes by responsibility:
 
 - Builder: smallest coherent implementation slice, changed files, and implementation notes.
@@ -69,6 +71,7 @@ When the pool starts zero workers, read these fields first:
 - `reason_summary.summary`
 - `reason_summary.next_action`
 - `reason_summary.lanes[]`
+- `reason_summary.validation_modes`
 - `reason_summary.dispatch_failures[]`
 
 Typical next actions:
@@ -77,8 +80,17 @@ Typical next actions:
 - `no_candidates`: queue or split a matching issue for the lane.
 - `all_candidates_blocked_review`: unblock or finish the blocked or Review issues.
 - `version_skew`: requeue the stale-model work or align the runtime/model mapping.
+- `validation_failed`: inspect the local no-model validation report, fix the missing evidence or failing checks, and rerun the pool.
 - `runtime_missing`: fix the runtime registry or missing binary on the launch node.
 - `dispatch_failures`: inspect the dispatch failure records and fix the underlying error.
+
+Validator routing now follows a three-way planning table:
+
+- `no-model`: a story manifest exists, `validation.no_model_eligible` is true, `validation.risk` is not high, and the manifest is explicit enough to run `validate-run` locally.
+- `cheap-model`: a manifest exists and the story still needs validator judgment, but the story is not high risk and does not require a stronger escalation.
+- `strong-model`: the manifest is missing, the risk is high, the story is ambiguous, `validation.mode` is manual-planning, or the work needs human/device judgment.
+
+The dry-run lane diagnostics surface the planned mode as `reason_summary.lanes[].planned_validation_mode` and the mode histogram as `reason_summary.validation_modes`. When the no-model path is chosen, the pool runs the existing `cento agent-work validate-run` command locally instead of starting an AI validator session.
 
 ## Story Intake Checklist
 
@@ -98,6 +110,16 @@ Before dispatching or combining work, verify that the story contract is explicit
 - `validation.required_evidence` matches the commands and the artifact paths.
 - `handoff.human_steps` exists when a human must touch a device, simulator, account, or LAN-only environment.
 - `review_gate.required_sections` includes `Delivered`, `Validation`, `Evidence`, and `Residual risk` when strict review notes are required.
+
+## Deterministic-First Validation Checklist
+
+Before dispatching validator work, verify that the story can be proven without a model judge:
+
+- `validation.commands` is a deterministic command list, not a prompt to infer intent.
+- `validation.required_evidence` points at durable local artifacts the validator can open later.
+- Any subjective requirement is split, blocked, or routed to human/device handoff instead of being hidden inside validation.
+- `review_gate.required_sections` stays on the standard four-section review-note shape.
+- If the rollout genuinely needs a new CLI command, register it in `data/tools.json` and regenerate `docs/tool-index.md` and `docs/platform-support.md`.
 
 If the acceptance contract is missing or incomplete, stop and either:
 

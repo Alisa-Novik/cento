@@ -183,6 +183,7 @@ _cento() {
             _values 'agent-work command' \
               'bootstrap[Create Redmine project/status/tracker fields]' \
               'create[Create one agent task]' \
+              'preflight[Check story and validation manifests before dispatch]' \
               'split[Create an agent work package]' \
               'list[List agent work items]' \
               'show[Show one issue]' \
@@ -220,6 +221,18 @@ _cento() {
               'reconcile-ledger[Reconcile one run ledger]' \
               'open-evidence[List evidence paths]' \
               'create-investigation-ticket[Create a follow-up ticket]'
+          fi
+          ;;
+        factory)
+          if (( CURRENT == 3 )); then
+            _values 'factory command' \
+              'intake[Create plan-only factory intake artifacts]' \
+              'plan[Generate deterministic factory-plan.json]' \
+              'materialize[Generate story and validation manifests]' \
+              'create-issues[Preview Taskstream issue creation]' \
+              'preflight[Run safety preflight]' \
+              'render-hub[Render start-here and implementation map]' \
+              'status[Show factory run artifact status]'
           fi
           ;;
         notify)

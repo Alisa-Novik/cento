@@ -213,6 +213,10 @@ button:hover {
   min-width: max-content;
 }
 
+.headerImplementationLink {
+  color: var(--orange) !important;
+}
+
 .headerActions button {
   min-height: 2.25rem;
   border-color: var(--orange);
@@ -263,6 +267,20 @@ button:hover {
   background: rgba(255, 90, 0, 0.08);
 }
 
+.consoleShortcuts {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(168, 156, 145, 0.14);
+}
+
+.implementationShortcut {
+  border-color: var(--line-dim) !important;
+  color: var(--orange) !important;
+  background:
+    linear-gradient(90deg, rgba(255, 90, 0, 0.12), rgba(255, 90, 0, 0.02)),
+    rgba(8, 8, 7, 0.9);
+  font-weight: 800;
+}
+
 .plant {
   position: sticky;
   top: 2rem;
@@ -305,6 +323,14 @@ button:hover {
   line-height: 1.08;
 }
 
+.sectionActions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .sectionAction {
   min-height: 2.25rem;
   display: inline-flex;
@@ -314,6 +340,94 @@ button:hover {
   color: var(--orange);
   text-decoration: none;
   font-weight: 800;
+  white-space: nowrap;
+}
+
+.primaryAction {
+  border-color: var(--orange);
+  background: rgba(255, 90, 0, 0.11);
+}
+
+.implementationCallout {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: 1rem;
+  align-items: center;
+  min-height: 5.75rem;
+  margin-bottom: 1rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(90deg, rgba(255, 90, 0, 0.16), rgba(255, 90, 0, 0.04) 44%, rgba(12, 12, 11, 0.92)),
+    #0a0908;
+  color: var(--text);
+  text-decoration: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 90, 0, 0.06);
+}
+
+.calloutGlyph {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-dim);
+  color: var(--orange);
+  background: rgba(255, 90, 0, 0.09);
+}
+
+.calloutCopy {
+  min-width: 0;
+}
+
+.calloutCopy small {
+  display: block;
+  color: var(--orange-soft);
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.calloutCopy strong {
+  display: block;
+  margin-top: 0.12rem;
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+
+.calloutCopy em {
+  display: block;
+  margin-top: 0.22rem;
+  color: var(--muted);
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.calloutStats {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.calloutStats b {
+  min-height: 1.85rem;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(168, 156, 145, 0.18);
+  padding: 0 0.55rem;
+  color: var(--muted);
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.calloutAction {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.2rem;
+  border: 1px solid var(--line-dim);
+  padding: 0 0.75rem;
+  color: var(--orange);
+  font-weight: 900;
   white-space: nowrap;
 }
 
@@ -357,6 +471,908 @@ button:hover {
   color: var(--cyan);
   font-family: "IBM Plex Mono", monospace;
   white-space: nowrap;
+}
+
+body.docsMode .appShell {
+  grid-template-columns: 1fr;
+  min-height: calc(100vh - 64px);
+}
+
+body.docsMode .sidebar,
+body.docsMode .taskstreamNav {
+  display: none;
+}
+
+body.docsMode .content {
+  padding: 0;
+  border: 0;
+  min-height: calc(100vh - 64px);
+}
+
+#docsView:not(.hidden) {
+  display: grid;
+  grid-template-columns: 246px minmax(460px, 1fr) minmax(560px, 1.25fr);
+  min-height: calc(100vh - 64px);
+  border-bottom: 1px solid var(--line);
+  background:
+    radial-gradient(circle at 80% 10%, rgba(255, 90, 0, 0.06), transparent 26rem),
+    linear-gradient(180deg, rgba(7, 8, 8, 0.96), rgba(5, 5, 4, 0.98));
+}
+
+.docsSidebar,
+.docsToc {
+  min-width: 0;
+  background: linear-gradient(180deg, rgba(9, 10, 10, 0.98), rgba(4, 4, 3, 0.98));
+}
+
+.docsSidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-right: 1px solid var(--line);
+  padding: 1.25rem 1.05rem 1.9rem;
+}
+
+.docsSidebar details {
+  margin: 0 0 0.85rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(168, 156, 145, 0.17);
+}
+
+.docsSidebar summary,
+.docsToc h2 {
+  margin: 0 0 0.5rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.docsSidebar summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 1.6rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.docsSidebar summary::-webkit-details-marker {
+  display: none;
+}
+
+.docsSidebar summary::after {
+  content: "+";
+  color: var(--orange);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.78rem;
+}
+
+.docsSidebar details[open] summary {
+  color: var(--text);
+}
+
+.docsSidebar details[open] summary::after {
+  content: "−";
+}
+
+.docsSidebar a,
+.docsToc a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.docsSidebar nav a {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 1.85rem;
+  padding: 0 0.55rem;
+  border: 1px solid transparent;
+  font-size: 0.92rem;
+}
+
+.docsSidebar nav a.active,
+.docsSidebar nav a:hover {
+  color: var(--orange);
+  border-color: rgba(255, 90, 0, 0.22);
+  background: rgba(255, 90, 0, 0.16);
+}
+
+.navIcon {
+  width: 1rem;
+  color: var(--orange);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.83rem;
+  text-align: center;
+}
+
+.docsHelpCard {
+  display: grid;
+  grid-template-columns: 2.1rem minmax(0, 1fr) auto;
+  gap: 0.25rem 0.6rem;
+  align-items: center;
+  padding: 0.8rem;
+  border: 1px solid var(--panel-line);
+  background: linear-gradient(180deg, rgba(28, 27, 25, 0.96), rgba(13, 13, 12, 0.98));
+}
+
+.docsHelpCard strong,
+.docsHelpCard small {
+  grid-column: 2;
+}
+
+.docsHelpCard strong {
+  color: var(--text);
+  font-size: 0.91rem;
+}
+
+.docsHelpCard small {
+  color: var(--muted);
+}
+
+.docsHelpCard b {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  color: var(--orange);
+}
+
+.docsMain {
+  min-width: 0;
+  padding: 2.35rem 2.55rem 3rem;
+}
+
+.docsBreadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.7rem;
+  margin: -2.35rem -2.55rem 1rem;
+  padding: 0 1.6rem;
+  border-bottom: 1px solid rgba(168, 156, 145, 0.16);
+  color: var(--muted);
+  font-size: 0.86rem;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.docsBreadcrumb strong,
+.docsBreadcrumb span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.docsBreadcrumb b {
+  color: rgba(168, 156, 145, 0.7);
+  font-weight: 700;
+}
+
+.docsBreadcrumb strong {
+  color: var(--text);
+  min-width: 0;
+}
+
+.researchHeader {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: start;
+  margin-bottom: 0.95rem;
+}
+
+.researchBack {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 1.5rem;
+}
+
+.researchHeader h1 {
+  margin: 0;
+  max-width: 33rem;
+  font-size: 1.42rem;
+  line-height: 1.14;
+}
+
+.researchMeta {
+  display: grid;
+  justify-items: end;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.statePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 1.55rem;
+  padding: 0 0.6rem;
+  border: 1px solid rgba(168, 156, 145, 0.22);
+  color: var(--muted);
+  background: rgba(18, 18, 17, 0.9);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.statePill::before {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.statePill.complete {
+  border-color: rgba(16, 182, 106, 0.45);
+  color: var(--green);
+  background: rgba(16, 182, 106, 0.1);
+}
+
+.statePill.partial {
+  border-color: rgba(255, 176, 46, 0.32);
+  color: var(--yellow);
+  background: rgba(255, 176, 46, 0.12);
+}
+
+.researchTabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.1rem;
+  min-height: 3.15rem;
+  border-bottom: 1px solid rgba(168, 156, 145, 0.16);
+}
+
+.researchTabs a {
+  display: flex;
+  align-items: center;
+  min-height: 2.8rem;
+  border-bottom: 3px solid transparent;
+  color: var(--muted);
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.researchTabs a.active,
+.researchTabs a:hover {
+  color: var(--orange);
+  border-bottom-color: var(--orange);
+}
+
+.researchDocument {
+  min-width: 0;
+}
+
+.documentToolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.95rem;
+}
+
+.documentToolbar button,
+.iconButton {
+  min-height: 2.15rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.65rem;
+  border-color: rgba(168, 156, 145, 0.2);
+  background: rgba(13, 13, 12, 0.98);
+}
+
+.documentToolbar button:first-child {
+  min-width: 13rem;
+  justify-content: flex-start;
+  white-space: nowrap;
+}
+
+.iconButton {
+  width: 2.15rem;
+  justify-content: center;
+  color: var(--orange);
+  font-size: 1rem;
+}
+
+.iconButton.ghost {
+  color: var(--text);
+}
+
+.toolbarSpacer {
+  flex: 1;
+}
+
+.pageIndicator,
+.zoomIndicator {
+  min-width: 4.4rem;
+  color: var(--text);
+  text-align: center;
+}
+
+.pdfStage {
+  min-height: calc(100vh - 17.8rem);
+  padding: 1.75rem 1.5rem 0;
+  border: 1px solid rgba(168, 156, 145, 0.18);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 1.45rem),
+    radial-gradient(circle at 50% 10%, rgba(255, 255, 255, 0.04), transparent 18rem),
+    #10100f;
+  overflow: hidden;
+}
+
+.pdfPage {
+  position: relative;
+  min-height: calc(100vh - 20.4rem);
+  padding: 2.4rem 2.5rem;
+  border-left: 1px solid rgba(168, 156, 145, 0.22);
+  border-right: 1px solid rgba(168, 156, 145, 0.1);
+  background:
+    linear-gradient(180deg, rgba(21, 22, 21, 0.96), rgba(14, 15, 14, 0.98));
+  box-shadow: 0 0 22px rgba(0, 0, 0, 0.35);
+}
+
+.pdfPage h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.12rem;
+}
+
+.pdfPage h3 {
+  margin: 1.8rem 0 0.5rem;
+  font-size: 1rem;
+}
+
+.pdfPage p,
+.pdfPage li {
+  color: var(--text);
+  line-height: 1.58;
+}
+
+.pdfPage p {
+  margin: 0.35rem 0 0.85rem;
+}
+
+.pdfPage ul {
+  margin: 0.25rem 0 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.pdfPage li::before {
+  content: "- ";
+  color: var(--muted);
+}
+
+.selectedText {
+  display: inline;
+  padding: 0.1rem 0.15rem;
+  background: rgba(70, 115, 190, 0.55);
+  box-decoration-break: clone;
+}
+
+.pageNumber {
+  position: absolute;
+  right: 2.4rem;
+  bottom: 2rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.docsHero {
+  max-width: 760px;
+  margin-bottom: 1.6rem;
+}
+
+.docsHero h1 {
+  margin: 0 0 0.65rem;
+  font-size: clamp(2rem, 2.4vw, 2.5rem);
+  line-height: 1.08;
+}
+
+.docsHero p,
+.docsAreaCard p,
+.docsSupport p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.52;
+}
+
+.docsSection {
+  margin-top: 1.45rem;
+}
+
+.docsSection h2,
+.docsSupport h2 {
+  margin: 0 0 0.9rem;
+  font-size: 1.16rem;
+}
+
+.docsExploreGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.1rem 1.45rem;
+}
+
+.docsAreaCard {
+  position: relative;
+  display: grid;
+  grid-template-columns: 3.1rem minmax(0, 1fr) auto;
+  gap: 0.9rem;
+  align-items: start;
+  min-height: 10.7rem;
+  padding: 1.35rem 1.25rem;
+  border: 1px solid var(--panel-line);
+  background:
+    radial-gradient(circle at 16% 20%, rgba(255, 90, 0, 0.08), transparent 8rem),
+    linear-gradient(180deg, rgba(20, 21, 20, 0.94), rgba(12, 12, 11, 0.96));
+  color: var(--text);
+  text-decoration: none;
+}
+
+.docsAreaCard:hover {
+  border-color: var(--line);
+}
+
+.docsAreaCard h3 {
+  margin: 0 0 1rem;
+  font-size: 1.08rem;
+}
+
+.docsAreaCard b {
+  align-self: end;
+  color: var(--orange);
+  font-size: 1.15rem;
+}
+
+.docGlyph {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-dim);
+  color: var(--orange);
+  background: rgba(255, 90, 0, 0.08);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.docGlyph.stacked {
+  box-shadow: 0.38rem -0.38rem 0 rgba(255, 90, 0, 0.08), 0.38rem -0.38rem 0 1px var(--line-dim);
+}
+
+.docsUpdates {
+  border: 1px solid var(--panel-line);
+  background: linear-gradient(180deg, rgba(17, 17, 16, 0.96), rgba(11, 11, 10, 0.98));
+}
+
+.docsUpdates div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 9rem;
+  gap: 1rem;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0.45rem 1.25rem;
+  border-bottom: 1px solid rgba(168, 156, 145, 0.14);
+  color: var(--muted);
+}
+
+.docsUpdates div:last-child {
+  border-bottom: 0;
+}
+
+.docsUpdates time {
+  color: var(--muted);
+  text-align: right;
+}
+
+.docsSupport {
+  display: grid;
+  grid-template-columns: 3.8rem minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 2rem;
+  padding: 1.45rem 1.65rem;
+  border: 1px solid var(--panel-line);
+  background: linear-gradient(180deg, rgba(18, 18, 17, 0.96), rgba(10, 10, 9, 0.98));
+}
+
+.supportIcon {
+  width: 2.9rem;
+  height: 2.9rem;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(168, 156, 145, 0.8);
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 1.6rem;
+  font-weight: 900;
+}
+
+.docsSupport h2 {
+  margin-bottom: 0.35rem;
+}
+
+.docsSupport a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.65rem;
+  padding: 0 1.1rem;
+  border: 1px solid var(--line-dim);
+  color: var(--orange);
+  font-weight: 900;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.docsToc {
+  border-left: 1px solid var(--panel-line);
+  padding: 2.1rem 2.05rem;
+}
+
+.docsToc a {
+  display: block;
+  padding: 0.7rem 0 0.7rem 1.1rem;
+  border-left: 3px solid transparent;
+}
+
+.docsToc a.active,
+.docsToc a:hover {
+  border-left-color: var(--orange);
+  color: var(--text);
+}
+
+.implementationPanel {
+  padding: 1.55rem 1.25rem 0.85rem;
+  overflow: auto;
+}
+
+.panelHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(22rem, 0.9fr);
+  gap: 1rem;
+  align-items: start;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid rgba(168, 156, 145, 0.16);
+}
+
+.panelHeader h2 {
+  margin: 0 0 0.4rem;
+  color: var(--text);
+  font-size: 1.08rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.panelHeader p {
+  max-width: 25rem;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.statusCards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.statusCard {
+  min-height: 4.35rem;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.2rem;
+  border: 1px solid rgba(168, 156, 145, 0.18);
+  background: rgba(13, 13, 12, 0.92);
+}
+
+.statusCard strong {
+  font-size: 1.25rem;
+}
+
+.statusCard span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.statusCard.implemented {
+  border-color: rgba(16, 182, 106, 0.45);
+  color: var(--green);
+  background: rgba(16, 182, 106, 0.08);
+}
+
+.statusCard.partial {
+  color: var(--yellow);
+}
+
+.statusCard.missing {
+  color: #ff4f45;
+}
+
+.mappingControls {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin: 0.8rem 0;
+}
+
+.segmentedControl {
+  display: inline-flex;
+  border: 1px solid rgba(168, 156, 145, 0.18);
+}
+
+.segmentedControl button,
+.filterButton {
+  min-height: 2.15rem;
+  border: 0;
+  border-right: 1px solid rgba(168, 156, 145, 0.18);
+  background: rgba(13, 13, 12, 0.95);
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.segmentedControl button:last-child {
+  border-right: 0;
+}
+
+.segmentedControl button.active {
+  color: var(--orange);
+  box-shadow: inset 0 0 0 1px var(--line);
+  background: rgba(255, 90, 0, 0.1);
+}
+
+.filterButton {
+  min-width: 5.8rem;
+  border: 1px solid rgba(168, 156, 145, 0.18);
+  display: inline-flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.mappingTable {
+  border: 1px solid rgba(168, 156, 145, 0.14);
+  background: rgba(12, 12, 11, 0.82);
+}
+
+.mappingHead,
+.mappingRow {
+  display: grid;
+  grid-template-columns: minmax(17rem, 1.55fr) minmax(9.5rem, 0.7fr) minmax(10rem, 0.72fr) 2rem;
+  gap: 1rem;
+  align-items: center;
+}
+
+.mappingHead {
+  min-height: 2.4rem;
+  padding: 0 0.8rem;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.035);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.mappingRow {
+  position: relative;
+  min-height: 3.2rem;
+  padding: 0.45rem 0.8rem 0.45rem 1.15rem;
+  border-top: 1px solid rgba(168, 156, 145, 0.12);
+}
+
+.mappingRow::before {
+  content: "";
+  position: absolute;
+  left: 0.35rem;
+  top: 0.55rem;
+  bottom: 0.55rem;
+  width: 3px;
+  background: var(--green);
+}
+
+.mappingRow.partial::before {
+  background: var(--yellow);
+}
+
+.mappingRow.missing::before {
+  background: #ff4f45;
+}
+
+.mappingRow strong,
+.mappingRow small {
+  display: block;
+}
+
+.mappingRow strong {
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.mappingRow small {
+  margin-top: 0.18rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.mappingStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.83rem;
+  font-weight: 900;
+}
+
+.mappingStatus::before {
+  content: "⊙";
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+.mappingStatus.good {
+  color: var(--green);
+}
+
+.mappingStatus.warn {
+  color: var(--yellow);
+}
+
+.mappingStatus.bad {
+  color: #ff4f45;
+}
+
+.coverage {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
+.coverage i {
+  --coverage: 0%;
+  position: relative;
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  background: rgba(168, 156, 145, 0.22);
+}
+
+.coverage i::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--coverage);
+  background: var(--green);
+}
+
+.mappingRow.partial .coverage i::before {
+  background: var(--yellow);
+}
+
+.mappingRow.missing .coverage i::before {
+  background: #ff4f45;
+}
+
+.rowToggle {
+  width: 1.8rem;
+  min-height: 1.8rem;
+  padding: 0;
+  border: 0;
+  color: var(--text);
+  background: transparent;
+}
+
+.implementationDetail {
+  margin-top: 1rem;
+  padding: 1.05rem 1rem 0.8rem;
+  border: 1px solid rgba(168, 156, 145, 0.18);
+  background:
+    radial-gradient(circle at 80% 20%, rgba(255, 176, 46, 0.05), transparent 14rem),
+    rgba(12, 12, 11, 0.92);
+}
+
+.implementationDetail > header {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+}
+
+.implementationDetail h3 {
+  margin: 0;
+  padding-left: 0.7rem;
+  border-left: 3px solid var(--yellow);
+  font-size: 1.1rem;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.95fr) minmax(0, 0.95fr);
+  gap: 1rem;
+}
+
+.detailGrid h4 {
+  margin: 0 0 0.55rem;
+  color: var(--text);
+  font-size: 0.82rem;
+}
+
+.detailGrid p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.checkList,
+.gapList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checkList li,
+.gapList li {
+  margin: 0 0 0.42rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.checkList li::before {
+  content: "⊙ ";
+  color: var(--green);
+}
+
+.gapList li::before {
+  content: "• ";
+  color: var(--yellow);
+}
+
+.implementationDetail footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(168, 156, 145, 0.14);
+}
+
+.implementationDetail footer span {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.implementationDetail footer a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.9rem;
+  margin-right: 0.45rem;
+  padding: 0 0.6rem;
+  border: 1px solid var(--line-dim);
+  color: var(--orange);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.implementationLink {
+  min-width: 12rem;
+  justify-content: center;
+}
+
+.implementationLink span {
+  display: inline;
+  margin: 0 0 0 0.35rem;
+  color: inherit;
 }
 
 .listHeader {
@@ -722,7 +1738,7 @@ h1 {
 table {
   border-collapse: collapse;
   width: 100%;
-  min-width: 1120px;
+  min-width: 1220px;
 }
 
 th,
@@ -1527,6 +2543,38 @@ kbd {
   color: #8ed9ff;
 }
 
+.validationBadge,
+.badge.validation {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.65rem;
+  border: 1px solid rgba(255, 90, 0, 0.35);
+  background: rgba(255, 90, 0, 0.1);
+  color: var(--orange);
+  padding: 0.18rem 0.48rem;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.validation-ready {
+  border-color: rgba(96, 211, 148, 0.45);
+  background: rgba(96, 211, 148, 0.12);
+  color: #9ef0be;
+}
+
+.validation-manual-review,
+.validation-low-coverage,
+.validation-missing-validation,
+.validation-missing-story,
+.validation-invalid-story,
+.validation-invalid-validation {
+  border-color: rgba(255, 199, 82, 0.5);
+  background: rgba(255, 199, 82, 0.12);
+  color: #ffd47c;
+}
+
 .issueMeta {
   margin: 0;
   color: var(--muted);
@@ -1763,6 +2811,28 @@ kbd {
     grid-template-columns: 1fr;
   }
 
+  .implementationCallout {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .calloutStats,
+  .calloutAction {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  #docsView:not(.hidden) {
+    grid-template-columns: 260px minmax(0, 1fr);
+  }
+
+  .docsToc {
+    display: none;
+  }
+
+  .docsExploreGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .filterPanel {
     grid-template-columns: repeat(2, minmax(150px, 1fr));
   }
@@ -1781,6 +2851,10 @@ kbd {
 }
 
 @media (max-width: 620px) {
+  body {
+    overflow-x: hidden;
+  }
+
   .topbar {
     padding: 0.75rem;
   }
@@ -1791,7 +2865,9 @@ kbd {
 
   .headerActions {
     width: 100%;
+    min-width: 0;
     justify-content: stretch;
+    flex-wrap: wrap;
   }
 
   .headerActions a,
@@ -1800,9 +2876,16 @@ kbd {
     justify-content: center;
   }
 
+  .headerActions .headerImplementationLink {
+    flex: 1 0 100%;
+  }
+
   .primaryNav a {
-    flex: 1 0 auto;
+    flex: 1 1 0;
     justify-content: center;
+    min-width: 0;
+    padding: 0 0.42rem;
+    font-size: 0.86rem;
   }
 
   .taskstreamNav {
@@ -1812,6 +2895,29 @@ kbd {
   .sectionHeader {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .sectionActions {
+    justify-content: stretch;
+  }
+
+  .sectionAction {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .implementationCallout {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .calloutGlyph {
+    display: none;
+  }
+
+  .calloutStats,
+  .calloutAction {
+    grid-column: auto;
   }
 
   .listHeader,
@@ -1826,5 +2932,105 @@ kbd {
 
   .filterPanel {
     grid-template-columns: 1fr;
+  }
+
+  #docsView:not(.hidden) {
+    grid-template-columns: 1fr;
+  }
+
+  .docsSidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    max-height: none;
+  }
+
+  .docsSidebar nav {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .docsMain {
+    padding: 1.5rem 1rem 2rem;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .docsBreadcrumb {
+    margin: -1.5rem -1rem 1rem;
+    padding: 0 1rem;
+  }
+
+  .researchHeader {
+    grid-template-columns: 2rem minmax(0, 1fr);
+  }
+
+  .researchHeader h1 {
+    max-width: 11rem;
+    font-size: 1.38rem;
+  }
+
+  .researchMeta {
+    grid-column: 2;
+    justify-items: start;
+    white-space: normal;
+  }
+
+  .researchTabs {
+    max-width: calc(100vw - 4rem);
+    gap: 1rem;
+    overflow-x: auto;
+  }
+
+  .documentToolbar {
+    max-width: calc(100vw - 2rem);
+    overflow-x: auto;
+    padding-bottom: 0.2rem;
+  }
+
+  .documentToolbar button:first-child {
+    min-width: 12.5rem;
+  }
+
+  .toolbarSpacer {
+    flex: 0 0 0.4rem;
+  }
+
+  .pdfStage {
+    min-height: 0;
+    padding: 1.25rem 1rem 0;
+    overflow: hidden;
+  }
+
+  .pdfPage {
+    min-height: 44rem;
+    padding: 2rem 1.5rem;
+  }
+
+  .docsExploreGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .docsAreaCard,
+  .docsSupport {
+    grid-template-columns: 2.7rem minmax(0, 1fr);
+  }
+
+  .docsAreaCard b {
+    grid-column: 2;
+    justify-self: end;
+  }
+
+  .docsSupport a {
+    grid-column: 1 / -1;
+    justify-content: center;
+  }
+
+  .docsUpdates div {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+
+  .docsUpdates time {
+    text-align: left;
   }
 }

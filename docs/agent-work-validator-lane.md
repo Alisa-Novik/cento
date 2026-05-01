@@ -24,6 +24,37 @@ Builder output should include:
 - draft evidence paths
 - known risks or limitations
 
+## Deterministic-First Validation
+
+Validation is no-model by default. The Validator lane proves work with durable evidence instead of asking a model to infer whether the issue is done.
+
+The story manifest's `validation` block is the routing contract. It records `mode`, `risk`, `no_model_eligible`, `escalation_triggers`, and `commands`, which tells the validator whether it can stay local or must escalate to a model or human handoff.
+
+Preferred evidence types are:
+
+- command output from a narrow validation command
+- file existence or file content checks
+- URL or API smoke checks
+- desktop or mobile screenshots
+- generated validation reports and review summaries
+
+If a story cannot be decided from deterministic evidence, the validator should fail or block with the missing evidence named explicitly. Subjective judgment belongs in the story manifest as a manual-review requirement or in a separate human/device handoff, not inside an unannounced model judge.
+
+Rollout commands:
+
+```bash
+cento agent-work validate-run ISSUE_ID \
+  --manifest workspace/runs/agent-work/ISSUE_ID/validation.json \
+  --story-manifest workspace/runs/agent-work/ISSUE_ID/story.json
+
+cento agent-work validate ISSUE_ID \
+  --result pass \
+  --evidence workspace/runs/agent-work/ISSUE_ID/validation-report.md \
+  --note "..."
+```
+
+`validate-run` remains the executable check path. `validate` records the board state after the evidence has passed.
+
 ## Validator Contract
 
 Validator agents own review evidence. They should not implement product code unless a validation harness fix is explicitly required.

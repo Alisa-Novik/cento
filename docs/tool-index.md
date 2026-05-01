@@ -147,6 +147,64 @@
   - `cento scan --query "crm" --case-sensitive`
   - `cento scan --query "mcp" --port 47890`
 
+## Validator Tier 0
+
+- `id`: `validator-tier0`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/validator_tier0.py`
+- description: Create validation packets and run deterministic Tier 0 checks with mandatory timing and AI budget stats.
+- commands:
+  - `cento validator-tier0 stories`
+  - `cento validator-tier0 run workspace/runs/validator-tier0/e2e/sample-pass.json`
+  - `cento validator-tier0 e2e`
+  - `cento validator-tier0 run workspace/runs/agent-work/no-model-validation-e2e/validation.json --run-dir workspace/runs/agent-work/no-model-validation-e2e/tier0`
+
+## Story Manifest
+
+- `id`: `story-manifest`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/story_manifest.py`
+- description: Validate, draft, and render Cento agent-work story.json manifests.
+- commands:
+  - `cento story-manifest draft --title "Fix dashboard" --package app --expected-output workspace/runs/agent-work/drafts/fix-dashboard/evidence.md`
+  - `cento story-manifest validate workspace/runs/agent-work/no-model-validation-e2e/story.json`
+  - `cento story-manifest render-hub workspace/runs/agent-work/1000086/story.json`
+
+## Validation Manifest
+
+- `id`: `validation-manifest`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/validation_manifest.py`
+- description: Generate deterministic validation.json checks from story.json and enforce no-model coverage guardrails.
+- commands:
+  - `cento validation-manifest draft workspace/runs/agent-work/no-model-validation-e2e/story.json --output workspace/runs/agent-work/no-model-validation-e2e/validation.json`
+  - `cento validation-manifest validate workspace/runs/agent-work/no-model-validation-e2e/validation.json`
+
+## No-model Validation E2E
+
+- `id`: `no-model-validation-e2e`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/no_model_validation_e2e.py`
+- description: Run generated story manifest, generated validation manifest, agent-work preflight, and Tier 0 validation in one zero-AI evidence loop.
+- commands:
+  - `cento no-model-validation-e2e`
+  - `cento no-model-validation-e2e --run-dir workspace/runs/agent-work/no-model-validation-e2e`
+
+## Manifest Validate
+
+- `id`: `manifest-validate`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/manifest_validate.py`
+- description: Deterministically validate story.json and validation.json pairs, including evidence paths, API specs, and allowlisted commands without AI.
+- commands:
+  - `cento manifest-validate --story workspace/runs/agent-work/1000088/story.json --validation workspace/runs/agent-work/1000088/validation.json --json --report workspace/runs/agent-work/1000088/validation-report.md`
+  - `python3 ./scripts/manifest_validate.py --story workspace/runs/agent-work/1000088/story.json --json`
+
 ## Bluetooth Audio Doctor
 
 - `id`: `bluetooth-audio-doctor`
@@ -459,8 +517,9 @@
 - description: Cento Taskstream CLI for assigning, splitting, dispatching, reviewing, archiving, and cutting over Cento agent tasks across the Mac/Linux cluster.
 - commands:
   - `cento agent-work bootstrap`
-  - `cento agent-work create --title "Fix dashboard" --node linux --agent codex`
-  - `CENTO_AGENT_WORK_BACKEND=dual cento agent-work create --title "Validate parity" --node linux --agent codex`
+  - `cento agent-work create --title "Fix dashboard" --manifest workspace/runs/agent-work/drafts/fix-dashboard/story.json --node linux --agent codex`
+  - `CENTO_AGENT_WORK_BACKEND=dual cento agent-work create --title "Validate parity" --manifest workspace/runs/agent-work/drafts/validate-parity/story.json --node linux --agent codex`
+  - `cento agent-work preflight workspace/runs/agent-work/no-model-validation-e2e/story.json --validation-manifest workspace/runs/agent-work/no-model-validation-e2e/validation.json`
   - `cento agent-work split --title "Improve mission control" --nodes linux,macos --task "Backend status" --task "Mac tile view"`
   - `cento agent-work list`
   - `cento agent-work show 123`
@@ -503,6 +562,22 @@
   - `cento agent-manager mark-blocked 81 --reason "stuck validator" --evidence RUN_ID --dry-run`
   - `cento agent-manager terminate-tmux cento-agent-81-095103 --reason "stuck validator" --dry-run`
   - `make agent-manager ARGS="pool-stats --json"`
+
+## Cento Factory
+
+- `id`: `factory`
+- `lane`: `planning`
+- `kind`: `python`
+- `entrypoint`: `./scripts/factory.py`
+- description: Plan-only factory workflow that turns a high-level request into intake artifacts, a validated factory-plan.json, story manifests, validation manifests, and static evidence hubs without dispatching AI workers.
+- commands:
+  - `cento factory intake "develop me a career consulting module" --dry-run --out workspace/runs/factory/factory-planning-e2e`
+  - `cento factory plan workspace/runs/factory/factory-planning-e2e --no-model`
+  - `cento factory materialize workspace/runs/factory/factory-planning-e2e`
+  - `cento factory create-issues workspace/runs/factory/factory-planning-e2e --dry-run`
+  - `cento factory preflight workspace/runs/factory/factory-planning-e2e --json`
+  - `cento factory render-hub workspace/runs/factory/factory-planning-e2e`
+  - `cento factory status workspace/runs/factory/factory-planning-e2e`
 
 ## Cento Console App
 

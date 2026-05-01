@@ -19,7 +19,7 @@ Taskstream remains the tasking system inside that console. Issues and review are
 
 - Taskstream project: `cento-agent-work`
 - Trackers: `Agent Epic`, `Agent Task`
-- Statuses: `Queued`, `Running`, `Review`, `Blocked`, `Done`
+- Statuses: `Queued`, `Running`, `Validating`, `Review`, `Blocked`, `Done`
 - Custom fields: `Agent Node`, `Agent Owner`, `Agent State`, `Cento Work Package`, `TUI Summary`, `Cluster Dispatch`
 - Local run bundles: `workspace/runs/agent-work/<run-id>/`
 
@@ -29,6 +29,36 @@ This is the operating model:
 2. Each task gets a node, agent owner, package, status, and work instructions.
 3. Agents claim tasks, update status, and leave notes in Taskstream.
 4. You inspect Taskstream, `cento agent-work list`, and `cento cluster activity` to see what is assigned and what is actually running.
+
+## Deterministic-First Validation
+
+No-model validation in Cento means deterministic-first validation is the default. Builders should leave behind durable artifacts that a validator can check mechanically, and validators should prefer files, commands, URLs, screenshots, and generated reports over model judgment when deciding pass or fail.
+
+The story manifest's `validation` block is the source of truth for that routing decision: `mode`, `risk`, `no_model_eligible`, `escalation_triggers`, and `commands` tell the validator whether the work stays no-model or must escalate.
+
+Use `preflight` before dispatch, then the existing `validate-run` and `validate` commands for the rollout. The no-model path is stricter because it requires a story manifest, validation manifest, 95%+ automation coverage, and no unresolved manual-review items before work leaves planning.
+
+```bash
+cento agent-work preflight workspace/runs/agent-work/ISSUE_ID/story.json \
+  --validation-manifest workspace/runs/agent-work/ISSUE_ID/validation.json
+
+cento agent-work validate-run ISSUE_ID \
+  --manifest workspace/runs/agent-work/ISSUE_ID/validation.json \
+  --story-manifest workspace/runs/agent-work/ISSUE_ID/story.json
+
+cento agent-work validate ISSUE_ID \
+  --result pass \
+  --evidence workspace/runs/agent-work/ISSUE_ID/validation-report.md \
+  --note "..."
+```
+
+Coordinator rule of thumb:
+
+- Keep the acceptance contract explicit enough to validate from durable evidence.
+- Split or block work that would require an unannounced model judge.
+- Route subjective or device-bound judgment into a human handoff instead of burying it in validation.
+- `agent-work dispatch` runs preflight by default and blocks AI launch when the story or validation manifest is missing, coverage is below 95%, or manual review is unresolved. Use `--skip-preflight` only for explicit legacy/manual dispatch.
+- If a future CLI command is genuinely required, register it in `data/tools.json` and regenerate `docs/tool-index.md` and `docs/platform-support.md`.
 
 ## Bootstrap
 
@@ -45,11 +75,14 @@ It is safe to run again. The command creates any missing Taskstream schema and w
 ```bash
 cento agent-work create \
   --title "Improve mission control pane" \
+  --manifest workspace/runs/agent-work/drafts/mission-control-story.json \
   --description "Add a compact running-agent summary and link it to cluster activity." \
   --node linux \
   --agent codex \
   --package mission-control
 ```
+
+`--manifest` is mandatory. The coordinator/AI caller must interpret the feature request and generate a valid draft `story.json` before creating the task. Use `issue.id: 0` in the draft; `agent-work create` writes the canonical copy to `workspace/runs/agent-work/<issue-id>/story.json` after Taskstream assigns the issue ID.
 
 List active work:
 
@@ -100,7 +133,7 @@ Use `Review` for code that is ready for human inspection. Use `Done` only after 
 Cento work scales by separating ownership:
 
 - Builder lane: implements the smallest coherent code or content change.
-- Validator lane: independently validates and moves work to Review only after evidence passes. See [`docs/agent-work-validator-lane.md`](./agent-work-validator-lane.md).
+- Validator lane: independently validates with deterministic evidence first and moves work to Review only after evidence passes. See [`docs/agent-work-validator-lane.md`](./agent-work-validator-lane.md).
 - Docs/Evidence lane: preserves manager-facing hubs, screenshots, validation logs, and review notes. See [`docs/agent-work-docs-evidence-lane.md`](./agent-work-docs-evidence-lane.md).
 - Coordinator lane: splits stories, routes work, manages status hygiene, plans worker pools, and escalates blockers. See [`docs/agent-work-coordinator-lane.md`](./agent-work-coordinator-lane.md).
 

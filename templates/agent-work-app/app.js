@@ -263,6 +263,26 @@ function issueHasEvidence(issue) {
   );
 }
 
+function validationState(issue) {
+  return issue?.validation_state && typeof issue.validation_state === "object" ? issue.validation_state : {};
+}
+
+function validationLabel(issue) {
+  const state = validationState(issue);
+  const mode = state.mode || "unknown";
+  const coverage = Number(state.automation_coverage_percent || 0);
+  if (state.escalation_state === "ready") return `${mode} ${coverage.toFixed(0)}%`;
+  if (state.escalation_state === "manual-review") return `${mode} manual`;
+  if (state.escalation_state === "low-coverage") return `${mode} ${coverage.toFixed(0)}%`;
+  if (state.escalation_state === "missing-validation") return `${mode} missing`;
+  return mode;
+}
+
+function validationClass(issue) {
+  const state = validationState(issue);
+  return `validation-${String(state.escalation_state || "unknown").toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+}
+
 function issueUpdatedInRange(issue, startValue, endValue) {
   const updated = new Date(issue.updated_on);
   if (Number.isNaN(updated.getTime())) return true;
@@ -305,6 +325,8 @@ function issueMatchesFilters(issue) {
       issue.package,
       issue.description,
       issue.validation_report,
+      validationLabel(issue),
+      validationState(issue).escalation_state,
     ]
       .map((value) => String(value || "").toLowerCase())
       .join(" ");
@@ -459,6 +481,7 @@ function renderRows(visibleIssues) {
       <td><a class="issueId" href="/issues/${issue.id}" data-issue="${issue.id}">#${escapeHtml(issue.id)}</a></td>
       <td>${escapeHtml(issue.tracker)}</td>
       <td><span class=\"statusDot ${statusClass(issue.status)}\"></span>${escapeHtml(issue.status)}</td>
+      <td><span class="validationBadge ${validationClass(issue)}">${escapeHtml(validationLabel(issue))}</span></td>
       <td>${escapeHtml(issue.priority || "Normal")}</td>
       <td><a class="subjectLink" href="/issues/${issue.id}" data-issue="${issue.id}">${escapeHtml(issue.subject)}</a></td>
       <td class="assignee">${escapeHtml(issue.assignee || issue.agent || "Taskstream Admin")}</td>
@@ -610,6 +633,8 @@ function buildMetaRows(issue, customFields) {
   add("Owner", issue.agent || getCustomFieldValue(customFields, "Agent Owner", "Owner") || "—");
   add("Role", issue.role || getCustomFieldValue(customFields, "Agent Role", "Role") || "—");
   add("Package", issue.package || getCustomFieldValue(customFields, "Cento Work Package", "Package") || "default");
+  add("Validation mode", validationLabel(issue));
+  add("Escalation state", validationState(issue).escalation_state || "unknown");
   add("Dispatch", getCustomFieldValue(customFields, "Cluster Dispatch", "Dispatch") || "Not dispatched");
   add("Validation report", getCustomFieldValue(customFields, "Validation Report", "Validation Report"));
   add("Due date", getCustomFieldValue(customFields, "Due Date", "Due") || "-");
@@ -686,6 +711,7 @@ function renderDetail(payload) {
         <strong class="issueId">#${escapeHtml(issue.id)}</strong>
         <span class="badge">${escapeHtml(issue.tracker || "Agent Task")}</span>
         <span class="badge status"><span class="statusDot ${statusClass(issue.status)}"></span>${escapeHtml(issue.status || "Unknown")}</span>
+        <span class="badge validation ${validationClass(issue)}">${escapeHtml(validationLabel(issue))}</span>
         <span class="badge">Priority ${escapeHtml(issue.priority || "Normal")}</span>
         <span class="badge">Source ${escapeHtml(source)}</span>
       </div>
@@ -820,7 +846,7 @@ function currentIssueIdFromDetail() {
 
 function setNavActive(route) {
   const activeRoute = route || (location.pathname.startsWith("/review") ? "review" : "issues");
-  const activeMain = ["cluster", "consulting", "docs"].includes(activeRoute) ? activeRoute : "taskstream";
+  const activeMain = ["cluster", "consulting", "docs", "research"].includes(activeRoute) ? activeRoute : "taskstream";
   mainNavLinks.forEach((link) => {
     link.classList.toggle("active", link.dataset.mainRoute === activeMain);
   });
@@ -828,6 +854,7 @@ function setNavActive(route) {
     link.classList.toggle("active", link.dataset.navRoute === activeRoute);
   });
   if (taskstreamNav) taskstreamNav.classList.toggle("hidden", activeMain !== "taskstream");
+  document.body.classList.toggle("docsMode", activeMain === "docs");
 }
 
 function refreshSavedQueryOptions() {
@@ -1447,6 +1474,8 @@ function renderReviewContext(payload) {
     ["Related issue", `#${issue.id || "-"}`],
     ["Status", issue.status || "-"],
     ["Package", issue.package || "-"],
+    ["Validation", validationLabel(issue)],
+    ["Escalation", validationState(issue).escalation_state || "unknown"],
     ["Artifacts", String(artifacts.length)],
   ];
   reviewContext.innerHTML = rows.map(([label, value]) => `
@@ -1597,14 +1626,21 @@ function showList() {
 
 function showCentoSection(route) {
   setNavActive(route);
+  const docsLike = route === "docs" || route === "research";
   document.body.classList.remove("reviewMode");
   reviewView.classList.add("hidden");
   detailView.classList.add("hidden");
   listView.classList.add("hidden");
   clusterView.classList.toggle("hidden", route !== "cluster");
   consultingView.classList.toggle("hidden", route !== "consulting");
-  docsView.classList.toggle("hidden", route !== "docs");
-  history.replaceState(null, "", `/${route}`);
+  docsView.classList.toggle("hidden", !docsLike);
+  if (route === "research") {
+    history.replaceState(null, "", "/research-center#research-implementation");
+    document.querySelector("#research-implementation")?.scrollIntoView({ block: "start" });
+    return;
+  }
+  const hash = route === "docs" ? location.hash : "";
+  history.replaceState(null, "", `/${route}${hash}`);
 }
 
 async function loadIssues() {
@@ -1861,6 +1897,8 @@ window.addEventListener("popstate", () => {
     showCentoSection("cluster");
   } else if (location.pathname === "/consulting") {
     showCentoSection("consulting");
+  } else if (location.pathname === "/research-center") {
+    showCentoSection("research");
   } else if (location.pathname === "/docs") {
     showCentoSection("docs");
   } else if (match) {
@@ -1888,6 +1926,10 @@ async function boot() {
   }
   if (location.pathname === "/consulting") {
     showCentoSection("consulting");
+    return;
+  }
+  if (location.pathname === "/research-center") {
+    showCentoSection("research");
     return;
   }
   if (location.pathname === "/docs") {

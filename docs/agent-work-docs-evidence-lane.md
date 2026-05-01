@@ -8,7 +8,7 @@ The Docs/Evidence lane is responsible for:
 
 - Generating and updating `start-here.html` hubs from story manifests.
 - Maintaining `deliverables.json` with current artifact links.
-- Writing and publishing validation logs and screenshot indexes.
+- Writing and publishing validation logs, validation report artifacts, and screenshot indexes.
 - Keeping captain's notes append-only (no history rewrites).
 - Composing review notes with the required four sections.
 - Preserving old evidence rather than overwriting it.
@@ -32,6 +32,7 @@ The Docs/Evidence lane does **not**:
 | `scope.acceptance` | Review checklist items |
 | `expected_outputs[]` | Files to link from the hub; `owner` field used to group by lane |
 | `validation.required_evidence[]` | Evidence paths to verify and list |
+| `validation.report` | Validation result report reference used by the hub for validation badges |
 | `deliverables.manifest` | Source for `deliverables_hub.py` generation |
 | `deliverables.hub` | Target hub path |
 | `screenshots[]` | Names, descriptions, and output paths for screenshot index |
@@ -49,6 +50,7 @@ Every story worked by this lane must produce:
 | `<run_dir>/start-here.html` | Manager-facing hub with links to app, docs, screenshots, validation log, and current story status |
 | `<run_dir>/deliverables.json` | Structured manifest consumed by `scripts/deliverables_hub.py` or `scripts/story_manifest.py render-hub` |
 | `<run_dir>/validation.md` | Append-only evidence log: commands run, results, screenshot paths |
+| `<run_dir>/validation-report.md` / `<run_dir>/validation-report.json` | Canonical validation result pair when `validation.report` or the validation manifest provides a report |
 | `<run_dir>/screenshots/` | Visual evidence directory; each screenshot indexed in the hub |
 
 Optional but standard:
@@ -73,6 +75,32 @@ python3 scripts/deliverables_hub.py workspace/runs/agent-work/<id>/deliverables.
 ```
 
 Run either command again to regenerate — it must not destroy prior evidence.
+
+## Validation Result Shape
+
+`validation.report` may be written in either of these forms:
+
+```json
+"validation": {
+  "report": "workspace/runs/agent-work/<id>/validation-report.md"
+}
+```
+
+or:
+
+```json
+"validation": {
+  "report": {
+    "path": "workspace/runs/agent-work/<id>/validation-report.md",
+    "json": "workspace/runs/agent-work/<id>/validation-report.json",
+    "result": "pass",
+    "label": "No-model validation",
+    "description": "Structured no-model validation result"
+  }
+}
+```
+
+The hub renders this into `deliverables.json.validation_results[]` entries with badge text taken from `result`, `status`, or `badge`. `expected_outputs[]` still drives the generic `Use First` links, so report files stay visible even when a story only lists them as outputs.
 
 ## Review-Note Sections
 

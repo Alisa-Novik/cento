@@ -730,19 +730,25 @@
         <section id="create">
           <h2>Create One Task</h2>
           <p class="section-lead">
-            Use <code>create</code> for one focused task. It writes the Taskstream issue, stores node/owner/package fields,
-            and adds a starting journal note.
+            Use <code>create</code> for one focused task. It requires a generated story manifest, writes the Taskstream issue,
+            stores node/owner/package fields, canonicalizes the manifest, and adds a starting journal note.
           </p>
 
           <div class="command-block">
             <div class="command-head"><span>create task</span><button class="copy" type="button">Copy</button></div>
             <pre><code class="language-bash">cento agent-work create \
   --title "Improve mission control pane" \
+  --manifest workspace/runs/agent-work/drafts/mission-control-story.json \
   --description "Add a compact running-agent summary and link it to cluster activity." \
   --node linux \
   --agent codex \
   --package mission-control</code></pre>
           </div>
+
+          <p>
+            The draft manifest uses <code>issue.id: 0</code>. After Taskstream assigns an issue ID, Cento writes the canonical
+            copy to <code>workspace/runs/agent-work/&lt;issue-id&gt;/story.json</code>.
+          </p>
 
           <div class="grid two">
             <article class="card card-body">

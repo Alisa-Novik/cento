@@ -8,6 +8,8 @@ import shlex
 import subprocess
 import sys
 import time
+import urllib.error
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -62,9 +64,10 @@ def get_field(data: Any, field: str) -> tuple[bool, Any]:
 
 
 def status_for_checks(checks: list[dict[str, Any]]) -> tuple[str, str, list[str]]:
-    failed = [item for item in checks if item["status"] == "failed"]
-    missing = [item for item in checks if item["status"] == "missing"]
-    blocked = [item for item in checks if item["status"] == "blocked"]
+    required = [item for item in checks if item.get("required", True)]
+    failed = [item for item in required if item["status"] == "failed"]
+    missing = [item for item in required if item["status"] == "missing"]
+    blocked = [item for item in required if item["status"] == "blocked"]
     if blocked:
         return "blocked", f"{len(blocked)} check(s) blocked validation", [item["name"] for item in blocked]
     if missing:
@@ -168,6 +171,102 @@ def evaluate_command(check: dict[str, Any], manifest_dir: Path) -> dict[str, Any
     }
 
 
+def evaluate_contains_text(check: dict[str, Any], manifest_dir: Path) -> dict[str, Any]:
+    target = resolve_path(str(check.get("path", "")), manifest_dir)
+    needle = str(check.get("text") or check.get("contains") or "")
+    case_sensitive = bool(check.get("case_sensitive", True))
+    if not needle:
+        return {"evidence": rel(target), "observed": {}, "status": "blocked", "reason": "text is missing"}
+    if not target.exists():
+        return {
+            "evidence": rel(target),
+            "observed": {"exists": False},
+            "status": "missing",
+            "reason": "text file is missing",
+        }
+    try:
+        haystack = target.read_text(encoding=str(check.get("encoding") or "utf-8"), errors="replace")
+    except OSError as exc:
+        return {
+            "evidence": rel(target),
+            "observed": {"exists": True},
+            "status": "failed",
+            "reason": str(exc),
+        }
+    search_haystack = haystack if case_sensitive else haystack.lower()
+    search_needle = needle if case_sensitive else needle.lower()
+    found = search_needle in search_haystack
+    return {
+        "evidence": rel(target),
+        "observed": {"exists": True, "case_sensitive": case_sensitive, "text_found": found},
+        "status": "passed" if found else "failed",
+        "reason": "text found" if found else "text not found",
+    }
+
+
+def evaluate_http_status(check: dict[str, Any], manifest_dir: Path) -> dict[str, Any]:
+    del manifest_dir
+    url = str(check.get("url") or "")
+    if not url:
+        return {"evidence": "", "observed": {}, "status": "blocked", "reason": "url is missing"}
+    timeout = int(check.get("timeout_seconds", 10))
+    expected = int(check.get("expected_status", 200))
+    try:
+        with urllib.request.urlopen(url, timeout=timeout) as response:
+            status = int(getattr(response, "status", 200))
+            body = response.read(256)
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        return {
+            "evidence": url,
+            "observed": {"timeout_seconds": timeout},
+            "status": "failed",
+            "reason": str(exc),
+        }
+    return {
+        "evidence": url,
+        "observed": {"status": status, "body_sample": body.decode("utf-8", errors="replace")},
+        "status": "passed" if status == expected else "failed",
+        "reason": f"status {status}, expected {expected}",
+    }
+
+
+def evaluate_image_nonblank(check: dict[str, Any], manifest_dir: Path) -> dict[str, Any]:
+    target = resolve_path(str(check.get("path", "")), manifest_dir)
+    if not target.exists():
+        return {
+            "evidence": rel(target),
+            "observed": {"exists": False},
+            "status": "missing",
+            "reason": "image file is missing",
+        }
+    try:
+        from PIL import Image
+    except ImportError:
+        return {
+            "evidence": rel(target),
+            "observed": {"exists": True},
+            "status": "blocked",
+            "reason": "Pillow is required for image_nonblank checks",
+        }
+    try:
+        image = Image.open(target).convert("RGB")
+        extrema = image.getextrema()
+    except Exception as exc:  # noqa: BLE001 - corrupted image details belong in validation evidence.
+        return {
+            "evidence": rel(target),
+            "observed": {"exists": True},
+            "status": "failed",
+            "reason": f"image could not be read: {exc}",
+        }
+    nonblank = any(channel_min != channel_max for channel_min, channel_max in extrema)
+    return {
+        "evidence": rel(target),
+        "observed": {"exists": True, "size": list(image.size), "extrema": extrema},
+        "status": "passed" if nonblank else "failed",
+        "reason": "image has non-uniform pixels" if nonblank else "image appears blank",
+    }
+
+
 def evaluate_check(check: dict[str, Any], manifest_dir: Path) -> dict[str, Any]:
     start = time.perf_counter()
     check_type = str(check.get("type", ""))
@@ -178,6 +277,12 @@ def evaluate_check(check: dict[str, Any], manifest_dir: Path) -> dict[str, Any]:
         result = evaluate_json_field(check, manifest_dir)
     elif check_type == "command":
         result = evaluate_command(check, manifest_dir)
+    elif check_type == "contains_text":
+        result = evaluate_contains_text(check, manifest_dir)
+    elif check_type == "http_status":
+        result = evaluate_http_status(check, manifest_dir)
+    elif check_type == "image_nonblank":
+        result = evaluate_image_nonblank(check, manifest_dir)
     else:
         result = {
             "evidence": "",
@@ -218,6 +323,8 @@ def markdown_summary(packet: dict[str, Any], result: dict[str, Any]) -> str:
         f"- AI calls used: `{result['ai_calls_used']}`",
         f"- Estimated AI cost: `{result['estimated_ai_cost']}`",
         f"- Total duration: `{result['stats']['total_duration_ms']} ms`",
+        f"- Automation coverage: `{result['stats'].get('automation_coverage_percent', 0)}%`",
+        f"- Manual review items: `{result['stats'].get('manual_review_count', 0)}`",
         "",
         "## Checks",
         "",
@@ -259,6 +366,8 @@ def run_manifest(manifest_path: Path, run_dir: Path | None = None) -> dict[str, 
     decision, reason, missing_evidence = status_for_checks(check_results)
     ended_at = now_iso()
     total_duration_ms = round((time.perf_counter() - total_start) * 1000, 3)
+    coverage = manifest.get("coverage") if isinstance(manifest.get("coverage"), dict) else {}
+    manual_review = manifest.get("manual_review") if isinstance(manifest.get("manual_review"), list) else []
     stats = {
         "started_at": started_at,
         "ended_at": ended_at,
@@ -268,6 +377,8 @@ def run_manifest(manifest_path: Path, run_dir: Path | None = None) -> dict[str, 
         "checks_failed": sum(1 for item in check_results if item["status"] == "failed"),
         "checks_missing": sum(1 for item in check_results if item["status"] == "missing"),
         "checks_blocked": sum(1 for item in check_results if item["status"] == "blocked"),
+        "manual_review_count": len(manual_review),
+        "automation_coverage_percent": coverage.get("automation_coverage_percent", 100 if check_results and not manual_review else 0),
         "check_durations_ms": {item["name"]: item["duration_ms"] for item in check_results},
     }
     packet = {
@@ -290,6 +401,7 @@ def run_manifest(manifest_path: Path, run_dir: Path | None = None) -> dict[str, 
         "ai_calls_used": 0,
         "estimated_ai_cost": 0,
         "escalation_reason": "" if decision == "approve" else reason,
+        "manual_review": manual_review,
         "checks": check_results,
         "stats": stats,
         "outputs": {
@@ -324,7 +436,7 @@ def story_payload() -> dict[str, Any]:
             {
                 "id": "AI-VAL-002",
                 "title": "Evaluate deterministic Tier 0 checks",
-                "acceptance": "file_exists, command, and json_field checks return passed, failed, missing, or blocked.",
+                "acceptance": "file_exists, command, json_field, contains_text, http_status, and image_nonblank checks return passed, failed, missing, or blocked.",
             },
             {
                 "id": "AI-VAL-003",
@@ -335,6 +447,16 @@ def story_payload() -> dict[str, Any]:
                 "id": "AI-VAL-004",
                 "title": "Prove E2E with pass and fail examples",
                 "acceptance": "One passing sample approves and one failing sample returns a non-approve decision with reason.",
+            },
+            {
+                "id": "AI-VAL-005",
+                "title": "Generate Draft Manifests Conservatively",
+                "acceptance": "Feature interpretation may generate draft Tier 0 manifests, but only explicit artifacts and commands become deterministic checks.",
+            },
+            {
+                "id": "AI-VAL-006",
+                "title": "Gate Dispatch With Preflight",
+                "acceptance": "agent-work preflight blocks missing validation drafts, unresolved manual review, and automation coverage below the configured threshold.",
             },
         ],
     }
@@ -361,7 +483,9 @@ def write_sample_manifests(run_dir: Path) -> tuple[Path, Path]:
     sample_dir = run_dir / "sample-data"
     sample_dir.mkdir(parents=True, exist_ok=True)
     sample_json = sample_dir / "sample.json"
+    sample_text = sample_dir / "sample.html"
     write_json(sample_json, {"status": "ready", "nested": {"ok": True}})
+    sample_text.write_text("<html><body><section>No-model validation ready</section></body></html>\n", encoding="utf-8")
     pass_manifest = run_dir / "sample-pass.json"
     fail_manifest = run_dir / "sample-fail.json"
     write_json(
@@ -373,6 +497,7 @@ def write_sample_manifests(run_dir: Path) -> tuple[Path, Path]:
             "checks": [
                 {"name": "sample-json-exists", "type": "file_exists", "path": "sample-data/sample.json"},
                 {"name": "sample-json-ready", "type": "json_field", "path": "sample-data/sample.json", "field": "status", "expected": "ready"},
+                {"name": "sample-html-text", "type": "contains_text", "path": "sample-data/sample.html", "text": "No-model validation ready"},
                 {"name": "json-load-command", "type": "command", "cwd": ".", "command": ["python3", "-m", "json.tool", "sample-data/sample.json"]},
             ],
         },

@@ -8,10 +8,39 @@ Recommended path:
 workspace/runs/agent-work/<issue-id>/story.json
 ```
 
+Create-time guardrail:
+
+- `cento agent-work create` requires `--manifest`.
+- The coordinator/AI caller must generate the draft manifest from the interpreted user request before task creation.
+- Use `issue.id: 0` in the draft manifest because Taskstream has not assigned the issue yet.
+- After creation, `agent-work create` canonicalizes the manifest to `workspace/runs/agent-work/<issue-id>/story.json`, updates `issue.id`, and records the source path in metadata.
+- Do not invent deterministic checks just to make the manifest look complete; ambiguous requirements stay in acceptance or manual-review language.
+
 Validate a story manifest:
 
 ```bash
 python3 scripts/story_manifest.py validate workspace/runs/agent-work/<issue-id>/story.json
+```
+
+Draft a story manifest from an interpreted request:
+
+```bash
+cento story-manifest draft \
+  --title "Fix dashboard" \
+  --package app \
+  --acceptance "Dashboard evidence exists" \
+  --expected-output workspace/runs/agent-work/drafts/fix-dashboard/evidence.md \
+  --output workspace/runs/agent-work/drafts/fix-dashboard/story.json
+```
+
+Generate deterministic validation checks from that story:
+
+```bash
+cento validation-manifest draft workspace/runs/agent-work/drafts/fix-dashboard/story.json \
+  --output workspace/runs/agent-work/drafts/fix-dashboard/validation.json
+
+cento agent-work preflight workspace/runs/agent-work/drafts/fix-dashboard/story.json \
+  --validation-manifest workspace/runs/agent-work/drafts/fix-dashboard/validation.json
 ```
 
 Generate a manager-facing hub from a story manifest:
@@ -40,12 +69,23 @@ cento agent-work handoff <issue-id> --manifest workspace/runs/agent-work/<issue-
 - `routes`: UI routes or pages the story changes or validates.
 - `api_endpoints`: HTTP/API checks relevant to the story.
 - `validation.manifest`: existing `validation.json` path for `cento agent-work validate-run`.
-- `validation.commands`: focused local checks a Builder or Validator can run.
+- `validation.mode`: planned validation route. Draft manifests may use `manual-planning`; final manifests should use `no-model`, `cheap-model`, or `strong-model`.
+- `validation.risk`: story risk classification. Allowed values are `low`, `medium`, and `high`.
+- `validation.no_model_eligible`: boolean gate for deterministic local validation. `true` means the story can stay on the no-model path.
+- `validation.escalation_triggers`: canonical reasons to leave the no-model path, such as `missing_manifest`, `high_risk`, `ux_judgment`, `failed_deterministic_command`, and `ambiguity`.
+- `validation.commands`: ordered deterministic local checks a Builder or Validator can run. Use plain strings for compact manifests or objects with `name` and `command` when you want a label in generated evidence.
 - `deliverables.manifest`: `deliverables.json` path for `scripts/deliverables_hub.py`.
 - `screenshots`: required screenshot names, URLs, viewports, and output paths.
 - `handoff`: human/device handoff steps and notes.
 - `review_gate`: required review-note sections and residual-risk policy.
 - `review_gate.required_evidence_categories`: optional list of evidence classes to enforce (`syntax-test`, `api-check`, `screenshot`, `visual-inspection`).
+
+Validation policy:
+
+- `validation.no_model_eligible: true` requires `validation.mode: no-model`.
+- `validation.mode: no-model` requires `validation.no_model_eligible: true`, `validation.risk` of `low` or `medium`, at least one deterministic command, and at least one escalation trigger.
+- Final validation modes (`no-model`, `cheap-model`, `strong-model`) should declare escalation triggers explicitly so routing does not depend on chat history.
+- Commands should stay deterministic and local. If a check depends on model judgment, credentials, device access, or other ambiguity, move that condition into `validation.escalation_triggers` instead of hiding it in the command list.
 
 Screenshot support:
 
@@ -56,6 +96,52 @@ Example:
 
 ```bash
 cento story-screenshot-runner workspace/runs/agent-work/59/story.json --force
+```
+
+## Validation Examples
+
+### Minimal No-Model Example
+
+```json
+{
+  "validation": {
+    "mode": "no-model",
+    "risk": "low",
+    "no_model_eligible": true,
+    "escalation_triggers": [
+      "missing_manifest",
+      "failed_deterministic_command",
+      "ambiguity"
+    ],
+    "commands": [
+      "python3 scripts/story_manifest.py validate workspace/runs/agent-work/<issue-id>/story.json --check-links",
+      "make check"
+    ]
+  }
+}
+```
+
+### High-Risk Example
+
+```json
+{
+  "validation": {
+    "mode": "strong-model",
+    "risk": "high",
+    "no_model_eligible": false,
+    "escalation_triggers": [
+      "high_risk",
+      "ux_judgment",
+      "missing_manifest"
+    ],
+    "commands": [
+      {
+        "name": "Broad validation sweep",
+        "command": "make check"
+      }
+    ]
+  }
+}
 ```
 
 ## Agent Lane Usage

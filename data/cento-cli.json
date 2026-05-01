@@ -12,7 +12,7 @@
     {
       "name": "tool-routing",
       "usage": "cento TOOL [args...]",
-      "summary": "Run a registered tool directly by id."
+      "summary": "Run a registered tool directly by id, including `cento factory` for plan-only factory artifacts."
     },
     {
       "name": "alias-routing",
@@ -155,7 +155,24 @@
       "flags": [],
       "examples": [
         "cento run scan --query \"mcp\"",
-        "cento run crm docs"
+        "cento run crm docs",
+        "cento run factory status workspace/runs/factory/factory-planning-e2e"
+      ]
+    },
+    {
+      "name": "factory",
+      "summary": "Registered tool route for the no-model, plan-only Cento Factory workflow.",
+      "usage": "cento factory <intake|plan|materialize|create-issues|preflight|render-hub|status> [args...]",
+      "flags": [],
+      "examples": [
+        "cento factory intake \"develop me a career consulting module\" --dry-run --out workspace/runs/factory/factory-planning-e2e",
+        "cento factory plan workspace/runs/factory/factory-planning-e2e --no-model",
+        "cento factory materialize workspace/runs/factory/factory-planning-e2e",
+        "cento factory render-hub workspace/runs/factory/factory-planning-e2e"
+      ],
+      "details": [
+        "This command is routed through data/tools.json and scripts/factory.py.",
+        "factory-planning-v1 never dispatches workers; it generates durable planning, story, validation, and evidence artifacts."
       ]
     }
   ]

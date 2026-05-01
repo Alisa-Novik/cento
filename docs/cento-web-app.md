@@ -13,6 +13,32 @@ The Cento web app is the operator console for the whole Cento system. Taskstream
 
 Top-level header sections represent Cento product areas. Taskstream-specific views, including `Issues` and `Review`, live inside the Taskstream section instead of occupying the global product header.
 
+## Docs Module
+
+The `/docs` route is a first-class documentation module with:
+
+- global Cento Console topbar and active Docs state
+- documentation sidebar with a Cento general group expanded by default
+- product-area groups folded by default for Taskstream, Cluster, Consulting, and References
+- hero copy for Cento Documentation
+- six Explore by area cards
+- Recent updates list
+- support callout
+- right-side On this page rail on desktop
+
+Screenshot-section validation lives under:
+
+```bash
+workspace/runs/agent-work/docs-module/
+```
+
+Repeat the E2E with:
+
+```bash
+python3 scripts/docs_module_e2e.py
+python3 scripts/validator_tier0.py run workspace/runs/agent-work/docs-module/validation.json --run-dir workspace/runs/agent-work/docs-module/tier0
+```
+
 ## Implementation Notes
 
 - Keep the brand as `Cento Console`.
