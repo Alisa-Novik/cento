@@ -1,4 +1,4 @@
-const CACHE_NAME = "cento-taskstream-v10-review-summary";
+const CACHE_NAME = "cento-taskstream-v11-docs-research-routes";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -40,7 +40,9 @@ self.addEventListener("fetch", (event) => {
     url.pathname === "/app.js" ||
     url.pathname === "/styles.css" ||
     url.pathname === "/sw.js" ||
-    url.pathname === "/review"
+    url.pathname === "/review" ||
+    url.pathname === "/docs" ||
+    url.pathname === "/research-center"
   ) {
     event.respondWith(fetch(request));
     return;

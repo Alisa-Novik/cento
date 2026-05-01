@@ -860,7 +860,7 @@ function setNavActive(route) {
     link.classList.toggle("active", link.dataset.navRoute === activeRoute);
   });
   if (taskstreamNav) taskstreamNav.classList.toggle("hidden", activeMain !== "taskstream");
-  document.body.classList.toggle("docsMode", activeMain === "docs");
+  document.body.classList.toggle("docsMode", activeMain === "docs" || activeMain === "research");
 }
 
 function refreshSavedQueryOptions() {
@@ -1650,8 +1650,7 @@ function showCentoSection(route) {
     return;
   }
   if (route === "research") {
-    history.replaceState(null, "", "/research-center#research-implementation");
-    document.querySelector("#research-implementation")?.scrollIntoView({ block: "start" });
+    history.replaceState(null, "", "/research-center");
     return;
   }
   const hash = route === "docs" ? location.hash : "";

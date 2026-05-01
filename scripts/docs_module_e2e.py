@@ -247,13 +247,15 @@ def main() -> int:
 
         full_desktop = screenshots / "docs-module-desktop.png"
         full_mobile = screenshots / "docs-module-mobile.png"
+        research_desktop = screenshots / "research-center-desktop.png"
         run_command([playwright, "screenshot", f"--viewport-size={args.viewport}", f"http://127.0.0.1:{port}/docs", str(full_desktop)], env=env)
+        run_command([playwright, "screenshot", f"--viewport-size={args.viewport}", f"http://127.0.0.1:{port}/research-center", str(research_desktop)], env=env)
         run_command([playwright, "screenshot", "--full-page", f"--viewport-size={args.mobile_viewport}", f"http://127.0.0.1:{port}/docs", str(full_mobile)], env=env)
         section_crops = crop_sections(full_desktop, crops)
-        evidence = [full_desktop, full_mobile, *[ROOT / path for path in section_crops.values()]]
+        evidence = [full_desktop, research_desktop, full_mobile, *[ROOT / path for path in section_crops.values()]]
         image_stats = validate_nonblank(evidence)
         stories_path = write_section_stories(run_dir, section_crops)
-        evidence_paths = [rel(full_desktop), rel(full_mobile), rel(stories_path), rel(run_dir / "stories.md"), *section_crops.values()]
+        evidence_paths = [rel(full_desktop), rel(research_desktop), rel(full_mobile), rel(stories_path), rel(run_dir / "stories.md"), *section_crops.values()]
         validation_manifest = write_validation_manifest(run_dir, evidence_paths)
         summary = {
             "schema": "cento.docs-module.e2e.v1",
@@ -266,6 +268,7 @@ def main() -> int:
             "validation_manifest": rel(validation_manifest),
             "screenshots": {
                 "desktop": rel(full_desktop),
+                "research_center": rel(research_desktop),
                 "mobile": rel(full_mobile),
                 "sections": section_crops,
             },
