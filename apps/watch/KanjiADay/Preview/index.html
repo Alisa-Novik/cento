@@ -7,206 +7,741 @@
   <style>
     :root {
       color-scheme: dark;
-      --bg: #05090c;
-      --panel: #111820;
-      --text: #f7f7f4;
-      --muted: #a7abb2;
+      --page: #090b0e;
+      --surface: #0d1115;
+      --surface-2: #151a20;
+      --text: #f7f5ef;
+      --muted: #aeb4bd;
+      --faint: rgba(247, 245, 239, 0.18);
       --accent: #ff563c;
-      --green: #58d461;
+      --accent-2: #ff7a4d;
+      --ok: #60d26f;
+      --line: rgba(255, 255, 255, 0.12);
     }
-    * { box-sizing: border-box; }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       min-height: 100vh;
-      background: radial-gradient(circle at 18% 12%, #17212b 0, #071016 34%, #030609 100%);
+      background:
+        linear-gradient(145deg, rgba(255, 86, 60, 0.10), transparent 34%),
+        linear-gradient(225deg, rgba(96, 210, 111, 0.08), transparent 42%),
+        var(--page);
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .shell {
+      width: min(430px, 100%);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 22px 22px 28px;
+      display: grid;
+      align-content: start;
+      gap: 24px;
+    }
+
+    .device {
+      width: 100%;
+      aspect-ratio: 1 / 1.22;
+      border-radius: 30%;
+      padding: clamp(18px, 5.2vw, 28px);
+      background: linear-gradient(145deg, #59636c 0%, #20272d 42%, #050607 100%);
+      box-shadow:
+        inset 0 0 0 2px rgba(255, 255, 255, 0.10),
+        inset 0 -12px 22px rgba(0, 0, 0, 0.42),
+        0 28px 60px rgba(0, 0, 0, 0.46);
+    }
+
+    .bezel {
+      height: 100%;
+      border-radius: 24%;
+      background: #000;
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: clamp(18px, 5vw, 28px);
+      box-shadow: inset 0 0 36px rgba(255, 86, 60, 0.10);
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(58px, 1fr) minmax(58px, auto) minmax(58px, 1fr);
+      align-items: start;
+      gap: 10px;
+      min-height: 38px;
+      flex: 0 0 auto;
+    }
+
+    .topbar strong,
+    .topbar span {
+      display: block;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .count {
+      color: var(--accent);
+      font-size: 20px;
+      font-weight: 850;
+    }
+
+    .label {
+      color: var(--text);
+      font-size: 17px;
+      font-weight: 850;
+    }
+
+    .center-label {
+      text-align: center;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 800;
+      padding-top: 2px;
+    }
+
+    .timer {
+      text-align: right;
+    }
+
+    .timer span:first-child {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 3px;
+    }
+
+    .timer span:last-child {
+      font-size: 16px;
+      font-weight: 850;
+    }
+
+    .stage {
+      flex: 1 1 auto;
       display: grid;
       place-items: center;
-      padding: 34px;
+      min-height: 0;
+      padding: 8px 0 4px;
     }
-    main {
-      width: min(1120px, 100%);
+
+    .stroke-board {
+      width: min(188px, 57vw);
+      max-width: 100%;
+      aspect-ratio: 1;
+      overflow: visible;
+      filter: drop-shadow(0 0 22px rgba(255, 86, 60, 0.20));
     }
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: end;
-      gap: 20px;
-      margin-bottom: 28px;
+
+    .stroke-path {
+      fill: none;
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      path-length: 100;
     }
+
+    .stroke-path.ghost {
+      stroke: rgba(255, 255, 255, 0.16);
+    }
+
+    .stroke-path.done {
+      stroke: rgba(247, 245, 239, 0.96);
+    }
+
+    .stroke-path.current {
+      stroke: var(--accent);
+      filter: drop-shadow(0 0 10px rgba(255, 86, 60, 0.55));
+    }
+
+    .watch-copy {
+      min-height: 62px;
+      display: grid;
+      align-content: center;
+      gap: 5px;
+      text-align: center;
+      flex: 0 0 auto;
+    }
+
+    .watch-copy strong {
+      font-size: 16px;
+      line-height: 1.1;
+    }
+
+    .watch-copy span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .watch-copy .kanji-small {
+      color: var(--text);
+      font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+      font-size: 44px;
+      font-weight: 700;
+      line-height: 0.95;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      flex: 0 0 auto;
+      padding-top: 10px;
+    }
+
+    .action {
+      min-width: 0;
+      min-height: 52px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.06);
+      font-size: clamp(16px, 5vw, 25px);
+      font-weight: 850;
+      line-height: 1;
+      padding: 12px 10px;
+      box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+    }
+
+    .action.primary {
+      border-color: transparent;
+      background: linear-gradient(145deg, var(--accent), var(--accent-2));
+    }
+
+    .action:disabled {
+      color: rgba(247, 245, 239, 0.42);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .app-panel {
+      border: 1px solid rgba(255, 86, 60, 0.44);
+      background: rgba(13, 17, 21, 0.78);
+      padding: 28px 26px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-size: 14px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      margin: 0 0 14px;
+      text-align: center;
+    }
+
     h1 {
       margin: 0;
-      font-size: 42px;
+      color: var(--text);
+      font-size: clamp(42px, 13vw, 56px);
       line-height: 1;
       letter-spacing: 0;
+      text-align: center;
     }
-    .sub {
-      margin-top: 10px;
+
+    .summary {
+      margin: 18px 0 0;
       color: var(--muted);
-      font-size: 18px;
+      font-size: 16px;
+      line-height: 1.45;
+      text-align: center;
     }
-    .badge {
-      color: var(--accent);
-      border: 1px solid rgba(255, 86, 60, .45);
-      padding: 8px 12px;
-      border-radius: 999px;
-      font-weight: 700;
-    }
-    .screens {
+
+    .stats {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 24px;
-      align-items: start;
+      gap: 10px;
+      margin-top: 22px;
     }
-    .screen-wrap {
-      display: grid;
-      justify-items: center;
-      gap: 14px;
+
+    .stat {
+      min-width: 0;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.04);
+      padding: 12px 8px;
+      text-align: center;
     }
-    .watch {
-      width: 220px;
-      height: 270px;
-      border-radius: 48px;
-      padding: 12px;
-      background: linear-gradient(145deg, #4d565e, #11161a 42%, #020303);
-      box-shadow: inset 0 0 0 2px #22282e, 0 22px 44px rgba(0,0,0,.46);
+
+    .stat strong,
+    .stat span {
+      display: block;
     }
-    .bezel {
-      width: 100%;
-      height: 100%;
-      border-radius: 38px;
-      background: #000;
-      border: 1px solid #25292d;
-      overflow: hidden;
-      padding: 17px;
-      position: relative;
-    }
-    .time {
-      position: absolute;
-      top: 11px;
-      right: 14px;
-      font-size: 13px;
-      font-weight: 700;
-    }
-    .topline {
-      color: var(--muted);
-      font-size: 14px;
-      font-weight: 700;
-      margin-top: 16px;
-    }
-    .kanji {
-      font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
-      font-size: 82px;
+
+    .stat strong {
+      font-size: 21px;
       line-height: 1;
-      text-align: center;
-      margin-top: 24px;
     }
-    .meaning {
-      color: var(--accent);
-      text-align: center;
-      font-size: 15px;
+
+    .stat span {
+      color: var(--muted);
+      font-size: 12px;
       font-weight: 700;
       margin-top: 6px;
     }
-    button, .button {
-      border: 0;
+
+    .reset {
       width: 100%;
-      border-radius: 14px;
-      background: var(--accent);
-      color: white;
-      font-weight: 800;
-      font-size: 14px;
-      padding: 11px 12px;
-      margin-top: 20px;
-      box-shadow: inset 0 -2px 0 rgba(0,0,0,.18);
-    }
-    svg {
-      display: block;
-      width: 138px;
-      height: 138px;
-      margin: 36px auto 10px;
-    }
-    .ghost { stroke: rgba(255,255,255,.22); }
-    .live { stroke: var(--accent); stroke-dasharray: 100; stroke-dashoffset: 0; }
-    .counter {
-      color: var(--accent);
-      font-weight: 800;
-      margin-top: 18px;
-    }
-    .done {
-      color: var(--green);
-      text-align: center;
-      font-weight: 800;
-      margin-top: 8px;
-    }
-    .caption {
-      max-width: 230px;
-      color: #d7d8db;
-      text-align: center;
-      font-size: 18px;
-      line-height: 1.25;
-    }
-    .streak {
-      text-align: center;
+      margin-top: 16px;
+      border: 1px solid var(--line);
       color: var(--muted);
-      font-size: 14px;
-      margin-top: 12px;
+      background: transparent;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 800;
     }
-    @media (max-width: 800px) {
-      body { padding: 22px; }
-      header { display: block; }
-      .badge { display: inline-block; margin-top: 16px; }
-      .screens { grid-template-columns: 1fr; }
+
+    @media (min-width: 860px) {
+      .shell {
+        width: min(980px, 100%);
+        min-height: 100vh;
+        grid-template-columns: 430px minmax(340px, 1fr);
+        align-items: center;
+      }
+
+      .app-panel {
+        align-self: center;
+      }
+
+      .summary,
+      h1,
+      .eyebrow {
+        text-align: left;
+      }
     }
   </style>
 </head>
 <body>
-  <main>
-    <header>
-      <div>
-        <h1>Kanji a Day MVP</h1>
-        <div class="sub">Today, stroke order, meaning. Three kanji. Watch-only.</div>
+  <main class="shell">
+    <section class="device" aria-label="Kanji a Day practice surface">
+      <div class="bezel">
+        <div class="topbar">
+          <div>
+            <strong class="count" id="strokeCount">0 / 4</strong>
+            <span class="label" id="modeLabel">Today</span>
+          </div>
+          <strong class="center-label" id="centerLabel">Shape first</strong>
+          <div class="timer" aria-label="practice timer">
+            <span id="statusLabel">ready</span>
+            <span id="timerLabel">0:00</span>
+          </div>
+        </div>
+
+        <div class="stage">
+          <svg class="stroke-board" viewBox="0 0 100 100" role="img" aria-label="stroke order preview" id="strokeBoard"></svg>
+        </div>
+
+        <div class="watch-copy" id="watchCopy"></div>
+
+        <div class="actions">
+          <button class="action" type="button" id="secondaryAction">Replay</button>
+          <button class="action primary" type="button" id="primaryAction">Play</button>
+        </div>
       </div>
-      <div class="badge">0 AI calls · no backend</div>
-    </header>
-    <section class="screens" aria-label="MVP screens">
-      <article class="screen-wrap">
-        <div class="watch"><div class="bezel">
-          <div class="time">10:09</div>
-          <div class="topline">Today</div>
-          <div class="kanji">日</div>
-          <div class="meaning">sun, day</div>
-          <div class="button">Let's learn</div>
-        </div></div>
-        <div class="caption">Open once a day and get exactly one kanji.</div>
-      </article>
-      <article class="screen-wrap">
-        <div class="watch"><div class="bezel">
-          <div class="time">10:09</div>
-          <div class="counter">3 / 4</div>
-          <svg viewBox="0 0 100 100" aria-label="stroke order preview">
-            <path class="live" d="M30 18 L30 82" fill="none" stroke-width="8" stroke-linecap="round"/>
-            <path class="live" d="M30 18 L72 18 L72 82" fill="none" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-            <path class="live" d="M32 50 L70 50" fill="none" stroke-width="8" stroke-linecap="round"/>
-            <path class="ghost" d="M30 82 L72 82" fill="none" stroke-width="8" stroke-linecap="round"/>
-          </svg>
-          <div class="button">Meaning</div>
-        </div></div>
-        <div class="caption">Follow the stroke order in a short animation.</div>
-      </article>
-      <article class="screen-wrap">
-        <div class="watch"><div class="bezel">
-          <div class="time">10:09</div>
-          <div class="topline" style="text-align:center">Meaning</div>
-          <div class="kanji" style="font-size:62px;margin-top:22px">日</div>
-          <div class="meaning">sun, day</div>
-          <div class="streak">Current streak 1 day</div>
-          <div class="button">✓ Got it</div>
-        </div></div>
-        <div class="caption">Reveal meaning and preserve the daily streak.</div>
-      </article>
+    </section>
+
+    <section class="app-panel" aria-label="Kanji a Day MVP status">
+      <p class="eyebrow">PWA MVP</p>
+      <h1>Kanji a Day</h1>
+      <p class="summary" id="summaryText">
+        A compact loop for one kanji: watch the stroke order, reveal the meaning, keep the streak, then preview what comes next.
+      </p>
+      <div class="stats" aria-label="progress summary">
+        <div class="stat">
+          <strong id="learnedStat">0</strong>
+          <span>learned</span>
+        </div>
+        <div class="stat">
+          <strong id="streakStat">0</strong>
+          <span>streak</span>
+        </div>
+        <div class="stat">
+          <strong id="nextStat">日</strong>
+          <span>next</span>
+        </div>
+      </div>
+      <button class="reset" type="button" id="resetAction">Reset demo progress</button>
     </section>
   </main>
+
+  <script>
+    const KANJI = [
+      {
+        id: "日",
+        meaning: "sun, day",
+        onyomi: "ニチ / ジツ",
+        kunyomi: "ひ / か",
+        example: "日本 - にほん - Japan",
+        strokes: [
+          { id: 1, path: "M30 18 L30 82", durationMs: 680, hint: "left vertical stroke" },
+          { id: 2, path: "M30 18 L72 18 L72 82", durationMs: 780, hint: "top and right stroke" },
+          { id: 3, path: "M32 50 L70 50", durationMs: 560, hint: "middle horizontal stroke" },
+          { id: 4, path: "M30 82 L72 82", durationMs: 560, hint: "bottom closing stroke" }
+        ]
+      },
+      {
+        id: "月",
+        meaning: "moon, month",
+        onyomi: "ゲツ / ガツ",
+        kunyomi: "つき",
+        example: "月曜日 - げつようび - Monday",
+        strokes: [
+          { id: 1, path: "M34 16 L34 86", durationMs: 700, hint: "left vertical stroke" },
+          { id: 2, path: "M34 16 L72 16 L72 86", durationMs: 820, hint: "top and right outline" },
+          { id: 3, path: "M36 43 L70 43", durationMs: 560, hint: "upper inner stroke" },
+          { id: 4, path: "M36 64 L70 64", durationMs: 560, hint: "lower inner stroke" }
+        ]
+      },
+      {
+        id: "火",
+        meaning: "fire",
+        onyomi: "カ",
+        kunyomi: "ひ",
+        example: "火曜日 - かようび - Tuesday",
+        strokes: [
+          { id: 1, path: "M40 26 L24 52", durationMs: 560, hint: "left flame stroke" },
+          { id: 2, path: "M63 24 L76 52", durationMs: 560, hint: "right flame stroke" },
+          { id: 3, path: "M52 16 L50 48 L32 84", durationMs: 760, hint: "main falling stroke" },
+          { id: 4, path: "M52 48 L76 84", durationMs: 680, hint: "right finishing stroke" }
+        ]
+      }
+    ];
+
+    const STORAGE_KEY = "kanji-a-day.preview-progress.v1";
+    const els = {
+      strokeBoard: document.getElementById("strokeBoard"),
+      strokeCount: document.getElementById("strokeCount"),
+      modeLabel: document.getElementById("modeLabel"),
+      centerLabel: document.getElementById("centerLabel"),
+      statusLabel: document.getElementById("statusLabel"),
+      timerLabel: document.getElementById("timerLabel"),
+      watchCopy: document.getElementById("watchCopy"),
+      primaryAction: document.getElementById("primaryAction"),
+      secondaryAction: document.getElementById("secondaryAction"),
+      resetAction: document.getElementById("resetAction"),
+      learnedStat: document.getElementById("learnedStat"),
+      streakStat: document.getElementById("streakStat"),
+      nextStat: document.getElementById("nextStat"),
+      summaryText: document.getElementById("summaryText")
+    };
+
+    let progress = loadProgress();
+    let screen = "today";
+    let playbackState = "idle";
+    let currentStroke = 1;
+    let strokeProgress = 0;
+    let lessonIndex = progress.currentIndex;
+    let completedLesson = null;
+    let startedAt = Date.now();
+    let animationToken = 0;
+
+    function loadProgress() {
+      const fallback = {
+        currentIndex: 0,
+        learnedKanji: [],
+        streak: 0,
+        lastCompletedDate: "",
+        lastCompletedKanji: ""
+      };
+
+      try {
+        return { ...fallback, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") };
+      } catch {
+        return fallback;
+      }
+    }
+
+    function saveProgress() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+    }
+
+    function todayKey() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function currentKanji() {
+      return KANJI[lessonIndex % KANJI.length];
+    }
+
+    function nextKanji() {
+      return KANJI[progress.currentIndex % KANJI.length];
+    }
+
+    function renderStrokeBoard(kanji) {
+      const allComplete = playbackState === "allComplete" || screen === "meaning" || screen === "complete";
+      els.strokeBoard.innerHTML = kanji.strokes.map((stroke) => {
+        let className = "ghost";
+        let trim = 0;
+
+        if (allComplete || stroke.id < currentStroke) {
+          className = "done";
+          trim = 100;
+        } else if (stroke.id === currentStroke && playbackState !== "idle") {
+          className = "current";
+          trim = Math.round(strokeProgress * 100);
+        } else if (screen === "today") {
+          className = "ghost";
+          trim = 100;
+        }
+
+        return `<path class="stroke-path ${className}" d="${stroke.path}" pathLength="100" stroke-dasharray="100" stroke-dashoffset="${100 - trim}"></path>`;
+      }).join("");
+    }
+
+    function renderCopy(kanji) {
+      if (screen === "meaning") {
+        els.watchCopy.innerHTML = `
+          <div class="kanji-small">${kanji.id}</div>
+          <strong>${kanji.meaning}</strong>
+          <span>Onyomi: ${kanji.onyomi} · Kunyomi: ${kanji.kunyomi}</span>
+          <span>${kanji.example}</span>
+        `;
+        return;
+      }
+
+      if (screen === "complete" && completedLesson) {
+        els.watchCopy.innerHTML = `
+          <div class="kanji-small">${completedLesson.id}</div>
+          <strong>${completedLesson.id} learned</strong>
+          <span>Stroke order complete · meaning viewed</span>
+          <span>Next: ${nextKanji().id} - ${nextKanji().meaning}</span>
+        `;
+        return;
+      }
+
+      if (playbackState === "allComplete") {
+        els.watchCopy.innerHTML = `
+          <strong>Stroke order complete</strong>
+          <span>Reveal the meaning when the shape is fresh.</span>
+        `;
+        return;
+      }
+
+      if (playbackState === "playingStroke") {
+        const hint = kanji.strokes[currentStroke - 1]?.hint || "follow the current stroke";
+        els.watchCopy.innerHTML = `
+          <strong>Stroke ${currentStroke}</strong>
+          <span>${hint}</span>
+        `;
+        return;
+      }
+
+      els.watchCopy.innerHTML = `
+        <div class="kanji-small">${kanji.id}</div>
+        <strong>Today's kanji</strong>
+        <span>Learn the shape before revealing the meaning.</span>
+      `;
+    }
+
+    function renderActions() {
+      els.primaryAction.disabled = false;
+      els.secondaryAction.disabled = playbackState === "playingStroke" && screen === "practice";
+
+      if (screen === "today") {
+        els.secondaryAction.textContent = "Replay";
+        els.primaryAction.textContent = "Play";
+        els.secondaryAction.disabled = false;
+        return;
+      }
+
+      if (screen === "practice") {
+        els.secondaryAction.textContent = "Replay";
+        els.primaryAction.textContent = playbackState === "allComplete" ? "Meaning" : "Playing";
+        els.primaryAction.disabled = playbackState !== "allComplete";
+        return;
+      }
+
+      if (screen === "meaning") {
+        els.secondaryAction.textContent = "Replay";
+        els.primaryAction.textContent = "Complete";
+        els.primaryAction.disabled = false;
+        return;
+      }
+
+      els.secondaryAction.textContent = "Replay";
+      els.primaryAction.textContent = "Next";
+      els.primaryAction.disabled = false;
+    }
+
+    function render() {
+      const kanji = currentKanji();
+      const countValue = screen === "today" ? 0 : Math.min(currentStroke, kanji.strokes.length);
+
+      els.strokeCount.textContent = `${countValue} / ${kanji.strokes.length}`;
+      els.modeLabel.textContent = screen === "today" ? "Today" : screen === "meaning" ? "Meaning" : screen === "complete" ? "Done" : "Stroke";
+      els.centerLabel.textContent = screen === "complete" ? "Next ready" : screen === "meaning" ? "Meaning" : "Shape first";
+      els.statusLabel.textContent = playbackState === "allComplete" || screen === "complete" ? "complete" : playbackState === "playingStroke" ? "playing" : "ready";
+
+      renderStrokeBoard(kanji);
+      renderCopy(kanji);
+      renderActions();
+
+      els.learnedStat.textContent = progress.learnedKanji.length;
+      els.streakStat.textContent = progress.streak;
+      els.nextStat.textContent = nextKanji().id;
+      els.summaryText.textContent = screen === "complete"
+        ? `Next up is ${nextKanji().id}, so the demo now has a full learn-and-continue loop.`
+        : "A compact loop for one kanji: watch the stroke order, reveal the meaning, keep the streak, then preview what comes next.";
+    }
+
+    function startLesson(index = progress.currentIndex) {
+      lessonIndex = index;
+      completedLesson = null;
+      screen = "practice";
+      startedAt = Date.now();
+      playFrom(1);
+    }
+
+    function playFrom(index) {
+      animationToken += 1;
+      const token = animationToken;
+      const kanji = currentKanji();
+      currentStroke = index;
+      strokeProgress = 0;
+      playbackState = "playingStroke";
+      render();
+      animateStroke(token, kanji.strokes[index - 1]);
+    }
+
+    function animateStroke(token, stroke) {
+      const start = performance.now();
+
+      function frame(now) {
+        if (token !== animationToken || !stroke) {
+          return;
+        }
+
+        strokeProgress = Math.min((now - start) / stroke.durationMs, 1);
+        render();
+
+        if (strokeProgress < 1) {
+          requestAnimationFrame(frame);
+          return;
+        }
+
+        playbackState = "strokeComplete";
+        render();
+
+        if (currentStroke >= currentKanji().strokes.length) {
+          playbackState = "allComplete";
+          render();
+          return;
+        }
+
+        window.setTimeout(() => {
+          if (token !== animationToken) {
+            return;
+          }
+          currentStroke += 1;
+          strokeProgress = 0;
+          playbackState = "playingStroke";
+          animateStroke(token, currentKanji().strokes[currentStroke - 1]);
+        }, 170);
+      }
+
+      requestAnimationFrame(frame);
+    }
+
+    function replay() {
+      const replayIndex = screen === "complete" && completedLesson
+        ? KANJI.findIndex((item) => item.id === completedLesson.id)
+        : lessonIndex;
+
+      screen = "practice";
+      startLesson(replayIndex >= 0 ? replayIndex : progress.currentIndex);
+    }
+
+    function showMeaning() {
+      if (playbackState !== "allComplete") {
+        return;
+      }
+      screen = "meaning";
+      render();
+    }
+
+    function completeLesson() {
+      const kanji = currentKanji();
+      completedLesson = kanji;
+      const today = todayKey();
+      const isNewCompletion = progress.lastCompletedDate !== today || progress.lastCompletedKanji !== kanji.id;
+
+      if (isNewCompletion) {
+        if (!progress.learnedKanji.includes(kanji.id)) {
+          progress.learnedKanji.push(kanji.id);
+        }
+        progress.streak = progress.lastCompletedDate === yesterdayKey() ? progress.streak + 1 : Math.max(progress.streak, 1);
+        progress.lastCompletedDate = today;
+        progress.lastCompletedKanji = kanji.id;
+      }
+
+      if (progress.currentIndex % KANJI.length === lessonIndex % KANJI.length) {
+        progress.currentIndex = (progress.currentIndex + 1) % KANJI.length;
+      }
+
+      saveProgress();
+      screen = "complete";
+      playbackState = "allComplete";
+      render();
+    }
+
+    function yesterdayKey() {
+      const date = new Date();
+      date.setDate(date.getDate() - 1);
+      return date.toISOString().slice(0, 10);
+    }
+
+    function nextLesson() {
+      screen = "today";
+      playbackState = "idle";
+      currentStroke = 1;
+      strokeProgress = 0;
+      lessonIndex = progress.currentIndex;
+      completedLesson = null;
+      render();
+    }
+
+    els.primaryAction.addEventListener("click", () => {
+      if (screen === "today") {
+        startLesson(progress.currentIndex);
+      } else if (screen === "practice") {
+        showMeaning();
+      } else if (screen === "meaning") {
+        completeLesson();
+      } else {
+        nextLesson();
+      }
+    });
+
+    els.secondaryAction.addEventListener("click", replay);
+
+    els.resetAction.addEventListener("click", () => {
+      localStorage.removeItem(STORAGE_KEY);
+      progress = loadProgress();
+      screen = "today";
+      playbackState = "idle";
+      currentStroke = 1;
+      strokeProgress = 0;
+      lessonIndex = progress.currentIndex;
+      completedLesson = null;
+      animationToken += 1;
+      startedAt = Date.now();
+      render();
+    });
+
+    window.setInterval(() => {
+      const elapsed = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+      const minutes = Math.floor(elapsed / 60);
+      const seconds = String(elapsed % 60).padStart(2, "0");
+      els.timerLabel.textContent = `${minutes}:${seconds}`;
+    }, 250);
+
+    render();
+  </script>
 </body>
 </html>
