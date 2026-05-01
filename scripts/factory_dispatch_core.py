@@ -785,7 +785,12 @@ def preflight(run_dir: Path, *, max_actionable_stale: int = 5, max_risk_count: i
     if risk_count > max_risk_count:
         reasons.append(f"risk_count {risk_count} exceeds {max_risk_count}")
     owned = [path for item in normalize_queue_tasks(queue) for path in owned_paths_for(item)]
-    dirty_owned = [path for path in git_dirty_files() if any(path_overlaps(path, owned_path) for owned_path in owned)]
+    run_artifact_prefix = rel(run_dir).rstrip("/") + "/"
+    dirty_owned = [
+        path
+        for path in git_dirty_files()
+        if not path.startswith(run_artifact_prefix) and any(path_overlaps(path, owned_path) for owned_path in owned)
+    ]
     if dirty_owned:
         reasons.append("dirty_git_touches_owned_paths: " + ", ".join(dirty_owned[:12]))
     unintegrated = [
