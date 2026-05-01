@@ -1,0 +1,90 @@
+{
+  "schema_version": "factory-autopilot-e2e-fixture/v1",
+  "fixture": "career-consulting",
+  "package": "factory-autopilot-v1",
+  "goal": "Create an Autopilot contract fixture for adaptive fanout without implementing the Autopilot runtime.",
+  "tasks": [
+    {
+      "id": "scan-and-preflight-contract",
+      "title": "Scan and preflight contract",
+      "lane": "builder",
+      "node": "linux",
+      "owned_scope": [
+        "workspace/runs/factory/factory-autopilot-e2e/autopilot/cycles/0001/scan.json"
+      ],
+      "goal": "Define the scan inputs and safety gate shape for Autopilot cycles.",
+      "expected_outputs": [
+        {
+          "path": "workspace/runs/factory/factory-autopilot-e2e/autopilot/cycles/0001/scan.json",
+          "description": "Cycle scan contract artifact"
+        }
+      ],
+      "validation_commands": [
+        "test -f autopilot/cycles/0001/scan.json"
+      ],
+      "no_model_eligible": true,
+      "risk": "low",
+      "dependencies": []
+    },
+    {
+      "id": "decision-policy-contract",
+      "title": "Decision policy contract",
+      "lane": "builder",
+      "node": "linux",
+      "owned_scope": [
+        "workspace/runs/factory/factory-autopilot-e2e/autopilot/cycles/0001/decision.json",
+        "workspace/runs/factory/factory-autopilot-e2e/autopilot/policy.json"
+      ],
+      "goal": "Define one-action-per-cycle decision and fanout policy contract artifacts.",
+      "expected_outputs": [
+        {
+          "path": "workspace/runs/factory/factory-autopilot-e2e/autopilot/cycles/0001/decision.json",
+          "description": "Cycle decision contract artifact"
+        },
+        {
+          "path": "workspace/runs/factory/factory-autopilot-e2e/autopilot/policy.json",
+          "description": "Autopilot policy contract artifact"
+        }
+      ],
+      "validation_commands": [
+        "test -f autopilot/cycles/0001/decision.json",
+        "test -f autopilot/policy.json"
+      ],
+      "no_model_eligible": true,
+      "risk": "low",
+      "dependencies": [
+        "scan-and-preflight-contract"
+      ]
+    },
+    {
+      "id": "evidence-contract",
+      "title": "Evidence contract",
+      "lane": "docs-evidence",
+      "node": "linux",
+      "owned_scope": [
+        "workspace/runs/factory/factory-autopilot-e2e/autopilot/autopilot-state.json",
+        "workspace/runs/factory/factory-autopilot-e2e/autopilot/autopilot-summary.md"
+      ],
+      "goal": "Define Autopilot state, metrics, stop reason, and operator summary contract artifacts.",
+      "expected_outputs": [
+        {
+          "path": "workspace/runs/factory/factory-autopilot-e2e/autopilot/autopilot-state.json",
+          "description": "Autopilot state contract artifact"
+        },
+        {
+          "path": "workspace/runs/factory/factory-autopilot-e2e/autopilot/autopilot-summary.md",
+          "description": "Autopilot operator summary contract artifact"
+        }
+      ],
+      "validation_commands": [
+        "test -f autopilot/autopilot-state.json",
+        "test -f autopilot/autopilot-summary.md"
+      ],
+      "no_model_eligible": true,
+      "risk": "low",
+      "dependencies": [
+        "decision-policy-contract"
+      ]
+    }
+  ]
+}
