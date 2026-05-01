@@ -1,0 +1,80 @@
+{
+  "deliverables": {
+    "hub": "workspace/runs/agent-work/drafts/factory-autopilot-v1-coordinate-real/start-here.html",
+    "manifest": "workspace/runs/agent-work/drafts/factory-autopilot-v1-coordinate-real/deliverables.json"
+  },
+  "expected_outputs": [
+    {
+      "description": "Saved Autopilot prompt",
+      "owner": "alice",
+      "path": "workspace/runs/coordination/factory-autopilot-v1/factory-adaptive-fanout-autopilot-prompt.md",
+      "required": true
+    },
+    {
+      "description": "Coordinator story manifest",
+      "owner": "alice",
+      "path": "workspace/runs/agent-work/drafts/factory-autopilot-v1-coordinate-real/story.json",
+      "required": true
+    },
+    {
+      "description": "No-model validation manifest",
+      "owner": "alice",
+      "path": "workspace/runs/agent-work/drafts/factory-autopilot-v1-coordinate-real/validation.json",
+      "required": true
+    }
+  ],
+  "issue": {
+    "id": 1000099,
+    "package": "factory-autopilot-v1",
+    "title": "Coordinate Factory Adaptive Fanout Autopilot v1"
+  },
+  "lane": {
+    "agent": "codex",
+    "node": "linux",
+    "owner": "alice",
+    "role": "coordinator"
+  },
+  "metadata": {
+    "canonicalized_at": "2026-05-01T06:12:35.307550+00:00",
+    "canonicalized_from": "workspace/runs/agent-work/drafts/factory-autopilot-v1-coordinate-real/story.json",
+    "draft_policy": "deterministic checks only; unresolved subjective criteria must stay in manual_review",
+    "drafted_at": "2026-05-01T02:12:26-04:00"
+  },
+  "paths": {
+    "run_dir": "workspace/runs/agent-work/1000099"
+  },
+  "review_gate": {
+    "required_sections": [
+      "Delivered",
+      "Validation",
+      "Evidence",
+      "Residual risk"
+    ],
+    "residual_risk_required": true
+  },
+  "schema_version": "1.0",
+  "scope": {
+    "acceptance": [
+      "The Autopilot prompt is saved at workspace/runs/coordination/factory-autopilot-v1/factory-adaptive-fanout-autopilot-prompt.md.",
+      "A clean factory-autopilot-v1 coordination issue exists in Taskstream and remains queued unless explicitly dispatched later.",
+      "Sleep-mode safety holds: no notifications, no live worker dispatch, no pool-kick, no automatic merge, no automatic Done transitions.",
+      "Zero-AI Autopilot contract evidence is available for future implementation work."
+    ],
+    "goal": "Coordinate factory-autopilot-v1 from the saved Autopilot prompt. Keep overnight execution in safe mode: dry-run/no-model evidence only, queued coordination, no live worker dispatch, no pool-kick, no notifications, no automatic merge, and no automatic Done transitions."
+  },
+  "validation": {
+    "commands": [
+      "test -f workspace/runs/coordination/factory-autopilot-v1/factory-adaptive-fanout-autopilot-prompt.md",
+      "grep -q \"Factory Adaptive Fanout Autopilot\" workspace/runs/coordination/factory-autopilot-v1/factory-adaptive-fanout-autopilot-prompt.md",
+      "cento agent-manager scan --json"
+    ],
+    "escalation_triggers": [
+      "failed_deterministic_command",
+      "high_risk"
+    ],
+    "manifest": "workspace/runs/agent-work/drafts/factory-autopilot-v1-coordinate-real/validation.json",
+    "mode": "no-model",
+    "no_model_eligible": true,
+    "risk": "medium"
+  }
+}
