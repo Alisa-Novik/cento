@@ -1,0 +1,25 @@
+{
+  "allowed_commands": [
+    "./commands/other.sh"
+  ],
+  "checks": [
+    {
+      "command": "./commands/escalate.sh",
+      "name": "Disallowed command",
+      "type": "command"
+    },
+    {
+      "name": "Ready evidence",
+      "non_empty": true,
+      "path": "evidence/ready.txt",
+      "type": "file"
+    },
+    {
+      "expected": "GET",
+      "field": "api_endpoints.0.method",
+      "name": "Fixture API method",
+      "path": "story.json",
+      "type": "json_field"
+    }
+  ]
+}

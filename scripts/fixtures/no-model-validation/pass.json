@@ -1,0 +1,34 @@
+{
+  "expected": {
+    "decision": "approve",
+    "reason_contains": "All deterministic Tier 0 checks passed"
+  },
+  "manifest": {
+    "checks": [
+      {
+        "name": "pass-evidence-file",
+        "path": "scripts/fixtures/no-model-validation/evidence/pass-local-evidence.json",
+        "type": "file_exists"
+      },
+      {
+        "expected": "ready",
+        "field": "status",
+        "name": "pass-evidence-status",
+        "path": "scripts/fixtures/no-model-validation/evidence/pass-local-evidence.json",
+        "type": "json_field"
+      }
+    ],
+    "claim": "Approve deterministic work when local evidence is present.",
+    "decision_requested": "approve",
+    "risk": "low",
+    "task": "NO-MODEL-VALIDATION-PASS"
+  },
+  "metadata": {
+    "evidence_path": "scripts/fixtures/no-model-validation/evidence/pass-local-evidence.json",
+    "note": "Real local evidence is committed beside the fixture."
+  },
+  "name": "pass-local-evidence",
+  "risk": "low",
+  "schema": "cento.no-model-validation.fixture.v1",
+  "status": "pass"
+}

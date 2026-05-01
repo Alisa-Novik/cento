@@ -1,0 +1,51 @@
+{
+  "api_endpoints": [
+    {
+      "method": "GET",
+      "name": "Fixture API",
+      "purpose": "Static API spec used by the fail fixture.",
+      "url": "https://example.invalid/api"
+    }
+  ],
+  "expected_outputs": [
+    {
+      "description": "Evidence that exists for the fail fixture.",
+      "owner": "builder",
+      "path": "scripts/fixtures/no-model-validation/engine/fail/evidence/present.txt"
+    },
+    {
+      "description": "Evidence intentionally left missing for the fail fixture.",
+      "owner": "builder",
+      "path": "scripts/fixtures/no-model-validation/engine/fail/evidence/missing-output.txt"
+    }
+  ],
+  "issue": {
+    "id": 91002,
+    "package": "no-model-validation/engine-fixture-fail",
+    "title": "No-model validation fixture: fail"
+  },
+  "lane": {
+    "agent": "fixture",
+    "node": "linux",
+    "owner": "builder",
+    "role": "builder"
+  },
+  "paths": {
+    "run_dir": "scripts/fixtures/no-model-validation/engine/fail"
+  },
+  "scope": {
+    "acceptance": [
+      "The validator fails when required evidence is missing or a check command exits non-zero."
+    ],
+    "goal": "Exercise the fail path of the deterministic engine."
+  },
+  "schema_version": "1.0",
+  "validation": {
+    "commands": [
+      "./commands/fail.sh"
+    ],
+    "mode": "deterministic",
+    "no_model_eligible": true,
+    "risk": "low"
+  }
+}

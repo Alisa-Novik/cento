@@ -1,0 +1,35 @@
+{
+  "allowed_commands": [
+    "./commands/pass.sh"
+  ],
+  "checks": [
+    {
+      "command": "./commands/pass.sh",
+      "name": "Generate pass evidence",
+      "type": "command"
+    },
+    {
+      "name": "Generated evidence exists",
+      "non_empty": true,
+      "path": "evidence/generated-by-command.txt",
+      "type": "file"
+    },
+    {
+      "expected": "GET",
+      "field": "api_endpoints.0.method",
+      "name": "Fixture API method",
+      "path": "story.json",
+      "type": "json_field"
+    },
+    {
+      "name": "Story file URL is reachable",
+      "type": "url",
+      "url": "file:///{root}/scripts/fixtures/no-model-validation/engine/pass/story.json"
+    },
+    {
+      "name": "Screenshot evidence exists",
+      "output": "screenshots/summary.png",
+      "type": "screenshot"
+    }
+  ]
+}

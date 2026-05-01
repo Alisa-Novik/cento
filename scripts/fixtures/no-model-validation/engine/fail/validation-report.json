@@ -1,0 +1,268 @@
+{
+  "allowed_commands": [
+    "./commands/fail.sh"
+  ],
+  "checks": [
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/fail/story.json",
+      "name": "story.schema_version",
+      "observed": {
+        "value": "1.0"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/fail/story.json",
+      "name": "story.issue.id",
+      "observed": {
+        "value": 91002
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/fail/story.json",
+      "name": "story.issue.title",
+      "observed": {
+        "value": "No-model validation fixture: fail"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/fail/story.json",
+      "name": "story.issue.package",
+      "observed": {
+        "value": "no-model-validation/engine-fixture-fail"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/fail/story.json",
+      "name": "story.lane.owner",
+      "observed": {
+        "value": "builder"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/fail/story.json",
+      "name": "story.lane.role",
+      "observed": {
+        "value": "builder"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/fail/story.json",
+      "name": "story.lane.node",
+      "observed": {
+        "value": "linux"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/fail/story.json",
+      "name": "story.lane.role",
+      "observed": {
+        "value": "builder"
+      },
+      "reason": "role is valid",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/fail",
+      "name": "story.paths.run_dir",
+      "observed": {
+        "value": "scripts/fixtures/no-model-validation/engine/fail"
+      },
+      "reason": "run_dir exists",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/fail/story.json",
+      "name": "story.scope.acceptance",
+      "observed": {
+        "count": 1
+      },
+      "reason": "acceptance list is present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/fail/story.json",
+      "name": "story.validation.no_model_eligible",
+      "observed": {
+        "value": true
+      },
+      "reason": "explicitly eligible",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/fail/story.json",
+      "name": "story.validation.mode",
+      "observed": {
+        "value": "deterministic"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/fail/story.json",
+      "name": "story.validation.commands",
+      "observed": {
+        "count": 1
+      },
+      "reason": "command list present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/fail/story.json",
+      "name": "story.expected_outputs",
+      "observed": {
+        "count": 2
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/fail/story.json",
+      "name": "Fixture API",
+      "observed": {
+        "method": "GET",
+        "url": "https://example.invalid/api"
+      },
+      "reason": "API endpoint spec is explicit",
+      "required": true,
+      "status": "pass",
+      "type": "api_spec",
+      "url": "https://example.invalid/api"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/fail/evidence/present.txt",
+      "name": "story.expected_outputs[0]",
+      "observed": {
+        "description": "Evidence that exists for the fail fixture.",
+        "exists": true,
+        "owner": "builder",
+        "required": true
+      },
+      "path": "scripts/fixtures/no-model-validation/engine/fail/evidence/present.txt",
+      "reason": "expected output exists",
+      "required": true,
+      "status": "pass",
+      "type": "artifact"
+    },
+    {
+      "name": "story.expected_outputs[1]",
+      "observed": {
+        "description": "Evidence intentionally left missing for the fail fixture.",
+        "exists": false,
+        "owner": "builder",
+        "required": true
+      },
+      "path": "scripts/fixtures/no-model-validation/engine/fail/evidence/missing-output.txt",
+      "reason": "required output is missing",
+      "required": true,
+      "status": "fail",
+      "type": "artifact"
+    },
+    {
+      "command": "./commands/fail.sh",
+      "name": "Failing command",
+      "observed": {
+        "cwd": "scripts/fixtures/no-model-validation/engine/fail",
+        "exit_code": 7,
+        "stderr_tail": "fail fixture command intentionally exits non-zero",
+        "stdout_tail": ""
+      },
+      "reason": "exit code 7, expected 0",
+      "required": true,
+      "status": "fail",
+      "type": "command"
+    },
+    {
+      "name": "Missing evidence",
+      "observed": {
+        "exists": false,
+        "non_empty": true
+      },
+      "path": "evidence/missing-output.txt",
+      "reason": "file is missing",
+      "required": true,
+      "status": "fail",
+      "type": "file"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/fail/story.json",
+      "name": "Fixture API method",
+      "observed": {
+        "exists": true,
+        "field": "api_endpoints.0.method",
+        "value": "GET"
+      },
+      "path": "story.json",
+      "reason": "JSON field is present",
+      "required": true,
+      "status": "pass",
+      "type": "json_field"
+    }
+  ],
+  "decision": "fail",
+  "duration_ms": 3.652,
+  "ended_at": "2026-04-30T23:14:37-04:00",
+  "escalation_reasons": [],
+  "evidence_paths": [
+    "scripts/fixtures/no-model-validation/engine/fail/evidence/present.txt",
+    "scripts/fixtures/no-model-validation/engine/fail/story.json",
+    "scripts/fixtures/no-model-validation/engine/fail/validation-report.md",
+    "scripts/fixtures/no-model-validation/engine/fail/validation-report.json"
+  ],
+  "failed_commands": [
+    "./commands/fail.sh"
+  ],
+  "missing_items": [
+    "scripts/fixtures/no-model-validation/engine/fail/evidence/missing-output.txt",
+    "evidence/missing-output.txt"
+  ],
+  "report": "scripts/fixtures/no-model-validation/engine/fail/validation-report.md",
+  "report_json": "scripts/fixtures/no-model-validation/engine/fail/validation-report.json",
+  "schema": "cento.no-model-validation.result.v1",
+  "started_at": "2026-04-30T23:14:37-04:00",
+  "status": "fail",
+  "story": "scripts/fixtures/no-model-validation/engine/fail/story.json",
+  "summary": "3 deterministic check(s) failed or required evidence was missing.",
+  "validation": "scripts/fixtures/no-model-validation/engine/fail/validation.json"
+}

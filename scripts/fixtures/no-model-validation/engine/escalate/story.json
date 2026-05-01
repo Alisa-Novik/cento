@@ -1,0 +1,46 @@
+{
+  "api_endpoints": [
+    {
+      "method": "GET",
+      "name": "Fixture API",
+      "purpose": "Static API spec used by the escalate fixture.",
+      "url": "https://example.invalid/api"
+    }
+  ],
+  "expected_outputs": [
+    {
+      "description": "Evidence required by the escalate fixture.",
+      "owner": "builder",
+      "path": "scripts/fixtures/no-model-validation/engine/escalate/evidence/ready.txt"
+    }
+  ],
+  "issue": {
+    "id": 91003,
+    "package": "no-model-validation/engine-fixture-escalate",
+    "title": "No-model validation fixture: escalate"
+  },
+  "lane": {
+    "agent": "fixture",
+    "node": "linux",
+    "owner": "builder",
+    "role": "builder"
+  },
+  "paths": {
+    "run_dir": "scripts/fixtures/no-model-validation/engine/escalate"
+  },
+  "scope": {
+    "acceptance": [
+      "The validator escalates when the manifest is safe to parse but the command is not allowlisted."
+    ],
+    "goal": "Exercise the escalation path of the deterministic engine."
+  },
+  "schema_version": "1.0",
+  "validation": {
+    "commands": [
+      "./commands/escalate.sh"
+    ],
+    "mode": "deterministic",
+    "no_model_eligible": true,
+    "risk": "low"
+  }
+}

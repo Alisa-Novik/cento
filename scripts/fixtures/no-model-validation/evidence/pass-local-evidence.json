@@ -1,0 +1,6 @@
+{
+  "artifact": "pass-local-evidence",
+  "source": "scripts/fixtures/no-model-validation",
+  "status": "ready",
+  "summary": "Local evidence for the deterministic no-model validation pass fixture."
+}

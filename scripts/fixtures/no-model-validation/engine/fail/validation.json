@@ -1,0 +1,25 @@
+{
+  "allowed_commands": [
+    "./commands/fail.sh"
+  ],
+  "checks": [
+    {
+      "command": "./commands/fail.sh",
+      "name": "Failing command",
+      "type": "command"
+    },
+    {
+      "name": "Missing evidence",
+      "non_empty": true,
+      "path": "evidence/missing-output.txt",
+      "type": "file"
+    },
+    {
+      "expected": "GET",
+      "field": "api_endpoints.0.method",
+      "name": "Fixture API method",
+      "path": "story.json",
+      "type": "json_field"
+    }
+  ]
+}

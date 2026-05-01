@@ -1,0 +1,292 @@
+{
+  "allowed_commands": [
+    "./commands/pass.sh"
+  ],
+  "checks": [
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass/story.json",
+      "name": "story.schema_version",
+      "observed": {
+        "value": "1.0"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass/story.json",
+      "name": "story.issue.id",
+      "observed": {
+        "value": 91001
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass/story.json",
+      "name": "story.issue.title",
+      "observed": {
+        "value": "No-model validation fixture: pass"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass/story.json",
+      "name": "story.issue.package",
+      "observed": {
+        "value": "no-model-validation/engine-fixture-pass"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass/story.json",
+      "name": "story.lane.owner",
+      "observed": {
+        "value": "builder"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass/story.json",
+      "name": "story.lane.role",
+      "observed": {
+        "value": "builder"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass/story.json",
+      "name": "story.lane.node",
+      "observed": {
+        "value": "linux"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass/story.json",
+      "name": "story.lane.role",
+      "observed": {
+        "value": "builder"
+      },
+      "reason": "role is valid",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass",
+      "name": "story.paths.run_dir",
+      "observed": {
+        "value": "scripts/fixtures/no-model-validation/engine/pass"
+      },
+      "reason": "run_dir exists",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass/story.json",
+      "name": "story.scope.acceptance",
+      "observed": {
+        "count": 1
+      },
+      "reason": "acceptance list is present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass/story.json",
+      "name": "story.validation.no_model_eligible",
+      "observed": {
+        "value": true
+      },
+      "reason": "explicitly eligible",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass/story.json",
+      "name": "story.validation.mode",
+      "observed": {
+        "value": "deterministic"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass/story.json",
+      "name": "story.validation.commands",
+      "observed": {
+        "count": 1
+      },
+      "reason": "command list present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass/story.json",
+      "name": "story.expected_outputs",
+      "observed": {
+        "count": 2
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass/story.json",
+      "name": "Fixture API",
+      "observed": {
+        "method": "GET",
+        "url": "https://example.invalid/api"
+      },
+      "reason": "API endpoint spec is explicit",
+      "required": true,
+      "status": "pass",
+      "type": "api_spec",
+      "url": "https://example.invalid/api"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass/evidence/generated-by-command.txt",
+      "name": "story.expected_outputs[0]",
+      "observed": {
+        "description": "Command-generated evidence for the pass fixture.",
+        "exists": true,
+        "owner": "builder",
+        "required": true
+      },
+      "path": "scripts/fixtures/no-model-validation/engine/pass/evidence/generated-by-command.txt",
+      "reason": "expected output exists",
+      "required": true,
+      "status": "pass",
+      "type": "artifact"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass/screenshots/summary.png",
+      "name": "story.expected_outputs[1]",
+      "observed": {
+        "description": "Screenshot evidence for the pass fixture.",
+        "exists": true,
+        "owner": "builder",
+        "required": true
+      },
+      "path": "scripts/fixtures/no-model-validation/engine/pass/screenshots/summary.png",
+      "reason": "expected output exists",
+      "required": true,
+      "status": "pass",
+      "type": "artifact"
+    },
+    {
+      "command": "./commands/pass.sh",
+      "name": "Generate pass evidence",
+      "observed": {
+        "cwd": "scripts/fixtures/no-model-validation/engine/pass",
+        "exit_code": 0,
+        "stderr_tail": "",
+        "stdout_tail": ""
+      },
+      "reason": "command succeeded",
+      "required": true,
+      "status": "pass",
+      "type": "command"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass/evidence/generated-by-command.txt",
+      "name": "Generated evidence exists",
+      "observed": {
+        "exists": true,
+        "non_empty": true
+      },
+      "path": "evidence/generated-by-command.txt",
+      "reason": "file exists",
+      "required": true,
+      "status": "pass",
+      "type": "file"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass/story.json",
+      "name": "Fixture API method",
+      "observed": {
+        "exists": true,
+        "field": "api_endpoints.0.method",
+        "value": "GET"
+      },
+      "path": "story.json",
+      "reason": "JSON field is present",
+      "required": true,
+      "status": "pass",
+      "type": "json_field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass/story.json",
+      "name": "Story file URL is reachable",
+      "observed": {
+        "status": 200,
+        "url": "file:///{root}/scripts/fixtures/no-model-validation/engine/pass/story.json"
+      },
+      "reason": "file URL exists",
+      "required": true,
+      "status": "pass",
+      "type": "url",
+      "url": "file:///{root}/scripts/fixtures/no-model-validation/engine/pass/story.json"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/pass/screenshots/summary.png",
+      "name": "Screenshot evidence exists",
+      "observed": {
+        "exists": true,
+        "output": "screenshots/summary.png"
+      },
+      "path": "screenshots/summary.png",
+      "reason": "screenshot evidence exists",
+      "required": true,
+      "status": "pass",
+      "type": "screenshot"
+    }
+  ],
+  "decision": "pass",
+  "duration_ms": 4.995,
+  "ended_at": "2026-04-30T23:14:37-04:00",
+  "escalation_reasons": [],
+  "evidence_paths": [
+    "scripts/fixtures/no-model-validation/engine/pass/evidence/generated-by-command.txt",
+    "scripts/fixtures/no-model-validation/engine/pass/screenshots/summary.png",
+    "scripts/fixtures/no-model-validation/engine/pass/story.json",
+    "scripts/fixtures/no-model-validation/engine/pass/validation-report.md",
+    "scripts/fixtures/no-model-validation/engine/pass/validation-report.json"
+  ],
+  "failed_commands": [],
+  "missing_items": [],
+  "report": "scripts/fixtures/no-model-validation/engine/pass/validation-report.md",
+  "report_json": "scripts/fixtures/no-model-validation/engine/pass/validation-report.json",
+  "schema": "cento.no-model-validation.result.v1",
+  "started_at": "2026-04-30T23:14:37-04:00",
+  "status": "pass",
+  "story": "scripts/fixtures/no-model-validation/engine/pass/story.json",
+  "summary": "All deterministic manifest checks passed.",
+  "validation": "scripts/fixtures/no-model-validation/engine/pass/validation.json"
+}

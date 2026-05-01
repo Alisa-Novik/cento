@@ -1,0 +1,33 @@
+{
+  "expected": {
+    "decision": "blocked",
+    "reason_contains": "check(s) blocked validation"
+  },
+  "manifest": {
+    "checks": [
+      {
+        "name": "shared-local-evidence",
+        "path": "scripts/fixtures/no-model-validation/evidence/pass-local-evidence.json",
+        "type": "file_exists"
+      },
+      {
+        "name": "manual-review-required",
+        "reason": "UX wording and approval criteria are ambiguous",
+        "type": "manual_review"
+      }
+    ],
+    "claim": "High-risk UX ambiguity should escalate instead of auto-approving.",
+    "decision_requested": "blocked",
+    "risk": "high",
+    "task": "NO-MODEL-VALIDATION-ESCALATE"
+  },
+  "metadata": {
+    "high_risk": true,
+    "note": "Local evidence exists, but ambiguity requires a human review.",
+    "ux_ambiguity": true
+  },
+  "name": "escalate-high-risk-ux-ambiguity",
+  "risk": "high",
+  "schema": "cento.no-model-validation.fixture.v1",
+  "status": "escalate"
+}

@@ -1,0 +1,28 @@
+{
+  "expected": {
+    "decision": "needs_fix",
+    "reason_contains": "deterministic check(s) failed"
+  },
+  "manifest": {
+    "checks": [
+      {
+        "command": "python3 -c \"from pathlib import Path; import sys; sys.exit(0 if Path('scripts/fixtures/no-model-validation/evidence/missing-artifact.md').exists() else 7)\"",
+        "expected_exit": 0,
+        "name": "missing-artifact-command",
+        "type": "command"
+      }
+    ],
+    "claim": "Missing artifact should be treated as a deterministic fix-needed outcome.",
+    "decision_requested": "needs_fix",
+    "risk": "low",
+    "task": "NO-MODEL-VALIDATION-FAIL"
+  },
+  "metadata": {
+    "missing_artifact_path": "scripts/fixtures/no-model-validation/evidence/missing-artifact.md",
+    "note": "The validator should fail because the artifact is absent."
+  },
+  "name": "fail-missing-artifact",
+  "risk": "low",
+  "schema": "cento.no-model-validation.fixture.v1",
+  "status": "fail"
+}

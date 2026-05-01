@@ -1,0 +1,252 @@
+{
+  "allowed_commands": [
+    "./commands/other.sh"
+  ],
+  "checks": [
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/escalate/story.json",
+      "name": "story.schema_version",
+      "observed": {
+        "value": "1.0"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/escalate/story.json",
+      "name": "story.issue.id",
+      "observed": {
+        "value": 91003
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/escalate/story.json",
+      "name": "story.issue.title",
+      "observed": {
+        "value": "No-model validation fixture: escalate"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/escalate/story.json",
+      "name": "story.issue.package",
+      "observed": {
+        "value": "no-model-validation/engine-fixture-escalate"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/escalate/story.json",
+      "name": "story.lane.owner",
+      "observed": {
+        "value": "builder"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/escalate/story.json",
+      "name": "story.lane.role",
+      "observed": {
+        "value": "builder"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/escalate/story.json",
+      "name": "story.lane.node",
+      "observed": {
+        "value": "linux"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/escalate/story.json",
+      "name": "story.lane.role",
+      "observed": {
+        "value": "builder"
+      },
+      "reason": "role is valid",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/escalate",
+      "name": "story.paths.run_dir",
+      "observed": {
+        "value": "scripts/fixtures/no-model-validation/engine/escalate"
+      },
+      "reason": "run_dir exists",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/escalate/story.json",
+      "name": "story.scope.acceptance",
+      "observed": {
+        "count": 1
+      },
+      "reason": "acceptance list is present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/escalate/story.json",
+      "name": "story.validation.no_model_eligible",
+      "observed": {
+        "value": true
+      },
+      "reason": "explicitly eligible",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/escalate/story.json",
+      "name": "story.validation.mode",
+      "observed": {
+        "value": "deterministic"
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/escalate/story.json",
+      "name": "story.validation.commands",
+      "observed": {
+        "count": 1
+      },
+      "reason": "command list present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/escalate/story.json",
+      "name": "story.expected_outputs",
+      "observed": {
+        "count": 1
+      },
+      "reason": "present",
+      "required": true,
+      "status": "pass",
+      "type": "field"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/escalate/story.json",
+      "name": "Fixture API",
+      "observed": {
+        "method": "GET",
+        "url": "https://example.invalid/api"
+      },
+      "reason": "API endpoint spec is explicit",
+      "required": true,
+      "status": "pass",
+      "type": "api_spec",
+      "url": "https://example.invalid/api"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/escalate/evidence/ready.txt",
+      "name": "story.expected_outputs[0]",
+      "observed": {
+        "description": "Evidence required by the escalate fixture.",
+        "exists": true,
+        "owner": "builder",
+        "required": true
+      },
+      "path": "scripts/fixtures/no-model-validation/engine/escalate/evidence/ready.txt",
+      "reason": "expected output exists",
+      "required": true,
+      "status": "pass",
+      "type": "artifact"
+    },
+    {
+      "command": "./commands/escalate.sh",
+      "name": "Disallowed command",
+      "observed": {
+        "allowed_commands": [
+          "./commands/other.sh"
+        ],
+        "command": "./commands/escalate.sh"
+      },
+      "reason": "command is not allowlisted",
+      "required": true,
+      "status": "escalate",
+      "type": "command"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/escalate/evidence/ready.txt",
+      "name": "Ready evidence",
+      "observed": {
+        "exists": true,
+        "non_empty": true
+      },
+      "path": "evidence/ready.txt",
+      "reason": "file exists",
+      "required": true,
+      "status": "pass",
+      "type": "file"
+    },
+    {
+      "evidence": "scripts/fixtures/no-model-validation/engine/escalate/story.json",
+      "name": "Fixture API method",
+      "observed": {
+        "exists": true,
+        "field": "api_endpoints.0.method",
+        "value": "GET"
+      },
+      "path": "story.json",
+      "reason": "JSON field is present",
+      "required": true,
+      "status": "pass",
+      "type": "json_field"
+    }
+  ],
+  "decision": "escalate",
+  "duration_ms": 1.743,
+  "ended_at": "2026-04-30T23:14:37-04:00",
+  "escalation_reasons": [
+    "command is not in the allowed command list: ./commands/escalate.sh"
+  ],
+  "evidence_paths": [
+    "scripts/fixtures/no-model-validation/engine/escalate/evidence/ready.txt",
+    "scripts/fixtures/no-model-validation/engine/escalate/story.json",
+    "scripts/fixtures/no-model-validation/engine/escalate/validation-report.md",
+    "scripts/fixtures/no-model-validation/engine/escalate/validation-report.json"
+  ],
+  "failed_commands": [],
+  "missing_items": [],
+  "report": "scripts/fixtures/no-model-validation/engine/escalate/validation-report.md",
+  "report_json": "scripts/fixtures/no-model-validation/engine/escalate/validation-report.json",
+  "schema": "cento.no-model-validation.result.v1",
+  "started_at": "2026-04-30T23:14:37-04:00",
+  "status": "escalate",
+  "story": "scripts/fixtures/no-model-validation/engine/escalate/story.json",
+  "summary": "1 escalation reason(s) require human or coordinated follow-up.",
+  "validation": "scripts/fixtures/no-model-validation/engine/escalate/validation.json"
+}
