@@ -1,0 +1,77 @@
+{
+  "checks": [
+    {
+      "name": "file-exists-factory-safe-integrator-plan-md",
+      "path": "workspace/runs/coordination/factory-integration-v1/factory-safe-integrator-plan.md",
+      "required": true,
+      "type": "file_exists"
+    },
+    {
+      "name": "file-exists-story-json",
+      "path": "workspace/runs/agent-work/drafts/factory-integration-v1-coordinate/story.json",
+      "required": true,
+      "type": "file_exists"
+    },
+    {
+      "name": "file-exists-validation-json",
+      "path": "workspace/runs/agent-work/drafts/factory-integration-v1-coordinate/validation.json",
+      "required": true,
+      "type": "file_exists"
+    },
+    {
+      "command": "test -f workspace/runs/coordination/factory-integration-v1/factory-safe-integrator-plan.md",
+      "cwd": ".",
+      "expect_exit": 0,
+      "name": "command-1",
+      "required": true,
+      "timeout_seconds": 20,
+      "type": "command"
+    },
+    {
+      "command": "grep -q \"Factory Safe Integrator\" workspace/runs/coordination/factory-integration-v1/factory-safe-integrator-plan.md",
+      "cwd": ".",
+      "expect_exit": 0,
+      "name": "command-2",
+      "required": true,
+      "timeout_seconds": 20,
+      "type": "command"
+    },
+    {
+      "command": "cento agent-manager scan --json",
+      "cwd": ".",
+      "expect_exit": 0,
+      "name": "command-3",
+      "required": true,
+      "timeout_seconds": 20,
+      "type": "command"
+    },
+    {
+      "command": "cento agent-work list --json",
+      "cwd": ".",
+      "expect_exit": 0,
+      "name": "command-4",
+      "required": true,
+      "timeout_seconds": 20,
+      "type": "command"
+    }
+  ],
+  "claim": "Coordinate the safe, no-model scheduling and execution plan for Factory Safe Integrator v1. Create or verify child work only through manifests, keep live dispatch disabled by default, and require deterministic validation before any worker execution.",
+  "coverage": {
+    "automation_coverage_percent": 100.0,
+    "deterministic_checks": 7,
+    "manual_review_items": 0
+  },
+  "created_at": "2026-05-01T01:24:28-04:00",
+  "decision_requested": "approve",
+  "manual_review": [],
+  "risk": "medium",
+  "schema": "cento.validation-manifest.v1",
+  "stats_policy": {
+    "ai_calls_used": 0,
+    "estimated_ai_cost": 0,
+    "requires_per_check_duration_ms": true,
+    "requires_total_duration_ms": true
+  },
+  "story_manifest": "workspace/runs/agent-work/drafts/factory-integration-v1-coordinate/story.json",
+  "task": "Coordinate Factory Safe Integrator v1 execution"
+}

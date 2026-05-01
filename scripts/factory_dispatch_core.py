@@ -784,7 +784,12 @@ def preflight(run_dir: Path, *, max_actionable_stale: int = 5, max_risk_count: i
         reasons.append(f"actionable_stale {actionable_stale} exceeds {max_actionable_stale}")
     if risk_count > max_risk_count:
         reasons.append(f"risk_count {risk_count} exceeds {max_risk_count}")
-    owned = [path for item in normalize_queue_tasks(queue) for path in owned_paths_for(item)]
+    owned = [
+        path
+        for item in normalize_queue_tasks(queue)
+        if str(item.get("status") or "") in RUNNABLE_QUEUE_STATUSES
+        for path in owned_paths_for(item)
+    ]
     run_artifact_prefix = rel(run_dir).rstrip("/") + "/"
     dirty_owned = [
         path
@@ -873,6 +878,10 @@ def dispatch_dry_run(
                 "would_run": execute,
             }
         )
+    for item in normalize_queue_tasks(queue):
+        task_dir = run_dir / "tasks" / task_id(item)
+        if not (task_dir / "worker-prompt.md").exists() or not (task_dir / "dispatch.json").exists():
+            render_worker_prompt(run_dir, item, mode="dry_run_staged")
     payload = {
         "schema_version": "factory-dispatch-plan/v1",
         "run_id": queue.get("run_id") or run_dir.name,

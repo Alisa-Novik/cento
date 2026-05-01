@@ -1,6 +1,6 @@
 # Cento Factory
 
-Cento Factory is the layer above Taskstream for turning one high-level request into durable artifacts, queue state, dispatch plans, integration gates, and release evidence before any worker can mutate the repo.
+Cento Factory is the layer above Taskstream for turning one high-level request into durable artifacts, queue state, owned-path leases, worktree metadata, prompt bundles, patch collection, integration dry-runs, and release evidence before any worker can mutate the repo.
 
 The delivered slice defaults to no-model dry-runs. It does not launch agents by default. Live Taskstream issue creation requires `--apply`, and AI dispatch remains gated behind explicit operator action.
 
@@ -14,7 +14,11 @@ cento factory intake "develop me a career consulting module" \
 cento factory plan workspace/runs/factory/factory-planning-e2e --no-model
 cento factory materialize workspace/runs/factory/factory-planning-e2e
 cento factory queue workspace/runs/factory/factory-planning-e2e
-cento factory dispatch workspace/runs/factory/factory-planning-e2e --lane builder --max 4 --include-waiting
+cento factory preflight workspace/runs/factory/factory-planning-e2e --json
+cento factory lease workspace/runs/factory/factory-planning-e2e --task crm-schema-extension --dry-run
+cento factory dispatch workspace/runs/factory/factory-planning-e2e --lane builder --max 4 --dry-run
+cento factory collect workspace/runs/factory/factory-planning-e2e
+cento factory validate workspace/runs/factory/factory-planning-e2e
 cento factory integrate workspace/runs/factory/factory-planning-e2e --dry-run
 cento factory release workspace/runs/factory/factory-planning-e2e --json
 cento factory render-hub workspace/runs/factory/factory-planning-e2e
@@ -32,16 +36,31 @@ Each run writes under `workspace/runs/factory/<run-id>/`:
 - `factory-plan.json`
 - `tasks/<task-id>/story.json`
 - `tasks/<task-id>/validation.json`
-- `queue/state.json`
+- `queue/queue.json`
+- `queue/events.jsonl`
+- `queue/leases.json`
+- `queue/backpressure.json`
 - `queue/queued.jsonl`
 - `queue/waiting.jsonl`
 - `queue/leased.jsonl`
 - `queue/owned-paths.json`
 - `create-issues-preview.json`
+- `tasks/<task-id>/worker-prompt.md`
+- `tasks/<task-id>/prompt-record.json`
+- `tasks/<task-id>/dispatch.json`
+- `tasks/<task-id>/worktree.json`
+- `patches/<task-id>/patch.json`
+- `patches/<task-id>/patch.diff`
 - `dispatch-plan.json`
-- `integration-plan.json`
+- `integration/integration-plan.json`
+- `integration/dry-run-summary.md`
+- `integration/conflict-report.json`
+- `integration/rollback-plan.json`
+- `integration/release-gates.json`
+- `evidence/validation-summary.json`
 - `start-here.html`
 - `implementation-map.html`
+- `release-packet.md`
 - `summary.md`
 - `release-notes.md`
 - `validation-summary.json`, when the E2E runner is used
@@ -56,11 +75,17 @@ Generated story manifests are validated with `scripts/story_manifest.py`. Genera
 
 `create-issues --dry-run` writes `create-issues-preview.json` so operators can inspect the intended Taskstream shape. `create-issues --apply` creates an Agent Epic plus child Agent Tasks from generated manifests and records `taskstream-issues.json`.
 
-`dispatch` writes a deterministic dispatch plan and lease records. It runs Agent Manager preflight and records whether each task has a Taskstream issue before any live dispatch can happen.
+`lease` simulates or acquires an owned-path lease. Active leases reject overlapping owned paths, write `tasks/<task-id>/worktree.json`, and keep live state in `queue/leases.json`.
 
-`integrate --dry-run` writes an integration gate plan in dependency order. Patches are only accepted through the patch queue path and must keep validation evidence.
+`dispatch --dry-run` writes a deterministic dispatch plan, lease simulations, worktree metadata, per-task `dispatch.json`, `worker-prompt.md`, and `prompt-record.json`. It runs Agent Manager preflight and records skipped tasks with reasons before any live dispatch can happen.
 
-`release` writes `delivery-status.json` and `project-delivery.md`. A delivered run requires intake, plan, materialization, queue, dispatch plan, integration plan, evidence hub, implementation map, and validation summary.
+`collect` creates patch bundle records under `patches/<task-id>/`. A task may have a collected patch or an explicitly missing dry-run patch bundle; both states are visible to validation and integration.
+
+`integrate --dry-run` writes an integration gate plan in dependency order. It checks patch presence, owned paths, protected shared files, `git apply --check` when a patch exists, docs/tool registry alignment, conflicts, validation results, and rollback metadata.
+
+`validate` writes `evidence/validation-summary.json` and root `validation-summary.json` with T0/T1/T2 ladder status, no-model usage, residual risks, and evidence links.
+
+`release` writes `delivery-status.json`, `project-delivery.md`, and `release-packet.md`. A delivered run requires intake, plan, materialization, queue, dispatch plan, integration dry-run, evidence hub, implementation map, and validation summary.
 
 ## E2E
 
@@ -68,6 +93,10 @@ Generated story manifests are validated with `scripts/story_manifest.py`. Genera
 python3 scripts/factory_e2e.py \
   --fixture career-consulting \
   --out workspace/runs/factory/factory-planning-e2e
+
+python3 scripts/factory_dispatch_e2e.py \
+  --fixture career-consulting \
+  --out workspace/runs/factory/factory-dispatch-e2e
 ```
 
 The E2E records mandatory timing stats per step and total stats in `validation-summary.json`. The expected AI usage for this slice is always:

@@ -104,7 +104,7 @@ The bias is toward low-dependency tooling that works well from a terminal and ca
 - `tool_index.py`
   Generate `docs/tool-index.md` from the central registry.
 - `factory.py`
-  Create no-model Factory runs with intake artifacts, validated `factory-plan.json`, story manifests, validation manifests, queue ledgers, dispatch dry-runs, integration gates, release status, and static evidence hubs.
+  Create no-model Factory runs with intake artifacts, validated `factory-plan.json`, story manifests, validation manifests, queue ledgers, owned-path lease simulation, worktree metadata, prompt bundles, patch collection, integration dry-runs, release status, and static evidence hubs.
 
 ## Common commands
 
@@ -159,7 +159,10 @@ make cento ARGS='factory intake "develop me a career consulting module" --dry-ru
 make cento ARGS="factory plan workspace/runs/factory/factory-planning-e2e --no-model"
 make cento ARGS="factory materialize workspace/runs/factory/factory-planning-e2e"
 make cento ARGS="factory queue workspace/runs/factory/factory-planning-e2e"
-make cento ARGS="factory dispatch workspace/runs/factory/factory-planning-e2e --lane builder --max 4 --include-waiting"
+make cento ARGS="factory lease workspace/runs/factory/factory-planning-e2e --task crm-schema-extension --dry-run"
+make cento ARGS="factory dispatch workspace/runs/factory/factory-planning-e2e --lane builder --max 4 --dry-run"
+make cento ARGS="factory collect workspace/runs/factory/factory-planning-e2e"
+make cento ARGS="factory validate workspace/runs/factory/factory-planning-e2e"
 make cento ARGS="factory integrate workspace/runs/factory/factory-planning-e2e --dry-run"
 make cento ARGS="factory release workspace/runs/factory/factory-planning-e2e --json"
 make cento ARGS="factory render-hub workspace/runs/factory/factory-planning-e2e"

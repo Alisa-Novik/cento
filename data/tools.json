@@ -1247,7 +1247,7 @@
       "lane": "planning",
       "kind": "python",
       "entrypoint": "./scripts/factory.py",
-      "description": "Manifest-driven factory workflow that turns a high-level request into intake artifacts, a validated factory-plan.json, story manifests, validation manifests, queue ledgers, dispatch dry-runs, integration gates, release status, and static evidence hubs without default AI dispatch.",
+      "description": "Manifest-driven factory workflow that turns a high-level request into intake artifacts, a validated factory-plan.json, story manifests, validation manifests, queue ledgers, owned-path leases, worktree metadata, prompt bundles, patch collection, integration dry-runs, release status, and static evidence hubs without default AI dispatch.",
       "platforms": [
         "linux",
         "macos"
@@ -1259,7 +1259,10 @@
         "cento factory create-issues workspace/runs/factory/factory-planning-e2e --dry-run",
         "cento factory preflight workspace/runs/factory/factory-planning-e2e --json",
         "cento factory queue workspace/runs/factory/factory-planning-e2e",
-        "cento factory dispatch workspace/runs/factory/factory-planning-e2e --lane builder --max 4 --include-waiting",
+        "cento factory lease workspace/runs/factory/factory-planning-e2e --task crm-schema-extension --dry-run",
+        "cento factory dispatch workspace/runs/factory/factory-planning-e2e --lane builder --max 4 --dry-run",
+        "cento factory collect workspace/runs/factory/factory-planning-e2e",
+        "cento factory validate workspace/runs/factory/factory-planning-e2e",
         "cento factory integrate workspace/runs/factory/factory-planning-e2e --dry-run",
         "cento factory release workspace/runs/factory/factory-planning-e2e --json",
         "cento factory render-hub workspace/runs/factory/factory-planning-e2e",
@@ -1271,18 +1274,26 @@
         "workspace/runs/factory/<run-id>/factory-plan.json",
         "workspace/runs/factory/<run-id>/tasks/<task-id>/story.json",
         "workspace/runs/factory/<run-id>/tasks/<task-id>/validation.json",
-        "workspace/runs/factory/<run-id>/queue/state.json",
+        "workspace/runs/factory/<run-id>/queue/queue.json",
+        "workspace/runs/factory/<run-id>/queue/events.jsonl",
+        "workspace/runs/factory/<run-id>/queue/leases.json",
+        "workspace/runs/factory/<run-id>/tasks/<task-id>/worker-prompt.md",
+        "workspace/runs/factory/<run-id>/tasks/<task-id>/dispatch.json",
+        "workspace/runs/factory/<run-id>/tasks/<task-id>/worktree.json",
+        "workspace/runs/factory/<run-id>/patches/<task-id>/patch.json",
         "workspace/runs/factory/<run-id>/dispatch-plan.json",
-        "workspace/runs/factory/<run-id>/integration-plan.json",
+        "workspace/runs/factory/<run-id>/integration/integration-plan.json",
+        "workspace/runs/factory/<run-id>/integration/dry-run-summary.md",
+        "workspace/runs/factory/<run-id>/evidence/validation-summary.json",
         "workspace/runs/factory/<run-id>/start-here.html",
         "workspace/runs/factory/<run-id>/implementation-map.html",
-        "workspace/runs/factory/<run-id>/validation-summary.json",
+        "workspace/runs/factory/<run-id>/release-packet.md",
         "workspace/runs/factory/<run-id>/delivery-status.json"
       ],
       "notes": [
         "Factory defaults to no-model dry-runs. Live Taskstream issue creation requires --apply, and AI dispatch is never launched by default.",
         "Every generated task has owned scope, expected outputs, validation commands, no-model eligibility, and dependency metadata.",
-        "Use factory-plan validation, story-manifest validation, validation-manifest validation, Agent Manager preflight, queue leases, and release status as required guardrails before worker dispatch."
+        "Use factory-plan validation, story-manifest validation, validation-manifest validation, Agent Manager preflight, owned-path leases, patch collection, integration dry-run, and release status as required guardrails before worker dispatch."
       ]
     },
     {
