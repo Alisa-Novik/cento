@@ -272,7 +272,7 @@ The web UI is the Cento Console. Taskstream is its first fully interactive area:
 - Project identifier: `cento-agent-work`
 - App command: `make agent-work-app-status`
 - Local Linux app URL: shown by `make agent-work-app-status`
-- Main sections: `Taskstream`, `Cluster`, `Consulting`, `Docs`
+- Main sections: `Taskstream`, `Factory`, `Cluster`, `Consulting`, `Research Center`, `Docs`
 - Taskstream sections: `Issues`, `Review`
 
 ## MVP Limits

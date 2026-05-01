@@ -161,18 +161,22 @@
     },
     {
       "name": "factory",
-      "summary": "Registered tool route for the no-model, plan-only Cento Factory workflow.",
-      "usage": "cento factory <intake|plan|materialize|create-issues|preflight|render-hub|status> [args...]",
+      "summary": "Registered tool route for the no-model Cento Factory workflow.",
+      "usage": "cento factory <intake|plan|materialize|create-issues|preflight|queue|dispatch|integrate|release|render-hub|status> [args...]",
       "flags": [],
       "examples": [
         "cento factory intake \"develop me a career consulting module\" --dry-run --out workspace/runs/factory/factory-planning-e2e",
         "cento factory plan workspace/runs/factory/factory-planning-e2e --no-model",
         "cento factory materialize workspace/runs/factory/factory-planning-e2e",
+        "cento factory queue workspace/runs/factory/factory-planning-e2e",
+        "cento factory dispatch workspace/runs/factory/factory-planning-e2e --lane builder --max 4 --include-waiting",
+        "cento factory integrate workspace/runs/factory/factory-planning-e2e --dry-run",
+        "cento factory release workspace/runs/factory/factory-planning-e2e --json",
         "cento factory render-hub workspace/runs/factory/factory-planning-e2e"
       ],
       "details": [
         "This command is routed through data/tools.json and scripts/factory.py.",
-        "factory-planning-v1 never dispatches workers; it generates durable planning, story, validation, and evidence artifacts."
+        "Factory defaults to deterministic no-model planning, queueing, dry-run dispatch, integration gates, and release evidence. Live Taskstream creation requires --apply."
       ]
     }
   ]

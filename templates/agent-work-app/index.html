@@ -20,13 +20,13 @@
       </a>
       <nav class="primaryNav" aria-label="Primary navigation">
         <a class="active" href="/" data-main-route="taskstream">Taskstream</a>
+        <a href="/factory" data-main-route="factory">Factory</a>
         <a href="/cluster" data-main-route="cluster">Cluster</a>
         <a href="/consulting" data-main-route="consulting">Consulting</a>
         <a href="/research-center" data-main-route="research">Research Center</a>
         <a href="/docs" data-main-route="docs">Docs</a>
       </nav>
       <div class="headerActions" aria-label="Cento actions">
-        <a class="headerImplementationLink" href="/research-center">Research Center</a>
         <a href="/review?status=open">Review queue</a>
         <button id="headerNewIssueButton" type="button">New issue</button>
       </div>
@@ -42,6 +42,10 @@
           <h2>Console</h2>
           <a class="implementationShortcut" href="/research-center">
             Research Center
+            <span>↗</span>
+          </a>
+          <a class="implementationShortcut" href="/factory">
+            Factory
             <span>↗</span>
           </a>
         </section>
@@ -158,6 +162,49 @@
               <p>Inspect consulting sources and exportable funnel reports from the local JSON workspace.</p>
               <code>cento funnel report</code>
             </article>
+          </div>
+        </section>
+
+        <section id="factoryView" class="view hidden">
+          <div class="sectionHeader">
+            <div>
+              <span class="eyebrow">Factory</span>
+              <h1>Manifest-driven delivery control plane</h1>
+            </div>
+            <div class="sectionActions">
+              <a class="sectionAction primaryAction" href="/docs#factory">Factory docs</a>
+              <a class="sectionAction" href="/research-center">Research Center</a>
+            </div>
+          </div>
+          <div class="factoryStats" aria-label="Factory delivery stats">
+            <article>
+              <span>Runs</span>
+              <strong id="factoryRunCount">0</strong>
+            </article>
+            <article>
+              <span>Delivered</span>
+              <strong id="factoryDeliveredCount">0</strong>
+            </article>
+            <article>
+              <span>Queued tasks</span>
+              <strong id="factoryQueuedCount">0</strong>
+            </article>
+            <article>
+              <span>AI calls</span>
+              <strong id="factoryAiCalls">0</strong>
+            </article>
+          </div>
+          <div class="factoryPanel">
+            <div class="panelTitle">
+              <div>
+                <h2>Factory Runs</h2>
+                <p>Requests become validated plans, story manifests, validation manifests, queue ledgers, dispatch plans, integration gates, and release evidence.</p>
+              </div>
+              <code>cento factory release RUN_DIR --json</code>
+            </div>
+            <div class="factoryRunList" id="factoryRunList" aria-live="polite">
+              <div class="factoryEmpty">Loading Factory runs...</div>
+            </div>
           </div>
         </section>
 

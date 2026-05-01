@@ -37,7 +37,13 @@ const agentCards = document.querySelector("#agentCards");
 const taskstreamNav = document.querySelector(".taskstreamNav");
 const clusterView = document.querySelector("#clusterView");
 const consultingView = document.querySelector("#consultingView");
+const factoryView = document.querySelector("#factoryView");
 const docsView = document.querySelector("#docsView");
+const factoryRunList = document.querySelector("#factoryRunList");
+const factoryRunCount = document.querySelector("#factoryRunCount");
+const factoryDeliveredCount = document.querySelector("#factoryDeliveredCount");
+const factoryQueuedCount = document.querySelector("#factoryQueuedCount");
+const factoryAiCalls = document.querySelector("#factoryAiCalls");
 const issueModal = document.querySelector("#issueModal");
 const issueForm = document.querySelector("#issueForm");
 const issueModalTitle = document.querySelector("#issueModalTitle");
@@ -846,7 +852,7 @@ function currentIssueIdFromDetail() {
 
 function setNavActive(route) {
   const activeRoute = route || (location.pathname.startsWith("/review") ? "review" : "issues");
-  const activeMain = ["cluster", "consulting", "docs", "research"].includes(activeRoute) ? activeRoute : "taskstream";
+  const activeMain = ["cluster", "consulting", "factory", "docs", "research"].includes(activeRoute) ? activeRoute : "taskstream";
   mainNavLinks.forEach((link) => {
     link.classList.toggle("active", link.dataset.mainRoute === activeMain);
   });
@@ -1538,6 +1544,7 @@ function showReview() {
   detailView.classList.add("hidden");
   clusterView.classList.add("hidden");
   consultingView.classList.add("hidden");
+  factoryView.classList.add("hidden");
   docsView.classList.add("hidden");
   reviewView.classList.remove("hidden");
   history.replaceState(null, "", "/review");
@@ -1600,6 +1607,7 @@ async function showDetail(issueId) {
   reviewView.classList.add("hidden");
   clusterView.classList.add("hidden");
   consultingView.classList.add("hidden");
+  factoryView.classList.add("hidden");
   docsView.classList.add("hidden");
   detailView.classList.remove("hidden");
   history.replaceState(null, "", `/issues/${issueId}`);
@@ -1618,6 +1626,7 @@ function showList() {
   detailView.classList.add("hidden");
   clusterView.classList.add("hidden");
   consultingView.classList.add("hidden");
+  factoryView.classList.add("hidden");
   docsView.classList.add("hidden");
   listView.classList.remove("hidden");
   setLocationFromState();
@@ -1633,7 +1642,13 @@ function showCentoSection(route) {
   listView.classList.add("hidden");
   clusterView.classList.toggle("hidden", route !== "cluster");
   consultingView.classList.toggle("hidden", route !== "consulting");
+  factoryView.classList.toggle("hidden", route !== "factory");
   docsView.classList.toggle("hidden", !docsLike);
+  if (route === "factory") {
+    history.replaceState(null, "", "/factory");
+    void loadFactory();
+    return;
+  }
   if (route === "research") {
     history.replaceState(null, "", "/research-center#research-implementation");
     document.querySelector("#research-implementation")?.scrollIntoView({ block: "start" });
@@ -1668,6 +1683,68 @@ async function loadAgents() {
   } catch (error) {
     agentSummary.textContent = `agent pool visibility failed: ${error.message}`;
     agentCards.innerHTML = "";
+  }
+}
+
+function renderFactory(payload) {
+  if (!factoryRunList) return;
+  const summary = payload.summary || {};
+  const runs = Array.isArray(payload.runs) ? payload.runs : [];
+  factoryRunCount.textContent = summary.total ?? runs.length;
+  factoryDeliveredCount.textContent = summary.delivered ?? runs.filter((run) => run.decision === "delivered").length;
+  factoryQueuedCount.textContent = summary.queued ?? 0;
+  factoryAiCalls.textContent = summary.ai_calls_used ?? 0;
+  if (!runs.length) {
+    factoryRunList.innerHTML = `<div class="factoryEmpty">No Factory runs yet.</div>`;
+    return;
+  }
+  factoryRunList.innerHTML = runs
+    .map((run) => {
+      const queue = run.queue || {};
+      const decision = String(run.decision || "incomplete");
+      const statusClassName = decision === "delivered" ? "good" : decision === "approve" ? "good" : "warn";
+      const hubLink = run.start_hub
+        ? `<a href="${escapeHtml(`/api/artifacts?path=${encodeURIComponent(run.start_hub)}`)}" target="_blank" rel="noreferrer">hub</a>`
+        : `<span>hub missing</span>`;
+      const mapLink = run.implementation_map
+        ? `<a href="${escapeHtml(`/api/artifacts?path=${encodeURIComponent(run.implementation_map)}`)}" target="_blank" rel="noreferrer">map</a>`
+        : `<span>map missing</span>`;
+      return `
+        <article class="factoryRunCard">
+          <div class="factoryRunTop">
+            <div>
+              <strong>${escapeHtml(run.package || run.run_id)}</strong>
+              <small>${escapeHtml(run.goal || run.run_dir)}</small>
+            </div>
+            <span class="factoryDecision ${statusClassName}">${escapeHtml(decision.replaceAll("_", " "))}</span>
+          </div>
+          <div class="factoryRunMeta">
+            <span>${escapeHtml(String(run.tasks || 0))} tasks</span>
+            <span>${escapeHtml(String(queue.queued || 0))} queued</span>
+            <span>${escapeHtml(String(queue.waiting || 0))} waiting</span>
+            <span>${escapeHtml(String(run.dispatch_selected || 0))} dispatch planned</span>
+            <span>${escapeHtml(String(run.ai_calls_used || 0))} AI calls</span>
+            <span>${escapeHtml(String(Math.round(Number(run.total_duration_ms || 0))))} ms</span>
+          </div>
+          <div class="factoryRunLinks">
+            <code>${escapeHtml(run.run_dir)}</code>
+            ${hubLink}
+            ${mapLink}
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+async function loadFactory() {
+  if (!factoryRunList) return;
+  factoryRunList.innerHTML = `<div class="factoryEmpty">Loading Factory runs...</div>`;
+  try {
+    const payload = await apiGetJson(`${API_BASE}/factory`);
+    renderFactory(payload);
+  } catch (error) {
+    factoryRunList.innerHTML = `<div class="factoryEmpty">${escapeHtml(error.message)}</div>`;
   }
 }
 
@@ -1897,6 +1974,8 @@ window.addEventListener("popstate", () => {
     showCentoSection("cluster");
   } else if (location.pathname === "/consulting") {
     showCentoSection("consulting");
+  } else if (location.pathname === "/factory") {
+    showCentoSection("factory");
   } else if (location.pathname === "/research-center") {
     showCentoSection("research");
   } else if (location.pathname === "/docs") {
@@ -1926,6 +2005,10 @@ async function boot() {
   }
   if (location.pathname === "/consulting") {
     showCentoSection("consulting");
+    return;
+  }
+  if (location.pathname === "/factory") {
+    showCentoSection("factory");
     return;
   }
   if (location.pathname === "/research-center") {

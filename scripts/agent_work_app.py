@@ -1081,6 +1081,65 @@ def run_list() -> dict[str, Any]:
     return payload
 
 
+def read_json_path(path: Path) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def factory_run_list() -> dict[str, Any]:
+    root = ROOT_DIR / "workspace" / "runs" / "factory"
+    runs = []
+    if root.exists():
+        for run_dir in sorted((path for path in root.iterdir() if path.is_dir()), key=lambda item: item.stat().st_mtime, reverse=True):
+            plan = read_json_path(run_dir / "factory-plan.json")
+            if not plan:
+                continue
+            validation = read_json_path(run_dir / "validation-summary.json")
+            delivery = read_json_path(run_dir / "delivery-status.json")
+            queue = read_json_path(run_dir / "queue" / "state.json")
+            dispatch = read_json_path(run_dir / "dispatch-plan.json")
+            integration = read_json_path(run_dir / "integration-plan.json")
+            queue_stats = queue.get("stats") if isinstance(queue.get("stats"), dict) else {}
+            delivery_stats = delivery.get("stats") if isinstance(delivery.get("stats"), dict) else {}
+            validation_stats = validation.get("stats") if isinstance(validation.get("stats"), dict) else {}
+            runs.append(
+                {
+                    "run_id": run_dir.name,
+                    "run_dir": str(run_dir.relative_to(ROOT_DIR)),
+                    "package": str(plan.get("package") or ""),
+                    "goal": str((plan.get("request") or {}).get("normalized_goal") or ""),
+                    "mode": str(plan.get("mode") or ""),
+                    "tasks": len(plan.get("tasks") or []),
+                    "decision": str(delivery.get("decision") or validation.get("decision") or "incomplete"),
+                    "validation_decision": str(validation.get("decision") or ""),
+                    "queue": queue_stats,
+                    "dispatch_selected": len(dispatch.get("selected") or []),
+                    "integration_decision": str(integration.get("decision") or ""),
+                    "ai_calls_used": int(delivery_stats.get("ai_calls_used", validation_stats.get("ai_calls_used", 0)) or 0),
+                    "total_duration_ms": float(delivery_stats.get("total_duration_ms", validation_stats.get("total_duration_ms", 0)) or 0),
+                    "start_hub": str(run_dir.relative_to(ROOT_DIR) / "start-here.html") if (run_dir / "start-here.html").exists() else "",
+                    "implementation_map": str(run_dir.relative_to(ROOT_DIR) / "implementation-map.html") if (run_dir / "implementation-map.html").exists() else "",
+                    "delivery_status": str(run_dir.relative_to(ROOT_DIR) / "delivery-status.json") if (run_dir / "delivery-status.json").exists() else "",
+                    "updated_at": datetime.fromtimestamp(run_dir.stat().st_mtime, timezone.utc).isoformat(),
+                }
+            )
+    delivered = sum(1 for item in runs if item.get("decision") == "delivered")
+    return {
+        "runs": runs,
+        "summary": {
+            "total": len(runs),
+            "delivered": delivered,
+            "incomplete": len(runs) - delivered,
+            "ai_calls_used": sum(int(item.get("ai_calls_used") or 0) for item in runs),
+            "queued": sum(int((item.get("queue") or {}).get("queued", 0) or 0) for item in runs),
+            "waiting": sum(int((item.get("queue") or {}).get("waiting", 0) or 0) for item in runs),
+        },
+    }
+
+
 def sync_source() -> str:
     source = os.environ.get(SYNC_SOURCE_ENV, "redmine").strip().lower()
     if source in {"", "redmine"}:
@@ -1956,7 +2015,7 @@ def add_local_attachment(conn: sqlite3.Connection, issue_id: int, payload: dict[
 
 def safe_static_path(raw_path: str) -> Path:
     route = raw_path.split("?", 1)[0].split("#", 1)[0]
-    if route in ("", "/") or route in {"/review", "/cluster", "/consulting", "/docs", "/research-center"} or route.startswith("/issues/"):
+    if route in ("", "/") or route in {"/review", "/cluster", "/consulting", "/factory", "/docs", "/research-center"} or route.startswith("/issues/"):
         route = "/index.html"
     path = (TEMPLATE_DIR / route.lstrip("/")).resolve()
     template_root = TEMPLATE_DIR.resolve()
@@ -2092,6 +2151,9 @@ def make_handler(db_path: Path) -> type[BaseHTTPRequestHandler]:
                     return
                 if parsed.path == "/api/runs":
                     self.send_json(200, run_list())
+                    return
+                if parsed.path == "/api/factory":
+                    self.send_json(200, factory_run_list())
                     return
                 if parsed.path == "/api/review":
                     with connect(db_path) as conn:

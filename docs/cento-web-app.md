@@ -5,6 +5,7 @@ The Cento web app is the operator console for the whole Cento system. Taskstream
 ## Main Sections
 
 - `Taskstream`: issues, review queue, dispatch, validation evidence, and agent-work lifecycle.
+- `Factory`: manifest-driven runs, delivery status, queue pressure, dispatch plans, integration gates, and AI-call totals.
 - `Cluster`: node health, bridge mesh, Agent Processes, manual agents, worker pools, and runtime usage.
 - `Consulting`: CRM, career intake, funnel, and client deliverables.
 - `Docs`: operating guides, tasking contracts, validation lanes, runbooks, and generated tool references.

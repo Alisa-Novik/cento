@@ -99,9 +99,14 @@ def render_start(plan: dict[str, Any], run_dir: Path) -> str:
     </div>
     <div class="actions">
       <a href="factory-plan.json">factory-plan.json</a>
+      <a href="queue/state.json">queue</a>
+      <a href="dispatch-plan.json">dispatch plan</a>
+      <a href="integration-plan.json">integration gate</a>
+      <a href="delivery-status.json">delivery status</a>
       <a href="implementation-map.html">Implementation Map</a>
       <a href="summary.md">summary.md</a>
       <a href="release-notes.md">release-notes.md</a>
+      <a href="project-delivery.md">project-delivery.md</a>
     </div>
     <table>
       <thead><tr><th>Task</th><th>Title</th><th>Lane</th><th>Risk</th><th>Story</th><th>Validation</th></tr></thead>

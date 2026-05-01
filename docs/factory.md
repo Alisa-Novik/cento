@@ -1,8 +1,8 @@
 # Cento Factory
 
-Cento Factory is the plan-only layer above Taskstream for turning one high-level request into durable artifacts before any worker dispatch happens.
+Cento Factory is the layer above Taskstream for turning one high-level request into durable artifacts, queue state, dispatch plans, integration gates, and release evidence before any worker can mutate the repo.
 
-The first slice is `factory-planning-v1`. It does not launch agents, create live Taskstream issues, apply patches, or merge code. It creates a validated plan and the manifests future dispatch must use.
+The delivered slice defaults to no-model dry-runs. It does not launch agents by default. Live Taskstream issue creation requires `--apply`, and AI dispatch remains gated behind explicit operator action.
 
 ## Workflow
 
@@ -13,6 +13,10 @@ cento factory intake "develop me a career consulting module" \
 
 cento factory plan workspace/runs/factory/factory-planning-e2e --no-model
 cento factory materialize workspace/runs/factory/factory-planning-e2e
+cento factory queue workspace/runs/factory/factory-planning-e2e
+cento factory dispatch workspace/runs/factory/factory-planning-e2e --lane builder --max 4 --include-waiting
+cento factory integrate workspace/runs/factory/factory-planning-e2e --dry-run
+cento factory release workspace/runs/factory/factory-planning-e2e --json
 cento factory render-hub workspace/runs/factory/factory-planning-e2e
 cento factory create-issues workspace/runs/factory/factory-planning-e2e --dry-run
 ```
@@ -28,11 +32,21 @@ Each run writes under `workspace/runs/factory/<run-id>/`:
 - `factory-plan.json`
 - `tasks/<task-id>/story.json`
 - `tasks/<task-id>/validation.json`
+- `queue/state.json`
+- `queue/queued.jsonl`
+- `queue/waiting.jsonl`
+- `queue/leased.jsonl`
+- `queue/owned-paths.json`
+- `create-issues-preview.json`
+- `dispatch-plan.json`
+- `integration-plan.json`
 - `start-here.html`
 - `implementation-map.html`
 - `summary.md`
 - `release-notes.md`
 - `validation-summary.json`, when the E2E runner is used
+- `delivery-status.json`
+- `project-delivery.md`
 
 ## Guardrails
 
@@ -40,7 +54,13 @@ Each run writes under `workspace/runs/factory/<run-id>/`:
 
 Generated story manifests are validated with `scripts/story_manifest.py`. Generated validation manifests are validated with `scripts/validation_manifest.py` and must preserve no-model coverage.
 
-Live dispatch is intentionally absent from this slice. `create-issues --dry-run` only writes `create-issues-preview.json` so operators can inspect the intended Taskstream shape before any future live creation path exists.
+`create-issues --dry-run` writes `create-issues-preview.json` so operators can inspect the intended Taskstream shape. `create-issues --apply` creates an Agent Epic plus child Agent Tasks from generated manifests and records `taskstream-issues.json`.
+
+`dispatch` writes a deterministic dispatch plan and lease records. It runs Agent Manager preflight and records whether each task has a Taskstream issue before any live dispatch can happen.
+
+`integrate --dry-run` writes an integration gate plan in dependency order. Patches are only accepted through the patch queue path and must keep validation evidence.
+
+`release` writes `delivery-status.json` and `project-delivery.md`. A delivered run requires intake, plan, materialization, queue, dispatch plan, integration plan, evidence hub, implementation map, and validation summary.
 
 ## E2E
 

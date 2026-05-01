@@ -569,13 +569,17 @@
 - `lane`: `planning`
 - `kind`: `python`
 - `entrypoint`: `./scripts/factory.py`
-- description: Plan-only factory workflow that turns a high-level request into intake artifacts, a validated factory-plan.json, story manifests, validation manifests, and static evidence hubs without dispatching AI workers.
+- description: Manifest-driven factory workflow that turns a high-level request into intake artifacts, a validated factory-plan.json, story manifests, validation manifests, queue ledgers, dispatch dry-runs, integration gates, release status, and static evidence hubs without default AI dispatch.
 - commands:
   - `cento factory intake "develop me a career consulting module" --dry-run --out workspace/runs/factory/factory-planning-e2e`
   - `cento factory plan workspace/runs/factory/factory-planning-e2e --no-model`
   - `cento factory materialize workspace/runs/factory/factory-planning-e2e`
   - `cento factory create-issues workspace/runs/factory/factory-planning-e2e --dry-run`
   - `cento factory preflight workspace/runs/factory/factory-planning-e2e --json`
+  - `cento factory queue workspace/runs/factory/factory-planning-e2e`
+  - `cento factory dispatch workspace/runs/factory/factory-planning-e2e --lane builder --max 4 --include-waiting`
+  - `cento factory integrate workspace/runs/factory/factory-planning-e2e --dry-run`
+  - `cento factory release workspace/runs/factory/factory-planning-e2e --json`
   - `cento factory render-hub workspace/runs/factory/factory-planning-e2e`
   - `cento factory status workspace/runs/factory/factory-planning-e2e`
 

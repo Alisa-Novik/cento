@@ -1247,7 +1247,7 @@
       "lane": "planning",
       "kind": "python",
       "entrypoint": "./scripts/factory.py",
-      "description": "Plan-only factory workflow that turns a high-level request into intake artifacts, a validated factory-plan.json, story manifests, validation manifests, and static evidence hubs without dispatching AI workers.",
+      "description": "Manifest-driven factory workflow that turns a high-level request into intake artifacts, a validated factory-plan.json, story manifests, validation manifests, queue ledgers, dispatch dry-runs, integration gates, release status, and static evidence hubs without default AI dispatch.",
       "platforms": [
         "linux",
         "macos"
@@ -1258,6 +1258,10 @@
         "cento factory materialize workspace/runs/factory/factory-planning-e2e",
         "cento factory create-issues workspace/runs/factory/factory-planning-e2e --dry-run",
         "cento factory preflight workspace/runs/factory/factory-planning-e2e --json",
+        "cento factory queue workspace/runs/factory/factory-planning-e2e",
+        "cento factory dispatch workspace/runs/factory/factory-planning-e2e --lane builder --max 4 --include-waiting",
+        "cento factory integrate workspace/runs/factory/factory-planning-e2e --dry-run",
+        "cento factory release workspace/runs/factory/factory-planning-e2e --json",
         "cento factory render-hub workspace/runs/factory/factory-planning-e2e",
         "cento factory status workspace/runs/factory/factory-planning-e2e"
       ],
@@ -1267,14 +1271,18 @@
         "workspace/runs/factory/<run-id>/factory-plan.json",
         "workspace/runs/factory/<run-id>/tasks/<task-id>/story.json",
         "workspace/runs/factory/<run-id>/tasks/<task-id>/validation.json",
+        "workspace/runs/factory/<run-id>/queue/state.json",
+        "workspace/runs/factory/<run-id>/dispatch-plan.json",
+        "workspace/runs/factory/<run-id>/integration-plan.json",
         "workspace/runs/factory/<run-id>/start-here.html",
         "workspace/runs/factory/<run-id>/implementation-map.html",
-        "workspace/runs/factory/<run-id>/validation-summary.json"
+        "workspace/runs/factory/<run-id>/validation-summary.json",
+        "workspace/runs/factory/<run-id>/delivery-status.json"
       ],
       "notes": [
-        "factory-planning-v1 is no-model and plan-only; live dispatch and patch integration are deliberately deferred.",
+        "Factory defaults to no-model dry-runs. Live Taskstream issue creation requires --apply, and AI dispatch is never launched by default.",
         "Every generated task has owned scope, expected outputs, validation commands, no-model eligibility, and dependency metadata.",
-        "Use factory-plan validation, story-manifest validation, and validation-manifest validation as the required guardrails before any future Taskstream creation or worker dispatch."
+        "Use factory-plan validation, story-manifest validation, validation-manifest validation, Agent Manager preflight, queue leases, and release status as required guardrails before worker dispatch."
       ]
     },
     {

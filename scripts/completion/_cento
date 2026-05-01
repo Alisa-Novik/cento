@@ -231,6 +231,10 @@ _cento() {
               'materialize[Generate story and validation manifests]' \
               'create-issues[Preview Taskstream issue creation]' \
               'preflight[Run safety preflight]' \
+              'queue[Create queue and owned-path ledgers]' \
+              'dispatch[Plan dispatch and leases]' \
+              'integrate[Write integration gate metadata]' \
+              'release[Write delivery status]' \
               'render-hub[Render start-here and implementation map]' \
               'status[Show factory run artifact status]'
           fi
