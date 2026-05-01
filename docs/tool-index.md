@@ -592,6 +592,26 @@
   - `cento factory render-hub workspace/runs/factory/factory-planning-e2e`
   - `cento factory status workspace/runs/factory/factory-planning-e2e`
 
+## Cento Storage
+
+- `id`: `storage`
+- `lane`: `platform ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/storage.py`
+- description: No-delete artifact catalog and retention planner for Cento run ledgers, manifests, patches, validation logs, screenshots, SQLite snapshots, prompts, and release evidence before high-fanout Factory work increases artifact volume.
+- commands:
+  - `cento storage scan --root workspace/runs --db workspace/storage/catalog.sqlite`
+  - `cento storage plan --dry-run`
+  - `cento storage query --largest --limit 20`
+  - `cento storage query --class screenshot_raw`
+  - `cento storage normalize screenshots --dry-run`
+  - `cento storage compress logs --dry-run`
+  - `cento storage snapshot-db --path workspace/storage/catalog.sqlite --out workspace/storage/db-snapshots/catalog-snapshot.db`
+  - `cento storage restore-test --sample 10`
+  - `cento storage verify --all`
+  - `cento storage report --out workspace/storage/reports/storage-summary.md`
+  - `python3 scripts/storage_e2e.py --fixture mixed-artifacts --out workspace/runs/storage/cento-storage-v1`
+
 ## Cento Console App
 
 - `id`: `agent-work-app`

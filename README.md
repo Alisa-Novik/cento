@@ -105,6 +105,8 @@ The bias is toward low-dependency tooling that works well from a terminal and ca
   Generate `docs/tool-index.md` from the central registry.
 - `factory.py`
   Create no-model Factory runs with intake artifacts, validated `factory-plan.json`, story manifests, validation manifests, queue ledgers, owned-path lease simulation, worktree metadata, prompt bundles, patch collection, integration dry-runs, safe factory integration branches, rollback metadata, release candidates, release status, and static evidence hubs.
+- `storage.py`
+  Catalog Cento run artifacts into SQLite, classify evidence/logs/screenshots/patches/manifests, plan no-delete lifecycle actions, verify hashes, and render storage reports before high-fanout Factory runs create artifact pressure.
 
 ## Common commands
 
@@ -172,6 +174,12 @@ make cento ARGS="factory release-candidate factory-integration-e2e"
 make cento ARGS="factory sync-taskstream factory-integration-e2e --dry-run"
 make cento ARGS="factory release workspace/runs/factory/factory-planning-e2e --json"
 make cento ARGS="factory render-hub workspace/runs/factory/factory-planning-e2e"
+make cento ARGS="storage scan --root workspace/runs --db workspace/storage/catalog.sqlite"
+make cento ARGS="storage plan --dry-run"
+make cento ARGS="storage query --largest --limit 20"
+make cento ARGS="storage snapshot-db --path workspace/storage/catalog.sqlite --out workspace/storage/db-snapshots/catalog-snapshot.db"
+make cento ARGS="storage restore-test --sample 10"
+make cento ARGS="storage report --out workspace/storage/reports/storage-summary.md"
 make funnel ARGS="init"
 make funnel ARGS="sources"
 make funnel ARGS="report"
@@ -237,6 +245,7 @@ go run ./scripts/telegram_tui.go
 ./scripts/manifest_validate.py --story workspace/runs/agent-work/1000088/story.json --validation workspace/runs/agent-work/1000088/validation.json --json --report workspace/runs/agent-work/1000088/validation-report.md
 ./scripts/factory_e2e.py --fixture career-consulting --out workspace/runs/factory/factory-planning-e2e
 ./scripts/factory_integration_e2e.py --fixture career-consulting --out workspace/runs/factory/factory-integration-e2e
+./scripts/storage_e2e.py --fixture mixed-artifacts --out workspace/runs/storage/cento-storage-v1
 ./scripts/funnel_module.py init
 ./scripts/funnel_module.py report
 ./scripts/burp_suite_community.sh setup

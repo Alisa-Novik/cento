@@ -4,9 +4,9 @@ This file is generated from `data/tools.json`.
 
 ## Summary
 
-- macOS tools: 34
-- Linux tools: 43
-- both platforms: 31
+- macOS tools: 35
+- Linux tools: 44
+- both platforms: 32
 - Linux only: 12
 - macOS only: 3
 
@@ -51,6 +51,7 @@ This file is generated from `data/tools.json`.
 | `repo-snapshot` | yes | yes | Create a compact repo status report including tree, git status, diffstat, and recent commits. |
 | `scan` | yes | yes | Scan cento for a topic and generate an archived HTML one-pager with explanation and snippets. |
 | `search-report` | yes | yes | Search a filesystem tree and write a Markdown report with matches and context. |
+| `storage` | yes | yes | No-delete artifact catalog and retention planner for Cento run ledgers, manifests, patches, validation logs, screenshots, SQLite snapshots, prompts, and release evidence before high-fanout Factory work increases artifact volume. |
 | `story-manifest` | yes | yes | Validate, draft, and render Cento agent-work story.json manifests. |
 | `story-screenshot-runner` | yes | yes | Read screenshot requirements from story.json, capture desktop and mobile evidence with Playwright, and write deterministic metadata plus an index for Docs/Evidence and Validator lanes. |
 | `system-inventory` | yes | yes | Capture a Markdown baseline of host, shell, tooling, and environment state. |
@@ -87,6 +88,7 @@ This file is generated from `data/tools.json`.
 - `repo-snapshot`
 - `scan`
 - `search-report`
+- `storage`
 - `story-manifest`
 - `story-screenshot-runner`
 - `system-inventory`

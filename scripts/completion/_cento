@@ -245,6 +245,39 @@ _cento() {
               'status[Show factory run artifact status]'
           fi
           ;;
+        storage)
+          if (( CURRENT == 3 )); then
+            _values 'storage command' \
+              'scan[Scan artifacts into the SQLite catalog]' \
+              'catalog[Alias for scan]' \
+              'plan[Write a no-delete retention dry-run plan]' \
+              'query[Query cataloged artifacts]' \
+              'report[Render a Markdown storage summary]' \
+              'verify[Verify catalog hashes]' \
+              'normalize[Plan additive screenshot normalization]' \
+              'compress[Plan additive log compression]' \
+              'snapshot-db[Create a safe SQLite backup snapshot]' \
+              'restore-test[Copy and verify a small high-value sample]'
+          elif (( CURRENT == 4 )) && [[ "${words[3]:-}" == "normalize" ]]; then
+            _values 'normalize target' screenshots
+          elif (( CURRENT == 4 )) && [[ "${words[3]:-}" == "compress" ]]; then
+            _values 'compress target' logs
+          else
+            _arguments \
+              '--db[SQLite catalog path]:file:_files' \
+              '--root[Root to scan]:directory:_files -/' \
+              '--out[Output path]:file:_files' \
+              '--dry-run[Plan only]' \
+              '--json[Print JSON]' \
+              '--class[Artifact class]:class:' \
+              '--largest[Sort by size]' \
+              '--limit[Maximum rows]:limit:' \
+              '--deletion-candidates[Show no-delete deletion candidates]' \
+              '--missing-derivative[Show raw screenshots without derivatives]' \
+              '--all[Verify all rows]' \
+              '--sample[Sample size]:count:'
+          fi
+          ;;
         notify)
           if (( CURRENT == 3 )); then
             _values 'notify command or target' \

@@ -1,0 +1,59 @@
+{
+  "schema_version": "cento-storage-policies/v1",
+  "default_posture": "no_delete",
+  "delete_execute_enabled": false,
+  "external_vault": "/mnt/cento-vault",
+  "external_vault_write_enabled": false,
+  "hot_days": 30,
+  "warm_days": 180,
+  "class_rules": {
+    "manifest": {
+      "default_action": "preserve",
+      "reason": "Control artifacts make Factory, Taskstream, Integration, and Autopilot runs auditable."
+    },
+    "patch": {
+      "default_action": "preserve",
+      "reason": "Patch bundles are high-value evidence and integration inputs."
+    },
+    "validation": {
+      "default_action": "preserve",
+      "reason": "Validation evidence is required before fanout and integration decisions can be trusted."
+    },
+    "release_packet": {
+      "default_action": "preserve",
+      "reason": "Release evidence is the human review packet."
+    },
+    "screenshot_raw": {
+      "default_action": "normalize_and_compress_candidate",
+      "reason": "Raw screenshots can be bulky and must have verified normalized derivatives before future pruning."
+    },
+    "log": {
+      "default_action": "compress_candidate",
+      "reason": "Logs should remain searchable through summaries while raw bodies can be compressed later."
+    },
+    "sqlite_db": {
+      "default_action": "snapshot_required",
+      "reason": "SQLite databases require controlled snapshots and integrity checks."
+    },
+    "sqlite_wal": {
+      "default_action": "snapshot_required",
+      "reason": "WAL/SHM files must never be archived or deleted independently of active database state."
+    },
+    "build_intermediate": {
+      "default_action": "delete_candidate_dry_run",
+      "reason": "Build intermediates are reproducible but v1 only reports candidates."
+    },
+    "client_data": {
+      "default_action": "preserve_local_first",
+      "reason": "Client and business data is high-value and high-sensitivity."
+    }
+  },
+  "hard_rules": [
+    "v1 never deletes artifacts",
+    "v1 never uploads to cloud",
+    "v1 treats the external 8TB vault as a planned target and does not require it to be mounted",
+    "active DB/WAL files are never lifecycle-pruned",
+    "raw screenshots are never deleted without verified normalized derivatives",
+    "catalog metadata should outlive artifact bodies in future lifecycle versions"
+  ]
+}

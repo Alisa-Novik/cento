@@ -11,6 +11,9 @@ workspace/inbox/*
 workspace/runs/*
 !workspace/runs/.gitkeep
 
+workspace/storage/*
+!workspace/storage/.gitkeep
+
 workspace/cluster-worktrees/*
 !workspace/cluster-worktrees/.gitkeep
 

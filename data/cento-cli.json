@@ -187,6 +187,28 @@
         "This command is routed through data/tools.json and scripts/factory.py.",
         "Factory defaults to deterministic no-model planning, queueing, lease simulation, dry-run dispatch, patch collection, Safe Integrator branch/apply/validate gates, rollback metadata, merge readiness, and release evidence. Live Taskstream creation requires --apply, while integration Taskstream sync is a dry-run preview by default."
       ]
+    },
+    {
+      "name": "storage",
+      "summary": "Registered tool route for the no-delete Cento artifact catalog and retention planner.",
+      "usage": "cento storage <scan|catalog|plan|query|report|verify|normalize|compress|snapshot-db|restore-test> [args...]",
+      "flags": [],
+      "examples": [
+        "cento storage scan --root workspace/runs --db workspace/storage/catalog.sqlite",
+        "cento storage plan --dry-run",
+        "cento storage query --largest --limit 20",
+        "cento storage query --class screenshot_raw",
+        "cento storage normalize screenshots --dry-run",
+        "cento storage compress logs --dry-run",
+        "cento storage snapshot-db --path workspace/storage/catalog.sqlite --out workspace/storage/db-snapshots/catalog-snapshot.db",
+        "cento storage restore-test --sample 10",
+        "cento storage verify --all",
+        "cento storage report --out workspace/storage/reports/storage-summary.md"
+      ],
+      "details": [
+        "This command is routed through data/tools.json and scripts/storage.py.",
+        "Storage v1 never deletes artifacts and never uploads to cloud. It catalogs, hashes, classifies, plans lifecycle actions, verifies hashes, and renders operator reports so Factory and Autopilot can scale without artifact chaos."
+      ]
     }
   ]
 }
