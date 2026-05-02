@@ -36,11 +36,43 @@ const docsHashLinks = document.querySelectorAll(".docsSidebar nav a[href^='#'], 
 const agentSummary = document.querySelector("#agentSummary");
 const agentCards = document.querySelector("#agentCards");
 const taskstreamNav = document.querySelector(".taskstreamNav");
+const homeView = document.querySelector("#homeView");
+const softwareDeliveryHubView = document.querySelector("#softwareDeliveryHubView");
+const devPipelineStudioView = document.querySelector("#devPipelineStudioView, .devPipelineStudioView");
+const sdHubRailLinks = document.querySelectorAll("[data-sd-hub-route]");
+const pipelineProjectSelect = document.querySelector("#pipelineProjectSelect");
+const pipelineTemplateSelect = document.querySelector("#pipelineTemplateSelect");
+const pipelineSurfaceSelect = document.querySelector("#pipelineSurfaceSelect");
+const pipelineTemplateLibrary = document.querySelector(".pipelineTemplateLibrary");
+let pipelineTemplateCards = document.querySelectorAll("[data-template-card]");
+const pipelineManifestCode = document.querySelector("#pipelineManifestCode");
+const pipelineManifestEditor = document.querySelector("#pipelineManifestEditor");
+const pipelineManifestStatus = document.querySelector("#pipelineManifestStatus");
+const pipelineFormatManifestButton = document.querySelector("#pipelineFormatManifestButton");
+const pipelineNewTemplateButton = document.querySelector("#pipelineNewTemplateButton");
+const pipelineDuplicateButton = document.querySelector("#pipelineDuplicateButton");
+const pipelineSaveDraftButton = document.querySelector("#pipelineSaveDraftButton");
+const pipelineSaveStatus = document.querySelector("#pipelineSaveStatus");
+const pipelineProjectLabelInput = document.querySelector("#pipelineProjectLabelInput");
+const pipelineTemplateLabelInput = document.querySelector("#pipelineTemplateLabelInput");
+const pipelineTemplateDetailInput = document.querySelector("#pipelineTemplateDetailInput");
+const pipelineExecutionModelSelect = document.querySelector("#pipelineExecutionModelSelect");
+const pipelineValidationTierInput = document.querySelector("#pipelineValidationTierInput");
+const pipelineRiskSelect = document.querySelector("#pipelineRiskSelect");
+const pipelineBudgetCapInput = document.querySelector("#pipelineBudgetCapInput");
+const pipelineReadPathsInput = document.querySelector("#pipelineReadPathsInput");
+const pipelineRequiredInputsEditor = document.querySelector("#pipelineRequiredInputsEditor");
+const pipelineAddInputButton = document.querySelector("#pipelineAddInputButton");
 const clusterView = document.querySelector("#clusterView");
 const consultingView = document.querySelector("#consultingView");
 const factoryView = document.querySelector("#factoryView");
 const docsView = document.querySelector("#docsView");
 const researchView = document.querySelector("#researchView");
+const codebaseIntelligenceView = document.querySelector("#codebaseIntelligenceView");
+const researchRailLinks = document.querySelectorAll("[data-research-route]");
+const ciGraphMount = document.querySelector("#ciGraphMount");
+const ciInspectorMount = document.querySelector("#ciInspectorMount");
+const ciAskMount = document.querySelector("#ciAskMount");
 const factoryRunList = document.querySelector("#factoryRunList");
 const factoryRunCount = document.querySelector("#factoryRunCount");
 const factoryDeliveredCount = document.querySelector("#factoryDeliveredCount");
@@ -136,6 +168,8 @@ let detailPayload = null;
 let detailIssueId = null;
 let detailLoadingId = null;
 let loadedIssueMode = "create";
+let codebaseIntelligenceInitialized = false;
+let codebaseIntelligencePayload = null;
 
 function clampInt(value, fallback, minValue = 1) {
   const parsed = Number.parseInt(value, 10);
@@ -430,7 +464,7 @@ function setLocationFromState() {
   if (perPage !== 25) params.set("per_page", String(perPage));
 
   const suffix = params.toString() ? `?${params.toString()}` : "";
-  history.replaceState(null, "", `${location.pathname.startsWith("/issues/") ? "/" : location.pathname}${suffix}`);
+  history.replaceState(null, "", `${location.pathname.startsWith("/issues/") ? "/issues" : location.pathname}${suffix}`);
 }
 
 function syncStateFromLocation() {
@@ -852,9 +886,716 @@ function currentIssueIdFromDetail() {
   return match ? Number.parseInt(match[1], 10) : null;
 }
 
+let pipelineStudioProjects = {
+  "generic-easy-medium-task": {
+    key: "generic-easy-medium-task",
+    name: "Generic Easy-Medium Task",
+    surface: "Cento code task",
+    surfaceValue: "generic-task",
+    ownedRoot: "workspace/runs/generic-task/outputs",
+    readPaths: ["AGENTS.md", "README.md", "scripts/**", "templates/agent-work-app/**", "tests/**"]
+  },
+  "kanji-a-day": {
+    key: "kanji-a-day",
+    name: "Kanji a Day",
+    surface: "Docs app page",
+    surfaceValue: "docs-app-page",
+    ownedRoot: "docs/apps/kanji-a-day/sections",
+    readPaths: ["docs/templates/**", "docs/apps/kanji-a-day/page.config.json"]
+  },
+  "cento-console-docs": {
+    key: "cento-console-docs",
+    name: "Cento Console Docs",
+    surface: "Console documentation page",
+    surfaceValue: "console-doc-page",
+    ownedRoot: "docs/console/sections",
+    readPaths: ["docs/templates/**", "templates/agent-work-app/index.html"]
+  },
+  "consulting-crm": {
+    key: "consulting-crm",
+    name: "Consulting CRM",
+    surface: "CRM app page",
+    surfaceValue: "crm-page",
+    ownedRoot: "templates/crm/pages",
+    readPaths: ["templates/crm/**", "workspace/runs/crm-app/latest.json"]
+  }
+};
+
+let pipelineStudioTemplates = {
+  "generic-task": {
+    id: "generic-task",
+    label: "Generic easy-medium task",
+    detail: "Standard Cento task template",
+    slug: "generic-task",
+    workerType: "generic_task_worker",
+    validationTier: "smoke-plus",
+    risk: "medium",
+    tasks: "9 / 9",
+    budget: "$1.42",
+    budgetDetail: "of $3.00 budget",
+    selectedIndex: 0,
+    workers: [
+      { id: "scope", title: "Scope & Acceptance Worker", file: "scope.json", description: "Convert request into acceptance criteria and owned paths" },
+      { id: "context", title: "Context Discovery Worker", file: "context.json", description: "Inspect existing code, docs, tests, and conventions" },
+      { id: "plan", title: "Change Plan Worker", file: "plan.json", description: "Create implementation and validation plan" },
+      { id: "implementation", title: "Implementation Worker", file: "implementation.json", description: "Make the scoped change" },
+      { id: "validation", title: "Focused Validation Worker", file: "validation.json", description: "Run checks, smoke tests, and focused tests" },
+      { id: "handoff", title: "Handoff Evidence Worker", file: "handoff.json", description: "Prepare screenshots and final notes" }
+    ]
+  },
+  "doc-page": {
+    id: "doc-page",
+    label: "Doc page creation",
+    detail: "Reusable web docs template",
+    slug: "doc-page",
+    workerType: "doc_page_worker",
+    validationTier: "smoke",
+    risk: "low",
+    tasks: "8 / 8",
+    budget: "$2.42",
+    budgetDetail: "of $5.00 budget",
+    selectedIndex: 0,
+    workers: [
+      { id: "hero", title: "Hero Section Worker", file: "hero.json", description: "Generate hero section" },
+      { id: "sections", title: "Body Sections Worker", file: "sections.json", description: "Generate body section structure" },
+      { id: "metadata", title: "Metadata Worker", file: "metadata.json", description: "Generate metadata and navigation" },
+      { id: "release", title: "Release Notes Worker", file: "release.json", description: "Generate release notes" },
+      { id: "operations", title: "Operations Worker", file: "operations.json", description: "Generate operational details" },
+      { id: "links", title: "Links Worker", file: "links.json", description: "Generate links and references" }
+    ]
+  },
+  "dashboard-module": {
+    id: "dashboard-module",
+    label: "Dashboard module",
+    detail: "Operational console template",
+    slug: "dashboard-module",
+    workerType: "dashboard_module_worker",
+    validationTier: "screenshot",
+    risk: "medium",
+    tasks: "10 / 10",
+    budget: "$3.18",
+    budgetDetail: "of $6.50 budget",
+    selectedIndex: 1,
+    workers: [
+      { id: "metrics", title: "Metric Model Worker", file: "metrics.json", description: "Define metric contracts" },
+      { id: "panels", title: "Panel Layout Worker", file: "panels.json", description: "Generate dashboard panel layout" },
+      { id: "actions", title: "Action Controls Worker", file: "actions.json", description: "Generate action controls" },
+      { id: "adapter", title: "Data Adapter Worker", file: "adapter.json", description: "Define data adapter bindings" },
+      { id: "empty-states", title: "Empty States Worker", file: "empty_states.json", description: "Generate loading and empty states" },
+      { id: "screenshot", title: "Screenshot Worker", file: "screenshot.json", description: "Capture dashboard validation screenshot" }
+    ]
+  },
+  "release-page": {
+    id: "release-page",
+    label: "Release evidence page",
+    detail: "Evidence and compliance template",
+    slug: "release-evidence",
+    workerType: "release_evidence_worker",
+    validationTier: "review",
+    risk: "medium",
+    tasks: "9 / 9",
+    budget: "$2.86",
+    budgetDetail: "of $5.50 budget",
+    selectedIndex: 2,
+    workers: [
+      { id: "summary", title: "Change Summary Worker", file: "summary.json", description: "Generate release change summary" },
+      { id: "artifacts", title: "Artifact Index Worker", file: "artifacts.json", description: "Generate artifact index" },
+      { id: "approvals", title: "Approval Gate Worker", file: "approvals.json", description: "Generate approval gates" },
+      { id: "cost", title: "Cost Receipt Worker", file: "cost.json", description: "Generate cost receipt" },
+      { id: "risk", title: "Risk Notes Worker", file: "risk.json", description: "Generate risk notes" },
+      { id: "audit", title: "Audit Trail Worker", file: "audit.json", description: "Generate audit trail" }
+    ]
+  }
+};
+
+let pipelineStudioControlsInitialized = false;
+let pipelineStudioState = null;
+let pipelineStudioOptionsReady = false;
+
+function setPipelineField(name, value) {
+  document.querySelectorAll(`[data-pipeline-field="${name}"]`).forEach((element) => {
+    element.textContent = value;
+  });
+}
+
+function updateIndexedPipelineText(attribute, values) {
+  document.querySelectorAll(`[${attribute}]`).forEach((element) => {
+    const index = Number.parseInt(element.getAttribute(attribute) || "0", 10);
+    element.textContent = values[index] || "";
+  });
+}
+
+function selectedPipelineStudioProject() {
+  return pipelineStudioProjects[pipelineProjectSelect?.value || "generic-easy-medium-task"] || pipelineStudioProjects["generic-easy-medium-task"];
+}
+
+function selectedPipelineStudioTemplate() {
+  return pipelineStudioTemplates[pipelineTemplateSelect?.value || "generic-task"] || pipelineStudioTemplates["generic-task"];
+}
+
+function optionMarkup(items, labelKey = "label") {
+  return items
+    .map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item[labelKey] || item.name || item.id)}</option>`)
+    .join("");
+}
+
+function renderPipelineTemplateCards(templates, selectedTemplateId) {
+  if (!pipelineTemplateLibrary || !templates.length) return;
+  pipelineTemplateLibrary.innerHTML = templates
+    .map((template) => {
+      const isActive = template.id === selectedTemplateId;
+      return `
+        <button class="pipelineTemplateCard ${isActive ? "active" : ""}" type="button" data-template-card="${escapeHtml(template.id)}" aria-pressed="${String(isActive)}">
+          <strong>${escapeHtml(template.label || template.id)}</strong>
+          <span>${escapeHtml(template.description || template.detail || "")}</span>
+          <small>${escapeHtml(template.tagline || template.detail || "")}</small>
+        </button>
+      `;
+    })
+    .join("");
+  pipelineTemplateCards = document.querySelectorAll("[data-template-card]");
+}
+
+function normalizePipelineState(payload) {
+  if (!payload || !payload.pipeline) return;
+  const projects = Array.isArray(payload.projects) ? payload.projects : [];
+  const templates = Array.isArray(payload.templates) ? payload.templates : [];
+  if (projects.length) {
+    pipelineStudioProjects = Object.fromEntries(projects.map((project) => [
+      project.id,
+      {
+        key: project.id,
+        name: project.label || project.id,
+        surface: project.surface || "",
+        surfaceValue: project.surface_value || "",
+        ownedRoot: project.owned_root || "",
+        readPaths: Array.isArray(project.read_paths) ? project.read_paths : []
+      }
+    ]));
+    if (pipelineProjectSelect) {
+      pipelineProjectSelect.innerHTML = optionMarkup(projects);
+    }
+  }
+  if (templates.length) {
+    pipelineStudioTemplates = Object.fromEntries(templates.map((template) => [
+      template.id,
+      {
+        id: template.id,
+        label: template.label || template.id,
+        detail: template.detail || "",
+        slug: template.id,
+        workerType: template.worker_type || "pipeline_worker",
+        validationTier: template.validation_tier || payload.pipeline.validation?.tier || "",
+        risk: template.risk || payload.pipeline.inspector?.summary?.risk_level || "",
+        tasks: payload.pipeline.tasks || "",
+        budget: payload.pipeline.budget || "",
+        budgetDetail: payload.pipeline.budget_detail || "",
+        budgetSpentUsd: Number(template.budget_spent_usd || 0),
+        budgetCapUsd: Number(template.budget_cap_usd || 0),
+        executionModel: template.execution_model || payload.pipeline.execution_model || "",
+        workerStageLabel: template.worker_stage_label || payload.pipeline.worker_stage_label || "",
+        selectedWorker: template.selected_worker || "",
+        requiredInputs: Array.isArray(template.required_inputs) ? template.required_inputs : [],
+        selectedIndex: 0,
+        workers: payload.pipeline.workers || []
+      }
+    ]));
+  }
+  pipelineStudioState = payload;
+  pipelineStudioOptionsReady = true;
+  if (pipelineProjectSelect) pipelineProjectSelect.value = payload.selected?.project_id || pipelineProjectSelect.value;
+  if (pipelineTemplateSelect) {
+    if (templates.length) {
+      pipelineTemplateSelect.innerHTML = optionMarkup(templates);
+    }
+    pipelineTemplateSelect.value = payload.selected?.template_id || pipelineTemplateSelect.value;
+  }
+  if (pipelineSurfaceSelect) {
+    const selectedProject = projects.find((project) => project.id === (payload.selected?.project_id || ""));
+    if (selectedProject?.surface_value) {
+      if (!Array.from(pipelineSurfaceSelect.options).some((option) => option.value === selectedProject.surface_value)) {
+        pipelineSurfaceSelect.add(new Option(selectedProject.surface || selectedProject.surface_value, selectedProject.surface_value));
+      }
+      pipelineSurfaceSelect.value = selectedProject.surface_value;
+    }
+  }
+  renderPipelineTemplateCards(templates, payload.selected?.template_id || "");
+}
+
+function renderPipelineCards(attributeBase, items, keys) {
+  keys.forEach(([suffix, key]) => {
+    updateIndexedPipelineText(`${attributeBase}-${suffix}`, items.map((item) => item[key] || ""));
+  });
+}
+
+function selectedPipelinePayloadProject() {
+  const projectId = pipelineStudioState?.selected?.project_id || pipelineProjectSelect?.value || "";
+  return (pipelineStudioState?.projects || []).find((project) => project.id === projectId) || null;
+}
+
+function selectedPipelinePayloadTemplate() {
+  const templateId = pipelineStudioState?.selected?.template_id || pipelineTemplateSelect?.value || "";
+  return (pipelineStudioState?.templates || []).find((template) => template.id === templateId) || null;
+}
+
+function setPipelineSaveStatus(message, isError = false) {
+  if (pipelineSaveStatus) {
+    pipelineSaveStatus.textContent = message;
+    pipelineSaveStatus.classList.toggle("error", isError);
+  }
+}
+
+function setPipelineManifestStatus(message, isError = false) {
+  if (pipelineManifestStatus) {
+    pipelineManifestStatus.textContent = message;
+    pipelineManifestStatus.classList.toggle("error", isError);
+  }
+}
+
+function pipelineInputStatusOptions(selected = "missing") {
+  return ["provided", "configured", "missing", "optional"]
+    .map((status) => `<option value="${status}" ${status === selected ? "selected" : ""}>${escapeHtml(status.replace("-", " "))}</option>`)
+    .join("");
+}
+
+function renderPipelineRequiredInputsEditor(inputs) {
+  if (!pipelineRequiredInputsEditor) return;
+  const rows = Array.isArray(inputs) && inputs.length ? inputs : [
+    { id: "task-request", title: "Task request", detail: "What should the AI change or build?", status: "missing", required: true }
+  ];
+  pipelineRequiredInputsEditor.innerHTML = rows
+    .map((item) => `
+      <div class="pipelineInputConfigRow" data-input-row>
+        <input data-input-title type="text" value="${escapeHtml(item.title || "")}" aria-label="Input title">
+        <input data-input-detail type="text" value="${escapeHtml(item.detail || "")}" aria-label="Input detail">
+        <select data-input-status aria-label="Input status">${pipelineInputStatusOptions(item.status || "missing")}</select>
+        <label><input data-input-required type="checkbox" ${item.required === false ? "" : "checked"}>Required</label>
+        <button type="button" data-remove-input>×</button>
+      </div>
+    `)
+    .join("");
+}
+
+function collectPipelineRequiredInputs() {
+  if (!pipelineRequiredInputsEditor) return [];
+  return Array.from(pipelineRequiredInputsEditor.querySelectorAll("[data-input-row]"))
+    .map((row, index) => {
+      const title = row.querySelector("[data-input-title]")?.value?.trim() || "";
+      const detail = row.querySelector("[data-input-detail]")?.value?.trim() || "";
+      const status = row.querySelector("[data-input-status]")?.value || "missing";
+      const required = Boolean(row.querySelector("[data-input-required]")?.checked);
+      return {
+        id: title ? title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `input-${index + 1}` : `input-${index + 1}`,
+        title,
+        detail,
+        status,
+        required
+      };
+    })
+    .filter((item) => item.title);
+}
+
+function renderPipelineInputCards(items) {
+  const inputStage = document.querySelector(".stageInput");
+  if (!inputStage) return;
+  inputStage.querySelectorAll(".pipelineCard").forEach((card) => card.remove());
+  const button = inputStage.querySelector("button");
+  (items || []).forEach((item) => {
+    const card = document.createElement("div");
+    const status = String(item.status || "Missing").toLowerCase();
+    card.className = `pipelineCard operatorInput ${status}`;
+    card.innerHTML = `
+      <i>▧</i>
+      <strong>${escapeHtml(item.title || "")}</strong>
+      <span>${escapeHtml(item.file || item.detail || "")}</span>
+      <em>${escapeHtml(item.status || "Missing")}</em>
+    `;
+    inputStage.insertBefore(card, button || null);
+  });
+  if (button) button.textContent = `View all (${(items || []).length})`;
+}
+
+function populatePipelineEditor() {
+  const project = selectedPipelinePayloadProject();
+  const template = selectedPipelinePayloadTemplate();
+  const inspector = pipelineStudioState?.pipeline?.inspector || {};
+  if (pipelineProjectLabelInput) pipelineProjectLabelInput.value = project?.label || "";
+  if (pipelineTemplateLabelInput) pipelineTemplateLabelInput.value = template?.label || "";
+  if (pipelineTemplateDetailInput) pipelineTemplateDetailInput.value = template?.detail || "";
+  if (pipelineExecutionModelSelect) pipelineExecutionModelSelect.value = template?.execution_model || pipelineStudioState?.pipeline?.execution_model || "ordered";
+  if (pipelineValidationTierInput) pipelineValidationTierInput.value = template?.validation_tier || pipelineStudioState?.pipeline?.validation?.tier || "";
+  if (pipelineRiskSelect) pipelineRiskSelect.value = template?.risk || inspector.summary?.risk_level || "medium";
+  if (pipelineBudgetCapInput) pipelineBudgetCapInput.value = template?.budget_cap_usd ?? "";
+  if (pipelineReadPathsInput) pipelineReadPathsInput.value = Array.isArray(project?.read_paths) ? project.read_paths.join("\n") : "";
+  renderPipelineRequiredInputsEditor(template?.required_inputs || []);
+  const manifestText = JSON.stringify(inspector.manifest || {}, null, 2);
+  if (pipelineManifestEditor) pipelineManifestEditor.value = manifestText;
+  if (pipelineManifestCode) pipelineManifestCode.textContent = manifestText;
+  setPipelineSaveStatus("Loaded from pipeline manifest");
+  setPipelineManifestStatus(inspector.manifest_path ? `Editing ${inspector.manifest_path}` : "Worker manifest synthesized from template");
+}
+
+function syncPipelineWorkerCards(workers) {
+  const cards = document.querySelectorAll(".pipelineCard.worker");
+  cards.forEach((card, index) => {
+    const worker = workers[index];
+    if (!worker) {
+      card.removeAttribute("data-worker-id");
+      card.classList.remove("selected");
+      return;
+    }
+    card.dataset.workerId = worker.id || "";
+    card.classList.toggle("selected", Boolean(worker.selected));
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+    card.setAttribute("aria-pressed", String(Boolean(worker.selected)));
+  });
+}
+
+function parsePipelineManifestEditor() {
+  if (!pipelineManifestEditor) return null;
+  const raw = pipelineManifestEditor.value.trim();
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    setPipelineManifestStatus(`Invalid worker manifest JSON: ${error.message}`, true);
+    throw error;
+  }
+}
+
+function pipelineEditorPayload(action = "save", options = {}) {
+  const project = selectedPipelinePayloadProject();
+  const template = selectedPipelinePayloadTemplate();
+  const includeManifest = options.includeManifest !== false;
+  const workerManifest = includeManifest ? parsePipelineManifestEditor() : null;
+  const selectedWorker = options.workerId || workerManifest?.task_id || template?.selected_worker || pipelineStudioState?.pipeline?.workers?.find((worker) => worker.selected)?.id || "";
+  return {
+    action,
+    project_id: pipelineStudioState?.selected?.project_id || pipelineProjectSelect?.value || "",
+    template_id: pipelineStudioState?.selected?.template_id || pipelineTemplateSelect?.value || "",
+    worker_id: options.workerId || "",
+    project: {
+      label: pipelineProjectLabelInput?.value || project?.label || "",
+      surface: pipelineSurfaceSelect?.selectedOptions?.[0]?.textContent || project?.surface || "",
+      surface_value: pipelineSurfaceSelect?.value || project?.surface_value || "",
+      owned_root: project?.owned_root || "",
+      read_paths_text: pipelineReadPathsInput?.value || ""
+    },
+    template: {
+      label: pipelineTemplateLabelInput?.value || template?.label || "",
+      detail: pipelineTemplateDetailInput?.value || template?.detail || "",
+      description: template?.description || "",
+      tagline: template?.tagline || "",
+      validation_tier: pipelineValidationTierInput?.value || template?.validation_tier || "",
+      risk: pipelineRiskSelect?.value || template?.risk || "",
+      budget_spent_usd: template?.budget_spent_usd ?? 0,
+      budget_cap_usd: pipelineBudgetCapInput?.value || template?.budget_cap_usd || 0,
+      execution_model: pipelineExecutionModelSelect?.value || template?.execution_model || "ordered",
+      worker_stage_label: (pipelineExecutionModelSelect?.value || template?.execution_model) === "ordered" ? "2. Task Execution" : "2. Workers (Parallel)",
+      selected_worker: selectedWorker,
+      required_inputs: collectPipelineRequiredInputs()
+    },
+    worker_manifest: workerManifest
+  };
+}
+
+async function savePipelineDraft(action = "save", options = {}) {
+  if (!pipelineProjectSelect || !pipelineTemplateSelect) return;
+  try {
+    setPipelineSaveStatus(action === "select_worker" ? "Selecting worker..." : "Saving pipeline draft...");
+    const response = await fetch(`${API_BASE}/dev-pipeline-studio`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(pipelineEditorPayload(action, options))
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+    normalizePipelineState(payload);
+    applyPipelineStudioContext();
+    const verb = action === "duplicate" ? "Duplicated" : action === "new" ? "Created" : action === "select_worker" ? "Selected" : "Saved";
+    setPipelineSaveStatus(`${verb} ${payload.selected?.template_id || "pipeline"} at ${new Date().toLocaleTimeString()}`);
+  } catch (error) {
+    setPipelineSaveStatus(`Save failed: ${error.message}`, true);
+  }
+}
+
+function applyPipelineStudioContext() {
+  if (pipelineStudioState?.pipeline) {
+    const pipeline = pipelineStudioState.pipeline;
+    const inspector = pipeline.inspector || {};
+    const summary = inspector.summary || {};
+    setPipelineField("status", pipeline.status || "Unknown");
+    setPipelineField("statusDetail", pipeline.status_detail || "");
+    setPipelineField("project", pipeline.project || "");
+    setPipelineField("surface", pipeline.surface || "");
+    setPipelineField("template", pipeline.template || "");
+    setPipelineField("templateDetail", pipeline.template_detail || "");
+    setPipelineField("tasks", pipeline.tasks || "");
+    setPipelineField("taskState", pipeline.task_state || "");
+    setPipelineField("budget", pipeline.budget || "");
+    setPipelineField("budgetDetail", pipeline.budget_detail || "");
+    setPipelineField("runName", pipeline.run_name || "");
+    setPipelineField("inputCount", pipeline.input_count || "");
+    setPipelineField("workerStageLabel", pipeline.worker_stage_label || "2. Workers (Parallel)");
+    setPipelineField("workerCount", pipeline.worker_count || "");
+    setPipelineField("integrationCount", pipeline.integration_count || "");
+    setPipelineField("selectedWorker", inspector.selected_worker || "");
+    setPipelineField("ownedPathCount", summary.owned_paths || "");
+    setPipelineField("readPathCount", summary.read_paths || "");
+    setPipelineField("validationTier", summary.validation_tier || pipeline.validation?.tier || "");
+    setPipelineField("riskLevel", summary.risk_level || "");
+    renderPipelineInputCards(pipeline.input_cards || []);
+    renderPipelineCards("data-pipeline-input", pipeline.input_cards || [], [["title", "title"], ["file", "file"], ["status", "status"]]);
+    renderPipelineCards("data-pipeline-worker", pipeline.workers || [], [["title", "title"], ["file", "detail"]]);
+    renderPipelineCards("data-pipeline-integrate", pipeline.integration || [], [["title", "title"]]);
+    renderPipelineCards("data-pipeline-validator", pipeline.validators || [], [["title", "title"], ["file", "file"], ["status", "status"]]);
+    renderPipelineCards("data-pipeline-evidence", pipeline.evidence || [], [["title", "title"], ["file", "file"], ["status", "status"]]);
+    if (pipelineManifestCode) {
+      pipelineManifestCode.textContent = JSON.stringify(inspector.manifest || {}, null, 2);
+    }
+    populatePipelineEditor();
+    syncPipelineWorkerCards(pipeline.workers || []);
+    pipelineTemplateCards.forEach((card) => {
+      const isActive = card.dataset.templateCard === (pipelineStudioState.selected?.template_id || "");
+      card.classList.toggle("active", isActive);
+      card.setAttribute("aria-pressed", String(isActive));
+    });
+    return;
+  }
+  if (!pipelineProjectSelect || !pipelineTemplateSelect) return;
+  const project = selectedPipelineStudioProject();
+  const template = selectedPipelineStudioTemplate();
+  const selectedWorker = template.workers[template.selectedIndex] || template.workers[0];
+  const workerFiles = template.workers.map((worker) => worker.file);
+  const runName = `${template.slug}-${project.key}_2026-05-02_120501`;
+  const readPaths = [...project.readPaths, `templates/pipelines/${template.id}.json`];
+  const manifest = {
+    schema_version: "cento.worker_manifest.v1",
+    id: `${selectedWorker.id}_worker_01`,
+    project: project.key,
+    template_id: template.id,
+    type: template.workerType,
+    task_id: selectedWorker.id,
+    description: `${selectedWorker.description} for ${project.name} using the ${template.label} template`,
+    owned_paths: [`${project.ownedRoot}/${selectedWorker.file}`],
+    read_paths: readPaths,
+    dependencies: [],
+    acceptance: [
+      `${template.label} output is valid`,
+      "Template parameters are preserved",
+      "Only owned paths changed"
+    ],
+    validation: {
+      tier: template.validationTier
+    }
+  };
+
+  if (pipelineSurfaceSelect) pipelineSurfaceSelect.value = project.surfaceValue;
+  setPipelineField("project", project.name);
+  setPipelineField("surface", project.surface);
+  setPipelineField("template", template.label);
+  setPipelineField("templateDetail", template.detail);
+  setPipelineField("tasks", template.tasks);
+  setPipelineField("taskState", "Template ready");
+  setPipelineField("budget", template.budget);
+  setPipelineField("budgetDetail", template.budgetDetail);
+  setPipelineField("runName", runName);
+  setPipelineField("inputCount", `${(template.requiredInputs || []).length} inputs`);
+  setPipelineField("workerStageLabel", template.workerStageLabel || "2. Workers (Parallel)");
+  setPipelineField("workerCount", `${template.workers.length} workers`);
+  setPipelineField("integrationCount", `${template.workers.length} integration steps`);
+  setPipelineField("selectedWorker", selectedWorker.title);
+  setPipelineField("ownedPathCount", "1 path");
+  setPipelineField("readPathCount", `${readPaths.length} paths`);
+  setPipelineField("validationTier", template.validationTier);
+  setPipelineField("riskLevel", template.risk);
+  updateIndexedPipelineText("data-pipeline-worker-title", template.workers.map((worker) => worker.title));
+  updateIndexedPipelineText("data-pipeline-worker-file", workerFiles);
+  updateIndexedPipelineText("data-pipeline-integrate-title", workerFiles.map((file) => `Integrate: ${file}`));
+  renderPipelineInputCards(template.requiredInputs || []);
+  if (pipelineManifestCode) {
+    pipelineManifestCode.textContent = JSON.stringify(manifest, null, 2);
+  }
+  if (pipelineManifestEditor) pipelineManifestEditor.value = JSON.stringify(manifest, null, 2);
+  syncPipelineWorkerCards(template.workers || []);
+  pipelineTemplateCards.forEach((card) => {
+    const isActive = card.dataset.templateCard === template.id;
+    card.classList.toggle("active", isActive);
+    card.setAttribute("aria-pressed", String(isActive));
+  });
+}
+
+async function loadPipelineStudioState() {
+  if (!pipelineProjectSelect || !pipelineTemplateSelect) {
+    applyPipelineStudioContext();
+    return;
+  }
+  const project = pipelineProjectSelect.value || "generic-easy-medium-task";
+  const template = pipelineTemplateSelect.value || "generic-task";
+  try {
+    const payload = await apiGetJson(`${API_BASE}/dev-pipeline-studio?project=${encodeURIComponent(project)}&template=${encodeURIComponent(template)}`);
+    normalizePipelineState(payload);
+    applyPipelineStudioContext();
+  } catch (error) {
+    console.warn("Dev Pipeline Studio backend unavailable; using local fallback.", error);
+    pipelineStudioState = null;
+    applyPipelineStudioContext();
+  }
+}
+
+function initPipelineStudioControls() {
+  if (pipelineStudioControlsInitialized || !pipelineProjectSelect || !pipelineTemplateSelect) return;
+  pipelineProjectSelect.addEventListener("change", () => {
+    void loadPipelineStudioState();
+  });
+  pipelineTemplateSelect.addEventListener("change", () => {
+    void loadPipelineStudioState();
+  });
+  if (pipelineTemplateLibrary) {
+    pipelineTemplateLibrary.addEventListener("click", (event) => {
+      const card = event.target.closest("[data-template-card]");
+      if (!card || !pipelineTemplateSelect) return;
+      pipelineTemplateSelect.value = card.dataset.templateCard || "generic-task";
+      void loadPipelineStudioState();
+    });
+  }
+  if (pipelineSaveDraftButton) {
+    pipelineSaveDraftButton.addEventListener("click", () => {
+      void savePipelineDraft("save");
+    });
+  }
+  if (pipelineDuplicateButton) {
+    pipelineDuplicateButton.addEventListener("click", () => {
+      void savePipelineDraft("duplicate");
+    });
+  }
+  if (pipelineNewTemplateButton) {
+    pipelineNewTemplateButton.addEventListener("click", () => {
+      void savePipelineDraft("new");
+    });
+  }
+  if (pipelineFormatManifestButton) {
+    pipelineFormatManifestButton.addEventListener("click", () => {
+      try {
+        const manifest = parsePipelineManifestEditor();
+        if (pipelineManifestEditor) pipelineManifestEditor.value = JSON.stringify(manifest || {}, null, 2);
+        setPipelineManifestStatus("Worker manifest formatted");
+      } catch (error) {
+        setPipelineManifestStatus(`Format failed: ${error.message}`, true);
+      }
+    });
+  }
+  if (pipelineAddInputButton) {
+    pipelineAddInputButton.addEventListener("click", () => {
+      const current = collectPipelineRequiredInputs();
+      current.push({ id: `input-${current.length + 1}`, title: "New input", detail: "", status: "missing", required: true });
+      renderPipelineRequiredInputsEditor(current);
+    });
+  }
+  if (pipelineRequiredInputsEditor) {
+    pipelineRequiredInputsEditor.addEventListener("click", (event) => {
+      const removeButton = event.target.closest("[data-remove-input]");
+      if (!removeButton) return;
+      removeButton.closest("[data-input-row]")?.remove();
+    });
+  }
+  document.querySelector(".pipelineStageGrid")?.addEventListener("click", (event) => {
+    const card = event.target.closest(".pipelineCard.worker");
+    const workerId = card?.dataset?.workerId || "";
+    if (!workerId) return;
+    void savePipelineDraft("select_worker", { workerId, includeManifest: false });
+  });
+  document.querySelector(".pipelineStageGrid")?.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const card = event.target.closest(".pipelineCard.worker");
+    const workerId = card?.dataset?.workerId || "";
+    if (!workerId) return;
+    event.preventDefault();
+    void savePipelineDraft("select_worker", { workerId, includeManifest: false });
+  });
+  pipelineStudioControlsInitialized = true;
+  void loadPipelineStudioState();
+}
+
+function setOptionalHidden(element, isHidden) {
+  if (element) element.classList.toggle("hidden", isHidden);
+}
+
+function hideSoftwareDeliveryViews() {
+  setOptionalHidden(homeView, true);
+  setOptionalHidden(softwareDeliveryHubView, true);
+  setOptionalHidden(devPipelineStudioView, true);
+}
+
+function hideResearchViews() {
+  setOptionalHidden(researchView, true);
+  setOptionalHidden(codebaseIntelligenceView, true);
+}
+
+function routeFromLocation() {
+  if (location.pathname === "/") return "home";
+  if (location.pathname === "/software-delivery-hub") return "software-delivery";
+  if (location.pathname === "/dev-pipeline-studio") return "dev-pipeline-studio";
+  if (location.pathname === "/codebase-intelligence") return "codebase-intelligence";
+  if (location.pathname === "/review") return "review";
+  if (location.pathname === "/cluster") return "cluster";
+  if (location.pathname === "/consulting") return "consulting";
+  if (location.pathname === "/factory") return "factory";
+  if (location.pathname === "/research-center") return "research";
+  if (location.pathname === "/docs") return "docs";
+  if (location.pathname === "/issues" || location.pathname.startsWith("/issues/")) return "issues";
+  return "home";
+}
+
+function hasMainRoute(route) {
+  return Array.from(mainNavLinks).some((link) => link.dataset.mainRoute === route);
+}
+
+function setSdHubRailActive(route) {
+  const activeRoute = route === "dev-pipeline-studio" || route === "factory" || route === "software-delivery"
+    ? route
+    : route === "issues" || route === "review"
+      ? "issues"
+      : "";
+  sdHubRailLinks.forEach((link) => {
+    const isActive = link.dataset.sdHubRoute === activeRoute;
+    link.classList.toggle("active", isActive);
+    if (isActive) {
+      link.setAttribute("aria-current", "page");
+    } else {
+      link.removeAttribute("aria-current");
+    }
+  });
+}
+
+function setResearchRailActive(route) {
+  const activeRoute = route === "codebase-intelligence" ? "codebase-intelligence" : route === "research" ? "research" : "";
+  researchRailLinks.forEach((link) => {
+    const isActive = link.dataset.researchRoute === activeRoute;
+    link.classList.toggle("active", isActive);
+    if (isActive) {
+      link.setAttribute("aria-current", "page");
+    } else {
+      link.removeAttribute("aria-current");
+    }
+  });
+}
+
 function setNavActive(route) {
-  const activeRoute = route || (location.pathname.startsWith("/review") ? "review" : "issues");
-  const activeMain = ["cluster", "consulting", "factory", "docs", "research"].includes(activeRoute) ? activeRoute : "taskstream";
+  const activeRoute = route || routeFromLocation();
+  let activeMain = "taskstream";
+  if (activeRoute === "home") {
+    activeMain = homeView ? "home" : "taskstream";
+  } else if (activeRoute === "software-delivery" || activeRoute === "factory" || activeRoute === "issues" || activeRoute === "dev-pipeline-studio") {
+    activeMain = softwareDeliveryHubView ? "software-delivery" : activeRoute === "factory" ? "factory" : "taskstream";
+  } else if (activeRoute === "review") {
+    activeMain = hasMainRoute("review") ? "review" : "taskstream";
+  } else if (activeRoute === "codebase-intelligence") {
+    activeMain = "research";
+  } else if (["cluster", "consulting", "docs", "research"].includes(activeRoute)) {
+    activeMain = activeRoute;
+  }
   mainNavLinks.forEach((link) => {
     link.classList.toggle("active", link.dataset.mainRoute === activeMain);
   });
@@ -862,22 +1603,36 @@ function setNavActive(route) {
     link.classList.toggle("active", link.dataset.navRoute === activeRoute);
   });
   if (taskstreamNav) taskstreamNav.classList.toggle("hidden", activeMain !== "taskstream");
+  document.body.classList.toggle("homeMode", activeMain === "home");
+  document.body.classList.toggle("softwareDeliveryMode", activeMain === "software-delivery");
   document.body.classList.toggle("docsMode", activeMain === "docs");
   document.body.classList.toggle("researchMode", activeMain === "research");
-  if (activeMain !== "docs") document.body.classList.remove("docsAppPage");
+  document.body.classList.toggle("codebaseMode", activeRoute === "codebase-intelligence");
+  setSdHubRailActive(activeMain === "software-delivery" ? activeRoute : "");
+  setResearchRailActive(activeMain === "research" ? activeRoute : "");
+  if (activeMain !== "docs") {
+    document.body.classList.remove("docsAppPage");
+    document.body.classList.remove("docsPipelinePage");
+    document.body.classList.remove("docsParallelPage");
+  }
 }
 
 function syncDocsHashNavigation(options = {}) {
   if (!docsHashLinks.length) return;
   const activeHash = location.hash || "#overview";
   const isKanjiAppPage = activeHash.startsWith("#kanji");
+  const isParallelPage = activeHash.startsWith("#parallel");
   document.body.classList.toggle("docsAppPage", isKanjiAppPage);
+  document.body.classList.toggle("docsParallelPage", isParallelPage);
+  document.body.classList.remove("docsPipelinePage");
   docsHashLinks.forEach((link) => {
     const href = link.getAttribute("href") || "";
     const isSidebarKanjiParent = href === "#kanji-a-day" && link.classList.contains("docsAppParentLink");
-    link.classList.toggle("active", href === activeHash && !isSidebarKanjiParent);
+    const isSidebarParallelParent = href === "#parallel-execution" && link.classList.contains("docsParallelParentLink");
+    const isParallelParentActive = isSidebarParallelParent && isParallelPage;
+    link.classList.toggle("active", (href === activeHash && !isSidebarKanjiParent) || isParallelParentActive);
   });
-  if (options.scrollToHash && isKanjiAppPage) {
+  if (options.scrollToHash && (isKanjiAppPage || isParallelPage)) {
     window.requestAnimationFrame(() => {
       const target = document.querySelector(activeHash);
       if (target) target.scrollIntoView({ block: "start" });
@@ -1562,13 +2317,14 @@ async function loadReview() {
 function showReview() {
   setNavActive("review");
   document.body.classList.remove("reviewMode");
+  hideSoftwareDeliveryViews();
   listView.classList.add("hidden");
   detailView.classList.add("hidden");
   clusterView.classList.add("hidden");
   consultingView.classList.add("hidden");
   factoryView.classList.add("hidden");
   docsView.classList.add("hidden");
-  researchView.classList.add("hidden");
+  hideResearchViews();
   reviewView.classList.remove("hidden");
   history.replaceState(null, "", "/review");
   void loadReview().catch((error) => {
@@ -1626,13 +2382,15 @@ async function showDetail(issueId) {
   detailContent.innerHTML = `<div class="detailLoading">Loading issue…</div>`;
   historyList.innerHTML = `<div class="historyCard historyEmpty">Loading history…</div>`;
   document.body.classList.remove("reviewMode");
+  document.body.classList.remove("studioMode");
+  hideSoftwareDeliveryViews();
   listView.classList.add("hidden");
   reviewView.classList.add("hidden");
   clusterView.classList.add("hidden");
   consultingView.classList.add("hidden");
   factoryView.classList.add("hidden");
   docsView.classList.add("hidden");
-  researchView.classList.add("hidden");
+  hideResearchViews();
   detailView.classList.remove("hidden");
   history.replaceState(null, "", `/issues/${issueId}`);
   try {
@@ -1646,21 +2404,292 @@ async function showDetail(issueId) {
 function showList() {
   setNavActive("issues");
   document.body.classList.remove("reviewMode");
+  document.body.classList.remove("studioMode");
+  hideSoftwareDeliveryViews();
   reviewView.classList.add("hidden");
   detailView.classList.add("hidden");
   clusterView.classList.add("hidden");
   consultingView.classList.add("hidden");
   factoryView.classList.add("hidden");
   docsView.classList.add("hidden");
-  researchView.classList.add("hidden");
+  hideResearchViews();
   listView.classList.remove("hidden");
   setLocationFromState();
   void withSpinner(loadIssues());
 }
 
+function showHome() {
+  if (!homeView) {
+    showList();
+    return;
+  }
+  setNavActive("home");
+  document.body.classList.remove("reviewMode");
+  document.body.classList.remove("studioMode");
+  setOptionalHidden(homeView, false);
+  setOptionalHidden(softwareDeliveryHubView, true);
+  setOptionalHidden(devPipelineStudioView, true);
+  reviewView.classList.add("hidden");
+  detailView.classList.add("hidden");
+  listView.classList.add("hidden");
+  clusterView.classList.add("hidden");
+  consultingView.classList.add("hidden");
+  factoryView.classList.add("hidden");
+  docsView.classList.add("hidden");
+  hideResearchViews();
+  history.replaceState(null, "", "/");
+}
+
+function showSoftwareDeliveryHub() {
+  if (!softwareDeliveryHubView) {
+    showCentoSection("factory");
+    return;
+  }
+  if (location.hash === "#dev-pipeline-studio") {
+    history.replaceState(null, "", "/dev-pipeline-studio");
+    showDevPipelineStudio();
+    return;
+  }
+  setNavActive("software-delivery");
+  document.body.classList.remove("reviewMode");
+  document.body.classList.remove("studioMode");
+  softwareDeliveryHubView.querySelectorAll('.hubSidebar a').forEach((a) => {
+    a.classList.toggle('active', a.getAttribute('href') === '/software-delivery-hub');
+  });
+  setOptionalHidden(homeView, true);
+  setOptionalHidden(softwareDeliveryHubView, false);
+  setOptionalHidden(devPipelineStudioView, true);
+  reviewView.classList.add("hidden");
+  detailView.classList.add("hidden");
+  listView.classList.add("hidden");
+  clusterView.classList.add("hidden");
+  consultingView.classList.add("hidden");
+  factoryView.classList.add("hidden");
+  docsView.classList.add("hidden");
+  hideResearchViews();
+  history.replaceState(null, "", "/software-delivery-hub");
+}
+
+function showDevPipelineStudio() {
+  if (!softwareDeliveryHubView || !devPipelineStudioView) {
+    showSoftwareDeliveryHub();
+    return;
+  }
+  setNavActive("dev-pipeline-studio");
+  document.body.classList.remove("reviewMode");
+  document.body.classList.add("studioMode");
+  softwareDeliveryHubView.querySelectorAll('.hubSidebar a').forEach((a) => {
+    a.classList.toggle('active', a.getAttribute('href') === '/dev-pipeline-studio');
+  });
+  setOptionalHidden(homeView, true);
+  setOptionalHidden(softwareDeliveryHubView, false);
+  setOptionalHidden(devPipelineStudioView, false);
+  reviewView.classList.add("hidden");
+  detailView.classList.add("hidden");
+  listView.classList.add("hidden");
+  clusterView.classList.add("hidden");
+  consultingView.classList.add("hidden");
+  factoryView.classList.add("hidden");
+  docsView.classList.add("hidden");
+  hideResearchViews();
+  const pipelineControlsAlreadyReady = pipelineStudioControlsInitialized;
+  initPipelineStudioControls();
+  if (pipelineControlsAlreadyReady) void loadPipelineStudioState();
+  const hash = location.hash;
+  history.replaceState(null, "", `/dev-pipeline-studio${hash}`);
+  if (hash) {
+    window.requestAnimationFrame(() => {
+      const target = document.querySelector(hash);
+      if (target) target.scrollIntoView({ block: "start" });
+    });
+  } else {
+    window.scrollTo({ top: 0, left: 0 });
+  }
+}
+
+function ciCompactNumber(value) {
+  const number = Number(value || 0);
+  if (!Number.isFinite(number)) return "--";
+  if (number >= 1000) return `${(number / 1000).toFixed(number >= 10000 ? 0 : 1)}k`;
+  return String(number);
+}
+
+function setCiText(selector, value) {
+  document.querySelectorAll(selector).forEach((element) => {
+    element.textContent = value;
+  });
+}
+
+function setCiHealth(name, pct, label) {
+  const normalized = Math.max(0, Math.min(100, Number(pct || 0)));
+  document.querySelectorAll(`[data-ci-health="${name}"]`).forEach((element) => {
+    element.style.width = `${normalized}%`;
+  });
+  setCiText(`[data-ci-health-label="${name}"]`, label || `${normalized}%`);
+}
+
+function renderCodebaseInventory(payload) {
+  if (!payload) return;
+  const health = payload.health || {};
+  const graph = payload.graph || {};
+  const capabilities = Array.isArray(payload.capabilities) ? payload.capabilities : [];
+  const routes = Array.isArray(payload.routes) ? payload.routes : [];
+  const datastores = Array.isArray(payload.datastores) ? payload.datastores : [];
+  const uncategorized = Array.isArray(health.uncategorized_files) ? health.uncategorized_files.length : 0;
+  const routeHealth = Math.min(100, routes.length * 8);
+  const testHealth = Math.min(100, (Number(health.test_file_count || 0) / Math.max(1, Number(health.script_count || 1))) * 100);
+
+  setCiText('[data-ci-metric="scriptCount"]', `${ciCompactNumber(health.script_count)} scripts indexed`);
+  setCiText('[data-ci-metric="capabilityCount"]', ciCompactNumber(capabilities.length || graph.nodes?.length));
+  setCiText('[data-ci-metric="routeCount"]', ciCompactNumber(routes.length));
+  setCiText('[data-ci-metric="dataFileCount"]', ciCompactNumber(health.data_file_count || datastores.length));
+  setCiText('[data-ci-metric="testCount"]', ciCompactNumber(health.test_file_count));
+  setCiText('[data-ci-metric="lineCount"]', `${ciCompactNumber(health.total_lines)} lines`);
+  setCiText("[data-ci-repo-state]", uncategorized ? "Needs map" : "Indexed");
+
+  const repoState = document.querySelector("[data-ci-repo-state]");
+  if (repoState) repoState.classList.toggle("clean", uncategorized === 0);
+  setCiHealth("docstrings", health.with_docstring_pct || 0);
+  setCiHealth("tests", testHealth, `${Math.round(testHealth)}%`);
+  setCiHealth("routes", routeHealth, `${routes.length}`);
+}
+
+function normalizeInspectorPayload(payload) {
+  if (!payload || payload.error) return null;
+  const extension = String(payload.extension || "").replace(/^\./, "");
+  const language = extension ? extension.toUpperCase() : "File";
+  const routes = Array.isArray(codebaseIntelligencePayload?.routes) ? codebaseIntelligencePayload.routes.slice(0, 5) : [];
+  const apiRoutes = routes.map((route) => ({
+    method: Array.isArray(route.methods) ? route.methods[0] : "GET",
+    path: route.prefix || "/",
+    label: route.description || route.module || "Route",
+  }));
+  const debt = Array.isArray(payload.health?.issues) && payload.health.issues.length
+    ? payload.health.issues
+    : ["No high-risk inspector issues detected for this file."];
+  return {
+    path: payload.path,
+    size_kb: ((Number(payload.size_bytes || 0)) / 1024).toFixed(1),
+    loc: payload.lines || 0,
+    modified: "Local workspace",
+    language,
+    purpose: payload.docstring || `Repository file inspected by Codebase Intelligence (${payload.path}).`,
+    api_routes: apiRoutes,
+    datastore: {
+      type: "repository",
+      path: payload.path,
+    },
+    tech_debt: debt,
+    ai_assistant: {
+      prompt: "Explain this file and its connected routes",
+      answer: `This inspector entry summarizes ${payload.path}, including line count, parsed symbols, imports, and local capability mapping.`,
+      references: [{ path: payload.path, lines: payload.lines || 1 }],
+    },
+  };
+}
+
+async function loadCodebaseIntelligencePayload() {
+  try {
+    codebaseIntelligencePayload = await apiGetJson(`${API_BASE}/codebase-intelligence`);
+    renderCodebaseInventory(codebaseIntelligencePayload);
+  } catch (error) {
+    setCiText('[data-ci-metric="scriptCount"]', "Inventory unavailable");
+    setCiText('[data-ci-metric="lineCount"]', error.message);
+  }
+}
+
+async function initCodebaseIntelligence() {
+  if (codebaseIntelligenceInitialized) return;
+  codebaseIntelligenceInitialized = true;
+
+  if (ciGraphMount && window.CodebaseIntelligenceGraph?.init) {
+    ciGraphMount.innerHTML = "";
+    window.CodebaseIntelligenceGraph.init(ciGraphMount);
+  }
+
+  await loadCodebaseIntelligencePayload();
+
+  if (window.CIpanels) {
+    let inspectorPayload = null;
+    if (window.CIpanels.loadInspectorData) {
+      inspectorPayload = normalizeInspectorPayload(await window.CIpanels.loadInspectorData("scripts/agent_work_app.py"));
+    }
+    window.CIpanels.mountInspectorPanel?.(ciInspectorMount, inspectorPayload || undefined);
+    window.CIpanels.mountAskCentoPanel?.(ciAskMount, {
+      context: "Cento repository",
+      example_prompt: "Which console routes connect to Agent Work and Factory?",
+      answer: "Codebase Intelligence maps registered API routes, local script capabilities, and data stores so route ownership and dependencies stay visible while working in the Research Center.",
+      references: [
+        { path: "scripts/agent_work_app.py", lines: 2542 },
+        { path: "scripts/codebase_intelligence.py", lines: 472 },
+        { path: "templates/agent-work-app/app.js", lines: 1 },
+      ],
+      extra_refs: 2,
+    });
+  }
+}
+
+function showResearchCenter() {
+  setNavActive("research");
+  document.body.classList.remove("reviewMode");
+  document.body.classList.remove("studioMode");
+  hideSoftwareDeliveryViews();
+  reviewView.classList.add("hidden");
+  detailView.classList.add("hidden");
+  listView.classList.add("hidden");
+  clusterView.classList.add("hidden");
+  consultingView.classList.add("hidden");
+  factoryView.classList.add("hidden");
+  docsView.classList.add("hidden");
+  setOptionalHidden(codebaseIntelligenceView, true);
+  setOptionalHidden(researchView, false);
+  history.replaceState(null, "", `/research-center${location.hash || ""}`);
+  if (location.hash) {
+    window.requestAnimationFrame(() => {
+      const target = document.querySelector(location.hash);
+      if (target) target.scrollIntoView({ block: "start" });
+    });
+  }
+}
+
+function showCodebaseIntelligence() {
+  if (!codebaseIntelligenceView) {
+    showResearchCenter();
+    return;
+  }
+  setNavActive("codebase-intelligence");
+  document.body.classList.remove("reviewMode");
+  document.body.classList.remove("studioMode");
+  hideSoftwareDeliveryViews();
+  reviewView.classList.add("hidden");
+  detailView.classList.add("hidden");
+  listView.classList.add("hidden");
+  clusterView.classList.add("hidden");
+  consultingView.classList.add("hidden");
+  factoryView.classList.add("hidden");
+  docsView.classList.add("hidden");
+  setOptionalHidden(researchView, true);
+  setOptionalHidden(codebaseIntelligenceView, false);
+  history.replaceState(null, "", "/codebase-intelligence");
+  window.scrollTo({ top: 0, left: 0 });
+  void initCodebaseIntelligence().catch((error) => {
+    if (ciGraphMount) ciGraphMount.innerHTML = `<div class="ciLoading">${escapeHtml(error.message)}</div>`;
+  });
+}
+
 function showCentoSection(route) {
+  if (route === "research") {
+    showResearchCenter();
+    return;
+  }
+  if (route === "codebase-intelligence") {
+    showCodebaseIntelligence();
+    return;
+  }
   setNavActive(route);
   document.body.classList.remove("reviewMode");
+  document.body.classList.remove("studioMode");
+  hideSoftwareDeliveryViews();
   reviewView.classList.add("hidden");
   detailView.classList.add("hidden");
   listView.classList.add("hidden");
@@ -1668,14 +2697,10 @@ function showCentoSection(route) {
   consultingView.classList.toggle("hidden", route !== "consulting");
   factoryView.classList.toggle("hidden", route !== "factory");
   docsView.classList.toggle("hidden", route !== "docs");
-  researchView.classList.toggle("hidden", route !== "research");
+  hideResearchViews();
   if (route === "factory") {
     history.replaceState(null, "", "/factory");
     void loadFactory();
-    return;
-  }
-  if (route === "research") {
-    history.replaceState(null, "", "/research-center");
     return;
   }
   const hash = route === "docs" ? location.hash : "";
@@ -2105,7 +3130,13 @@ backButton.addEventListener("click", showList);
 window.addEventListener("popstate", () => {
   syncStateFromLocation();
   const match = location.pathname.match(/^\/issues\/(\d+)/);
-  if (location.pathname === "/review") {
+  if (location.pathname === "/") {
+    showHome();
+  } else if (location.pathname === "/software-delivery-hub") {
+    showSoftwareDeliveryHub();
+  } else if (location.pathname === "/dev-pipeline-studio") {
+    showDevPipelineStudio();
+  } else if (location.pathname === "/review") {
     showReview();
   } else if (location.pathname === "/cluster") {
     showCentoSection("cluster");
@@ -2114,13 +3145,17 @@ window.addEventListener("popstate", () => {
   } else if (location.pathname === "/factory") {
     showCentoSection("factory");
   } else if (location.pathname === "/research-center") {
-    showCentoSection("research");
+    showResearchCenter();
+  } else if (location.pathname === "/codebase-intelligence") {
+    showCodebaseIntelligence();
   } else if (location.pathname === "/docs") {
     showCentoSection("docs");
   } else if (match) {
     void showDetail(match[1]).catch(console.error);
+  } else if (location.pathname === "/issues") {
+    showList();
   } else {
-    void withSpinner(loadIssues());
+    showHome();
   }
 });
 
@@ -2138,6 +3173,18 @@ async function boot() {
     showReview();
     return;
   }
+  if (location.pathname === "/") {
+    showHome();
+    return;
+  }
+  if (location.pathname === "/software-delivery-hub") {
+    showSoftwareDeliveryHub();
+    return;
+  }
+  if (location.pathname === "/dev-pipeline-studio") {
+    showDevPipelineStudio();
+    return;
+  }
   if (location.pathname === "/cluster") {
     showCentoSection("cluster");
     return;
@@ -2151,7 +3198,11 @@ async function boot() {
     return;
   }
   if (location.pathname === "/research-center") {
-    showCentoSection("research");
+    showResearchCenter();
+    return;
+  }
+  if (location.pathname === "/codebase-intelligence") {
+    showCodebaseIntelligence();
     return;
   }
   if (location.pathname === "/docs") {
@@ -2166,7 +3217,12 @@ async function boot() {
     });
     return;
   }
-  await withSpinner(loadIssues());
+  if (location.pathname === "/issues") {
+    showList();
+    return;
+  }
+  showHome();
 }
 
+initPipelineStudioControls();
 void boot();
