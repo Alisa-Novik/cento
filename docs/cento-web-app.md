@@ -22,7 +22,7 @@ The `/docs` route is a first-class documentation module with:
 - documentation sidebar with a Cento general group expanded by default
 - product-area groups folded by default for Taskstream, Cluster, Consulting, and References
 - hero copy for Cento Documentation
-- six Explore by area cards
+- Explore by area cards for Cento systems and app documentation such as Kanji a Day
 - Recent updates list
 - support callout
 - right-side On this page rail on desktop

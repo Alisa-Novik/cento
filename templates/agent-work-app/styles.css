@@ -106,7 +106,7 @@ button:hover {
   top: 0;
   z-index: 20;
   padding: 0.75rem 1.1rem;
-  background: rgba(5, 4, 3, 0.94);
+  background: #050403;
   box-shadow: 0 0 24px rgba(255, 90, 0, 0.12);
 }
 
@@ -185,6 +185,66 @@ button:hover {
   color: var(--orange);
   border-color: var(--line-dim);
   background: rgba(255, 90, 0, 0.08);
+}
+
+.sdHubChildHeader {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(16rem, 1fr) auto;
+  gap: 1rem;
+  align-items: end;
+  min-height: 4.3rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(199, 71, 0, 0.5);
+  background:
+    linear-gradient(180deg, rgba(20, 16, 12, 0.74), rgba(8, 8, 7, 0.96)),
+    #080706;
+}
+
+.sdHubChildHeader h1 {
+  margin: 0.2rem 0 0;
+  font-size: 1.35rem;
+  line-height: 1.15;
+}
+
+.sdHubChildHeader p {
+  max-width: 46rem;
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.sdHubChildNav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.sdHubChildNav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.2rem;
+  padding: 0 0.75rem;
+  border: 1px solid rgba(168, 156, 145, 0.15);
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 850;
+}
+
+.sdHubChildNav a.active,
+.sdHubChildNav a:hover {
+  border-color: rgba(255, 90, 0, 0.58);
+  color: var(--orange);
+  background: rgba(255, 90, 0, 0.1);
+}
+
+.sdHubChildNav span {
+  color: inherit;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.78rem;
 }
 
 .primaryNav {
@@ -310,21 +370,27 @@ button:hover {
   min-width: 0;
 }
 
-.sectionHeader {
+.viewHeader {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.9rem;
-  border-bottom: 1px solid var(--line-dim);
+  min-height: 3.9rem;
+  margin: 0 0 0.85rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgba(199, 71, 0, 0.4);
+  background: linear-gradient(180deg, rgba(16, 15, 13, 0.94), rgba(8, 8, 7, 0.96));
 }
 
-.sectionHeader h1 {
+.sectionHeader {
+  align-items: center;
+}
+
+.viewHeader h1 {
   margin: 0.25rem 0 0;
   max-width: 58rem;
-  font-size: clamp(1.55rem, 2vw, 2.25rem);
-  line-height: 1.08;
+  font-size: 1.35rem;
+  line-height: 1.15;
 }
 
 .sectionActions {
@@ -707,6 +773,32 @@ body.researchMode .content {
   min-height: calc(100vh - 64px);
 }
 
+body.researchMode .content {
+  display: grid;
+  grid-template-columns: 18rem minmax(0, 1fr);
+  align-items: stretch;
+  background:
+    linear-gradient(90deg, rgba(255, 90, 0, 0.07) 0 1px, transparent 1px 2.65rem),
+    linear-gradient(180deg, rgba(10, 10, 9, 0.98), rgba(3, 3, 3, 0.99));
+}
+
+body.researchMode .content > .view:not(.hidden) {
+  grid-column: 2;
+  min-width: 0;
+}
+
+body.researchMode .researchModuleRail {
+  display: block;
+  grid-column: 1;
+  grid-row: 1 / span 20;
+  min-height: calc(100vh - 94px);
+  padding: 1.05rem 0.85rem 1.2rem;
+  border-right: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(10, 10, 9, 0.99), rgba(4, 4, 3, 0.99)),
+    #050403;
+}
+
 #docsView:not(.hidden) {
   display: grid;
   grid-template-columns: 246px minmax(560px, 1fr) 320px;
@@ -715,6 +807,20 @@ body.researchMode .content {
   background:
     radial-gradient(circle at 80% 10%, rgba(255, 90, 0, 0.06), transparent 26rem),
     linear-gradient(180deg, rgba(7, 8, 8, 0.96), rgba(5, 5, 4, 0.98));
+}
+
+body.docsAppPage #docsView:not(.hidden),
+body.docsPipelinePage #docsView:not(.hidden) {
+  grid-template-columns: 246px minmax(0, 1fr);
+}
+
+body.docsPipelinePage #docsView:not(.hidden) {
+  grid-template-columns: 220px minmax(0, 1fr);
+}
+
+body.docsAppPage #docsView > .docsToc,
+body.docsPipelinePage #docsView > .docsToc {
+  display: none;
 }
 
 #researchView:not(.hidden) {
@@ -739,6 +845,16 @@ body.researchMode .content {
   justify-content: space-between;
   border-right: 1px solid var(--line);
   padding: 1.25rem 1.05rem 1.9rem;
+}
+
+@media (min-width: 761px) {
+  #docsView:not(.hidden) > .docsSidebar {
+    position: sticky;
+    top: 67px;
+    align-self: start;
+    max-height: calc(100vh - 67px);
+    overflow-y: auto;
+  }
 }
 
 .docsSidebar details {
@@ -801,11 +917,136 @@ body.researchMode .content {
   font-size: 0.92rem;
 }
 
+.docsSidebar nav .docsMutedLink {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 1.85rem;
+  padding: 0 0.55rem;
+  border: 1px solid transparent;
+  color: rgba(168, 156, 145, 0.48);
+  cursor: default;
+  font-size: 0.92rem;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.docsSidebar nav .docsMutedLink .navIcon {
+  color: rgba(255, 90, 0, 0.48);
+}
+
+.docsSidebar .docsNestedGroup {
+  margin: 0.15rem 0;
+  padding: 0;
+  border: 0;
+}
+
+.docsSidebar .docsNestedGroup > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 1.95rem;
+  margin: 0;
+  padding: 0 0.55rem;
+  border: 1px solid transparent;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.docsSidebar .docsNestedGroup > summary span:last-of-type {
+  white-space: nowrap;
+}
+
+.docsSidebar .docsNestedGroup > summary::after {
+  content: "›";
+  margin-left: auto;
+  color: var(--orange);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.82rem;
+}
+
+.docsSidebar .docsNestedGroup[open] > summary::after {
+  content: "⌄";
+}
+
+body.docsPipelinePage .docsSidebar .docsPipelineTree > summary {
+  color: var(--orange);
+  border-color: rgba(255, 90, 0, 0.34);
+  background: rgba(255, 90, 0, 0.18);
+}
+
+body.docsAppPage .docsSidebar .docsAppTree > summary {
+  color: var(--orange);
+  border-color: rgba(255, 90, 0, 0.34);
+  background: rgba(255, 90, 0, 0.18);
+}
+
+.docsTreeSubNav {
+  display: grid;
+  gap: 0.05rem;
+  margin: 0.28rem 0 0.42rem 1.92rem;
+}
+
+.docsSidebar nav .docsTreeSubNav a,
+.docsSidebar nav .docsTreeSubNav .docsMutedLink {
+  display: grid;
+  grid-template-columns: 0.9rem minmax(0, 1fr);
+  gap: 0.42rem;
+  align-items: center;
+  min-height: 1.78rem;
+  padding: 0 0.45rem 0 0;
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: 0.84rem;
+  white-space: nowrap;
+}
+
+.docsTreeSubNav a::before,
+.docsTreeSubNav .docsMutedLink::before {
+  content: "▸";
+  color: var(--muted);
+  font-size: 0.64rem;
+  line-height: 1;
+  text-align: center;
+}
+
+.docsSidebar nav .docsTreeSubNav a.active {
+  color: var(--orange);
+  border-color: transparent;
+  background: transparent;
+}
+
+.docsTreeSubNav a.active::before {
+  content: "";
+  width: 2px;
+  height: 1.3rem;
+  margin-left: 0.34rem;
+  background: var(--orange);
+}
+
 .docsSidebar nav a.active,
 .docsSidebar nav a:hover {
   color: var(--orange);
   border-color: rgba(255, 90, 0, 0.22);
   background: rgba(255, 90, 0, 0.16);
+}
+
+.docsSubNav {
+  margin: 0.2rem 0 0.15rem 1.2rem;
+}
+
+.docsSidebar nav .docsSubNav a {
+  min-height: 1.55rem;
+  padding-left: 0.45rem;
+  font-size: 0.84rem;
+}
+
+.docsSidebar nav .docsSubNav .navIcon {
+  color: var(--muted);
+  font-size: 0.66rem;
 }
 
 .navIcon {
@@ -879,6 +1120,45 @@ body.researchMode .content {
 .docsBreadcrumb strong {
   color: var(--text);
   min-width: 0;
+}
+
+.docsAppOnly,
+.docsPipelineOnly,
+.docsParallelOnly {
+  display: none !important;
+}
+
+body.docsAppPage .docsOverviewOnly,
+body.docsPipelinePage .docsOverviewOnly,
+body.docsPipelinePage .docsAppOnly,
+body.docsParallelPage .docsOverviewOnly,
+body.docsParallelPage .docsAppOnly,
+body.docsParallelPage .docsPipelineOnly {
+  display: none !important;
+}
+
+body.docsAppPage .docsAppOnly {
+  display: block !important;
+}
+
+body.docsPipelinePage .docsPipelineOnly {
+  display: block !important;
+}
+
+body.docsParallelPage .docsParallelOnly {
+  display: block !important;
+}
+
+body.docsAppPage .docsBreadcrumb.docsAppOnly,
+body.docsAppPage .appOverviewPage .docsBreadcrumb,
+body.docsPipelinePage .docsBreadcrumb.docsPipelineOnly,
+body.docsParallelPage .docsBreadcrumb.docsParallelOnly,
+body.docsParallelPage .parallelBreadcrumb {
+  display: flex !important;
+}
+
+body.docsAppPage .appOverviewPage {
+  margin-top: 0;
 }
 
 .researchHeader {
@@ -1120,10 +1400,55 @@ body.researchMode .content {
   font-size: 1.16rem;
 }
 
+.docsSection h3 {
+  margin: 0 0 0.55rem;
+  font-size: 0.98rem;
+}
+
+.docsSection code {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--panel-line);
+  padding: 0.08rem 0.32rem;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.92em;
+}
+
 .docsExploreGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.1rem 1.45rem;
+}
+
+.docsExploreSections {
+  display: grid;
+  gap: 1.35rem;
+}
+
+.docsExploreGroup {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.docsExploreGroup > header {
+  display: grid;
+  gap: 0.25rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid rgba(168, 156, 145, 0.16);
+}
+
+.docsExploreGroup > header span {
+  color: var(--orange);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.docsExploreGroup > header h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.03rem;
 }
 
 .docsAreaCard {
@@ -1155,6 +1480,3348 @@ body.researchMode .content {
   align-self: end;
   color: var(--orange);
   font-size: 1.15rem;
+}
+
+.appDocSection {
+  max-width: none;
+}
+
+.appDocSection > p {
+  max-width: 740px;
+  margin: 0 0 1.1rem;
+  color: var(--muted);
+  line-height: 1.58;
+}
+
+.docsDetailGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.docsDetailGrid article,
+.docsCallout {
+  border: 1px solid var(--panel-line);
+  background: linear-gradient(180deg, rgba(17, 17, 16, 0.96), rgba(11, 11, 10, 0.98));
+  padding: 1.1rem;
+}
+
+.docsDetailGrid p,
+.docsDetailGrid li,
+.docsCallout p {
+  color: var(--muted);
+  line-height: 1.52;
+}
+
+.docsDetailGrid p,
+.docsCallout p {
+  margin: 0;
+}
+
+.docsDetailGrid ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.docsDetailGrid li + li {
+  margin-top: 0.35rem;
+}
+
+.docsFlow {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--panel-line);
+  background: rgba(255, 90, 0, 0.05);
+}
+
+.docsFlow span {
+  border: 1px solid var(--line-dim);
+  padding: 0.42rem 0.62rem;
+  color: var(--text);
+  font-weight: 900;
+}
+
+.docsFlow b {
+  color: var(--orange);
+}
+
+.docsCallout {
+  margin-top: 1rem;
+  border-color: rgba(255, 90, 0, 0.28);
+}
+
+.docsCallout strong {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: var(--orange);
+}
+
+.parallelDocSection {
+  margin-top: 0;
+  scroll-margin-top: 5.6rem;
+  color: var(--text);
+}
+
+.parallelHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.64fr);
+  gap: 1rem;
+  align-items: stretch;
+  padding: 1.25rem;
+  border: 1px solid rgba(168, 156, 145, 0.16);
+  border-radius: 6px;
+  background:
+    radial-gradient(circle at 86% 0%, rgba(77, 215, 209, 0.08), transparent 18rem),
+    linear-gradient(180deg, rgba(19, 20, 20, 0.94), rgba(9, 10, 10, 0.98));
+}
+
+.parallelHero h1 {
+  max-width: 44rem;
+  margin: 0.2rem 0 0.55rem;
+  font-size: clamp(2rem, 3vw, 2.65rem);
+  line-height: 1.04;
+}
+
+.parallelHero p,
+.parallelSectionHeader p,
+.parallelPipeline p,
+.parallelCapabilityGrid p,
+.parallelRealityGrid p,
+.parallelGapList span,
+.parallelUseCallout p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.parallelBadgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+
+.parallelCommandPanel {
+  display: grid;
+  align-content: center;
+  gap: 0.48rem;
+  min-width: 0;
+  padding: 0.95rem;
+  border: 1px solid rgba(255, 90, 0, 0.24);
+  border-radius: 6px;
+  background: rgba(7, 7, 6, 0.74);
+}
+
+.parallelCommandPanel strong {
+  color: var(--orange);
+  font-size: 0.86rem;
+  text-transform: uppercase;
+}
+
+.parallelCommandPanel code,
+.parallelArtifactGrid code {
+  display: block;
+  min-width: 0;
+  padding: 0.46rem 0.55rem;
+  border: 1px solid rgba(168, 156, 145, 0.16);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.74rem;
+  overflow-wrap: anywhere;
+}
+
+.parallelStatusGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.parallelStatusGrid article {
+  min-width: 0;
+  min-height: 6.15rem;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid rgba(168, 156, 145, 0.16);
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(18, 18, 17, 0.92), rgba(9, 9, 8, 0.96));
+}
+
+.parallelStatusGrid span,
+.parallelStatusGrid small {
+  display: block;
+  color: var(--muted);
+}
+
+.parallelStatusGrid span {
+  margin-bottom: 0.45rem;
+  font-size: 0.74rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.parallelStatusGrid strong {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  min-height: 1.7rem;
+  color: var(--text);
+  font-size: 0.98rem;
+  overflow-wrap: anywhere;
+}
+
+.parallelPanel {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(168, 156, 145, 0.16);
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(13, 14, 14, 0.94), rgba(7, 7, 6, 0.98));
+}
+
+.parallelSectionHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.72fr);
+  gap: 1rem;
+  align-items: end;
+  margin-bottom: 0.85rem;
+}
+
+.parallelSectionHeader h2 {
+  margin: 0.2rem 0 0;
+  font-size: 1.12rem;
+}
+
+.parallelPipeline {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.62rem;
+}
+
+.parallelPipeline article {
+  position: relative;
+  min-width: 0;
+  min-height: 11.2rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(168, 156, 145, 0.17);
+  border-radius: 6px;
+  background: rgba(10, 10, 9, 0.78);
+}
+
+.parallelPipeline article:not(:last-child)::after {
+  content: ">";
+  position: absolute;
+  right: -0.52rem;
+  top: 50%;
+  z-index: 1;
+  color: rgba(236, 227, 216, 0.48);
+  transform: translateY(-50%);
+}
+
+.parallelPipeline b {
+  display: grid;
+  place-items: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  margin-bottom: 0.65rem;
+  border-radius: 5px;
+  color: var(--orange);
+  background: rgba(255, 90, 0, 0.14);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+.parallelPipeline strong,
+.parallelRealityGrid strong,
+.parallelGapList strong {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: var(--text);
+}
+
+.parallelPipeline code,
+.parallelCapabilityGrid code,
+.parallelGapList code,
+.parallelCommandReference code {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(168, 156, 145, 0.16);
+  border-radius: 3px;
+  padding: 0.06rem 0.22rem;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.9em;
+}
+
+.parallelCapabilityGrid,
+.parallelRealityGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.parallelCapabilityGrid article,
+.parallelRealityGrid article {
+  min-width: 0;
+  min-height: 10.4rem;
+  padding: 0.9rem;
+  border: 1px solid rgba(168, 156, 145, 0.15);
+  border-radius: 6px;
+  background: rgba(9, 9, 8, 0.66);
+}
+
+.parallelCapabilityGrid .statePill {
+  margin-bottom: 0.75rem;
+}
+
+.parallelCapabilityGrid h3 {
+  margin: 0 0 0.45rem;
+  font-size: 0.98rem;
+}
+
+.parallelRealityGrid article {
+  min-height: 8.6rem;
+}
+
+.parallelGapList {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.parallelGapList div {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.42fr) minmax(0, 1fr);
+  gap: 0.9rem;
+  align-items: start;
+  min-height: 3.35rem;
+  padding: 0.72rem 0.8rem;
+  border: 1px solid rgba(168, 156, 145, 0.14);
+  border-radius: 5px;
+  background: rgba(10, 10, 9, 0.66);
+}
+
+.parallelGapList strong {
+  margin: 0;
+  color: #ffb02e;
+}
+
+.parallelArtifactGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.parallelCommandReference pre {
+  max-width: 100%;
+  margin: 0;
+  padding: 0.9rem;
+  border: 1px solid rgba(168, 156, 145, 0.16);
+  border-radius: 5px;
+  background: #080807;
+  overflow-x: auto;
+}
+
+.parallelCommandReference pre code {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  white-space: pre;
+}
+
+.parallelUseCallout {
+  border-color: rgba(77, 215, 209, 0.26);
+}
+
+.parallelUseCallout strong {
+  color: var(--cyan);
+}
+
+.pipelineDocSection {
+  margin-top: 0;
+  scroll-margin-top: 5.6rem;
+  color: var(--text);
+}
+
+body.docsPipelinePage .docsMain {
+  padding: 1.65rem 1.9rem 2rem;
+}
+
+body.docsPipelinePage .pipelineInputDocPage {
+  display: grid !important;
+  gap: 1rem;
+  max-width: none;
+  scroll-margin-top: 5.6rem;
+}
+
+.pipelineInputDocHeader {
+  display: grid;
+  grid-template-columns: minmax(25rem, 1fr) minmax(31rem, 0.78fr);
+  gap: 1.2rem;
+  align-items: end;
+  padding: 0.15rem 0 0.25rem;
+}
+
+.pipelineInputDocHeader > *,
+.pipelineInputDocGrid > *,
+.pipelineTemplateControls {
+  min-width: 0;
+}
+
+.pipelineInputDocHeader h1 {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  color: var(--paper);
+  font-size: clamp(2rem, 3vw, 2.55rem);
+  line-height: 1;
+}
+
+.pipelineInputDocHeader h1 span {
+  padding: 0.24rem 0.55rem;
+  border: 1px solid rgba(139, 92, 246, 0.48);
+  border-radius: 999px;
+  background: rgba(139, 92, 246, 0.13);
+  color: #b39cff;
+  font-size: 0.72rem;
+}
+
+.pipelineInputDocHeader p {
+  max-width: 58rem;
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.pipelineTemplateControls {
+  display: grid;
+  grid-template-columns: minmax(13rem, 1fr) minmax(9rem, 0.72fr) minmax(10rem, 0.64fr);
+  gap: 0.85rem;
+  align-items: end;
+}
+
+.pipelineTemplateControls label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.pipelineTemplateControls select,
+.pipelineTemplateControls button {
+  min-width: 0;
+  width: 100%;
+  height: 2.55rem;
+  border: 1px solid var(--panel-line);
+  border-radius: 5px;
+  background: rgba(11, 11, 10, 0.92);
+  color: var(--text);
+  font: inherit;
+}
+
+.pipelineTemplateControls select {
+  padding: 0 0.8rem;
+}
+
+.pipelineTemplateControls button {
+  color: var(--paper);
+  font-weight: 800;
+}
+
+.pipelineInputDocGrid {
+  display: grid;
+  grid-template-columns: minmax(30rem, 1.08fr) minmax(29rem, 0.98fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.pipelineDocPanel {
+  border: 1px solid var(--panel-line);
+  border-radius: 6px;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(255, 90, 0, 0.045), transparent 15rem),
+    linear-gradient(180deg, rgba(19, 20, 19, 0.86), rgba(9, 10, 9, 0.96));
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.015) inset;
+}
+
+.pipelineDocPanel > header,
+.pipelineInputFormat > header,
+.pipelineInputOverview > header {
+  padding: 1.15rem 1.1rem 0.3rem;
+}
+
+.pipelineDocPanel h2,
+.pipelineDocPanel h3 {
+  margin: 0;
+  color: var(--paper);
+}
+
+.pipelineDocPanel h2 {
+  font-size: 1.02rem;
+}
+
+.pipelineDocPanel h3 {
+  font-size: 1rem;
+}
+
+.pipelineDocPanel p {
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+  line-height: 1.48;
+}
+
+.pipelineInputStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 0.8rem 1.1rem 1rem;
+  border-bottom: 1px solid rgba(168, 156, 145, 0.14);
+}
+
+.pipelineInputStats div,
+.pipelineFormatBadges div,
+.pipelineInputLegend article {
+  border: 1px solid rgba(168, 156, 145, 0.14);
+  border-radius: 5px;
+  background: rgba(9, 10, 10, 0.72);
+}
+
+.pipelineInputStats div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.08rem 0.6rem;
+  min-height: 4rem;
+  padding: 0.8rem;
+}
+
+.pipelineInputStats strong {
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  min-width: 2rem;
+  height: 2rem;
+  border-radius: 4px;
+  background: rgba(139, 92, 246, 0.18);
+  color: #b39cff;
+  font-size: 1.35rem;
+}
+
+.pipelineInputStats .provided strong {
+  background: rgba(16, 185, 129, 0.16);
+  color: var(--green);
+}
+
+.pipelineInputStats .missing strong {
+  background: rgba(255, 77, 109, 0.15);
+  color: var(--red);
+}
+
+.pipelineInputStats .structured strong {
+  background: rgba(56, 189, 248, 0.13);
+  color: var(--cyan);
+  font-size: 1rem;
+}
+
+.pipelineInputStats span {
+  color: var(--paper);
+  font-weight: 900;
+}
+
+.pipelineInputStats small {
+  color: var(--muted);
+}
+
+.pipelineInputElements {
+  padding: 0.95rem 1.1rem 1.1rem;
+}
+
+.pipelineInputRows {
+  display: grid;
+  gap: 0.24rem;
+  margin-top: 0.85rem;
+}
+
+.pipelineInputRow {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1fr) auto minmax(7.6rem, auto) auto;
+  gap: 0.75rem;
+  align-items: center;
+  min-height: 3.9rem;
+  padding: 0.68rem 0.78rem;
+  border: 1px solid rgba(168, 156, 145, 0.13);
+  border-radius: 4px;
+  background: rgba(9, 10, 10, 0.72);
+}
+
+.pipelineInputRow > div {
+  display: grid;
+  grid-template-columns: 1.15rem minmax(0, 1fr);
+  gap: 0 0.7rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.pipelineInputRow i,
+.pipelineInputLegend span {
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+}
+
+.pipelineInputRow i {
+  grid-row: 1 / span 2;
+}
+
+.pipelineInputRow strong {
+  color: #d6c8ff;
+  font-weight: 900;
+}
+
+.pipelineInputRow span {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.pipelineInputRow small {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.pipelineInputRow em,
+.pipelineInputRow b {
+  padding: 0.22rem 0.46rem;
+  border-radius: 4px;
+  font-style: normal;
+  font-size: 0.72rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.pipelineInputRow b {
+  background: rgba(139, 92, 246, 0.18);
+  color: #c7b6ff;
+}
+
+.pipelineInputRow em.provided {
+  background: rgba(16, 185, 129, 0.14);
+  color: var(--green);
+}
+
+.pipelineInputRow em.configured {
+  background: rgba(56, 189, 248, 0.13);
+  color: var(--cyan);
+}
+
+.pipelineInputRow em.missing {
+  background: rgba(255, 77, 109, 0.14);
+  color: var(--red);
+}
+
+.pipelineInputRow i.required,
+.pipelineInputLegend .required {
+  color: #b39cff;
+  background: rgba(139, 92, 246, 0.14);
+}
+
+.pipelineInputRow i.configured,
+.pipelineInputLegend .configured {
+  color: var(--cyan);
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.pipelineInputRow i.missing,
+.pipelineInputLegend .missing {
+  color: var(--red);
+  background: rgba(255, 77, 109, 0.12);
+}
+
+.pipelineInputLegend .provided {
+  color: var(--green);
+  background: rgba(16, 185, 129, 0.13);
+}
+
+.pipelineInputLegend .type {
+  color: var(--cyan);
+  border-radius: 50%;
+  background: rgba(56, 189, 248, 0.1);
+}
+
+.pipelineInputNotice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 5px;
+  background: rgba(69, 43, 122, 0.18);
+}
+
+.pipelineInputNotice span {
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border: 1px solid #b39cff;
+  border-radius: 50%;
+  color: #b39cff;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+.pipelineInputNotice p {
+  margin: 0;
+}
+
+.pipelineFormatBadges {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  padding: 0.95rem 1.1rem 1rem;
+}
+
+.pipelineFormatBadges div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.05rem 0.7rem;
+  min-height: 4.2rem;
+  padding: 0.82rem;
+}
+
+.pipelineFormatBadges strong {
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+.pipelineFormatBadges .json {
+  color: #b39cff;
+  background: rgba(139, 92, 246, 0.15);
+}
+
+.pipelineFormatBadges .valid {
+  color: var(--green);
+  background: rgba(16, 185, 129, 0.13);
+}
+
+.pipelineFormatBadges .required {
+  color: var(--cyan);
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.pipelineFormatBadges span {
+  color: var(--paper);
+  font-weight: 900;
+}
+
+.pipelineFormatBadges small {
+  color: var(--muted);
+}
+
+.pipelineExampleJson {
+  padding: 0.55rem 1.1rem 1rem;
+}
+
+.pipelineExampleJson > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 0.7rem;
+}
+
+.pipelineExampleJson button {
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--panel-line);
+  border-radius: 4px;
+  background: rgba(10, 10, 9, 0.9);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.pipelineExampleJson pre {
+  max-height: 24rem;
+  margin: 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(168, 156, 145, 0.16);
+  border-radius: 5px;
+  background: #070807;
+  overflow: auto;
+}
+
+.pipelineExampleJson code {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #d1d5db;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.pipelineInputLegend {
+  padding: 1rem 1.1rem 1.15rem;
+}
+
+.pipelineInputLegend > header {
+  padding: 0;
+}
+
+.pipelineInputLegend > div {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.pipelineInputLegend article {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.12rem 0.6rem;
+  min-height: 4.5rem;
+  padding: 0.75rem;
+}
+
+.pipelineInputLegend span {
+  grid-row: 1 / span 2;
+  margin-top: 0.1rem;
+}
+
+.pipelineInputLegend strong {
+  color: var(--paper);
+  font-size: 0.86rem;
+}
+
+.pipelineInputLegend p {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.pipelineHero {
+  display: grid;
+  grid-template-columns: minmax(24rem, 1fr) minmax(42rem, 0.95fr);
+  gap: 1.2rem;
+  align-items: end;
+  margin-bottom: 0.7rem;
+}
+
+.pipelineHero h1 {
+  margin: 0 0 0.35rem;
+  font-size: 1.72rem;
+  line-height: 1.1;
+}
+
+.pipelineHero h1 span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.35rem;
+  margin-left: 0.4rem;
+  padding: 0 0.55rem;
+  border: 1px solid rgba(126, 81, 255, 0.44);
+  border-radius: 999px;
+  color: #a683ff;
+  background: rgba(126, 81, 255, 0.13);
+  font-size: 0.73rem;
+  vertical-align: middle;
+}
+
+.pipelineHero p {
+  max-width: 58rem;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.42;
+}
+
+.pipelineContextPanel {
+  display: grid;
+  grid-template-columns: minmax(33rem, 0.92fr) minmax(38rem, 1.08fr);
+  gap: 0.85rem;
+  margin-bottom: 0.8rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(168, 156, 145, 0.16);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(14, 14, 13, 0.95), rgba(7, 7, 6, 0.98));
+}
+
+.pipelineContextControls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.pipelineContextControls label {
+  display: grid;
+  gap: 0.28rem;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.pipelineContextControls select {
+  min-width: 0;
+  width: 100%;
+  min-height: 2.35rem;
+  padding: 0 0.65rem;
+  border: 1px solid rgba(168, 156, 145, 0.22);
+  border-radius: 4px;
+  color: var(--text);
+  background: #090908;
+  font: inherit;
+  font-size: 0.82rem;
+  outline: none;
+}
+
+.pipelineContextControls select:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 1px rgba(255, 90, 0, 0.18);
+}
+
+.pipelineContextActions {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pipelineContextActions button {
+  height: 2.25rem;
+  min-height: 2rem;
+  padding: 0 0.68rem;
+  border-radius: 4px;
+  color: #49b8ff;
+  border-color: rgba(42, 157, 244, 0.34);
+  background: rgba(42, 157, 244, 0.09);
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.pipelineContextActions button:first-child {
+  color: var(--orange);
+  border-color: rgba(255, 90, 0, 0.42);
+  background: rgba(255, 90, 0, 0.1);
+}
+
+.pipelineTemplateLibrary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.pipelineTemplateCard {
+  display: grid;
+  gap: 0.32rem;
+  min-width: 0;
+  min-height: 6.2rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(168, 156, 145, 0.16);
+  border-radius: 5px;
+  color: var(--text);
+  background: rgba(10, 10, 9, 0.7);
+  text-align: left;
+}
+
+.pipelineTemplateCard strong,
+.pipelineTemplateCard span,
+.pipelineTemplateCard small {
+  display: block;
+  min-width: 0;
+}
+
+.pipelineTemplateCard strong {
+  color: var(--text);
+  font-size: 0.86rem;
+  line-height: 1.22;
+}
+
+.pipelineTemplateCard span {
+  color: var(--muted);
+  font-size: 0.73rem;
+  line-height: 1.35;
+}
+
+.pipelineTemplateCard small {
+  align-self: end;
+  color: #49b8ff;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.64rem;
+}
+
+.pipelineTemplateCard.active,
+.pipelineTemplateCard:hover {
+  border-color: rgba(255, 90, 0, 0.58);
+  background:
+    linear-gradient(180deg, rgba(45, 24, 13, 0.8), rgba(11, 9, 8, 0.92));
+}
+
+.pipelineTemplateCard.active strong,
+.pipelineTemplateCard:hover strong {
+  color: var(--orange);
+}
+
+.pipelineEditPanel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid rgba(168, 156, 145, 0.15);
+  border-radius: 5px;
+  background: rgba(7, 8, 8, 0.74);
+}
+
+.pipelineEditorGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.58rem;
+}
+
+.pipelineEditorGrid label {
+  display: grid;
+  gap: 0.28rem;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pipelineEditorGrid label.wide {
+  grid-column: span 2;
+}
+
+.pipelineEditorGrid input,
+.pipelineEditorGrid select,
+.pipelineEditorGrid textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0 0.55rem;
+  border: 1px solid rgba(168, 156, 145, 0.22);
+  border-radius: 4px;
+  color: var(--text);
+  background: #080909;
+  font: inherit;
+  font-size: 0.76rem;
+  outline: none;
+}
+
+.pipelineEditorGrid textarea {
+  min-height: 4.45rem;
+  padding: 0.5rem 0.55rem;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  line-height: 1.35;
+  resize: vertical;
+}
+
+.pipelineRequiredInputsPanel {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+  padding-top: 0.2rem;
+  border-top: 1px solid rgba(168, 156, 145, 0.12);
+}
+
+.pipelineRequiredInputsPanel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.pipelineRequiredInputsPanel strong {
+  color: var(--text);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+}
+
+.pipelineRequiredInputsPanel button,
+.pipelineInputConfigRow button {
+  min-height: 1.85rem;
+  border-color: rgba(42, 157, 244, 0.34);
+  color: #49b8ff;
+  background: rgba(42, 157, 244, 0.09);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.pipelineRequiredInputsEditor {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.pipelineInputConfigRow {
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.8fr) minmax(7.6rem, 0.58fr) minmax(12rem, 1.35fr) minmax(7rem, 0.5fr) auto 2rem;
+  gap: 0.42rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.pipelineInputConfigRow input[type="text"],
+.pipelineInputConfigRow select {
+  width: 100%;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0 0.55rem;
+  border: 1px solid rgba(168, 156, 145, 0.22);
+  border-radius: 4px;
+  color: var(--text);
+  background: #080909;
+  font: inherit;
+  font-size: 0.74rem;
+  outline: none;
+}
+
+.pipelineInputConfigRow label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.pipelineEditorGrid input:focus,
+.pipelineEditorGrid select:focus,
+.pipelineEditorGrid textarea:focus,
+.pipelineInputConfigRow input:focus,
+.pipelineInputConfigRow select:focus,
+.pipelineManifestEditor:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 1px rgba(255, 90, 0, 0.16);
+}
+
+#pipelineSaveStatus {
+  color: #49b8ff;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+#pipelineSaveStatus.error,
+#pipelineManifestStatus.error {
+  color: #ff5b68;
+}
+
+.pipelineStatusGrid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.25fr 0.72fr 0.9fr 0.95fr;
+  gap: 0.8rem;
+}
+
+.pipelineStatusGrid article {
+  min-width: 0;
+  min-height: 6rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid rgba(168, 156, 145, 0.16);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(23, 24, 25, 0.9), rgba(12, 13, 14, 0.95));
+}
+
+.pipelineStatusGrid small,
+.pipelineStatusGrid span {
+  display: block;
+  color: var(--muted);
+}
+
+.pipelineStatusGrid small {
+  margin-bottom: 0.45rem;
+  font-size: 0.74rem;
+}
+
+.pipelineStatusGrid strong {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 1.7rem;
+  color: var(--text);
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.pipelineStatusGrid strong i {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--green);
+  box-shadow: 0 0 12px rgba(16, 182, 106, 0.45);
+}
+
+.pipelineTabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.1rem;
+  min-height: 2.8rem;
+  margin-bottom: 0.55rem;
+  border-top: 1px solid rgba(168, 156, 145, 0.15);
+  border-bottom: 1px solid rgba(168, 156, 145, 0.15);
+  overflow-x: auto;
+}
+
+.pipelineTabs a {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pipelineTabs a.active,
+.pipelineTabs a:hover {
+  color: var(--orange);
+  border-bottom-color: var(--orange);
+}
+
+.pipelineWorkbench {
+  display: grid;
+  grid-template-columns: minmax(38rem, 1fr) minmax(20rem, 27rem);
+  gap: 0.9rem;
+  align-items: start;
+}
+
+.pipelineCanvas,
+.pipelineInspector,
+.pipelineArtifactInventory {
+  border: 1px solid rgba(168, 156, 145, 0.16);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(12, 13, 14, 0.94), rgba(6, 7, 7, 0.98));
+}
+
+.pipelineCanvas {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.pipelineCanvasToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3.2rem;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid rgba(168, 156, 145, 0.14);
+}
+
+.pipelineCanvasToolbar > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.pipelineCanvasToolbar strong {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pipelineCanvasToolbar b {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 1.3rem;
+  padding: 0 0.5rem;
+  border: 1px solid rgba(16, 182, 106, 0.35);
+  border-radius: 4px;
+  color: var(--green);
+  background: rgba(16, 182, 106, 0.12);
+  font-size: 0.72rem;
+}
+
+.pipelineCanvasToolbar b::before {
+  content: "";
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.pipelineTools {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+}
+
+.pipelineTools button {
+  min-width: 2.15rem;
+  min-height: 2rem;
+  padding: 0 0.62rem;
+  border-color: rgba(168, 156, 145, 0.18);
+  background: rgba(9, 9, 9, 0.88);
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.pipelineTools span {
+  min-width: 3.6rem;
+  color: var(--text);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.pipelineStageGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(10rem, 1fr));
+  gap: 0.6rem;
+  min-width: 54rem;
+  padding: 0.8rem;
+}
+
+.pipelineStage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-height: 30.2rem;
+  padding: 0.72rem;
+  border: 1px solid rgba(168, 156, 145, 0.17);
+  border-radius: 6px;
+  overflow: visible;
+}
+
+.pipelineStage:not(:last-child)::after {
+  content: "→";
+  position: absolute;
+  right: -0.72rem;
+  top: 50%;
+  z-index: 2;
+  width: 0.85rem;
+  color: rgba(236, 227, 216, 0.58);
+  font-size: 1.1rem;
+  transform: translateY(-50%);
+}
+
+.pipelineStage header {
+  display: grid;
+  grid-template-columns: 1.65rem minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: start;
+  margin-bottom: 0.2rem;
+}
+
+.pipelineStage header b {
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 5px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 1rem;
+}
+
+.pipelineStage header strong {
+  display: block;
+  color: var(--text);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+}
+
+.pipelineStage header span {
+  display: block;
+  margin-top: 0.1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.stageInput {
+  background: linear-gradient(180deg, rgba(126, 81, 255, 0.11), rgba(8, 7, 13, 0.9));
+}
+
+.stageInput header b {
+  color: #a683ff;
+  background: rgba(126, 81, 255, 0.18);
+}
+
+.stageInput header strong {
+  color: #b99bff;
+}
+
+.stageWorkers {
+  background: linear-gradient(180deg, rgba(42, 157, 244, 0.1), rgba(4, 12, 18, 0.9));
+}
+
+.stageWorkers header b {
+  color: #49b8ff;
+  background: rgba(42, 157, 244, 0.18);
+}
+
+.stageWorkers header strong {
+  color: #49b8ff;
+}
+
+.stageIntegrate {
+  background: linear-gradient(180deg, rgba(255, 119, 0, 0.12), rgba(17, 9, 3, 0.92));
+}
+
+.stageIntegrate header b {
+  color: var(--orange);
+  background: rgba(255, 90, 0, 0.18);
+}
+
+.stageIntegrate header strong {
+  color: var(--orange);
+}
+
+.stageValidate {
+  background: linear-gradient(180deg, rgba(16, 182, 106, 0.12), rgba(3, 15, 10, 0.92));
+}
+
+.stageValidate header b {
+  color: var(--green);
+  background: rgba(16, 182, 106, 0.18);
+}
+
+.stageValidate header strong {
+  color: var(--green);
+}
+
+.stageEvidence {
+  background: linear-gradient(180deg, rgba(126, 81, 255, 0.12), rgba(9, 6, 15, 0.92));
+}
+
+.stageEvidence header b {
+  color: #a683ff;
+  background: rgba(126, 81, 255, 0.18);
+}
+
+.stageEvidence header strong {
+  color: #b99bff;
+}
+
+.pipelineCard {
+  display: grid;
+  grid-template-columns: 1.1rem minmax(0, 1fr);
+  gap: 0.1rem 0.45rem;
+  min-height: 3.65rem;
+  padding: 0.62rem 0.62rem 0.52rem;
+  border: 1px solid rgba(168, 156, 145, 0.22);
+  border-radius: 5px;
+  background: rgba(8, 9, 9, 0.78);
+}
+
+.pipelineCard i {
+  grid-row: 1 / span 3;
+  color: currentColor;
+  font-style: normal;
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.pipelineCard strong {
+  color: var(--text);
+  font-size: 0.78rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.pipelineCard span,
+.pipelineCard small {
+  color: var(--muted);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.66rem;
+  overflow-wrap: anywhere;
+}
+
+.pipelineCard em {
+  justify-self: start;
+  min-height: 1.1rem;
+  padding: 0 0.38rem;
+  border-radius: 4px;
+  color: var(--green);
+  background: rgba(16, 182, 106, 0.12);
+  font-size: 0.65rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.pipelineCard.manifest {
+  border-color: rgba(126, 81, 255, 0.62);
+  color: #a683ff;
+}
+
+.pipelineCard.operatorInput {
+  border-color: rgba(126, 81, 255, 0.62);
+  color: #a683ff;
+  cursor: pointer;
+}
+
+.pipelineCard.operatorInput i {
+  grid-row: 1 / span 4;
+  min-width: 1.1rem;
+  font-size: 0.66rem;
+  font-weight: 900;
+}
+
+.pipelineCard.operatorInput.selected {
+  background: rgba(36, 23, 68, 0.78);
+  box-shadow: 0 0 0 1px rgba(166, 131, 255, 0.16), 0 0 18px rgba(126, 81, 255, 0.13);
+}
+
+.pipelineCard.operatorInput.missing {
+  border-color: rgba(255, 77, 94, 0.58);
+  color: #ff5b68;
+}
+
+.pipelineCard.operatorInput.missing em {
+  color: #ff5b68;
+  background: rgba(255, 77, 94, 0.12);
+}
+
+.pipelineCard.operatorInput.configured {
+  border-color: rgba(42, 157, 244, 0.58);
+  color: #49b8ff;
+}
+
+.pipelineCard.operatorInput.configured em {
+  color: #49b8ff;
+  background: rgba(42, 157, 244, 0.12);
+}
+
+.pipelineCard.operatorInput.optional {
+  border-color: rgba(168, 156, 145, 0.35);
+  color: var(--muted);
+}
+
+.pipelineCard.worker {
+  border-color: rgba(42, 157, 244, 0.55);
+  color: #49b8ff;
+  cursor: pointer;
+}
+
+.pipelineCard.worker.selected {
+  background: rgba(11, 44, 64, 0.74);
+  box-shadow: 0 0 0 1px rgba(73, 184, 255, 0.12), 0 0 18px rgba(42, 157, 244, 0.12);
+}
+
+.pipelineCard.receipt {
+  border-color: rgba(255, 119, 0, 0.55);
+  color: var(--orange);
+  cursor: pointer;
+}
+
+.pipelineCard.receipt.selected {
+  background: rgba(64, 31, 7, 0.76);
+  box-shadow: 0 0 0 1px rgba(255, 119, 0, 0.16), 0 0 18px rgba(255, 119, 0, 0.13);
+}
+
+.pipelineCard.receipt.configured em,
+.pipelineCard.receipt.queued em {
+  color: var(--orange);
+  background: rgba(255, 90, 0, 0.12);
+}
+
+.pipelineCard.receipt.blocked,
+.pipelineCard.receipt.rejected {
+  border-color: rgba(255, 77, 94, 0.58);
+  color: #ff5b68;
+}
+
+.pipelineCard.receipt.blocked em,
+.pipelineCard.receipt.rejected em {
+  color: #ff5b68;
+  background: rgba(255, 77, 94, 0.12);
+}
+
+.pipelineCard.validator {
+  border-color: rgba(16, 182, 106, 0.55);
+  color: var(--green);
+  cursor: pointer;
+}
+
+.pipelineCard.validator.selected {
+  background: rgba(5, 42, 27, 0.76);
+  box-shadow: 0 0 0 1px rgba(16, 182, 106, 0.16), 0 0 18px rgba(16, 182, 106, 0.13);
+}
+
+.pipelineCard.validator.configured em,
+.pipelineCard.validator.warning em {
+  color: var(--orange);
+  background: rgba(255, 90, 0, 0.12);
+}
+
+.pipelineCard.validator.failed {
+  border-color: rgba(255, 77, 94, 0.58);
+  color: #ff5b68;
+}
+
+.pipelineCard.validator.failed em {
+  color: #ff5b68;
+  background: rgba(255, 77, 94, 0.12);
+}
+
+.pipelineCard.evidence {
+  border-color: rgba(126, 81, 255, 0.55);
+  color: #a683ff;
+}
+
+.screenshotCard {
+  min-height: 6.9rem;
+}
+
+.pipelineThumb {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.32rem;
+  min-height: 3.15rem;
+  margin-top: 0.35rem;
+  padding: 0.45rem;
+  border: 1px solid rgba(236, 227, 216, 0.2);
+  background:
+    linear-gradient(180deg, rgba(230, 234, 235, 0.92), rgba(178, 190, 198, 0.92));
+}
+
+.pipelineThumb span {
+  display: block;
+  min-height: 2.1rem;
+  border-radius: 2px;
+  background:
+    linear-gradient(180deg, rgba(74, 104, 135, 0.4), rgba(244, 247, 248, 0.95) 42%, rgba(210, 219, 226, 0.95));
+}
+
+.pipelineStage > button {
+  margin-top: auto;
+  min-height: 1.95rem;
+  padding: 0 0.65rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.stageInput > button,
+.stageEvidence > button {
+  color: #b99bff;
+  border-color: rgba(126, 81, 255, 0.28);
+  background: rgba(126, 81, 255, 0.08);
+}
+
+.stageWorkers > button {
+  color: #49b8ff;
+  border-color: rgba(42, 157, 244, 0.28);
+  background: rgba(42, 157, 244, 0.08);
+}
+
+.stageIntegrate > button {
+  color: var(--orange);
+  border-color: rgba(255, 90, 0, 0.28);
+  background: rgba(255, 90, 0, 0.08);
+}
+
+.stageValidate > button {
+  color: var(--green);
+  border-color: rgba(16, 182, 106, 0.28);
+  background: rgba(16, 182, 106, 0.08);
+}
+
+.pipelineDataFlow {
+  margin: 0.15rem 0.8rem 0.7rem;
+  padding: 0.75rem 0.75rem 0.8rem;
+  border: 1px solid rgba(168, 156, 145, 0.16);
+  border-radius: 6px;
+  background: rgba(9, 10, 10, 0.72);
+}
+
+.pipelineDataFlow h2,
+.pipelineArtifactInventory h2,
+.contractSummary h2 {
+  margin: 0 0 0.65rem;
+  color: var(--text);
+  font-size: 0.86rem;
+}
+
+.pipelineDataFlow > div {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(10.5rem, 1fr));
+  gap: 0.55rem;
+  align-items: stretch;
+  min-width: 54rem;
+}
+
+.pipelineDataFlow > div > b {
+  display: none;
+}
+
+.pipelineDataFlow article {
+  min-height: 5.5rem;
+  padding: 0.7rem;
+  border: 1px solid rgba(168, 156, 145, 0.16);
+  border-radius: 5px;
+  background: rgba(16, 16, 15, 0.8);
+}
+
+.pipelineDataFlow article p {
+  margin: 0.25rem 0 0.45rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.pipelineDataFlow article span {
+  display: inline-flex;
+  margin: 0.1rem 0.18rem 0 0;
+  padding: 0.12rem 0.28rem;
+  border: 1px solid rgba(255, 90, 0, 0.3);
+  border-radius: 3px;
+  color: var(--orange);
+  background: rgba(255, 90, 0, 0.08);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.62rem;
+}
+
+.pipelineLegend {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: 54rem;
+  min-height: 2.4rem;
+  margin: 0 0.8rem 0.8rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid rgba(168, 156, 145, 0.16);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.pipelineLegend strong {
+  color: var(--text);
+}
+
+.pipelineLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pipelineLegend span::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: rgba(168, 156, 145, 0.55);
+}
+
+.pipelineLegend .done::before {
+  background: var(--green);
+}
+
+.pipelineLegend .working::before {
+  background: #49b8ff;
+}
+
+.pipelineLegend .queued::before {
+  background: var(--orange);
+}
+
+.pipelineLegend .blocked::before {
+  background: #ff4d5e;
+}
+
+.pipelineLegend .partial::before {
+  background: var(--yellow);
+}
+
+.pipelineInspector {
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.pipelineInspector > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  min-height: 3.25rem;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid rgba(168, 156, 145, 0.14);
+}
+
+.pipelineInspector > header div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.pipelineInspector > header span {
+  color: var(--muted);
+}
+
+.pipelineInspector > header strong {
+  color: var(--text);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.pipelineInspector > header b {
+  padding: 0.15rem 0.35rem;
+  border: 1px solid rgba(42, 157, 244, 0.45);
+  border-radius: 4px;
+  color: #49b8ff;
+  background: rgba(42, 157, 244, 0.12);
+  font-size: 0.7rem;
+}
+
+.pipelineInspector > header em {
+  padding: 0.25rem 0.55rem;
+  border: 1px solid rgba(16, 182, 106, 0.35);
+  border-radius: 4px;
+  color: var(--green);
+  background: rgba(16, 182, 106, 0.12);
+  font-size: 0.7rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.pipelineInspector nav {
+  display: flex;
+  gap: 0.95rem;
+  min-height: 2.55rem;
+  padding: 0 1rem;
+  border-bottom: 1px solid rgba(168, 156, 145, 0.14);
+  overflow-x: auto;
+}
+
+#pipelineInspectorNav.hidden,
+#pipelineWorkerInspectorActions.hidden,
+#pipelineManifestEditor.hidden,
+#pipelineContractSummary.hidden {
+  display: none;
+}
+
+.pipelineInspector nav a {
+  display: flex;
+  align-items: center;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pipelineInspector nav a.active,
+.pipelineInspector nav a:hover {
+  color: var(--orange);
+  border-bottom-color: var(--orange);
+}
+
+.pipelineInspector pre {
+  max-height: 27.5rem;
+  margin: 0.9rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(168, 156, 145, 0.13);
+  border-radius: 5px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 2.2rem),
+    rgba(4, 5, 6, 0.92);
+  color: var(--orange-soft);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  overflow: auto;
+}
+
+.pipelineInspectorActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  min-height: 2.35rem;
+  margin: 0.85rem 0.9rem 0;
+}
+
+.pipelineInspectorActions button {
+  min-height: 1.85rem;
+  padding: 0 0.55rem;
+  border-color: rgba(42, 157, 244, 0.34);
+  color: #49b8ff;
+  background: rgba(42, 157, 244, 0.09);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.pipelineInputInspector {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0.85rem 0.9rem 0;
+  padding: 0.85rem;
+  border: 1px solid rgba(126, 81, 255, 0.28);
+  border-radius: 5px;
+  background: rgba(9, 6, 15, 0.78);
+}
+
+.pipelineInputInspector.hidden {
+  display: none;
+}
+
+.pipelineInputInspectorGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.58rem;
+}
+
+.pipelineInputInspectorGrid label {
+  display: grid;
+  gap: 0.32rem;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pipelineInputInspectorGrid label.wide {
+  grid-column: 1 / -1;
+}
+
+.pipelineInputInspectorGrid input[type="text"],
+.pipelineInputInspectorGrid select,
+.pipelineInputInspectorGrid textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0 0.55rem;
+  border: 1px solid rgba(168, 156, 145, 0.22);
+  border-radius: 4px;
+  color: var(--text);
+  background: #080909;
+  font: inherit;
+  font-size: 0.74rem;
+  outline: none;
+}
+
+.pipelineInputInspectorGrid textarea {
+  min-height: 5.4rem;
+  padding: 0.5rem 0.55rem;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  line-height: 1.35;
+  resize: vertical;
+}
+
+.pipelineInputRequiredToggle {
+  grid-column: 1 / -1;
+  display: flex !important;
+  grid-template-columns: none !important;
+  align-items: center;
+  gap: 0.45rem;
+  text-transform: none !important;
+}
+
+.pipelineInputInspectorGrid input:focus,
+.pipelineInputInspectorGrid select:focus,
+.pipelineInputInspectorGrid textarea:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 1px rgba(255, 90, 0, 0.16);
+}
+
+.pipelineInputTypeEditors {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.pipelineInputTypeEditor {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.68rem;
+  border: 1px solid rgba(168, 156, 145, 0.14);
+  border-radius: 5px;
+  background: rgba(6, 7, 8, 0.68);
+}
+
+.pipelineInputTypeEditor.hidden {
+  display: none;
+}
+
+.pipelineInputTypeEditor header {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.pipelineInputTypeEditor strong {
+  color: var(--text);
+  font-size: 0.74rem;
+}
+
+.pipelineInputTypeEditor span,
+.pipelineInputManifestOutput {
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.pipelineInputTypeEditor label {
+  display: grid;
+  gap: 0.32rem;
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pipelineInputTypeEditor input,
+.pipelineInputTypeEditor textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0 0.55rem;
+  border: 1px solid rgba(168, 156, 145, 0.22);
+  border-radius: 4px;
+  color: var(--text);
+  background: #080909;
+  font: inherit;
+  font-size: 0.74rem;
+  outline: none;
+}
+
+.pipelineInputTypeEditor textarea {
+  min-height: 4.2rem;
+  padding: 0.5rem 0.55rem;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  line-height: 1.35;
+  resize: vertical;
+}
+
+.pipelineInputTypeEditor input:focus,
+.pipelineInputTypeEditor textarea:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 1px rgba(255, 90, 0, 0.16);
+}
+
+.pipelineInputManifestOutput {
+  display: flex;
+  align-items: center;
+  min-height: 1.55rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgba(126, 81, 255, 0.16);
+  border-radius: 4px;
+  background: rgba(126, 81, 255, 0.08);
+}
+
+.pipelineCard.operatorInput small {
+  justify-self: start;
+  color: #b99bff;
+  font-family: inherit;
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+#pipelineInputSaveButton {
+  justify-self: start;
+  min-height: 1.95rem;
+  padding: 0 0.65rem;
+  border-color: rgba(255, 90, 0, 0.38);
+  color: var(--orange);
+  background: rgba(255, 90, 0, 0.1);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+#pipelineInputInspectorStatus {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.pipelineIntegrationInspector {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0.85rem 0.9rem 0;
+  padding: 0.85rem;
+  border: 1px solid rgba(255, 119, 0, 0.32);
+  border-radius: 5px;
+  background: rgba(17, 9, 3, 0.84);
+}
+
+.pipelineIntegrationInspector.hidden {
+  display: none;
+}
+
+.pipelineIntegrationInspector [data-integration-section].hidden {
+  display: none;
+}
+
+.pipelineIntegrationModeBar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.pipelineIntegrationModeBar button {
+  min-height: 1.95rem;
+  border-color: rgba(255, 119, 0, 0.24);
+  color: var(--muted);
+  background: rgba(8, 9, 9, 0.78);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.pipelineIntegrationModeBar button.active {
+  color: var(--orange);
+  border-color: rgba(255, 119, 0, 0.55);
+  background: rgba(255, 90, 0, 0.12);
+}
+
+.pipelineIntegrationInspectorGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.42fr);
+  gap: 0.58rem;
+}
+
+.pipelineIntegrationInspectorGrid label {
+  display: grid;
+  gap: 0.32rem;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pipelineIntegrationInspectorGrid label.wide {
+  grid-column: 1 / -1;
+}
+
+.pipelineIntegrationInspectorGrid input[type="text"],
+.pipelineIntegrationInspectorGrid select,
+.pipelineIntegrationInspectorGrid textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0 0.55rem;
+  border: 1px solid rgba(168, 156, 145, 0.22);
+  border-radius: 4px;
+  color: var(--text);
+  background: #080909;
+  font: inherit;
+  font-size: 0.74rem;
+  outline: none;
+}
+
+.pipelineIntegrationInspectorGrid textarea {
+  min-height: 4.35rem;
+  padding: 0.5rem 0.55rem;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  line-height: 1.35;
+  resize: vertical;
+}
+
+#pipelineIntegrationDependenciesInput,
+#pipelineIntegrationArtifactsInput,
+#pipelineIntegrationGatesInput,
+#pipelineIntegrationRollbackInput {
+  min-height: 4.85rem;
+}
+
+.pipelineIntegrationInspectorGrid input:focus,
+.pipelineIntegrationInspectorGrid select:focus,
+.pipelineIntegrationInspectorGrid textarea:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 1px rgba(255, 90, 0, 0.16);
+}
+
+.pipelineIntegrationOutputs {
+  display: grid;
+  gap: 0.32rem;
+  color: var(--muted);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.66rem;
+}
+
+#pipelineIntegrationSaveButton {
+  justify-self: start;
+  min-height: 1.95rem;
+  padding: 0 0.65rem;
+  border-color: rgba(255, 119, 0, 0.4);
+  color: var(--orange);
+  background: rgba(255, 90, 0, 0.1);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+#pipelineIntegrationInspectorStatus {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.pipelineValidationInspector {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0.85rem 0.9rem 0;
+  padding: 0.85rem;
+  border: 1px solid rgba(16, 182, 106, 0.28);
+  border-radius: 5px;
+  background: rgba(3, 15, 10, 0.82);
+}
+
+.pipelineValidationInspector.hidden {
+  display: none;
+}
+
+.pipelineValidationModeBar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.pipelineValidationModeBar button {
+  min-height: 1.95rem;
+  border-color: rgba(16, 182, 106, 0.24);
+  color: var(--muted);
+  background: rgba(8, 9, 9, 0.78);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.pipelineValidationModeBar button.active {
+  color: var(--green);
+  border-color: rgba(16, 182, 106, 0.55);
+  background: rgba(16, 182, 106, 0.12);
+}
+
+.pipelineValidationConsultPanel,
+.pipelineValidationTypedEditor {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 0.7rem;
+  border: 1px solid rgba(16, 182, 106, 0.18);
+  border-radius: 5px;
+  background: rgba(4, 9, 7, 0.72);
+}
+
+.pipelineValidationConsultPanel > header,
+.pipelineValidationTypedEditor > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.pipelineValidationConsultPanel strong,
+.pipelineValidationTypedEditor strong {
+  display: block;
+  color: var(--text);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.pipelineValidationConsultPanel span,
+.pipelineValidationTypedEditor span {
+  display: block;
+  margin-top: 0.12rem;
+  color: var(--muted);
+  font-size: 0.66rem;
+  line-height: 1.35;
+}
+
+.pipelineValidationConsultPanel button,
+.pipelineValidationTypedEditor button {
+  min-height: 1.85rem;
+  padding: 0 0.55rem;
+  border-color: rgba(16, 182, 106, 0.32);
+  color: var(--green);
+  background: rgba(16, 182, 106, 0.09);
+  font-size: 0.66rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.pipelineValidationIntegrationContext {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.pipelineValidationIntegrationContext p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.pipelineValidationIntegrationContext article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.35rem 0.55rem;
+  align-items: center;
+  min-width: 0;
+  padding: 0.52rem;
+  border: 1px solid rgba(168, 156, 145, 0.14);
+  border-radius: 4px;
+  background: rgba(6, 7, 7, 0.72);
+}
+
+.pipelineValidationIntegrationContext article small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.62rem;
+  overflow-wrap: anywhere;
+}
+
+.pipelineValidationTypedEditors {
+  display: grid;
+  gap: 0.58rem;
+}
+
+.pipelineValidationTypedEditor {
+  display: none;
+}
+
+.pipelineValidationTypedEditor.active {
+  display: grid;
+}
+
+.pipelineValidationRows {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.pipelineValidationRow {
+  display: grid;
+  grid-template-columns: minmax(6.1rem, 0.42fr) minmax(0, 1fr) auto;
+  gap: 0.4rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.pipelineValidationRow.commandRow {
+  grid-template-columns: 1.8rem minmax(0, 1fr) auto;
+}
+
+.pipelineValidationRow > span {
+  display: grid;
+  place-items: center;
+  min-height: 1.95rem;
+  border: 1px solid rgba(16, 182, 106, 0.18);
+  border-radius: 4px;
+  color: var(--green);
+  background: rgba(16, 182, 106, 0.09);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.pipelineValidationRow input,
+.pipelineValidationRow select {
+  width: 100%;
+  min-width: 0;
+  min-height: 1.95rem;
+  padding: 0 0.52rem;
+  border: 1px solid rgba(168, 156, 145, 0.22);
+  border-radius: 4px;
+  color: var(--text);
+  background: #080909;
+  font: inherit;
+  font-size: 0.7rem;
+  outline: none;
+}
+
+.pipelineValidationRow input:focus,
+.pipelineValidationRow select:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px rgba(16, 182, 106, 0.16);
+}
+
+.pipelineValidationRow [data-validation-row-remove] {
+  border-color: rgba(255, 77, 94, 0.25);
+  color: #ff7f89;
+  background: rgba(255, 77, 94, 0.08);
+}
+
+.pipelineValidationBulkGrid {
+  padding-top: 0.2rem;
+  border-top: 1px solid rgba(16, 182, 106, 0.14);
+}
+
+.pipelineValidationInspectorGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.42fr);
+  gap: 0.58rem;
+}
+
+.pipelineValidationInspectorGrid label {
+  display: grid;
+  gap: 0.32rem;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pipelineValidationInspectorGrid label.wide {
+  grid-column: 1 / -1;
+}
+
+.pipelineValidationInspectorGrid input[type="text"],
+.pipelineValidationInspectorGrid select,
+.pipelineValidationInspectorGrid textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0 0.55rem;
+  border: 1px solid rgba(168, 156, 145, 0.22);
+  border-radius: 4px;
+  color: var(--text);
+  background: #080909;
+  font: inherit;
+  font-size: 0.74rem;
+  outline: none;
+}
+
+.pipelineValidationInspectorGrid textarea {
+  min-height: 4.35rem;
+  padding: 0.5rem 0.55rem;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  line-height: 1.35;
+  resize: vertical;
+}
+
+#pipelineValidationCommandsInput,
+#pipelineValidationEvidenceInput,
+#pipelineValidationGatesInput,
+#pipelineValidationSchemaInput {
+  min-height: 5.25rem;
+}
+
+.pipelineValidationBlockingToggle {
+  grid-column: 1 / -1;
+  display: flex !important;
+  grid-template-columns: none !important;
+  align-items: center;
+  gap: 0.45rem;
+  text-transform: none !important;
+}
+
+.pipelineValidationInspectorGrid input:focus,
+.pipelineValidationInspectorGrid select:focus,
+.pipelineValidationInspectorGrid textarea:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px rgba(16, 182, 106, 0.16);
+}
+
+.pipelineValidationOutputs {
+  display: grid;
+  gap: 0.32rem;
+  color: var(--muted);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.66rem;
+}
+
+#pipelineValidationSaveButton {
+  justify-self: start;
+  min-height: 1.95rem;
+  padding: 0 0.65rem;
+  border-color: rgba(16, 182, 106, 0.38);
+  color: var(--green);
+  background: rgba(16, 182, 106, 0.1);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+#pipelineValidationInspectorStatus {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+#pipelineManifestStatus {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pipelineManifestEditor {
+  display: block;
+  width: calc(100% - 1.8rem);
+  min-height: 24rem;
+  max-height: 33rem;
+  margin: 0.6rem 0.9rem 0.9rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(168, 156, 145, 0.18);
+  border-radius: 5px;
+  color: var(--orange-soft);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 2.2rem),
+    rgba(4, 5, 6, 0.92);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  outline: none;
+  resize: vertical;
+}
+
+.contractSummary {
+  padding: 0 1rem 1rem;
+}
+
+.contractSummary dl {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.contractSummary div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.7rem;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.contractSummary dt {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+
+.contractSummary dd {
+  margin: 0;
+  color: var(--text);
+  font-weight: 800;
+  text-align: right;
+}
+
+.contractCheck {
+  display: inline-grid;
+  place-items: center;
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 1px solid rgba(16, 182, 106, 0.55);
+  border-radius: 50%;
+  color: var(--green);
+  font-size: 0.6rem;
+  flex-shrink: 0;
+}
+
+/* Inspector tab panels */
+.pipelineInspectorPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem 1rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.contractPanelGroup {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.contractPanelGroup h3 {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.contractPathList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.28rem;
+}
+
+.contractPathList li {
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.contractPathList code {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.78rem;
+  color: var(--orange);
+  word-break: break-all;
+}
+
+.contractPathList .contractNone,
+.contractAcceptanceList .contractNone {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.contractAcceptanceList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.contractAcceptanceList li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.contractMeta {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgba(168, 156, 145, 0.14);
+  border-radius: 5px;
+  background: rgba(17, 17, 16, 0.6);
+  display: grid;
+  gap: 0.45rem;
+}
+
+.contractMeta div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.contractMeta dt {
+  color: var(--muted);
+}
+
+.contractMeta dd {
+  margin: 0;
+  color: var(--text);
+  font-weight: 700;
+  text-align: right;
+}
+
+/* Artifact panel */
+.artifactHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(168, 156, 145, 0.14);
+  border-radius: 5px;
+  background: rgba(17, 17, 16, 0.6);
+}
+
+.artifactHeader div {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.artifactHeader code {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.76rem;
+  color: var(--orange);
+  word-break: break-all;
+}
+
+.artifactHeader small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pipelineArtifactPreview {
+  margin: 0;
+  padding: 0.75rem;
+  background: rgba(12, 12, 11, 0.9);
+  border: 1px solid rgba(168, 156, 145, 0.12);
+  border-radius: 5px;
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.pipelineArtifactPreview code {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.76rem;
+  color: var(--orange);
+  white-space: pre;
+}
+
+.artifactMeta {
+  margin: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.artifactMeta div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.artifactMeta dt {
+  color: var(--muted);
+}
+
+.artifactMeta dd {
+  margin: 0;
+  color: var(--text);
+  font-weight: 700;
+  text-align: right;
+}
+
+/* Logs panel */
+.logsToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.logsToolbar span {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.logsToolbar button {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid rgba(168, 156, 145, 0.2);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.logsToolbar button:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.logsScroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: 0.1rem;
+  background: rgba(12, 12, 11, 0.9);
+  border: 1px solid rgba(168, 156, 145, 0.12);
+  border-radius: 5px;
+  padding: 0.6rem 0.75rem;
+}
+
+.logEntry {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: 0.5rem;
+  font-size: 0.76rem;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  line-height: 1.5;
+}
+
+.logEntry time {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.logEntry.done span { color: var(--green); }
+.logEntry.info span { color: var(--text); }
+.logEntry.warn span { color: #e6b44a; }
+.logEntry.error span { color: #e05a4a; }
+
+/* Cost panel */
+.costSummary {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(168, 156, 145, 0.14);
+  border-radius: 5px;
+  background: rgba(17, 17, 16, 0.6);
+}
+
+.costTotal {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.costTotal strong {
+  font-size: 1.45rem;
+  font-weight: 900;
+  color: var(--text);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+.costTotal span {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.costBar {
+  height: 4px;
+  background: rgba(168, 156, 145, 0.14);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.costBarFill {
+  height: 100%;
+  background: var(--orange);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+.costBarLabel {
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.costBreakdown {
+  margin: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.costBreakdown div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid rgba(168, 156, 145, 0.08);
+}
+
+.costBreakdown div:last-child {
+  border-bottom: 0;
+}
+
+.costBreakdown dt {
+  color: var(--muted);
+}
+
+.costBreakdown dd {
+  margin: 0;
+  color: var(--text);
+  font-weight: 700;
+  text-align: right;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.78rem;
+}
+
+.costNote {
+  font-size: 0.76rem;
+  color: var(--muted);
+  display: flex;
+  gap: 0.4rem;
+  align-items: flex-start;
+  line-height: 1.5;
+}
+
+.pipelineArtifactInventory {
+  margin-top: 0.9rem;
+  padding: 1rem;
+}
+
+.pipelineArtifactInventory > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.pipelineArtifactInventory article {
+  min-height: 6.25rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(168, 156, 145, 0.14);
+  border-radius: 5px;
+  background: rgba(13, 14, 14, 0.78);
+}
+
+.pipelineArtifactInventory strong {
+  color: var(--orange);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.82rem;
+}
+
+.pipelineArtifactInventory p {
+  margin: 0.38rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.42;
+}
+
+.appOverviewPage {
+  scroll-margin-top: 5.25rem;
+  color: var(--text);
+}
+
+.appOverviewPage h2 {
+  margin: 0.15rem 0 0.5rem;
+  font-size: clamp(2.05rem, 3vw, 2.7rem);
+  line-height: 1.02;
+}
+
+.appOverviewHero {
+  display: grid;
+  grid-template-columns: minmax(17rem, 1fr) minmax(12rem, 0.54fr) minmax(13rem, 0.64fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.appIdentity {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.appIcon {
+  width: 4.8rem;
+  height: 4.8rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 90, 0, 0.2);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle, rgba(255, 90, 0, 0.18) 0 36%, transparent 37%),
+    #f2eee8;
+  color: #090807;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 2.8rem;
+  font-weight: 900;
+  box-shadow: inset 0 0 0 0.48rem rgba(255, 90, 0, 0.08);
+}
+
+.appIdentity p {
+  max-width: 46rem;
+  margin: 0;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.appMetaRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+  color: var(--muted);
+}
+
+.versionPill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.55rem;
+  padding: 0 0.62rem;
+  border: 1px solid rgba(168, 156, 145, 0.22);
+  background: rgba(18, 18, 17, 0.9);
+  color: var(--text);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.appPreviewCard,
+.appControlCard,
+.appDashboardCard,
+.appInfoCard {
+  border: 1px solid rgba(168, 156, 145, 0.18);
+  border-radius: 6px;
+  background: rgba(17, 17, 16, 0.86);
+  box-shadow: 0 0 0 1px rgba(255, 90, 0, 0.02);
+}
+
+.appPreviewCard {
+  display: grid;
+  place-items: center;
+  min-height: 12rem;
+  margin: 0;
+  padding: 0.95rem;
+  overflow: hidden;
+}
+
+.miniWatch {
+  width: 8.8rem;
+  aspect-ratio: 0.78;
+  display: grid;
+  place-items: center;
+  border: 0.42rem solid #343b40;
+  border-radius: 2rem;
+  background: #010101;
+  box-shadow: 0 0 2rem rgba(255, 90, 0, 0.13);
+}
+
+.miniWatchScreen {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 1.2rem minmax(0, 1fr) 1.8rem;
+  gap: 0.25rem;
+  padding: 0.6rem 0.55rem 0.5rem;
+  overflow: hidden;
+}
+
+.miniWatchTop,
+.miniWatchButtons {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text);
+  font-size: 0.48rem;
+  font-weight: 900;
+}
+
+.miniWatchTop span:first-child {
+  color: #ff4f3d;
+}
+
+.miniKanji {
+  display: grid;
+  place-items: center;
+  color: #fff8f2;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 4.4rem;
+  line-height: 1;
+}
+
+.miniWatchButtons span,
+.miniWatchButtons strong {
+  min-width: 2.9rem;
+  padding: 0.32rem 0.3rem;
+  border-radius: 1rem;
+  background: #10100f;
+  text-align: center;
+}
+
+.miniWatchButtons strong {
+  background: #ff4937;
+  color: white;
+}
+
+.pipelineStatusMini {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.9rem 1.1rem;
+  width: 100%;
+}
+
+.pipelineStatusMiniRow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.83rem;
+  color: var(--muted);
+}
+
+.pipelineStatusMiniRow strong {
+  margin-left: auto;
+  color: var(--text);
+  font-size: 0.83rem;
+}
+
+.pipelineStatusMiniRow small {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.pipelineStatusDot {
+  width: 0.52rem;
+  height: 0.52rem;
+  border-radius: 50%;
+  background: rgba(168, 156, 145, 0.4);
+  flex-shrink: 0;
+}
+
+.pipelineStatusDot.healthy {
+  background: #4caf82;
+  box-shadow: 0 0 0 2px rgba(76, 175, 130, 0.2);
+}
+
+.appControlCard {
+  display: grid;
+  align-content: center;
+  padding: 0.75rem 1rem;
+}
+
+.appControlCard a {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid rgba(168, 156, 145, 0.12);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.appControlCard a:last-child {
+  border-bottom: 0;
+}
+
+.appControlCard a:hover span {
+  color: var(--orange);
+}
+
+.appControlCard span {
+  color: #8fbfff;
+  overflow-wrap: anywhere;
+}
+
+.appDashboardCard,
+.appInfoCard {
+  margin-top: 1rem;
+  padding: 1.15rem 1.2rem;
+}
+
+.appDashboardCard h3,
+.appInfoCard h3 {
+  margin: 0 0 0.9rem;
+}
+
+.appMetricGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.35rem, 1fr));
+  gap: 0.75rem 0;
+}
+
+.appMetricGrid div {
+  min-width: 0;
+  padding: 0.2rem 0.72rem 0.1rem;
+  border-left: 1px solid rgba(168, 156, 145, 0.14);
+}
+
+.appMetricGrid div:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.appMetricGrid span,
+.releaseFacts dt,
+.appFeatureGrid small,
+.appActionList small,
+.appArchitecture small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.appMetricGrid strong {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+  min-height: 1.7rem;
+  color: var(--text);
+  font-size: 0.96rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.metricDot {
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.appOverviewGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(15rem, 0.88fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.appMainColumn {
+  min-width: 0;
+}
+
+.appInfoCard p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.appFeatureGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.1rem 1rem;
+  margin-top: 1.15rem;
+}
+
+.appFeatureGrid div {
+  display: grid;
+  grid-template-columns: 1.35rem minmax(0, 1fr);
+  gap: 0.25rem 0.55rem;
+  align-items: center;
+}
+
+.appFeatureGrid small {
+  grid-column: 2;
+}
+
+.featureIcon,
+.archIcon {
+  color: var(--orange);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-weight: 900;
+}
+
+.appPrimaryLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 1.35rem;
+  min-height: 2.4rem;
+  padding: 0 0.95rem;
+  border: 1px solid var(--line-dim);
+  color: var(--orange);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.appPrimaryLink:hover,
+.appActionList a:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.releaseFacts {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0 0 0.95rem;
+}
+
+.releaseFacts div {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+.releaseFacts dd {
+  margin: 0;
+  color: var(--text);
+}
+
+.releaseLabel {
+  display: block;
+  margin: 0.25rem 0 0.55rem;
+}
+
+.releaseList {
+  margin: 0;
+  padding-left: 1rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.releaseList li + li {
+  margin-top: 0.25rem;
+}
+
+.releaseList li::marker {
+  color: var(--green);
+}
+
+.appArchitecture {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.appArchitecture > div {
+  min-height: 4.8rem;
+  display: grid;
+  grid-template-columns: 1.8rem minmax(0, 1fr);
+  gap: 0.25rem 0.65rem;
+  align-items: center;
+  padding: 0.9rem;
+  border: 1px solid rgba(168, 156, 145, 0.18);
+  background: rgba(8, 8, 7, 0.5);
+}
+
+.appArchitecture small {
+  grid-column: 2;
+}
+
+.appArchitecture > b {
+  justify-self: center;
+  margin: 0 -0.2rem;
+  color: var(--muted);
+  z-index: 1;
+}
+
+.appActionColumn {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  min-width: 0;
+}
+
+.appArchitectureCard {
+  grid-column: 1 / span 2;
+}
+
+.appActionList {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.appActionList a {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+  gap: 0.1rem 0.65rem;
+  align-items: center;
+  min-height: 3.25rem;
+  padding: 0.55rem 0;
+  border: 1px solid transparent;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.appActionList small {
+  grid-column: 2;
+}
+
+.appActionList b {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  color: var(--muted);
+}
+
+.compactFlow {
+  margin-top: 1rem;
+  font-size: 0.82rem;
 }
 
 .docGlyph {
@@ -1604,10 +5271,7 @@ body.researchMode .content {
 }
 
 .listHeader {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin: 0.05rem 0 0.65rem;
+  align-items: center;
 }
 
 .titleCluster,
@@ -2054,14 +5718,11 @@ tbody tr:hover {
   display: grid;
   grid-template-columns: minmax(180px, 240px) auto minmax(0, 1fr) 170px;
   align-items: center;
-  min-height: 46px;
-  margin-bottom: 0.75rem;
-  border: 1px solid #202020;
-  background: rgba(7, 7, 7, 0.96);
+  min-height: 3.9rem;
 }
 
 .reviewModeTitle {
-  padding: 0 1rem;
+  padding: 0;
   color: var(--orange);
   font-family: "IBM Plex Mono", monospace;
   text-transform: uppercase;
@@ -2092,14 +5753,14 @@ tbody tr:hover {
   display: grid;
   grid-template-columns: 150px minmax(170px, 1fr) 90px 78px;
   min-width: 0;
-  border-left: 1px solid #202020;
+  border-left: 1px solid rgba(199, 71, 0, 0.28);
 }
 
 .reviewRunMeta span {
   min-width: 0;
   overflow: hidden;
   padding: 0.75rem 0.9rem;
-  border-right: 1px solid #202020;
+  border-right: 1px solid rgba(199, 71, 0, 0.28);
   color: var(--muted);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -2725,10 +6386,6 @@ kbd {
 }
 
 .detailTopBar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.85rem;
   margin-bottom: 0.9rem;
 }
 
@@ -2999,6 +6656,839 @@ kbd {
   color: var(--orange);
 }
 
+.sdHubModuleRail {
+  display: none;
+}
+
+body.homeMode .appShell,
+body.softwareDeliveryMode .appShell,
+body:has(#homeView:not(.hidden)) .appShell,
+body:has(#softwareDeliveryHubView:not(.hidden)) .appShell,
+body:has(#factoryView:not(.hidden)) .appShell {
+  grid-template-columns: 1fr;
+  min-height: calc(100vh - 94px);
+}
+
+body.homeMode .sidebar,
+body.softwareDeliveryMode .sidebar,
+body:has(#homeView:not(.hidden)) .sidebar,
+body:has(#softwareDeliveryHubView:not(.hidden)) .sidebar,
+body:has(#factoryView:not(.hidden)) .sidebar,
+body.homeMode .taskstreamNav,
+body.softwareDeliveryMode .taskstreamNav,
+body:has(#homeView:not(.hidden)) .taskstreamNav,
+body:has(#softwareDeliveryHubView:not(.hidden)) .taskstreamNav,
+body:has(#factoryView:not(.hidden)) .taskstreamNav {
+  display: none;
+}
+
+body.homeMode .content,
+body.softwareDeliveryMode .content,
+body:has(#homeView:not(.hidden)) .content,
+body:has(#softwareDeliveryHubView:not(.hidden)) .content,
+body:has(#factoryView:not(.hidden)) .content {
+  padding: 0;
+  border-top: 0;
+  background:
+    linear-gradient(90deg, rgba(255, 90, 0, 0.07) 0 1px, transparent 1px 2.65rem),
+    linear-gradient(180deg, rgba(10, 10, 9, 0.98), rgba(3, 3, 3, 0.99));
+}
+
+body.softwareDeliveryMode .content {
+  display: grid;
+  grid-template-columns: 18rem minmax(0, 1fr);
+  align-items: stretch;
+}
+
+body.softwareDeliveryMode .content > .view:not(.hidden) {
+  grid-column: 2;
+  min-width: 0;
+}
+
+body.softwareDeliveryMode .sdHubModuleRail {
+  display: block;
+  grid-column: 1;
+  grid-row: 1 / span 20;
+  min-height: calc(100vh - 94px);
+  padding: 1.05rem 0.85rem 1.2rem;
+  border-right: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(10, 10, 9, 0.99), rgba(4, 4, 3, 0.99)),
+    #050403;
+}
+
+body.softwareDeliveryMode #researchModuleRail,
+body.researchMode #sdHubModuleRail {
+  display: none;
+}
+
+.sdHubModuleRail nav {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.sdHubModuleRail h2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 1.35rem;
+  margin: 0 0 0.55rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sdHubModuleRail h2::after {
+  content: "-";
+  color: var(--orange);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+.sdHubRailSwitcher,
+.sdHubRailLinks {
+  display: grid;
+  gap: 0.48rem;
+  margin: 0;
+  padding: 0 0 0.95rem;
+  border-bottom: 1px solid rgba(168, 156, 145, 0.12);
+}
+
+.sdHubRailSwitcher a,
+.sdHubRailLinks a {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  border: 1px solid rgba(168, 156, 145, 0.14);
+  color: var(--muted);
+  text-decoration: none;
+  background:
+    linear-gradient(180deg, rgba(18, 17, 15, 0.92), rgba(8, 8, 7, 0.97));
+}
+
+.sdHubRailSwitcher a {
+  min-height: 3.35rem;
+  padding: 0 0.85rem;
+  font-size: 1.08rem;
+  font-weight: 900;
+}
+
+.sdHubRailSwitcher a span {
+  width: 1rem;
+  color: inherit;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.sdHubRailSwitcher a strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.1;
+}
+
+.sdHubRailLinks a {
+  min-height: 1.95rem;
+  padding: 0 0.6rem;
+  font-size: 0.84rem;
+}
+
+.sdHubRailLinks .navIcon {
+  width: 0.85rem;
+  color: var(--orange);
+  font-size: 0.72rem;
+}
+
+.sdHubRailSwitcher a.active,
+.sdHubRailLinks a.active,
+.sdHubRailSwitcher a:hover,
+.sdHubRailLinks a:hover {
+  border-color: rgba(255, 90, 0, 0.78);
+  color: var(--orange);
+  background:
+    linear-gradient(90deg, rgba(255, 90, 0, 0.18), rgba(255, 90, 0, 0.03)),
+    rgba(12, 8, 5, 0.96);
+}
+
+.sdHubRailSwitcher a.active {
+  box-shadow: inset 3px 0 0 var(--orange);
+}
+
+#homeView:not(.hidden),
+#softwareDeliveryHubView:not(.hidden),
+#factoryView:not(.hidden) {
+  display: block;
+  min-height: calc(100vh - 94px);
+}
+
+.hubLayout {
+  display: grid;
+  grid-template-columns: 17rem minmax(0, 1fr) 20rem;
+  min-height: calc(100vh - 94px);
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+}
+
+.hubSectionLayout {
+  grid-template-columns: 17rem minmax(0, 1fr);
+}
+
+.softwareDeliverySubView .hubSectionLayout {
+  grid-template-columns: 1fr;
+}
+
+body.softwareDeliveryMode #softwareDeliveryHubView .hubLayout,
+body.studioMode #softwareDeliveryHubView .hubLayout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.softwareDeliverySubView .hubSidebar,
+body.softwareDeliveryMode #softwareDeliveryHubView > .hubLayout > .hubSidebar,
+body.studioMode #softwareDeliveryHubView .hubHero,
+body.studioMode #softwareDeliveryHubView .hubPanel[aria-labelledby="hub-modules-title"],
+body:not(.studioMode) #dev-pipeline-studio {
+  display: none;
+}
+
+body.softwareDeliveryMode .sdHubChildHeader {
+  display: none;
+}
+
+.hubSidebar,
+.hubAside {
+  min-width: 0;
+  background:
+    linear-gradient(180deg, rgba(10, 10, 9, 0.98), rgba(4, 4, 3, 0.98));
+}
+
+.hubSidebar {
+  padding: 1rem 0.85rem 1.2rem;
+  border-right: 1px solid var(--line);
+}
+
+.hubSidebar section {
+  margin-bottom: 1.15rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid rgba(168, 156, 145, 0.12);
+}
+
+.hubSidebar section:last-child {
+  margin-bottom: 0;
+  border-bottom: 0;
+}
+
+.hubSectionTitle,
+.hubSidebar h2,
+.hubPanel h2,
+.hubAside h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.98rem;
+  line-height: 1.2;
+}
+
+.hubSidebar h2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 1.35rem;
+  margin-bottom: 0.45rem;
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hubSidebar h2::after {
+  content: "-";
+  color: var(--orange);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+.hubSidebar a {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 1.7rem;
+  padding: 0 0.55rem;
+  border: 1px solid transparent;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.83rem;
+  overflow-wrap: anywhere;
+}
+
+.hubSidebar a::before {
+  content: "⊡";
+  display: none;
+  width: 0.8rem;
+  color: var(--orange);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.hubSidebar .navIcon {
+  width: 0.8rem;
+  color: var(--orange);
+  font-size: 0.72rem;
+}
+
+.hubSidebar a.active,
+.hubSidebar a:hover {
+  border-color: rgba(255, 90, 0, 0.3);
+  color: var(--orange);
+  background: rgba(255, 90, 0, 0.1);
+}
+
+.hubSidebar .statusBadge,
+.hubSectionTitle .statusBadge,
+.hubSidebar h2 b {
+  margin-left: 0.35rem;
+  border-color: rgba(126, 81, 255, 0.62);
+  border-radius: 2px;
+  padding: 0.1rem 0.34rem;
+  color: #b99bff;
+  background: rgba(126, 81, 255, 0.16);
+  font-size: 0.64rem;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.hubMain {
+  min-width: 0;
+  padding: 2rem 1.45rem 1.45rem;
+  border-right: 1px solid rgba(199, 71, 0, 0.55);
+}
+
+.hubSectionLayout .hubMain {
+  border-right: 0;
+}
+
+body.studioMode #softwareDeliveryHubView .hubMain {
+  border-right: 0;
+}
+
+.factoryHubMain {
+  overflow: hidden;
+}
+
+.hubHero {
+  display: grid;
+  grid-template-columns: minmax(18rem, 0.7fr) minmax(0, 1.3fr);
+  gap: 1.2rem;
+  align-items: start;
+  margin-bottom: 1.25rem;
+}
+
+.hubHero h1,
+.hubHero h2 {
+  margin: 0;
+  font-size: clamp(1.55rem, 1.9vw, 2rem);
+  line-height: 1.08;
+}
+
+.hubHero p,
+.hubPanel p,
+.hubModuleCard p,
+.hubMetricCard span,
+.hubMetricCard small,
+.hubStatStrip span,
+.platformMetricGrid span,
+.platformMetricGrid small {
+  color: var(--muted);
+}
+
+.hubHero p {
+  max-width: 44rem;
+  margin: 0.55rem 0 0;
+  line-height: 1.45;
+}
+
+.hubMetricGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.4rem, 1fr));
+  gap: 0.65rem;
+}
+
+.hubMetricCard,
+.hubPanel,
+.hubModuleCard,
+.hubAside section {
+  border: 1px solid rgba(168, 156, 145, 0.15);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(22, 23, 23, 0.88), rgba(8, 8, 7, 0.96));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.hubMetricCard {
+  min-width: 0;
+  min-height: 5.2rem;
+  padding: 0.85rem 0.9rem;
+}
+
+.hubMetricCard span,
+.hubMetricCard small {
+  display: block;
+  font-size: 0.75rem;
+}
+
+.hubMetricCard strong {
+  display: block;
+  margin-top: 0.45rem;
+  color: var(--text);
+  font-size: 1.05rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.hubMetricCard strong:first-letter {
+  color: inherit;
+}
+
+.hubMetricCard .metricDot,
+.hubMetricCard i {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-right: 0.45rem;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 14px rgba(16, 182, 106, 0.38);
+  vertical-align: 0.05rem;
+}
+
+.hubPanel {
+  min-width: 0;
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+.hubPanel > header,
+.hubAside section > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 0.85rem;
+}
+
+.hubPanel p {
+  margin: 0.35rem 0 0;
+  line-height: 1.42;
+}
+
+.hubModuleGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.hubModuleCard {
+  display: grid;
+  grid-template-rows: auto minmax(5.25rem, 1fr) auto auto;
+  min-width: 0;
+  min-height: 13.8rem;
+  padding: 1rem;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.hubModuleCard:hover {
+  border-color: rgba(126, 81, 255, 0.72);
+  background:
+    linear-gradient(180deg, rgba(28, 24, 39, 0.9), rgba(9, 8, 10, 0.98));
+}
+
+.hubModuleIcon {
+  width: 2.55rem;
+  height: 2.55rem;
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.65rem;
+  border: 1px solid rgba(126, 81, 255, 0.62);
+  border-radius: 6px;
+  color: #a683ff;
+  background: rgba(126, 81, 255, 0.13);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.hubModuleCard h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.22;
+}
+
+.hubModuleCard p {
+  margin: 0.45rem 0 0;
+  line-height: 1.45;
+}
+
+.hubStatStrip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 0.9rem;
+  border: 1px solid rgba(168, 156, 145, 0.14);
+  border-radius: 5px;
+  background: rgba(6, 6, 5, 0.62);
+}
+
+.hubStatStrip div {
+  min-width: 0;
+  padding: 0.65rem 0.55rem;
+  border-left: 1px solid rgba(168, 156, 145, 0.1);
+  text-align: center;
+}
+
+.hubStatStrip div:first-child {
+  border-left: 0;
+}
+
+.hubStatStrip span,
+.hubStatStrip strong,
+.hubStatStrip dt,
+.hubStatStrip dd {
+  display: block;
+}
+
+.hubStatStrip span,
+.hubStatStrip dt {
+  margin: 0;
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.hubStatStrip strong,
+.hubStatStrip dd {
+  margin-top: 0.25rem;
+  margin-right: 0;
+  margin-bottom: 0;
+  margin-left: 0;
+  color: var(--orange);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
+.hubModuleCard > a,
+.hubModuleCard > button,
+.hubModuleCard .sectionAction,
+.hubModuleCard > b {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.1rem;
+  margin-top: 0.85rem;
+  border: 1px solid rgba(126, 81, 255, 0.62);
+  border-radius: 4px;
+  color: #c4a9ff;
+  background: rgba(126, 81, 255, 0.12);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.platformMetricGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.platformMetricGrid article {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.2rem 0.65rem;
+  align-items: center;
+  min-width: 0;
+  min-height: 4.2rem;
+  padding: 0.7rem;
+  border: 1px solid rgba(168, 156, 145, 0.14);
+  border-radius: 5px;
+  background: rgba(9, 9, 8, 0.66);
+}
+
+.platformMetricGrid article > span:first-child {
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 1px solid rgba(126, 81, 255, 0.36);
+  border-radius: 6px;
+  color: #a683ff;
+  background: rgba(126, 81, 255, 0.12);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+.platformMetricGrid strong {
+  color: var(--text);
+  font-size: 0.98rem;
+}
+
+.platformMetricGrid span,
+.platformMetricGrid small {
+  display: block;
+  overflow: hidden;
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hubActivityGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.95fr);
+  gap: 0.8rem;
+}
+
+.hubQuickList,
+.hubShortcutList,
+.hubEventList,
+.hubHealthList {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hubEventList,
+.hubHealthList {
+  gap: 0;
+  background: rgba(6, 6, 5, 0.42);
+}
+
+.hubEventList li,
+.hubHealthList li,
+.hubEventList a,
+.hubHealthList p {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.35rem 0.45rem;
+  border-top: 1px solid rgba(168, 156, 145, 0.1);
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.hubEventList li:first-child,
+.hubHealthList li:first-child,
+.hubEventList a:first-of-type,
+.hubHealthList p:first-of-type {
+  border-top: 0;
+}
+
+.hubEventList li::before,
+.hubHealthList li::before,
+.hubEventList a::before,
+.hubHealthList p::before {
+  content: "⊙";
+  color: var(--orange);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+}
+
+.hubHealthList li::before,
+.hubHealthList p::before {
+  content: "✓";
+  color: var(--green);
+}
+
+.hubEventList a > span,
+.hubHealthList p > span {
+  display: none;
+}
+
+.hubEventList time,
+.hubHealthList time,
+.hubEventList small,
+.hubHealthList small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.hubPanel > a,
+.hubAside section > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.85rem;
+  margin-top: 0.65rem;
+  color: #b99bff;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.hubPanel > a:hover,
+.hubAside section > a:hover {
+  color: var(--orange);
+}
+
+.hubEventList > a,
+.hubHealthList > p {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: center;
+  min-height: 2rem;
+  margin: 0;
+  padding: 0.35rem 0.45rem;
+  border-top: 1px solid rgba(168, 156, 145, 0.1);
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.hubAside {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.hubAside section {
+  min-width: 0;
+  padding: 0.9rem;
+}
+
+.hubQuickList a,
+.hubShortcutList a,
+.hubQuickList button {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr);
+  gap: 0.15rem 0.65rem;
+  align-items: center;
+  width: 100%;
+  min-height: 3.55rem;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid rgba(168, 156, 145, 0.14);
+  border-radius: 5px;
+  background: rgba(10, 10, 9, 0.58);
+  color: var(--text);
+  text-align: left;
+  text-decoration: none;
+}
+
+.hubShortcutList a {
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 2.05rem;
+  padding: 0.45rem 0.6rem;
+  color: var(--muted);
+}
+
+.hubQuickList a::before,
+.hubQuickList button::before {
+  content: "";
+  grid-row: 1 / span 2;
+  display: none;
+  color: #a683ff;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 1.35rem;
+}
+
+.hubQuickList a > span,
+.hubQuickList button > span {
+  grid-row: 1 / span 2;
+  color: #a683ff;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 1.05rem;
+}
+
+.hubShortcutList a::after {
+  content: "↗";
+  color: var(--muted);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.78rem;
+}
+
+.hubQuickList strong,
+.hubShortcutList strong {
+  overflow: hidden;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hubShortcutList a > span {
+  display: none;
+}
+
+.hubQuickList small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.hubQuickList a:hover,
+.hubShortcutList a:hover,
+.hubQuickList button:hover {
+  border-color: rgba(126, 81, 255, 0.58);
+  color: #c4a9ff;
+  background: rgba(126, 81, 255, 0.12);
+}
+
+.devPipelineStudioView {
+  min-width: 0;
+  margin-top: 0;
+}
+
+.devPipelineStudioView .pipelineDocSection {
+  margin-top: 0;
+  scroll-margin-top: 5.25rem;
+}
+
+.devPipelineStudioView .pipelineHero {
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+}
+
+.devPipelineStudioView .pipelineWorkbench {
+  grid-template-columns: minmax(35rem, 1fr) minmax(18rem, 25rem);
+}
+
+.devPipelineStudioView .pipelineStatusGrid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+body.studioMode #dev-pipeline-studio .pipelineHero {
+  grid-template-columns: minmax(24rem, 0.58fr) minmax(46rem, 1.42fr);
+  gap: 1.5rem;
+  align-items: start;
+  margin-bottom: 1.1rem;
+  padding-bottom: 1.05rem;
+  border-bottom: 1px solid rgba(168, 156, 145, 0.12);
+}
+
+body.studioMode #dev-pipeline-studio .pipelineHero h1 {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  font-size: clamp(1.55rem, 1.85vw, 2rem);
+}
+
+body.studioMode #dev-pipeline-studio .pipelineHero h1 span {
+  margin: 0;
+}
+
+body.studioMode #dev-pipeline-studio .pipelineHero p {
+  max-width: 42rem;
+}
+
+body.studioMode #dev-pipeline-studio .pipelineStatusGrid {
+  grid-template-columns: repeat(5, minmax(9.4rem, 1fr));
+  gap: 0.85rem;
+}
+
 @media (max-width: 1050px) {
   .topbar {
     align-items: flex-start;
@@ -3017,6 +7507,57 @@ kbd {
   }
 
   .appShell {
+    grid-template-columns: 1fr;
+  }
+
+  .hubLayout {
+    grid-template-columns: 14.5rem minmax(0, 1fr);
+  }
+
+  .hubAside {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-top: 1px solid rgba(199, 71, 0, 0.45);
+  }
+
+  .hubMain {
+    border-right: 0;
+  }
+
+  .hubHero {
+    grid-template-columns: 1fr;
+  }
+
+  .hubMetricGrid,
+  .platformMetricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hubModuleGrid,
+  .hubActivityGrid,
+  .pipelineContextPanel,
+  .pipelineEditorGrid,
+  .devPipelineStudioView .pipelineHero,
+  .devPipelineStudioView .pipelineWorkbench {
+    grid-template-columns: 1fr;
+  }
+
+  .pipelineEditorGrid label.wide {
+    grid-column: auto;
+  }
+
+  .pipelineInputConfigRow {
+    grid-template-columns: 1fr;
+  }
+
+  .pipelineInputInspectorGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .pipelineValidationInspectorGrid,
+  .pipelineValidationModeBar,
+  .pipelineIntegrationInspectorGrid,
+  .pipelineIntegrationModeBar {
     grid-template-columns: 1fr;
   }
 
@@ -3065,6 +7606,86 @@ kbd {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .pipelineHero,
+  .pipelineWorkbench {
+    grid-template-columns: 1fr;
+  }
+
+  .pipelineStatusGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.studioMode #dev-pipeline-studio .pipelineHero {
+    grid-template-columns: 1fr;
+  }
+
+  body.studioMode #dev-pipeline-studio .pipelineStatusGrid,
+  .devPipelineStudioView .pipelineStatusGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pipelineCanvasToolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .pipelineTools {
+    max-width: 100%;
+    overflow-x: auto;
+    padding-bottom: 0.15rem;
+  }
+
+  .pipelineArtifactInventory > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .parallelHero,
+  .parallelSectionHeader {
+    grid-template-columns: 1fr;
+  }
+
+  .parallelStatusGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .parallelPipeline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .parallelPipeline article:not(:last-child)::after {
+    display: none;
+  }
+
+  .appOverviewHero,
+  .appOverviewGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .appActionColumn,
+  .appArchitectureCard {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .appMetricGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem 0;
+  }
+
+  .appMetricGrid div:nth-child(3n + 1) {
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  .appArchitecture {
+    grid-template-columns: 1fr;
+  }
+
+  .appArchitecture > b {
+    margin: -0.55rem 0;
+    transform: rotate(90deg);
+  }
+
   .filterPanel {
     grid-template-columns: repeat(2, minmax(150px, 1fr));
   }
@@ -3085,6 +7706,154 @@ kbd {
 @media (max-width: 620px) {
   body {
     overflow-x: hidden;
+  }
+
+  .hubLayout {
+    grid-template-columns: 1fr;
+  }
+
+  body.softwareDeliveryMode .content,
+  body.researchMode .content,
+  body.softwareDeliveryMode #softwareDeliveryHubView .hubLayout {
+    grid-template-columns: 1fr;
+  }
+
+  body.softwareDeliveryMode .content > .view:not(.hidden),
+  body.researchMode .content > .view:not(.hidden),
+  body.softwareDeliveryMode .sdHubModuleRail,
+  body.researchMode .researchModuleRail {
+    grid-column: 1;
+  }
+
+  body.softwareDeliveryMode .sdHubModuleRail,
+  body.researchMode .researchModuleRail {
+    grid-row: auto;
+    min-height: 0;
+    padding: 0.75rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .sdHubRailSwitcher a {
+    min-height: 2.75rem;
+    font-size: 0.98rem;
+  }
+
+  body.studioMode #softwareDeliveryHubView .hubLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .sdHubChildHeader {
+    grid-template-columns: 1fr;
+    align-items: start;
+    padding: 0.8rem 0.75rem;
+  }
+
+  .sdHubChildNav {
+    justify-content: flex-start;
+  }
+
+  .sdHubChildNav a {
+    flex: 1 1 10.5rem;
+    justify-content: center;
+  }
+
+  .hubSidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .hubSidebar section {
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.7rem;
+  }
+
+  .hubMain {
+    padding: 1rem 0.75rem;
+  }
+
+  .hubAside {
+    grid-template-columns: 1fr;
+    padding: 0.75rem;
+  }
+
+  .hubMetricGrid,
+  .platformMetricGrid,
+  .pipelineContextControls,
+  .pipelineTemplateLibrary,
+  .hubStatStrip {
+    grid-template-columns: 1fr;
+  }
+
+  .pipelineContextPanel {
+    grid-template-columns: 1fr;
+  }
+
+  .pipelineEditorGrid label.wide {
+    grid-column: auto;
+  }
+
+  .pipelineInputConfigRow {
+    grid-template-columns: 1fr;
+  }
+
+  .pipelineContextActions button {
+    flex: 1 1 8rem;
+  }
+
+  .hubMetricCard,
+  .hubPanel,
+  .hubModuleCard,
+  .hubAside section {
+    border-radius: 6px;
+  }
+
+  .hubModuleCard {
+    min-height: 0;
+  }
+
+  .hubStatStrip div,
+  .hubStatStrip div:first-child {
+    border-left: 0;
+    border-top: 1px solid rgba(168, 156, 145, 0.1);
+  }
+
+  .hubStatStrip div:first-child {
+    border-top: 0;
+  }
+
+  .hubPanel > header,
+  .hubAside section > header {
+    display: grid;
+  }
+
+  .hubEventList li,
+  .hubHealthList li {
+    grid-template-columns: 1rem minmax(0, 1fr);
+  }
+
+  .hubEventList time,
+  .hubHealthList time,
+  .hubEventList small,
+  .hubHealthList small {
+    grid-column: 2;
+    white-space: normal;
+  }
+
+  .devPipelineStudioView .pipelineCanvas {
+    max-width: calc(100vw - 1.5rem);
+  }
+
+  .devPipelineStudioView .pipelineStatusGrid {
+    grid-template-columns: 1fr;
+  }
+
+  body.studioMode #dev-pipeline-studio .pipelineStatusGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .appOverviewPage {
+    scroll-margin-top: 12.5rem;
   }
 
   .topbar {
@@ -3185,6 +7954,12 @@ kbd {
     grid-template-columns: 1fr;
   }
 
+  body.docsAppPage #docsView:not(.hidden),
+  body.docsPipelinePage #docsView:not(.hidden),
+  body.docsParallelPage #docsView:not(.hidden) {
+    grid-template-columns: 1fr;
+  }
+
   .docsSidebar {
     border-right: 0;
     border-bottom: 1px solid var(--line);
@@ -3205,6 +7980,88 @@ kbd {
   .docsBreadcrumb {
     margin: -1.5rem -1rem 1rem;
     padding: 0 1rem;
+  }
+
+  body.docsPipelinePage .docsMain {
+    padding: 1.5rem 1rem 2rem;
+  }
+
+  .pipelineDocSection {
+    scroll-margin-top: 12.5rem;
+  }
+
+  .parallelDocSection {
+    scroll-margin-top: 12.5rem;
+  }
+
+  .parallelHero,
+  .parallelSectionHeader,
+  .parallelStatusGrid,
+  .parallelPipeline,
+  .parallelCapabilityGrid,
+  .parallelRealityGrid,
+  .parallelArtifactGrid,
+  .parallelGapList div {
+    grid-template-columns: 1fr;
+  }
+
+  .parallelPanel,
+  .parallelHero {
+    padding: 0.85rem;
+  }
+
+  .parallelPipeline article {
+    min-height: 0;
+  }
+
+  .parallelCommandReference pre code {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .pipelineHero h1 {
+    font-size: 1.55rem;
+  }
+
+  .pipelineHero h1 span {
+    margin: 0.45rem 0 0;
+  }
+
+  .pipelineStatusGrid,
+  .pipelineArtifactInventory > div {
+    grid-template-columns: 1fr;
+  }
+
+  .pipelineTabs {
+    max-width: calc(100vw - 2rem);
+  }
+
+  .pipelineCanvas {
+    max-width: calc(100vw - 2rem);
+  }
+
+  .pipelineStageGrid {
+    min-width: 54rem;
+    grid-template-columns: repeat(5, minmax(10.6rem, 1fr));
+  }
+
+  .pipelineStage {
+    min-height: 29rem;
+  }
+
+  .pipelineDataFlow > div,
+  .pipelineLegend {
+    min-width: 54rem;
+  }
+
+  .pipelineInspector pre {
+    max-height: 22rem;
+    font-size: 0.68rem;
+  }
+
+  .pipelineManifestEditor {
+    min-height: 18rem;
+    font-size: 0.66rem;
   }
 
   .researchHeader {
@@ -3257,6 +8114,76 @@ kbd {
     grid-template-columns: 1fr;
   }
 
+  .appOverviewPage h2 {
+    font-size: 2rem;
+  }
+
+  .appIdentity {
+    grid-template-columns: 3.7rem minmax(0, 1fr);
+    gap: 0.9rem;
+  }
+
+  .appIcon {
+    width: 3.7rem;
+    height: 3.7rem;
+    border-radius: 14px;
+    font-size: 2.15rem;
+  }
+
+  .appMetaRow {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .appPreviewCard {
+    min-height: 10rem;
+  }
+
+  .miniWatch {
+    width: 7.8rem;
+  }
+
+  .appMetricGrid,
+  .appFeatureGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .appMetricGrid strong {
+    white-space: normal;
+  }
+
+  .appMetricGrid div,
+  .appMetricGrid div:nth-child(3n + 1) {
+    padding: 0.65rem 0 0.7rem;
+    border-left: 0;
+    border-top: 1px solid rgba(168, 156, 145, 0.14);
+  }
+
+  .appMetricGrid div:first-child {
+    border-top: 0;
+  }
+
+  .releaseFacts div {
+    grid-template-columns: 1fr;
+    gap: 0.18rem;
+  }
+
+  .appInfoCard,
+  .appDashboardCard {
+    padding: 1rem;
+  }
+
+  .compactFlow {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .compactFlow b {
+    justify-self: start;
+    transform: rotate(90deg);
+  }
+
   .docsAreaCard,
   .docsSupport {
     grid-template-columns: 2.7rem minmax(0, 1fr);
@@ -3279,5 +8206,54 @@ kbd {
 
   .docsUpdates time {
     text-align: left;
+  }
+}
+
+@media (max-width: 1180px) {
+  .pipelineInputDocHeader,
+  .pipelineInputDocGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .pipelineTemplateControls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pipelineTemplateControls button {
+    grid-column: 1 / -1;
+  }
+
+  .pipelineInputLegend > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  body.docsPipelinePage .pipelineInputDocPage {
+    scroll-margin-top: 12.5rem;
+  }
+
+  .pipelineTemplateControls,
+  .pipelineInputStats,
+  .pipelineFormatBadges,
+  .pipelineInputLegend > div {
+    grid-template-columns: 1fr;
+  }
+
+  .pipelineInputRow {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+    align-items: start;
+  }
+
+  .pipelineInputRow small,
+  .pipelineInputRow em,
+  .pipelineInputRow b {
+    justify-self: start;
+  }
+
+  .pipelineExampleJson > header {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
