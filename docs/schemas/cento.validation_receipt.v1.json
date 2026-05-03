@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cento Validation Receipt v1",
+  "type": "object",
+  "required": ["schema_version", "manifest_id", "tier", "status", "commands", "written_at"],
+  "properties": {
+    "schema_version": {"const": "cento.validation_receipt.v1"},
+    "manifest_id": {"type": "string"},
+    "tier": {"type": "string"},
+    "status": {"enum": ["passed", "failed", "skipped"]},
+    "commands": {"type": "array", "items": {"type": "object"}},
+    "artifacts": {"type": "array"},
+    "written_at": {"type": "string"}
+  }
+}

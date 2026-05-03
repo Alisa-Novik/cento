@@ -1,0 +1,6 @@
+diff --git a/tests/fixtures/cento_build/unowned.html b/tests/fixtures/cento_build/unowned.html
+new file mode 100644
+--- /dev/null
++++ b/tests/fixtures/cento_build/unowned.html
+@@ -0,0 +1 @@
++<p>Unowned patch content.</p>

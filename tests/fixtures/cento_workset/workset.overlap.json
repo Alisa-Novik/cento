@@ -1,0 +1,24 @@
+{
+  "schema_version": "cento.workset.v1",
+  "id": "workset_fixture_overlap_001",
+  "mode": "fast",
+  "max_parallel": 2,
+  "tasks": [
+    {
+      "id": "first",
+      "task": "Patch cluster notice first",
+      "write_paths": [
+        "CLUSTER_NOTICE.md"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "second",
+      "task": "Patch cluster notice second",
+      "write_paths": [
+        "CLUSTER_NOTICE.md"
+      ],
+      "depends_on": []
+    }
+  ]
+}

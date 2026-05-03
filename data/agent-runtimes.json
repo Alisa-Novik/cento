@@ -7,11 +7,10 @@
       "provider": "openai",
       "model": "gpt-5.3-codex-spark",
       "agent": "codex",
-      "weight": 75,
-      "preferred": true,
+      "weight": 0,
       "command_env": "CENTO_CODEX_BIN",
       "default_binary": "codex",
-      "budget_note": "Preferred runtime. Majority share because Codex budget is about 100 USD/month."
+      "budget_note": "Temporarily disabled for agent dispatch while Codex weekly limit is reserved for interactive coordination."
     },
     {
       "id": "claude-code",
@@ -19,11 +18,12 @@
       "provider": "anthropic",
       "model": "claude-sonnet-4-6",
       "agent": "claude-code",
-      "weight": 25,
+      "weight": 100,
+      "preferred": true,
       "plan": "personal-pro",
       "command_env": "CENTO_CLAUDE_BIN",
       "default_binary": "claude",
-      "budget_note": "Personal Pro plan budget is about 20-30 USD/month, so route about 20-30% of tasks here."
+      "budget_note": "Temporary Claude-only mode for factory and agent dispatch testing."
     }
   ]
 }

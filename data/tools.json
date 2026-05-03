@@ -28,6 +28,16 @@
         "cento install zsh",
         "cento install tmux",
         "cento run scan --query \"mcp\"",
+        "cento build --help",
+        "cento build init --task \"Fixture docs page patch\" --mode fast --write tests/fixtures/cento_build/app_page.html --route /fixture",
+        "cento build check tests/fixtures/cento_build/manifest.valid.json",
+        "cento runtime check codex-fast",
+        "cento workset check tests/fixtures/cento_workset/workset.valid.json",
+        "cento workset run tests/fixtures/cento_workset/workset.valid.json --max-workers 2 --runtime-profile fixture-valid --apply sequential --validation smoke",
+        "cento workset execute tests/fixtures/cento_workset/workset.execute.fixture.json --max-parallel 3 --runtime fixture --integrate sequential --validation smoke",
+        "cento workset execute .cento/worksets/docs_page.json --max-parallel 6 --runtime api-openai --budget-usd 3 --max-budget-usd 5 --integrate sequential --apply --validation smoke",
+        "cento build bundle synthesize --manifest tests/fixtures/cento_build/manifest.valid.json --patch tests/fixtures/cento_build/patch.valid.diff",
+        "cento build integrate tests/fixtures/cento_build/manifest.valid.json --bundle .cento/builds/build_fixture_docs_page_001/integration/patch_bundle.json --dry-run",
         "cento platforms",
         "cento platforms macos",
         "cento platforms linux",
@@ -170,12 +180,45 @@
         },
         {
           "name": "run",
-          "summary": "Run a registered tool by id.",
-          "usage": "cento run TOOL [args...]",
+          "summary": "Run a registered tool by id, or create a fast/standard/thorough execution contract with optional one-local-builder patch collection for owned-path tasks.",
+          "usage": "cento run TOOL [args...] | cento run fast|standard|thorough --task TEXT [--write PATH] [--local-builder [RUNTIME] --apply]",
           "flags": [],
           "examples": [
             "cento run scan --query \"mcp\"",
-            "cento run crm docs"
+            "cento run crm docs",
+            "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html --route /docs/foo",
+            "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html --route /docs/foo --local-builder fixture --fixture-case valid --apply --validation smoke --commit none"
+          ]
+        },
+        {
+          "name": "build",
+          "summary": "Create manifest-owned local build packages, run one local worker, check worker artifacts, synthesize patch bundles, dry-run integrate, and apply accepted bundles.",
+          "usage": "cento build <init|check|prompt|worker|artifact|bundle|integrate|apply|receipt> [args...]",
+          "flags": [],
+          "examples": [
+            "cento build init --task \"Fixture docs page patch\" --mode fast --write tests/fixtures/cento_build/app_page.html --route /fixture",
+            "cento build check tests/fixtures/cento_build/manifest.valid.json",
+            "cento build worker run .cento/builds/<id>/manifest.json --worker builder_1 --runtime fixture --fixture-case valid --worktree --timeout 180",
+            "cento build worker run .cento/builds/<id>/manifest.json --worker builder_1 --runtime-profile codex-fast --worktree",
+            "cento runtime check codex-fast",
+            "cento workset run tests/fixtures/cento_workset/workset.valid.json --max-workers 2 --runtime-profile fixture-valid --apply sequential --validation smoke",
+            "cento build bundle synthesize --manifest tests/fixtures/cento_build/manifest.valid.json --patch tests/fixtures/cento_build/patch.valid.diff",
+            "cento build integrate .cento/builds/<id>/manifest.json --bundle .cento/builds/<id>/workers/builder_1/patch_bundle.json --worktree --dry-run",
+            "cento build apply .cento/builds/<id>/manifest.json --bundle .cento/builds/<id>/workers/builder_1/patch_bundle.json --from-receipt .cento/builds/<id>/integration_receipt.json"
+          ]
+        },
+        {
+          "name": "workset",
+          "summary": "Run a minimal local N-worker workset with exclusive write paths, structured API artifacts, and sequential integration.",
+          "usage": "cento workset <check|run|execute|materialize-artifact> [args...]",
+          "flags": [],
+          "examples": [
+            "cento workset check tests/fixtures/cento_workset/workset.valid.json",
+            "cento workset check tests/fixtures/cento_workset/workset.overlap.json",
+            "cento workset run tests/fixtures/cento_workset/workset.valid.json --max-workers 2 --runtime-profile fixture-valid --apply sequential --validation smoke",
+            "cento workset run workset.json --max-workers 3 --runtime-profile codex-fast --apply sequential --validation smoke",
+            "cento workset execute tests/fixtures/cento_workset/workset.execute.fixture.json --max-parallel 3 --runtime fixture --integrate sequential --validation smoke",
+            "cento workset execute .cento/worksets/docs_page.json --max-parallel 6 --runtime api-openai --budget-usd 3 --max-budget-usd 5 --integrate sequential --apply --validation smoke"
           ]
         }
       ]
@@ -306,7 +349,6 @@
         "cento crm intake init --person \"Ada Lovelace\"",
         "cento crm intake add --person \"Ada Lovelace\" --kind resume --file ./resume.pdf",
         "cento crm intake plan --person \"Ada Lovelace\"",
-        "cento crm integration --provider redmine --person \"Ada Lovelace\" --start-workflow --dry-run",
         "cento crm serve --open",
         "cento crm show",
         "cento crm docs"
@@ -319,14 +361,12 @@
         "workspace/runs/career-intake/<person>/manifest.json",
         "workspace/runs/career-intake/<person>/artifact-plan.md",
         "workspace/runs/career-intake/<person>/prompts/*.md",
-        "workspace/runs/career-intake/<person>/artifacts/*.md",
-        "Project and issues via REST API"
+        "workspace/runs/career-intake/<person>/artifacts/*.md"
       ],
       "notes": [
         "Run cento crm serve to host the local SPA through the cento CLI.",
         "Run cento crm init to bootstrap app state from the saved questionnaire.",
         "Run cento crm intake to collect raw candidate inputs and generate a Codex-ready artifact plan.",
-        "Run cento crm integration --provider redmine --start-workflow to create a workflow from generated artifacts.",
         "The CRM is a no-build local app backed by JSON persistence."
       ]
     },
@@ -395,6 +435,34 @@
       ]
     },
     {
+      "id": "cento-mcp",
+      "name": "Cento MCP Server",
+      "lane": "agent ops",
+      "kind": "python",
+      "entrypoint": "./scripts/cento_mcp_server.py",
+      "description": "Local MCP stdio server that exposes safe Cento agent-work, story manifest, cluster, bridge, and context tools.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "python3 scripts/cento_mcp_server.py --list-tools",
+        "python3 scripts/cento_mcp_server.py --call-tool cento_agent_work_list --arguments '{}'",
+        "python3 scripts/cento_mcp_server.py --call-tool cento_context --arguments '{\"remote\":false}'",
+        "cento mcp doctor"
+      ],
+      "outputs": [
+        "MCP tools over stdio",
+        "structured JSON command results"
+      ],
+      "notes": [
+        "Configured as the `cento` server in .mcp.json.",
+        "The server exposes explicit write tools for agent-work mutations and story hub generation.",
+        "Set CENTO_MCP_READ_ONLY=1 to disable write tools.",
+        "Local paths are constrained to the Cento repo root."
+      ]
+    },
+    {
       "id": "scan",
       "name": "Scan One Pager",
       "lane": "general ops",
@@ -421,137 +489,6 @@
         "Each run archives the previous latest output before writing the new page.",
         "The tool starts or reuses a local preview server on a high port and opens the browser by default.",
         "See docs/scan-onepager.md for the command surface and output model."
-      ]
-    },
-    {
-      "id": "validator-tier0",
-      "name": "Validator Tier 0",
-      "lane": "agent ops",
-      "kind": "python",
-      "entrypoint": "./scripts/validator_tier0.py",
-      "description": "Create validation packets and run deterministic Tier 0 checks with mandatory timing and AI budget stats.",
-      "platforms": [
-        "linux",
-        "macos"
-      ],
-      "commands": [
-        "cento validator-tier0 stories",
-        "cento validator-tier0 run workspace/runs/validator-tier0/e2e/sample-pass.json",
-        "cento validator-tier0 e2e",
-        "cento validator-tier0 run workspace/runs/agent-work/no-model-validation-e2e/validation.json --run-dir workspace/runs/agent-work/no-model-validation-e2e/tier0"
-      ],
-      "outputs": [
-        "workspace/runs/validator-tier0/stories.json",
-        "workspace/runs/validator-tier0/*/validation-packet.json",
-        "workspace/runs/validator-tier0/*/validation-result.json",
-        "workspace/runs/validator-tier0/*/validation-summary.md",
-        "workspace/runs/validator-tier0/*/stats.json"
-      ],
-      "notes": [
-        "Tier 0 uses deterministic checks only: file_exists, command, json_field, contains_text, http_status, and image_nonblank.",
-        "Every run records total_duration_ms, per-check duration_ms, manual_review_count, automation_coverage_percent, ai_calls_used, and estimated_ai_cost.",
-        "The e2e command creates one passing sample and one failing sample to prove the path end to end."
-      ]
-    },
-    {
-      "id": "story-manifest",
-      "name": "Story Manifest",
-      "lane": "agent ops",
-      "kind": "python",
-      "entrypoint": "./scripts/story_manifest.py",
-      "description": "Validate, draft, and render Cento agent-work story.json manifests.",
-      "platforms": [
-        "linux",
-        "macos"
-      ],
-      "commands": [
-        "cento story-manifest draft --title \"Fix dashboard\" --package app --expected-output workspace/runs/agent-work/drafts/fix-dashboard/evidence.md",
-        "cento story-manifest validate workspace/runs/agent-work/no-model-validation-e2e/story.json",
-        "cento story-manifest render-hub workspace/runs/agent-work/1000086/story.json"
-      ],
-      "outputs": [
-        "workspace/runs/agent-work/*/story.json",
-        "workspace/runs/agent-work/*/deliverables.json",
-        "workspace/runs/agent-work/*/start-here.html"
-      ],
-      "notes": [
-        "Draft manifests use issue.id=0 before agent-work create canonicalizes the real issue id.",
-        "No-model drafts include explicit escalation triggers and deterministic validation inputs."
-      ]
-    },
-    {
-      "id": "validation-manifest",
-      "name": "Validation Manifest",
-      "lane": "agent ops",
-      "kind": "python",
-      "entrypoint": "./scripts/validation_manifest.py",
-      "description": "Generate deterministic validation.json checks from story.json and enforce no-model coverage guardrails.",
-      "platforms": [
-        "linux",
-        "macos"
-      ],
-      "commands": [
-        "cento validation-manifest draft workspace/runs/agent-work/no-model-validation-e2e/story.json --output workspace/runs/agent-work/no-model-validation-e2e/validation.json",
-        "cento validation-manifest validate workspace/runs/agent-work/no-model-validation-e2e/validation.json"
-      ],
-      "outputs": [
-        "workspace/runs/agent-work/*/validation.json"
-      ],
-      "notes": [
-        "Only explicit artifacts, commands, text assertions, JSON fields, URLs, and screenshots become deterministic checks.",
-        "Unresolved manual_review items block preflight until accepted, covered, or waived."
-      ]
-    },
-    {
-      "id": "no-model-validation-e2e",
-      "name": "No-model Validation E2E",
-      "lane": "agent ops",
-      "kind": "python",
-      "entrypoint": "./scripts/no_model_validation_e2e.py",
-      "description": "Run generated story manifest, generated validation manifest, agent-work preflight, and Tier 0 validation in one zero-AI evidence loop.",
-      "platforms": [
-        "linux",
-        "macos"
-      ],
-      "commands": [
-        "cento no-model-validation-e2e",
-        "cento no-model-validation-e2e --run-dir workspace/runs/agent-work/no-model-validation-e2e"
-      ],
-      "outputs": [
-        "workspace/runs/agent-work/no-model-validation-e2e/story.json",
-        "workspace/runs/agent-work/no-model-validation-e2e/validation.json",
-        "workspace/runs/agent-work/no-model-validation-e2e/preflight.json",
-        "workspace/runs/agent-work/no-model-validation-e2e/tier0/validation-result.json",
-        "workspace/runs/agent-work/no-model-validation-e2e/e2e-summary.json"
-      ],
-      "notes": [
-        "The run records command duration, total duration, automation coverage, manual review count, ai_calls_used, and estimated_ai_cost.",
-        "The target no-model path is 95%+ automatic; the current generated-fixture E2E is 100% automatic."
-      ]
-    },
-    {
-      "id": "manifest-validate",
-      "name": "Manifest Validate",
-      "lane": "agent ops",
-      "kind": "python",
-      "entrypoint": "./scripts/manifest_validate.py",
-      "description": "Deterministically validate story.json and validation.json pairs, including evidence paths, API specs, and allowlisted commands without AI.",
-      "platforms": [
-        "linux",
-        "macos"
-      ],
-      "commands": [
-        "cento manifest-validate --story workspace/runs/agent-work/1000088/story.json --validation workspace/runs/agent-work/1000088/validation.json --json --report workspace/runs/agent-work/1000088/validation-report.md",
-        "python3 ./scripts/manifest_validate.py --story workspace/runs/agent-work/1000088/story.json --json"
-      ],
-      "outputs": [
-        "workspace/runs/agent-work/<issue-id>/validation-report.md",
-        "workspace/runs/agent-work/<issue-id>/validation-report.json"
-      ],
-      "notes": [
-        "Uses story.json and validation.json as deterministic inputs.",
-        "Command checks fail on non-zero exits and escalate when a command is not allowlisted.",
-        "The default report lives next to the validation manifest unless overridden with --report."
       ]
     },
     {
@@ -875,6 +812,39 @@
       ]
     },
     {
+      "id": "temp",
+      "name": "Cento Temporary Commands",
+      "lane": "ops",
+      "kind": "shell",
+      "entrypoint": "./scripts/cento_temp.sh",
+      "description": "Short-lived operator wrappers for fragile one-off commands that should not be pasted as multiline shell.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento temp run",
+        "cento temp show",
+        "cento temp list",
+        "cento temp add ID --title TITLE --node local --command '...'",
+        "cento temp add ID --title TITLE --node macos --command-file /tmp/command.sh",
+        "cento temp run ID",
+        "cento temp run ID --dry-run",
+        "cento temp run ID --no-copy",
+        "cento temp remove ID"
+      ],
+      "outputs": [
+        "workspace/runs/temp/commands/*.json",
+        "workspace/runs/temp/history/*/output.log"
+      ],
+      "notes": [
+        "Use temp commands when an agent needs to give a human a stable command instead of a fragile multiline shell paste.",
+        "Temp commands can target local, macos, or linux; cross-node runs route through cento cluster exec.",
+        "Run output is saved to a history log and the most useful result path is copied to the clipboard by default.",
+        "Remove stale temp commands after use."
+      ]
+    },
+    {
       "id": "search-report",
       "name": "Search Report",
       "lane": "general ops",
@@ -1060,6 +1030,7 @@
         "cento cluster status",
         "cento cluster exec linux -- tmux ls",
         "cento cluster exec macos -- cento gather-context --no-remote",
+        "CENTO_IPHONE_URL=http://iphone-cento.local:47919 cento cluster exec iphone -- health",
         "cento cluster sync",
         "cento cluster heal",
         "cento cluster heal linux",
@@ -1085,6 +1056,7 @@
         "sync is a read-only git drift report; it never writes to either node.",
         "heal is the single repair path for bridge services and sockets.",
         "Remote execution uses the existing OCI Unix-socket mesh.",
+        "The iPhone remains a companion node, but can expose an authenticated CentoMobile app control endpoint for health/status via cluster exec iphone.",
         "cluster_health_e2e.sh validates Mac-to-Linux execution paths used by agents before relying on the cluster.",
         "companion-setup prints a POSIX iPhone/iSH installer that preserves natural-language text by shell-quoting each SSH argument.",
         "Remote execution uses bash -lc on the target node, supports quoted shell commands and argv-style commands, repairs the Linux socket once when stale, and falls back to alice@alisapad.local when the LAN route is available."
@@ -1142,41 +1114,27 @@
     },
     {
       "id": "agent-work",
-      "name": "Cento Taskstream CLI",
+      "name": "Agent Work Tracker",
       "lane": "agent ops",
       "kind": "python",
       "entrypoint": "./scripts/agent_work.py",
-      "description": "Cento Taskstream CLI for assigning, splitting, dispatching, reviewing, archiving, and cutting over Cento agent tasks across the Mac/Linux cluster.",
+      "description": "Taskstream-backed work tracker and first Cento Console section for assigning, splitting, dispatching, and reviewing Cento agent tasks across the Mac/Linux cluster.",
       "platforms": [
         "linux",
         "macos"
       ],
       "commands": [
         "cento agent-work bootstrap",
-        "cento agent-work create --title \"Fix dashboard\" --manifest workspace/runs/agent-work/drafts/fix-dashboard/story.json --node linux --agent codex",
-        "CENTO_AGENT_WORK_BACKEND=dual cento agent-work create --title \"Validate parity\" --manifest workspace/runs/agent-work/drafts/validate-parity/story.json --node linux --agent codex",
-        "cento agent-work preflight workspace/runs/agent-work/no-model-validation-e2e/story.json --validation-manifest workspace/runs/agent-work/no-model-validation-e2e/validation.json",
+        "cento agent-work create --title \"Fix dashboard\" --node linux --agent codex",
         "cento agent-work split --title \"Improve mission control\" --nodes linux,macos --task \"Backend status\" --task \"Mac tile view\"",
         "cento agent-work list",
         "cento agent-work show 123",
         "cento agent-work claim 123 --node linux --agent codex",
         "cento agent-work update 123 --status review --note \"implemented and tested\"",
-        "CENTO_AGENT_WORK_BACKEND=dual cento agent-work update 123 --status validating --note \"builder update path check\"",
-        "CENTO_AGENT_WORK_BACKEND=dual cento agent-work validate 123 --result pass --note \"validation accepted\" --evidence workspace/runs/agent-work/validation-report.md",
-        "CENTO_AGENT_WORK_BACKEND=dual cento agent-work cutover-parity --all --run-dir workspace/runs/agent-work/cutover",
-        "cento agent-work backup --run-dir workspace/runs/agent-work/cutover/e2e-check",
-        "cento agent-work restore --bundle workspace/runs/agent-work/cutover/e2e-check/backup --verify",
-        "cento agent-work archive --query \"cutover\"",
-        "cento agent-work cutover-status",
-        "cento agent-work cutover-freeze",
-        "cento agent-work cutover-verify --run-dir workspace/runs/agent-work/cutover/e2e-check",
-        "cento agent-work cutover-finalize --force",
-        "cento agent-work review-drain --package mission-control --dry-run",
-        "cento agent-work review-drain --package mission-control --apply",
         "cento agent-work prompt 123",
         "cento agent-work dispatch 123 --node linux --dry-run",
-        "CENTO_AGENT_WORK_BACKEND=dual make agent-work-e2e",
-        "CENTO_AGENT_WORK_BACKEND=dual make agent-work-dual-backend-stress",
+        "cento agent-work dispatch-pool --limit 3",
+        "cento agent-work dispatch-pool --limit 2 --runtime codex --model gpt-5.3-codex-spark --execute",
         "cento agent-work runs",
         "cento agent-work runs --json --active",
         "cento agent-work run-status RUN_ID --json"
@@ -1184,271 +1142,106 @@
       "outputs": [
         "docs/agent-work.html",
         "docs/agent-run-ledger.md",
-        "Project identifier cento-agent-work",
+        "Taskstream project cento-agent-work",
         "workspace/runs/agent-runs/<run-id>/run.json",
-        "workspace/runs/agent-work/<issue-id>/story.json",
-        "workspace/runs/agent-work/<issue-id>/preflight.json",
-        "workspace/runs/agent-work/<issue-id>/preflight.md",
         "workspace/runs/agent-work/<run-id>/prompt.md",
         "workspace/runs/agent-work/<run-id>/dispatch.json",
-        "workspace/runs/agent-work/<run-id>/codex.log",
-        "workspace/runs/agent-work/dual-backend-stress-<run-id>/stress.log",
-        "workspace/runs/agent-work/dual-backend-stress-<run-id>/concurrency-stress-report.md",
-        "workspace/runs/agent-work/review-drain/<run-id>/review-drain.md",
-        "workspace/runs/agent-work/review-drain/<run-id>/review-drain.json"
+        "workspace/runs/agent-work/<run-id>/codex.log"
       ],
       "notes": [
-        "The active path uses Cento Taskstream; migration, archive, backup, and rollback drills stay separate from active task flow.",
-        "Task creation requires a valid story manifest; preflight requires a validation manifest, 95%+ automation coverage, and no unresolved manual_review items.",
-        "Dispatch runs preflight by default and blocks AI launch unless --skip-preflight is used for explicit legacy/manual dispatch.",
-        "Set `CENTO_AGENT_WORK_BACKEND=dual` for migration dual-write/dual-read parity checks between the migration source and replacement before cutover finalization.",
-        "Use `make agent-work-dual-backend-stress` to exercise concurrent UI reads, `/api/sync`, dual-backend writes, and cutover parity against an isolated replacement SQLite database.",
+        "The web app shell is the Cento Console with top-level Taskstream, Cluster, Consulting, and Docs sections.",
+        "Taskstream is the main tasking backend used by agent-work, the Taskstream section, and cluster dispatch.",
         "Use split to create one package with node-assigned work items, then dispatch or hand the generated prompt to an agent.",
-        "Use review-drain to dry-run approved Review closures before applying them; the command only mutates Review items and writes a transcript under workspace/runs/agent-work/review-drain/<run-id>/.",
+        "Use dispatch-pool to keep cheap Spark/Codex workers busy; it is plan-only unless --execute is passed.",
         "Statuses are Queued, Running, Review, Blocked, and Done."
       ]
     },
     {
-      "id": "agent-manager",
-      "name": "Agent Manager",
+      "id": "agent-pool-kick",
+      "name": "Agent Pool Kicker",
       "lane": "agent ops",
       "kind": "python",
-      "entrypoint": "./scripts/agent_manager.py",
-      "description": "Control-plane scanner for Cento agents that detects stale, idle, stuck, errored, duplicated, manual, and low-value runs and writes actionable reports.",
+      "entrypoint": "./scripts/agent_pool_kick.py",
+      "description": "Bounded worker-pool launcher that keeps builder, validator, small-task, and coordinator lanes moving without unbounded dispatch.",
       "platforms": [
         "linux",
         "macos"
       ],
       "commands": [
-        "cento agent-manager scan",
-        "cento agent-manager scan --json",
-        "cento agent-manager report",
-        "cento agent-manager recommend --limit 10",
-        "cento agent-manager classify --issue-id 81",
-        "cento agent-manager mark-stale RUN_ID --reason \"stuck validator\" --dry-run",
-        "cento agent-manager mark-blocked 81 --reason \"stuck validator\" --evidence RUN_ID --dry-run",
-        "cento agent-manager terminate-tmux cento-agent-81-095103 --reason \"stuck validator\" --dry-run",
-        "make agent-manager ARGS=\"pool-stats --json\""
+        "cento agent-pool-kick --dry-run",
+        "cento agent-pool-kick --max-launch 3 --dry-run",
+        "cento agent-pool-kick --max-launch 3 --model gpt-5.3-codex-spark",
+        "cento agent-pool-kick --builder-target 2 --validator-target 2 --small-target 1 --coordinator-target 1",
+        "python3 scripts/agent_pool_kick.py --dry-run"
       ],
       "outputs": [
-        "docs/cento-agent-manager.html",
-        "workspace/runs/agent-manager/report-*/agent-manager-report.md",
-        "workspace/runs/agent-manager/report-*/agent-manager-report.json"
+        "~/.local/state/cento/agent-pool-kick-latest.json",
+        "stdout JSON launch summary",
+        "Taskstream issue state and agent run ledgers through agent-work dispatch"
       ],
       "notes": [
-        "Default management actions are dry-run unless --apply is passed.",
-        "The scanner correlates agent-work run ledgers, issue state, tmux sessions, process trees, logs, and pool state.",
-        "The Agent Processes TUI consumes the manager summary to surface risk, stuck, stale, and manual counts."
+        "Dry-run first before launching workers.",
+        "Defaults to the cheap Spark/Codex model unless CENTO_POOL_CODEX_MODEL, CENTO_AGENT_MODEL, or --model overrides it.",
+        "Uses current agent-work list and runs state to avoid dispatching issues that already have active runs.",
+        "Designed for a small cheap worker pool; use max-launch and target flags as guardrails."
       ]
     },
     {
-      "id": "factory",
-      "name": "Cento Factory",
-      "lane": "planning",
-      "kind": "python",
-      "entrypoint": "./scripts/factory.py",
-      "description": "Manifest-driven factory workflow that turns a high-level request into intake artifacts, a validated factory-plan.json, story manifests, validation manifests, queue ledgers, owned-path leases, worktree metadata, prompt bundles, patch collection, integration dry-runs, isolated Safe Integrator branches, per-patch validation, rollback metadata, release candidates, release status, Autopilot dry-run control cycles, runtime adapter contracts, and static evidence hubs without default AI dispatch.",
-      "platforms": [
-        "linux",
-        "macos"
-      ],
-      "commands": [
-        "cento factory intake \"develop me a career consulting module\" --dry-run --out workspace/runs/factory/factory-planning-e2e",
-        "cento factory plan workspace/runs/factory/factory-planning-e2e --no-model",
-        "cento factory materialize workspace/runs/factory/factory-planning-e2e",
-        "cento factory create-issues workspace/runs/factory/factory-planning-e2e --dry-run",
-        "cento factory preflight workspace/runs/factory/factory-planning-e2e --json",
-        "cento factory queue workspace/runs/factory/factory-planning-e2e",
-        "cento factory lease workspace/runs/factory/factory-planning-e2e --task crm-schema-extension --dry-run",
-        "cento factory dispatch workspace/runs/factory/factory-planning-e2e --lane builder --max 4 --dry-run",
-        "cento factory collect workspace/runs/factory/factory-planning-e2e",
-        "cento factory validate workspace/runs/factory/factory-planning-e2e",
-        "cento factory integrate workspace/runs/factory/factory-planning-e2e --dry-run",
-        "cento factory integrate factory-integration-e2e --plan",
-        "cento factory integrate factory-integration-e2e --prepare-branch --branch factory/factory-integration-e2e/integration",
-        "cento factory integrate factory-integration-e2e --apply --validate-each --limit 3",
-        "cento factory validate-integrated factory-integration-e2e",
-        "cento factory release-candidate factory-integration-e2e",
-        "cento factory sync-taskstream factory-integration-e2e --dry-run",
-        "cento factory release workspace/runs/factory/factory-planning-e2e --json",
-        "cento factory render-hub workspace/runs/factory/factory-planning-e2e",
-        "cento factory status workspace/runs/factory/factory-planning-e2e",
-        "cento factory autopilot factory-autopilot-runtime-e2e --dry-run --cycles 5",
-        "cento factory autopilot-status factory-autopilot-runtime-e2e --json",
-        "cento factory autopilot-render factory-autopilot-runtime-e2e",
-        "cento factory runtime list --json",
-        "cento factory runtime prepare factory-runtime-adapters-e2e --task factory-runtime-task-01 --runtime noop --dry-run",
-        "cento factory runtime launch factory-runtime-adapters-e2e --task factory-runtime-task-01 --runtime noop --dry-run",
-        "cento factory runtime status factory-runtime-adapters-e2e --task factory-runtime-task-01 --json",
-        "cento factory runtime collect factory-runtime-adapters-e2e --task factory-runtime-task-01",
-        "cento factory runtime cancel factory-runtime-adapters-e2e --task factory-runtime-task-01 --dry-run"
-      ],
-      "outputs": [
-        "workspace/runs/factory/<run-id>/request.md",
-        "workspace/runs/factory/<run-id>/intake.json",
-        "workspace/runs/factory/<run-id>/factory-plan.json",
-        "workspace/runs/factory/<run-id>/tasks/<task-id>/story.json",
-        "workspace/runs/factory/<run-id>/tasks/<task-id>/validation.json",
-        "workspace/runs/factory/<run-id>/queue/queue.json",
-        "workspace/runs/factory/<run-id>/queue/events.jsonl",
-        "workspace/runs/factory/<run-id>/queue/leases.json",
-        "workspace/runs/factory/<run-id>/tasks/<task-id>/worker-prompt.md",
-        "workspace/runs/factory/<run-id>/tasks/<task-id>/dispatch.json",
-        "workspace/runs/factory/<run-id>/tasks/<task-id>/worktree.json",
-        "workspace/runs/factory/<run-id>/patches/<task-id>/patch.json",
-        "workspace/runs/factory/<run-id>/dispatch-plan.json",
-        "workspace/runs/factory/<run-id>/integration/integration-plan.json",
-        "workspace/runs/factory/<run-id>/integration/dry-run-summary.md",
-        "workspace/runs/factory/<run-id>/integration/integration-state.json",
-        "workspace/runs/factory/<run-id>/integration/integration-branch.json",
-        "workspace/runs/factory/<run-id>/integration/apply-plan.json",
-        "workspace/runs/factory/<run-id>/integration/apply-log.jsonl",
-        "workspace/runs/factory/<run-id>/integration/applied-patches.json",
-        "workspace/runs/factory/<run-id>/integration/rejected-patches.json",
-        "workspace/runs/factory/<run-id>/integration/validation-after-each-patch.json",
-        "workspace/runs/factory/<run-id>/integration/quarantine/<task-id>/failure.json",
-        "workspace/runs/factory/<run-id>/integration/rollback-plan.json",
-        "workspace/runs/factory/<run-id>/integration/merge-readiness.json",
-        "workspace/runs/factory/<run-id>/integration/taskstream-sync-preview.json",
-        "workspace/runs/factory/<run-id>/integration/release-candidate.md",
-        "workspace/runs/factory/<run-id>/evidence/validation-summary.json",
-        "workspace/runs/factory/<run-id>/start-here.html",
-        "workspace/runs/factory/<run-id>/implementation-map.html",
-        "workspace/runs/factory/<run-id>/release-packet.md",
-        "workspace/runs/factory/<run-id>/delivery-status.json",
-        "workspace/runs/factory/<run-id>/autopilot/factory-state.json",
-        "workspace/runs/factory/<run-id>/autopilot/policy.json",
-        "workspace/runs/factory/<run-id>/autopilot/cycles/<cycle>/scan.json",
-        "workspace/runs/factory/<run-id>/autopilot/cycles/<cycle>/decision.json",
-        "workspace/runs/factory/<run-id>/autopilot/cycles/<cycle>/action.json",
-        "workspace/runs/factory/<run-id>/autopilot/cycles/<cycle>/result.json",
-        "workspace/runs/factory/<run-id>/autopilot/metrics.json",
-        "workspace/runs/factory/<run-id>/autopilot/stop-reason.json",
-        "workspace/runs/factory/<run-id>/autopilot/autopilot-summary.md",
-        "workspace/runs/factory/<run-id>/runtime/<task-id>/adapter-run.json",
-        "workspace/runs/factory/<run-id>/runtime/<task-id>/launch-plan.json",
-        "workspace/runs/factory/<run-id>/runtime/<task-id>/worker-ledger.json",
-        "workspace/runs/factory/<run-id>/runtime/<task-id>/heartbeat.json",
-        "workspace/runs/factory/<run-id>/runtime/<task-id>/status.json",
-        "workspace/runs/factory/<run-id>/runtime/<task-id>/cost.json",
-        "workspace/runs/factory/<run-id>/runtime/<task-id>/patch/patch.json",
-        "workspace/runs/factory/<run-id>/runtime/<task-id>/collect-result.json"
-      ],
-      "notes": [
-        "Factory defaults to no-model dry-runs. Live Taskstream issue creation requires --apply, and AI dispatch is never launched by default.",
-        "Every generated task has owned scope, expected outputs, validation commands, no-model eligibility, and dependency metadata.",
-        "Use factory-plan validation, story-manifest validation, validation-manifest validation, Agent Manager preflight, owned-path leases, runtime adapter contracts, patch collection, integration dry-run, Safe Integrator apply/validate gates, Autopilot cycle evidence, merge readiness, rollback metadata, and release status as required guardrails before worker dispatch or human merge review."
-      ]
-    },
-    {
-      "id": "storage",
-      "name": "Cento Storage",
-      "lane": "platform ops",
-      "kind": "python",
-      "entrypoint": "./scripts/storage.py",
-      "description": "No-delete artifact catalog and retention planner for Cento run ledgers, manifests, patches, validation logs, screenshots, SQLite snapshots, prompts, and release evidence before high-fanout Factory work increases artifact volume.",
-      "platforms": [
-        "linux",
-        "macos"
-      ],
-      "commands": [
-        "cento storage scan --root workspace/runs --db workspace/storage/catalog.sqlite",
-        "cento storage plan --dry-run",
-        "cento storage query --largest --limit 20",
-        "cento storage query --class screenshot_raw",
-        "cento storage pressure --json",
-        "cento storage normalize screenshots --dry-run",
-        "cento storage compress logs --dry-run",
-        "cento storage snapshot-db --path workspace/storage/catalog.sqlite --out workspace/storage/db-snapshots/catalog-snapshot.db",
-        "cento storage restore-test --sample 10",
-        "cento storage verify --all",
-        "cento storage report --out workspace/storage/reports/storage-summary.md",
-        "python3 scripts/storage_e2e.py --fixture mixed-artifacts --out workspace/runs/storage/cento-storage-v1"
-      ],
-      "outputs": [
-        "workspace/storage/catalog.sqlite",
-        "workspace/storage/reports/storage-summary.md",
-        "workspace/storage/reports/retention-plan.json",
-        "workspace/storage/reports/verify-report.json",
-        "workspace/storage/reports/storage-pressure.json",
-        "workspace/storage/reports/screenshot-normalization-plan.json",
-        "workspace/storage/reports/log-compression-plan.json",
-        "workspace/storage/db-snapshots/catalog-snapshot.db",
-        "workspace/storage/restore-tests/<timestamp>/restore-test-report.json",
-        "workspace/runs/storage/cento-storage-v1/e2e-summary.md",
-        "workspace/runs/storage/cento-storage-v1/catalog.sqlite",
-        "workspace/runs/storage/cento-storage-v1/retention-plan.json",
-        "workspace/runs/storage/cento-storage-v1/storage-pressure.json",
-        "workspace/runs/storage/cento-storage-v1/verify-report.json"
-      ],
-      "notes": [
-        "Storage v1 is no-delete and no-cloud-upload. It catalogs, hashes, plans, verifies, and reports only.",
-        "Raw screenshots are normalization/compression candidates until normalized derivatives and restore checks exist.",
-        "SQLite DB/WAL artifacts require controlled snapshot and integrity handling before future movement.",
-        "Autopilot should eventually treat storage pressure as a backpressure gate before increasing Factory fanout."
-      ]
-    },
-    {
-      "id": "agent-work-app",
-      "name": "Cento Console App",
+      "id": "agent-work-hygiene",
+      "name": "Agent Work Hygiene",
       "lane": "agent ops",
-      "kind": "python",
-      "entrypoint": "./scripts/agent_work_app.py",
-      "description": "Self-hosted Cento Console web app with Taskstream, Cluster, Consulting, and Docs sections, plus background process control, health checks, and migration import sync.",
+      "kind": "shell",
+      "entrypoint": "./scripts/agent_work_hygiene.sh",
+      "description": "Collect a point-in-time reconciliation report of agent run ledgers, tmux sessions, and Codex/Claude processes.",
       "platforms": [
         "linux",
         "macos"
       ],
       "commands": [
-        "cento agent-work-app start",
-        "cento agent-work-app stop",
-        "cento agent-work-app status",
-        "cento agent-work-app import-redmine",
-        "cento agent-work-app install-sync",
-        "cento agent-work backup",
-        "cento agent-work restore --bundle workspace/runs/agent-work/cutover/e2e-check/backup --verify",
-        "cento agent-work archive --query \"migration\"",
-        "cento agent-work cutover-status"
+        "cento agent-work-hygiene",
+        "cento agent-work-hygiene --issue 94",
+        "cento agent-work-hygiene --out-dir workspace/runs/agent-work/reconciliation",
+        "./scripts/agent_work_hygiene.sh"
       ],
       "outputs": [
-        "~/.local/state/cento/agent-work-app.pid",
-        "~/.local/state/cento/agent-work-app.log",
-        "~/.local/state/cento/agent-work-app-sync.log",
-        "~/.local/state/cento/agent-work-app.sqlite3",
-        "http://127.0.0.1:47910/health"
+        "workspace/runs/agent-work/reconciliation/hygiene-*/hygiene-report.md",
+        "workspace/runs/agent-work/reconciliation/hygiene-*/agent-work-runs.json",
+        "workspace/runs/agent-work/reconciliation/hygiene-*/tmux-sessions.txt",
+        "workspace/runs/agent-work/reconciliation/hygiene-*/process-probe.txt"
       ],
       "notes": [
-        "Start writes a PID file in ~/.local/state/cento and binds Cento Console to 127.0.0.1:47910.",
-        "Use status to probe the /health endpoint for the background app.",
-        "install-sync adds a 5-minute cron job that keeps the Taskstream database current during migration and writes cron output to ~/.local/state/cento/agent-work-app-sync.log.",
-        "import-redmine syncs the local replacement database from the current migration-backed agent-work CLI."
+        "Use before dispatching more workers when stale run records or blocked pool state are confusing capacity.",
+        "The report is evidence-first and does not mutate source code.",
+        "Pass --issue to scope reconciliation to one tracked run family."
       ]
     },
     {
-      "id": "story-screenshot-runner",
-      "name": "Story Screenshot Runner",
+      "id": "agent-processes",
+      "name": "Agent Processes Dashboard",
       "lane": "agent ops",
-      "kind": "python",
-      "entrypoint": "./scripts/story_screenshot_runner.py",
-      "description": "Read screenshot requirements from story.json, capture desktop and mobile evidence with Playwright, and write deterministic metadata plus an index for Docs/Evidence and Validator lanes.",
+      "kind": "shell",
+      "entrypoint": "./scripts/agent_processes_tui.sh",
+      "description": "Mac-friendly Bubble Tea dashboard for cluster-wide managed and manual agent sessions, stale/risk indicators, and queue pressure.",
       "platforms": [
         "linux",
         "macos"
       ],
       "commands": [
-        "cento story-screenshot-runner workspace/runs/agent-work/59/story.json",
-        "cento story-screenshot-runner workspace/runs/agent-work/59/story.json --force",
-        "./scripts/story_screenshot_runner.py workspace/runs/agent-work/59/story.json --force"
+        "cento agent-processes",
+        "cento agent-processes --once",
+        "./scripts/agent_processes_tui.sh",
+        "./scripts/agent_processes_tui.sh --once"
       ],
       "outputs": [
-        "workspace/runs/agent-work/<issue-id>/screenshot-evidence.json",
-        "workspace/runs/agent-work/<issue-id>/screenshot-index.md",
-        "workspace/runs/agent-work/<issue-id>/screenshots/<name>-<viewport>.png"
+        "interactive terminal dashboard",
+        "plain dashboard text when stdout is not a TTY"
       ],
       "notes": [
-        "Reads screenshots[] from story.json, prefers any explicit output path, and otherwise writes deterministic issue/name/viewport filenames under the run directory.",
-        "Writes URL, auth/token notes, viewport dimensions, issue id, command, and summary data into screenshot-evidence.json.",
-        "Returns non-zero with a clear status when the URL is unavailable or Playwright cannot be launched."
+        "Data comes from `python3 scripts/agent_work.py runs --json --active` and `python3 scripts/agent_work.py list --json`.",
+        "Attempts `python3 scripts/agent_manager.py scan --json` for risk/stale/manual counts when available.",
+        "If manager scan is unavailable, the dashboard remains usable from runs/list data alone.",
+        "Press r to refresh, q/Ctrl-C to quit.",
+        "Use --once for CI and non-interactive output."
       ]
     },
     {
@@ -1489,7 +1282,7 @@
       "kind": "shell",
       "entrypoint": "./scripts/opencode.sh",
       "wrapper": "~/bin/opencode",
-      "description": "Thin wrapper around opencode (Alisa-Novik fork of sst/opencode) \u2014 an open-source AI coding agent TUI.",
+      "description": "Thin wrapper around opencode (Alisa-Novik fork of sst/opencode) — an open-source AI coding agent TUI.",
       "platforms": [
         "linux",
         "macos"
@@ -1502,7 +1295,7 @@
       ],
       "notes": [
         "Binary installed via npm (opencode-ai). Fork source lives at ~/projects/opencode.",
-        "Fork: https://github.com/Alisa-Novik/opencode \u2014 based on sst/opencode.",
+        "Fork: https://github.com/Alisa-Novik/opencode — based on sst/opencode.",
         "Set OPENCODE_FORK_DIR to override the default fork path (~/projects/opencode).",
         "All arguments after 'cento opencode' are forwarded to the opencode binary unchanged."
       ]
@@ -1540,27 +1333,147 @@
       ]
     },
     {
-      "id": "temp",
-      "name": "Cento Temporary Commands",
-      "lane": "ops",
-      "kind": "shell",
-      "entrypoint": "./scripts/cento_temp.sh",
-      "description": "Short-lived operator wrappers for fragile one-off commands that should not be pasted as multiline shell.",
+      "id": "factory",
+      "name": "Cento Factory",
+      "lane": "agent ops",
+      "kind": "python",
+      "entrypoint": "./scripts/factory.py",
+      "description": "Deterministic no-model Factory planning, dispatch dry-runs, patch collection, validation, and Safe Integrator workflows.",
       "platforms": [
-        "linux"
+        "linux",
+        "macos"
       ],
       "commands": [
-        "cento run temp 1",
-        "cento run temp 1 status",
-        "cento run temp 1 rollback"
+        "cento factory --help",
+        "cento factory intake \"develop me a career consulting module\" --dry-run --out workspace/runs/factory/factory-planning-e2e",
+        "cento factory plan workspace/runs/factory/factory-planning-e2e --no-model",
+        "cento factory materialize workspace/runs/factory/factory-planning-e2e",
+        "cento factory queue workspace/runs/factory/factory-planning-e2e",
+        "cento factory dispatch workspace/runs/factory/factory-planning-e2e --lane builder --max 4 --dry-run",
+        "cento factory collect workspace/runs/factory/factory-planning-e2e",
+        "cento factory validate workspace/runs/factory/factory-planning-e2e",
+        "cento factory integrate workspace/runs/factory/factory-planning-e2e --dry-run",
+        "cento factory status workspace/runs/factory/factory-planning-e2e"
       ],
       "outputs": [
-        "workspace/runs/agent-work/<issue-id>/operator-cutover-stop.log",
-        "workspace/runs/agent-work/<issue-id>/operator-replacement-e2e.log"
+        "workspace/runs/factory/<run>/factory-plan.json",
+        "workspace/runs/factory/<run>/queue.json",
+        "workspace/runs/factory/<run>/integration/apply-plan.json"
       ],
       "notes": [
-        "Temp 1 installs the least-privilege migration cutover sudoers entry, stops the legacy board, validates the replacement backend, and updates the configured issue id (default #133 via CENTO_TEMP_ISSUE_ID).",
-        "Use `cento run temp 1 rollback` to start the legacy board again."
+        "Factory remains deterministic by default. Use `cento build` for the manifest-owned local build package v1 slice.",
+        "Live Taskstream creation and patch application remain explicit opt-in operations on Factory commands."
+      ]
+    },
+    {
+      "id": "build",
+      "name": "Cento Build",
+      "lane": "agent ops",
+      "kind": "python",
+      "entrypoint": "./scripts/cento_build.py",
+      "description": "Manifest-driven local build package primitive with owned path checks, Builder prompts, one-local-worker patch collection, dry-run patch integration, safe apply, and receipts.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento build --help",
+        "cento build init --task \"Fixture docs page patch\" --mode fast --write tests/fixtures/cento_build/app_page.html --route /fixture",
+        "cento build check tests/fixtures/cento_build/manifest.valid.json",
+        "cento build prompt tests/fixtures/cento_build/manifest.valid.json",
+        "cento build artifact check tests/fixtures/cento_build/worker_artifact.valid.json",
+        "cento build worker run .cento/builds/<id>/manifest.json --worker builder_1 --runtime fixture --fixture-case valid --worktree --timeout 180",
+        "cento build worker run .cento/builds/<id>/manifest.json --worker builder_1 --runtime-profile codex-fast --worktree",
+        "cento build worker run .cento/builds/<id>/manifest.json --worker builder_1 --runtime command --command \"codex exec --prompt-file {prompt}\" --allow-unsafe-command --worktree --timeout 180",
+        "cento build bundle synthesize --manifest tests/fixtures/cento_build/manifest.valid.json --patch tests/fixtures/cento_build/patch.valid.diff",
+        "cento build integrate .cento/builds/<id>/manifest.json --bundle .cento/builds/<id>/workers/builder_1/patch_bundle.json --worktree --dry-run",
+        "cento build apply .cento/builds/<id>/manifest.json --bundle .cento/builds/<id>/workers/builder_1/patch_bundle.json --from-receipt .cento/builds/<id>/integration_receipt.json",
+        "cento build receipt .cento/builds/build_fixture_docs_page_001"
+      ],
+      "outputs": [
+        ".cento/builds/<build_id>/manifest.json",
+        ".cento/builds/<build_id>/builder.prompt.md",
+        ".cento/builds/<build_id>/workers/builder_1/worker_artifact.json",
+        ".cento/builds/<build_id>/workers/builder_1/patch_bundle.json",
+        ".cento/builds/<build_id>/integration_receipt.json",
+        ".cento/builds/<build_id>/apply_receipt.json",
+        ".cento/builds/<build_id>/validation_receipt.json",
+        ".cento/builds/<build_id>/taskstream_evidence.json",
+        ".cento/builds/<build_id>/events.ndjson"
+      ],
+      "notes": [
+        "Local-only v1.2; one fixture/local worker can be launched, but there are no cloud workers, API calls, scheduler, PR creation, or automatic model patch generation.",
+        "Use `cento runtime check codex-fast` and `--runtime-profile codex-fast` for hardened command runtime profiles. Raw shell command runtimes require `--allow-unsafe-command`.",
+        "The normal integration path requires a patch bundle. Raw patch integration is rejected unless explicitly run as a dev raw-patch path.",
+        "The core acceptance behavior is rejecting dirty owned paths, unowned paths, protected paths, binary patches, path traversal, and undeclared lockfile changes.",
+        "`cento build apply` requires an accepted integration receipt and writes apply/taskstream evidence receipts."
+      ]
+    },
+    {
+      "id": "runtime",
+      "name": "Cento Runtime Profiles",
+      "lane": "agent ops",
+      "kind": "python",
+      "entrypoint": "./scripts/cento_runtime.py",
+      "description": "Inspect and validate local builder runtime profiles used by Cento Build worker execution.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento runtime list",
+        "cento runtime list --json",
+        "cento runtime check codex-fast",
+        "cento runtime check codex-fast --json",
+        "cento runtime check python-fixture --require-executable"
+      ],
+      "outputs": [
+        ".cento/runtimes.yaml"
+      ],
+      "notes": [
+        "Runtime profiles use argv arrays, scrubbed environment allowlists, explicit timeouts, and isolated worktrees for command workers.",
+        "`cento runtime check` validates the profile contract. Missing executables are warnings unless `--require-executable` is passed.",
+        "This tool does not launch workers; `cento build worker run --runtime-profile NAME --worktree` owns execution."
+      ]
+    },
+    {
+      "id": "workset",
+      "name": "Cento Workset",
+      "lane": "agent ops",
+      "kind": "python",
+      "entrypoint": "./scripts/cento_workset.py",
+      "description": "Minimal local N-worker runner for exclusive-path build tasks, structured API artifacts, dependency gates, budget caps, and sequential integration.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento workset check tests/fixtures/cento_workset/workset.valid.json",
+        "cento workset check tests/fixtures/cento_workset/workset.overlap.json",
+        "cento workset run tests/fixtures/cento_workset/workset.valid.json --max-workers 2 --runtime-profile fixture-valid --apply sequential --validation smoke",
+        "cento workset run workset.json --max-workers 3 --runtime-profile codex-fast --apply sequential --validation smoke",
+        "cento workset execute tests/fixtures/cento_workset/workset.execute.fixture.json --max-parallel 3 --runtime fixture --integrate sequential --validation smoke",
+        "cento workset execute .cento/worksets/docs_page.json --max-parallel 6 --runtime api-openai --budget-usd 3 --max-budget-usd 5 --integrate sequential --apply --validation smoke",
+        "cento workset materialize-artifact .cento/worksets/<run_id>/workers/<worker_id>/artifact.json"
+      ],
+      "outputs": [
+        ".cento/worksets/<run_id>/workset.json",
+        ".cento/worksets/<run_id>/leases.json",
+        ".cento/worksets/<run_id>/workset_receipt.json",
+        ".cento/worksets/<run_id>/workset_evidence.json",
+        ".cento/worksets/<run_id>/events.ndjson",
+        ".cento/worksets/<run_id>/workers/<worker_id>/artifact.json",
+        ".cento/worksets/<run_id>/workers/<worker_id>/cost_receipt.json",
+        ".cento/worksets/<run_id>/workers/<worker_id>/worker_receipt.json",
+        ".cento/builds/workset_<run_id>_<task_id>/*"
+      ],
+      "notes": [
+        "Workset v1 rejects overlapping write paths and glob write paths. Every task must have exclusive write_paths.",
+        "Workers run in parallel only until patch or structured artifact collection. Integration and apply are always sequential.",
+        "OpenAI API workers use Responses API structured outputs and do not mutate repo files directly.",
+        "API worker budgets have a target and hard max; budget-blocked workers still write cost receipts.",
+        "Dependency gates are intentionally simple: a task dispatches only after depends_on tasks are completed and applied.",
+        "Shared-file edits require a separate serialized integrator task; no smart merge or conflict resolution is attempted."
       ]
     }
   ]

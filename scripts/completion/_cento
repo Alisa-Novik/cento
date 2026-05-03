@@ -223,6 +223,85 @@ _cento() {
               'create-investigation-ticket[Create a follow-up ticket]'
           fi
           ;;
+        build)
+          if (( CURRENT == 3 )); then
+            _values 'build command' \
+              'init[Create a build manifest and Builder prompt]' \
+              'check[Validate manifest shape and path policy]' \
+              'prompt[Print or rewrite the Builder prompt]' \
+              'worker[Run one local build worker]' \
+              'apply[Apply an accepted patch bundle]' \
+              'artifact[Check worker artifacts]' \
+              'bundle[Synthesize patch bundles]' \
+              'integrate[Dry-run integrate a patch bundle]' \
+              'receipt[Print the latest build receipt]'
+          else
+            _arguments \
+              '--task[Operator task]:task:' \
+              '--mode[Execution mode]:mode:(fast standard thorough)' \
+              '--write[Owned writable path]:file:_files' \
+              '--read[Read-only path]:file:_files' \
+              '--route[Target route]:route:' \
+              '--patch[Patch diff path]:file:_files' \
+              '--bundle[Patch bundle path]:file:_files' \
+              '--from-receipt[Accepted integration receipt]:file:_files' \
+              '--worker[Worker id]:worker:(builder_1)' \
+              '--runtime[Worker runtime]:runtime:(fixture command fixture-unowned fixture-protected fixture-binary fixture-delete fixture-lockfile local-codex codex)' \
+              '--runtime-profile[Named runtime profile]:profile:(codex-fast fixture-valid python-fixture)' \
+              '--fixture-case[Fixture case]:case:(valid unowned protected delete lockfile binary)' \
+              '--command[Command runtime template]:command:' \
+              '--local-builder[Run one local builder runtime]:runtime:(fixture command)' \
+              '--builder-command[Run-fast command runtime template]:command:' \
+              '--worker-timeout[Run-fast worker timeout seconds]:seconds:' \
+              '--timeout[Worker timeout seconds]:seconds:' \
+              '--worktree[Run in an isolated worktree]' \
+              '--allow-dirty-owned[Allow dirty owned paths]' \
+              '--allow-unsafe-command[Allow raw shell command runtime]' \
+              '--allow-base-mismatch[Allow manifest base mismatch]' \
+              '--dev-raw-patch[Allow raw patch integration for dev]' \
+              '--dry-run[Run integration as a dry-run]' \
+              '--json[Print JSON]'
+          fi
+          ;;
+        runtime)
+          if (( CURRENT == 3 )); then
+            _values 'runtime command' \
+              'list[List runtime profiles]' \
+              'check[Validate one runtime profile]'
+          elif (( CURRENT == 4 )) && [[ "${words[3]:-}" == "check" ]]; then
+            _values 'runtime profile' codex-fast fixture-valid python-fixture
+          else
+            _arguments \
+              '--json[Print JSON]' \
+              '--require-executable[Fail when command executable is missing]'
+          fi
+          ;;
+        workset)
+          if (( CURRENT == 3 )); then
+            _values 'workset command' \
+              'check[Validate workset shape and exclusive paths]' \
+              'run[Run a local exclusive-path workset]' \
+              'execute[Run parallel fixture, local-command, or API workers]' \
+              'materialize-artifact[Convert API artifact to patch bundle]'
+          else
+            _arguments \
+              '--max-parallel[Maximum parallel workers]:count:' \
+              '--max-workers[Maximum parallel workers]:count:' \
+              '--runtime[Worker runtime]:runtime:(api-openai fixture local-command)' \
+              '--runtime-profile[Named runtime profile]:profile:(codex-fast fixture-valid python-fixture)' \
+              '--api-profile[API worker profile]:profile:(api-planner api-section-worker api-reviewer)' \
+              '--budget-usd[Target API budget]:usd:' \
+              '--max-budget-usd[Hard API budget cap]:usd:' \
+              '--integrate[Integration strategy]:strategy:(sequential)' \
+              '--apply[Apply mode]:mode:(sequential none)' \
+              '--validation[Validation tier]:tier:(smoke focused product)' \
+              '--worker-timeout[Worker timeout seconds]:seconds:' \
+              '--fixture-case[Fixture case]:case:(valid unowned protected delete lockfile binary)' \
+              '--allow-dirty-owned[Allow dirty owned paths]' \
+              '--allow-unsafe-command[Allow raw shell command runtime]' \
+              '--json[Print JSON]'
+          fi
+          ;;
         factory)
           if (( CURRENT == 3 )); then
             _values 'factory command' \

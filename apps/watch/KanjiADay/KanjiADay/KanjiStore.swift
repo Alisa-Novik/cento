@@ -17,6 +17,14 @@ final class KanjiStore: ObservableObject {
         KanjiDataset.all[progress.currentIndex % KanjiDataset.all.count]
     }
 
+    var currentPosition: Int {
+        (progress.currentIndex % KanjiDataset.all.count) + 1
+    }
+
+    var totalCount: Int {
+        KanjiDataset.all.count
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         if
@@ -39,8 +47,9 @@ final class KanjiStore: ObservableObject {
         guard progress.lastOpenedDay != today else {
             return
         }
-        progress.currentIndex = (progress.currentIndex + 1) % KanjiDataset.all.count
-        progress.streak += 1
+        let elapsedDays = max(Self.daysBetween(progress.lastOpenedDay, today), 1)
+        progress.currentIndex = (progress.currentIndex + elapsedDays) % KanjiDataset.all.count
+        progress.streak = elapsedDays == 1 ? progress.streak + 1 : 1
         progress.lastOpenedDay = today
         save()
     }
@@ -59,5 +68,23 @@ final class KanjiStore: ObservableObject {
         formatter.timeZone = .current
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: date)
+    }
+
+    private static func daysBetween(_ startKey: String, _ endKey: String) -> Int {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyy-MM-dd"
+
+        guard
+            let startDate = formatter.date(from: startKey),
+            let endDate = formatter.date(from: endKey)
+        else {
+            return 1
+        }
+
+        let calendar = Calendar(identifier: .gregorian)
+        return calendar.dateComponents([.day], from: startDate, to: endDate).day ?? 1
     }
 }

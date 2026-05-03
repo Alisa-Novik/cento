@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cento Build Manifest v1",
+  "type": "object",
+  "required": ["schema_version", "id", "task", "mode", "source", "scope", "policies", "validation", "workers"],
+  "properties": {
+    "schema_version": {"const": "cento.build.v1"},
+    "id": {"type": "string"},
+    "task": {
+      "type": "object",
+      "required": ["title"],
+      "properties": {
+        "title": {"type": "string"},
+        "description": {"type": "string"}
+      }
+    },
+    "mode": {"type": "string"},
+    "mode_policy": {"type": "object"},
+    "source": {
+      "type": "object",
+      "required": ["base_ref", "created_at"],
+      "properties": {
+        "base_ref": {"type": "string"},
+        "created_at": {"type": "string"}
+      }
+    },
+    "scope": {
+      "type": "object",
+      "required": ["routes", "read_paths", "write_paths", "protected_paths"],
+      "properties": {
+        "routes": {"type": "array", "items": {"type": "string"}},
+        "read_paths": {"type": "array", "items": {"type": "string"}},
+        "write_paths": {"type": "array", "items": {"type": "string"}},
+        "protected_paths": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "policies": {
+      "type": "object",
+      "required": ["allow_unowned_changes", "allow_protected_changes", "dirty_repo_policy"],
+      "properties": {
+        "allow_unowned_changes": {"type": "boolean"},
+        "allow_protected_changes": {"type": "boolean"},
+        "allow_dirty_owned": {"type": "boolean"},
+        "allow_deletes": {"type": "boolean"},
+        "dirty_repo_policy": {"type": ["string", "object"]}
+      }
+    },
+    "validation": {
+      "type": "object",
+      "required": ["tier"],
+      "properties": {
+        "tier": {"type": "string"},
+        "commands": {"type": "array", "items": {"type": "object"}}
+      }
+    },
+    "workers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "write_paths"],
+        "properties": {
+          "id": {"type": "string"},
+          "write_paths": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "acceptance": {"type": "array", "items": {"type": "string"}}
+  }
+}

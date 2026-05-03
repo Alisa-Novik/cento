@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cento Integration Receipt v1",
+  "type": "object",
+  "required": ["schema_version", "manifest_id", "status", "integration_mode", "checks", "applied", "dry_run", "rejections", "base_ref_manifest", "base_ref_current", "base_ref_match", "written_at"],
+  "properties": {
+    "schema_version": {"const": "cento.integration_receipt.v1"},
+    "manifest_id": {"type": "string"},
+    "status": {"enum": ["accepted", "rejected", "pending"]},
+    "mode": {"type": "string"},
+    "integration_mode": {"type": "string"},
+    "patch_bundle": {"type": ["string", "null"]},
+    "patch_bundle_id": {"type": ["string", "null"]},
+    "patch_path": {"type": ["string", "null"]},
+    "touched_paths": {"type": "array", "items": {"type": "string"}},
+    "checks": {"type": "array", "items": {"type": "object"}},
+    "applied": {"type": "boolean"},
+    "dry_run": {"type": "boolean"},
+    "rejections": {"type": "array", "items": {"type": "string"}},
+    "warnings": {"type": "array", "items": {"type": "string"}},
+    "risk_overrides": {"type": "array", "items": {"type": "string"}},
+    "dirty_owned_paths": {"type": "array", "items": {"type": "string"}},
+    "dirty_unrelated_paths": {"type": "array", "items": {"type": "string"}},
+    "base_ref_manifest": {"type": "string"},
+    "base_ref_worker": {"type": ["string", "null"]},
+    "base_ref_current": {"type": "string"},
+    "base_ref_match": {"type": "boolean"},
+    "worktree_path": {"type": ["string", "null"]},
+    "worktree_removed": {"type": ["boolean", "null"]},
+    "validation_receipt": {"type": ["string", "null"]},
+    "written_at": {"type": "string"}
+  }
+}

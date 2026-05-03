@@ -49,6 +49,7 @@ const pipelineManifestCode = document.querySelector("#pipelineManifestCode");
 const pipelineManifestEditor = document.querySelector("#pipelineManifestEditor");
 const pipelineManifestStatus = document.querySelector("#pipelineManifestStatus");
 const pipelineFormatManifestButton = document.querySelector("#pipelineFormatManifestButton");
+const pipelineSaveManifestButton = document.querySelector("#pipelineSaveManifestButton");
 const pipelineNewTemplateButton = document.querySelector("#pipelineNewTemplateButton");
 const pipelineDuplicateButton = document.querySelector("#pipelineDuplicateButton");
 const pipelineSaveDraftButton = document.querySelector("#pipelineSaveDraftButton");
@@ -61,8 +62,6 @@ const pipelineValidationTierInput = document.querySelector("#pipelineValidationT
 const pipelineRiskSelect = document.querySelector("#pipelineRiskSelect");
 const pipelineBudgetCapInput = document.querySelector("#pipelineBudgetCapInput");
 const pipelineReadPathsInput = document.querySelector("#pipelineReadPathsInput");
-const pipelineRequiredInputsEditor = document.querySelector("#pipelineRequiredInputsEditor");
-const pipelineAddInputButton = document.querySelector("#pipelineAddInputButton");
 const pipelineInspectorBadge = document.querySelector("#pipelineInspectorBadge");
 const pipelineInspectorState = document.querySelector("#pipelineInspectorState");
 const pipelineInspectorNav = document.querySelector("#pipelineInspectorNav");
@@ -80,6 +79,10 @@ const pipelineInputPathsInput = document.querySelector("#pipelineInputPathsInput
 const pipelineInputPathPolicyInput = document.querySelector("#pipelineInputPathPolicyInput");
 const pipelineInputArtifactsInput = document.querySelector("#pipelineInputArtifactsInput");
 const pipelineInputEvidencePolicyInput = document.querySelector("#pipelineInputEvidencePolicyInput");
+const pipelineInputAnswerInput = document.querySelector("#pipelineInputAnswerInput");
+const pipelineInputAnswerValuesInput = document.querySelector("#pipelineInputAnswerValuesInput");
+const pipelineInputAnswerNotesInput = document.querySelector("#pipelineInputAnswerNotesInput");
+const pipelineInputAnswerState = document.querySelector("#pipelineInputAnswerState");
 const pipelineInputManifestPath = document.querySelector("#pipelineInputManifestPath");
 const pipelineInputSaveButton = document.querySelector("#pipelineInputSaveButton");
 const pipelineInputInspectorStatus = document.querySelector("#pipelineInputInspectorStatus");
@@ -109,6 +112,9 @@ const pipelineValidationGatesInput = document.querySelector("#pipelineValidation
 const pipelineValidationSchemaInput = document.querySelector("#pipelineValidationSchemaInput");
 const pipelineValidationBlockingCheckbox = document.querySelector("#pipelineValidationBlockingCheckbox");
 const pipelineValidationSaveButton = document.querySelector("#pipelineValidationSaveButton");
+const pipelineValidationRunButton = document.querySelector("#pipelineValidationRunButton");
+const pipelineValidationRunStatus = document.querySelector("#pipelineValidationRunStatus");
+const pipelineValidationRunResults = document.querySelector("#pipelineValidationRunResults");
 const pipelineValidationInspectorStatus = document.querySelector("#pipelineValidationInspectorStatus");
 const pipelineValidationConfigPath = document.querySelector("#pipelineValidationConfigPath");
 const pipelineValidationReceiptPath = document.querySelector("#pipelineValidationReceiptPath");
@@ -122,6 +128,19 @@ const pipelineValidationAddCommandButton = document.querySelector("#pipelineVali
 const pipelineValidationAddEvidenceButton = document.querySelector("#pipelineValidationAddEvidenceButton");
 const pipelineValidationAddGateButton = document.querySelector("#pipelineValidationAddGateButton");
 const pipelineValidationAddSchemaButton = document.querySelector("#pipelineValidationAddSchemaButton");
+const pipelineEvidenceInspector = document.querySelector("#pipelineEvidenceInspector");
+const pipelineEvidenceTitleInput = document.querySelector("#pipelineEvidenceTitleInput");
+const pipelineEvidenceStatusSelect = document.querySelector("#pipelineEvidenceStatusSelect");
+const pipelineEvidenceKindSelect = document.querySelector("#pipelineEvidenceKindSelect");
+const pipelineEvidencePathInput = document.querySelector("#pipelineEvidencePathInput");
+const pipelineEvidenceSourcesInput = document.querySelector("#pipelineEvidenceSourcesInput");
+const pipelineEvidencePublishInput = document.querySelector("#pipelineEvidencePublishInput");
+const pipelineEvidenceRetentionInput = document.querySelector("#pipelineEvidenceRetentionInput");
+const pipelineEvidenceNotesInput = document.querySelector("#pipelineEvidenceNotesInput");
+const pipelineEvidenceSaveButton = document.querySelector("#pipelineEvidenceSaveButton");
+const pipelineEvidenceInspectorStatus = document.querySelector("#pipelineEvidenceInspectorStatus");
+const pipelineEvidenceConfigPath = document.querySelector("#pipelineEvidenceConfigPath");
+const pipelineEvidenceArtifactPath = document.querySelector("#pipelineEvidenceArtifactPath");
 const pipelineWorkerInspectorActions = document.querySelector("#pipelineWorkerInspectorActions");
 const pipelineContractSummary = document.querySelector("#pipelineContractSummary");
 const pipelineContractPanel = document.querySelector("#pipelineContractPanel");
@@ -129,6 +148,17 @@ const pipelineArtifactPanel = document.querySelector("#pipelineArtifactPanel");
 const pipelineLogsPanel = document.querySelector("#pipelineLogsPanel");
 const pipelineCostPanel = document.querySelector("#pipelineCostPanel");
 let currentInspectorTab = "manifest";
+let currentPipelineTab = "contracts";
+const manifestExplorerEl = document.querySelector("#manifestExplorer");
+const manifestSearchInput = document.querySelector("#manifestSearchInput");
+const manifestCodeEl = document.querySelector("#manifestCode");
+const manifestLineNumsEl = document.querySelector("#manifestLineNums");
+const manifestListScroll = document.querySelector("#manifestListScroll");
+const manifestReferenceCount = document.querySelector("#manifestReferenceCount");
+const manifestReferenceSummary = document.querySelector("#manifestReferenceSummary");
+const manifestReferenceTabs = document.querySelector("#manifestReferenceTabs");
+const manifestReferenceRows = document.querySelector("#manifestReferenceRows");
+const manifestReferenceMode = document.querySelector("#manifestReferenceMode");
 const clusterView = document.querySelector("#clusterView");
 const consultingView = document.querySelector("#consultingView");
 const factoryView = document.querySelector("#factoryView");
@@ -955,11 +985,11 @@ function currentIssueIdFromDetail() {
 let pipelineStudioProjects = {
   "generic-easy-medium-task": {
     key: "generic-easy-medium-task",
-    name: "Generic Easy-Medium Task",
-    surface: "Cento code task",
+    name: "Generic Easy Task",
+    surface: "Cento repo task",
     surfaceValue: "generic-task",
     ownedRoot: "workspace/runs/generic-task/outputs",
-    readPaths: ["AGENTS.md", "README.md", "scripts/**", "templates/agent-work-app/**", "tests/**"]
+    readPaths: ["AGENTS.md", "README.md", "scripts/**", "templates/agent-work-app/**", "docs/**", "tests/**", "templates/pipelines/generic-task.json"]
   },
   "kanji-a-day": {
     key: "kanji-a-day",
@@ -990,23 +1020,29 @@ let pipelineStudioProjects = {
 let pipelineStudioTemplates = {
   "generic-task": {
     id: "generic-task",
-    label: "Generic easy-medium task",
-    detail: "Standard Cento task template",
+    label: "Generic easy task",
+    detail: "Fully configured non-UI easy programming blueprint",
     slug: "generic-task",
-    workerType: "generic_task_worker",
-    validationTier: "smoke-plus",
-    risk: "medium",
+    workerType: "automation_contract_worker",
+    validationTier: "contract",
+    risk: "low",
     tasks: "9 / 9",
     budget: "$1.42",
     budgetDetail: "of $3.00 budget",
     selectedIndex: 0,
     workers: [
-      { id: "scope", title: "Scope & Acceptance Worker", file: "scope.json", description: "Convert request into acceptance criteria and owned paths" },
-      { id: "context", title: "Context Discovery Worker", file: "context.json", description: "Inspect existing code, docs, tests, and conventions" },
-      { id: "plan", title: "Change Plan Worker", file: "plan.json", description: "Create implementation and validation plan" },
-      { id: "implementation", title: "Implementation Worker", file: "implementation.json", description: "Make the scoped change" },
-      { id: "validation", title: "Focused Validation Worker", file: "validation.json", description: "Run checks, smoke tests, and focused tests" },
-      { id: "handoff", title: "Handoff Evidence Worker", file: "handoff.json", description: "Prepare screenshots and final notes" }
+      { id: "repo-context", title: "Repo Context Manifest", file: "repo_context.json", description: "Discover languages, tests, ownership hints, and dependency graph source", stage: "repo" },
+      { id: "change-blueprint", title: "Change Plan Contract", file: "change_plan.json", description: "Define bounded change units, test units, and optional AI review gates", stage: "blueprint", dependencies: ["repo-context"] }
+    ],
+    factorySteps: [
+      { id: "checkout-branch", title: "checkout_branch", file: "execution_manifest.json", status: "Accepted" },
+      { id: "snapshot-repo-state", title: "snapshot_repo_state", file: "repo_snapshot.json", status: "Accepted" },
+      { id: "apply-change-units", title: "apply_change_units", file: "factory_apply_receipt.json", status: "Accepted" },
+      { id: "run-formatters", title: "run_formatters", file: "format_receipt.json", status: "Accepted" },
+      { id: "run-focused-tests", title: "run_focused_tests", file: "focused_tests.log", status: "Accepted" },
+      { id: "run-full-tests", title: "run_full_tests", file: "full_tests.log", status: "Accepted" },
+      { id: "collect-diff", title: "collect_diff", file: "diff.patch", status: "Accepted" },
+      { id: "collect-logs", title: "collect_logs", file: "evidence_manifest.json", status: "Accepted" }
     ]
   },
   "doc-page": {
@@ -1080,6 +1116,7 @@ let pipelineStudioOptionsReady = false;
 let pipelineSelectedInputId = "";
 let pipelineSelectedIntegrationId = "";
 let pipelineSelectedValidationId = "";
+let pipelineSelectedEvidenceId = "";
 let pipelineIntegrationActiveView = "order";
 
 function setPipelineField(name, value) {
@@ -1166,8 +1203,9 @@ function normalizePipelineState(payload) {
         workerStageLabel: template.worker_stage_label || payload.pipeline.worker_stage_label || "",
         selectedWorker: template.selected_worker || "",
         requiredInputs: Array.isArray(template.required_inputs) ? template.required_inputs : [],
+        factorySteps: Array.isArray(template.factory_steps) ? template.factory_steps : [],
         selectedIndex: 0,
-        workers: payload.pipeline.workers || []
+        workers: Array.isArray(template.workers) ? template.workers : (payload.pipeline.workers || [])
       }
     ]));
   }
@@ -1249,25 +1287,28 @@ function pipelineInputTypeIcon(type) {
   return PIPELINE_INPUT_TYPES[type]?.icon || PIPELINE_INPUT_TYPES.text.icon;
 }
 
-function pipelineInputTypeOptions(selected = "text") {
-  return Object.entries(PIPELINE_INPUT_TYPES)
-    .map(([value, meta]) => `<option value="${escapeHtml(value)}" ${value === selected ? "selected" : ""}>${escapeHtml(meta.label)}</option>`)
-    .join("");
+function pipelineElementIcon(name) {
+  const paths = {
+    pencil: '<path d="M4 13.5V16h2.5L14 8.5 11.5 6 4 13.5Z"></path><path d="m10.8 6.7 1.5-1.5a1.4 1.4 0 0 1 2 0l.5.5a1.4 1.4 0 0 1 0 2l-1.5 1.5"></path>',
+    trash: '<path d="M3.5 5h9"></path><path d="M6 5V3.8c0-.5.4-.8.8-.8h2.4c.4 0 .8.3.8.8V5"></path><path d="M5 6.5 5.6 14c0 .6.5 1 1.1 1h2.6c.6 0 1.1-.4 1.1-1l.6-7.5"></path>',
+  };
+  return `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">${paths[name] || ""}</svg>`;
 }
 
-function safeParsePipelineInputPayload(row) {
-  try {
-    const parsed = JSON.parse(row?.dataset?.inputPayload || "{}");
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
+function pipelineCardActionButtons(type, id, title = "") {
+  const safeType = escapeHtml(type);
+  const safeId = escapeHtml(id);
+  const safeTitle = escapeHtml(title || id || "element");
+  return `
+    <div class="pipelineCardActions" aria-label="Element actions">
+      <button class="pipelineCardIconButton" type="button" data-pipeline-card-action="edit" data-element-type="${safeType}" data-element-id="${safeId}" aria-label="Edit ${safeTitle}" title="Edit">${pipelineElementIcon("pencil")}</button>
+      <button class="pipelineCardIconButton danger" type="button" data-pipeline-card-action="delete" data-element-type="${safeType}" data-element-id="${safeId}" aria-label="Remove ${safeTitle}" title="Remove">${pipelineElementIcon("trash")}</button>
+    </div>
+  `;
 }
 
-function pipelineInputStatusOptions(selected = "missing") {
-  return ["provided", "configured", "missing", "optional"]
-    .map((status) => `<option value="${status}" ${status === selected ? "selected" : ""}>${escapeHtml(status.replace("-", " "))}</option>`)
-    .join("");
+function pipelineStageFooterButton(stage) {
+  return Array.from(stage?.children || []).find((child) => child.tagName === "BUTTON") || null;
 }
 
 function pipelineInputId(item, index = 0) {
@@ -1278,65 +1319,27 @@ function pipelineInputId(item, index = 0) {
   return slug || `input-${index + 1}`;
 }
 
-function renderPipelineRequiredInputsEditor(inputs) {
-  if (!pipelineRequiredInputsEditor) return;
-  const rows = Array.isArray(inputs) && inputs.length ? inputs : [
-    { id: "task-request", title: "Task request", detail: "What should the AI change or build?", status: "missing", required: true }
-  ];
-  pipelineRequiredInputsEditor.innerHTML = rows
-    .map((item, index) => {
-      const inputType = pipelineInputType(item);
-      const inputStatus = String(item.status || "missing").toLowerCase().replaceAll("_", "-").replaceAll(" ", "-");
-      return `
-      <div class="pipelineInputConfigRow" data-input-row data-input-id="${escapeHtml(pipelineInputId(item, index))}" data-input-payload="${escapeHtml(JSON.stringify({ ...item, kind: inputType }))}">
-        <input data-input-title type="text" value="${escapeHtml(item.title || "")}" aria-label="Input title">
-        <select data-input-type aria-label="Input type">${pipelineInputTypeOptions(inputType)}</select>
-        <input data-input-detail type="text" value="${escapeHtml(item.detail || "")}" aria-label="Input detail">
-        <select data-input-status aria-label="Input status">${pipelineInputStatusOptions(inputStatus)}</select>
-        <label><input data-input-required type="checkbox" ${item.required === false ? "" : "checked"}>Required</label>
-        <button type="button" data-remove-input>×</button>
-      </div>
-    `;
-    })
-    .join("");
-}
-
-function collectPipelineRequiredInputs() {
-  if (!pipelineRequiredInputsEditor) return [];
-  return Array.from(pipelineRequiredInputsEditor.querySelectorAll("[data-input-row]"))
-    .map((row, index) => {
-      const existing = safeParsePipelineInputPayload(row);
-      const title = row.querySelector("[data-input-title]")?.value?.trim() || "";
-      const detail = row.querySelector("[data-input-detail]")?.value?.trim() || "";
-      const kind = pipelineInputType({ kind: row.querySelector("[data-input-type]")?.value || existing.kind || existing.input_type || existing.type });
-      const status = row.querySelector("[data-input-status]")?.value || "missing";
-      const required = Boolean(row.querySelector("[data-input-required]")?.checked);
-      const existingId = String(row.dataset.inputId || "").trim();
-      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-      return {
-        ...existing,
-        id: existingId || slug || `input-${index + 1}`,
-        title,
-        detail,
-        kind,
-        input_type: kind,
-        status,
-        required
-      };
-    })
-    .filter((item) => item.title);
+function pipelineInputAnswerPresent(item = {}) {
+  return Boolean(
+    item.answer_present ||
+    String(item.answer || item.provided_answer || "").trim() ||
+    String(item.answer_notes || item.provided_notes || "").trim() ||
+    (Array.isArray(item.answer_values) && item.answer_values.length) ||
+    (Array.isArray(item.provided_values) && item.provided_values.length)
+  );
 }
 
 function renderPipelineInputCards(items) {
   const inputStage = document.querySelector(".stageInput");
   if (!inputStage) return;
   inputStage.querySelectorAll(".pipelineCard").forEach((card) => card.remove());
-  const button = inputStage.querySelector("button");
+  const button = pipelineStageFooterButton(inputStage);
   (items || []).forEach((item, index) => {
     const card = document.createElement("div");
     const status = String(item.status || "Missing").toLowerCase();
     const inputId = pipelineInputId(item, index);
     const inputType = pipelineInputType(item);
+    const hasAnswer = pipelineInputAnswerPresent(item);
     card.className = `pipelineCard operatorInput ${status} inputType-${inputType} ${pipelineSelectedInputId === inputId ? "selected" : ""}`;
     card.dataset.inputId = inputId;
     card.setAttribute("role", "button");
@@ -1347,7 +1350,8 @@ function renderPipelineInputCards(items) {
       <strong>${escapeHtml(item.title || "")}</strong>
       <span>${escapeHtml(item.detail || item.file || item.manifest || "")}</span>
       <small>${escapeHtml(pipelineInputTypeLabel(inputType))}</small>
-      <em>${escapeHtml(item.status || "Missing")}</em>
+      <small class="pipelineCardAnswer ${hasAnswer ? "answered" : ""}">${hasAnswer ? "Answer saved" : "Needs answer"}</small>
+      ${pipelineCardActionButtons("input", inputId, item.title || "input")}
     `;
     inputStage.insertBefore(card, button || null);
   });
@@ -1374,7 +1378,7 @@ function renderPipelineIntegrationCards(items) {
   const integrationStage = document.querySelector(".stageIntegrate");
   if (!integrationStage) return;
   integrationStage.querySelectorAll(".pipelineCard.receipt").forEach((card) => card.remove());
-  const button = integrationStage.querySelector("button");
+  const button = pipelineStageFooterButton(integrationStage);
   (items || []).forEach((item, index) => {
     const integrationId = pipelineIntegrationId(item, index);
     const status = String(item.status || "Accepted").toLowerCase().replace(/\s+/g, "-");
@@ -1389,11 +1393,16 @@ function renderPipelineIntegrationCards(items) {
       <strong>${escapeHtml(item.title || "")}</strong>
       <span>${escapeHtml(item.file || item.receipt || "integration_receipt.json")}</span>
       <em>${escapeHtml(item.status || "Accepted")}</em>
+      ${pipelineCardActionButtons("integration", integrationId, item.title || "integration")}
     `;
     integrationStage.insertBefore(card, button || null);
   });
   const headerCount = integrationStage.querySelector("header span");
-  if (headerCount) headerCount.textContent = `${(items || []).length} integration steps`;
+  if (headerCount) {
+    const factoryLabel = document.querySelector('[data-pipeline-field="factoryStageLabel"]')?.textContent || "";
+    const defaultSuffix = factoryLabel.toLowerCase().includes("factory") ? "execution steps" : "integration steps";
+    headerCount.textContent = pipelineStudioState?.pipeline?.integration_count || `${(items || []).length} ${defaultSuffix}`;
+  }
   if (button) button.textContent = `View all (${(items || []).length})`;
 }
 
@@ -1401,7 +1410,7 @@ function renderPipelineValidatorCards(items) {
   const validateStage = document.querySelector(".stageValidate");
   if (!validateStage) return;
   validateStage.querySelectorAll(".pipelineCard.validator").forEach((card) => card.remove());
-  const button = validateStage.querySelector("button");
+  const button = pipelineStageFooterButton(validateStage);
   (items || []).forEach((item, index) => {
     const validatorId = pipelineValidatorId(item, index);
     const status = String(item.status || "Configured").toLowerCase().replace(/\s+/g, "-");
@@ -1416,14 +1425,98 @@ function renderPipelineValidatorCards(items) {
       <i>▧</i>
       <strong>${escapeHtml(item.title || "")}</strong>
       <span>${escapeHtml(item.file || item.receipt || "")}</span>
-      <em>${escapeHtml(item.status || "Configured")}</em>
       ${mode === "evidence" || validatorId === "screenshot" ? `<div class="pipelineThumb" aria-hidden="true"><span></span><span></span><span></span><span></span></div>` : ""}
+      ${pipelineCardActionButtons("validation", validatorId, item.title || "validator")}
     `;
     validateStage.insertBefore(card, button || null);
   });
   const headerCount = validateStage.querySelector("header span");
   if (headerCount) headerCount.textContent = `${(items || []).length} validators`;
   if (button) button.textContent = `View all (${(items || []).length})`;
+}
+
+function pipelineEvidenceId(item, index = 0) {
+  const raw = String(item?.id || item?.title || "").trim();
+  const slug = raw.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return slug || `evidence-${index + 1}`;
+}
+
+function renderPipelineEvidenceCards(items) {
+  const evidenceStage = document.querySelector(".stageEvidence");
+  if (!evidenceStage) return;
+  evidenceStage.querySelectorAll(".pipelineCard.evidence").forEach((card) => card.remove());
+  const button = pipelineStageFooterButton(evidenceStage);
+  (items || []).forEach((item, index) => {
+    const evidenceId = pipelineEvidenceId(item, index);
+    const state = String(item.state || item.status || "configured").toLowerCase().replace(/\s+/g, "-");
+    const card = document.createElement("div");
+    card.className = `pipelineCard evidence ${state} ${pipelineSelectedEvidenceId === evidenceId ? "selected" : ""}`;
+    card.dataset.evidenceId = evidenceId;
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+    card.setAttribute("aria-pressed", String(pipelineSelectedEvidenceId === evidenceId));
+    const statusText = escapeHtml(item.status || titleCasePipelineStatus(item.state || "Configured"));
+    const statusNode = /events|\$/.test(String(item.status || "")) ? `<small>${statusText}</small>` : `<em>${statusText}</em>`;
+    card.innerHTML = `
+      <i>▧</i>
+      <strong>${escapeHtml(item.title || "")}</strong>
+      <span>${escapeHtml(item.file || item.path || "evidence.json")}</span>
+      ${statusNode}
+      ${pipelineCardActionButtons("evidence", evidenceId, item.title || "evidence")}
+    `;
+    evidenceStage.insertBefore(card, button || null);
+  });
+  const headerCount = evidenceStage.querySelector("header span");
+  if (headerCount) headerCount.textContent = `${(items || []).length} artifacts`;
+  if (button) button.textContent = `View all (${(items || []).length})`;
+}
+
+function workerStageKey(worker, index = 0) {
+  const raw = String(worker?.stage || worker?.stage_kind || worker?.lane || "").trim().toLowerCase().replaceAll("_", "-");
+  if (raw === "blueprint" || raw === "change-blueprint" || raw === "plan") return "blueprint";
+  if (raw === "repo" || raw === "repo-discovery" || raw === "context") return "repo";
+  if (String(worker?.id || "").includes("blueprint") || String(worker?.id || "") === "plan") return "blueprint";
+  return index === 1 ? "blueprint" : "repo";
+}
+
+function renderPipelineWorkerCards(items) {
+  const stages = {
+    repo: document.querySelector(".stageWorkers"),
+    blueprint: document.querySelector(".stageBlueprint")
+  };
+  Object.values(stages).forEach((stage) => {
+    stage?.querySelectorAll(".pipelineCard.worker").forEach((card) => card.remove());
+  });
+  const counts = { repo: 0, blueprint: 0 };
+  (items || []).forEach((worker, index) => {
+    const stageKey = workerStageKey(worker, index);
+    const stage = stages[stageKey] || stages.repo;
+    const button = pipelineStageFooterButton(stage);
+    if (!stage) return;
+    counts[stageKey] = (counts[stageKey] || 0) + 1;
+    const card = document.createElement("div");
+    card.className = `pipelineCard worker ${worker.selected ? "selected" : ""}`;
+    card.dataset.workerId = worker.id || "";
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+    card.setAttribute("aria-pressed", String(Boolean(worker.selected)));
+    card.innerHTML = `
+      <i>▧</i>
+      <strong>${escapeHtml(worker.title || worker.id || "Contract")}</strong>
+      <span>${escapeHtml(worker.file || worker.detail || "")}</span>
+      <em>${escapeHtml(worker.status || "Ready")}</em>
+      ${pipelineCardActionButtons("worker", worker.id || "", worker.title || worker.id || "worker")}
+    `;
+    stage.insertBefore(card, button || null);
+  });
+  Object.entries(stages).forEach(([stageKey, stage]) => {
+    const count = counts[stageKey] || 0;
+    const label = `${count} ${count === 1 ? "contract" : "contracts"}`;
+    const headerCount = stage?.querySelector(`[data-worker-stage-count="${stageKey}"]`);
+    const button = pipelineStageFooterButton(stage);
+    if (headerCount) headerCount.textContent = label;
+    if (button) button.textContent = `View all (${count})`;
+  });
 }
 
 function selectedPipelineInput(inputId = pipelineSelectedInputId) {
@@ -1439,6 +1532,11 @@ function selectedPipelineValidator(validatorId = pipelineSelectedValidationId) {
 function selectedPipelineIntegration(integrationId = pipelineSelectedIntegrationId) {
   const integrations = pipelineStudioState?.pipeline?.integration || [];
   return (integrations || []).find((item, index) => pipelineIntegrationId(item, index) === integrationId) || null;
+}
+
+function selectedPipelineEvidence(evidenceId = pipelineSelectedEvidenceId) {
+  const evidence = pipelineStudioState?.pipeline?.evidence || [];
+  return (evidence || []).find((item, index) => pipelineEvidenceId(item, index) === evidenceId) || null;
 }
 
 function pipelineLinesToText(value) {
@@ -1677,19 +1775,16 @@ function renderPipelineValidationConsultation() {
   `).join("");
 }
 
-function pipelineInputRowById(inputId) {
-  return Array.from(pipelineRequiredInputsEditor?.querySelectorAll("[data-input-row]") || [])
-    .find((row) => row.dataset.inputId === inputId) || null;
-}
-
 function setPipelineInspectorMode(mode) {
   const inputMode = mode === "input";
   const integrationMode = mode === "integration";
   const validationMode = mode === "validation";
-  const workerMode = !inputMode && !integrationMode && !validationMode;
+  const evidenceMode = mode === "evidence";
+  const workerMode = !inputMode && !integrationMode && !validationMode && !evidenceMode;
   pipelineInputInspector?.classList.toggle("hidden", !inputMode);
   pipelineIntegrationInspector?.classList.toggle("hidden", !integrationMode);
   pipelineValidationInspector?.classList.toggle("hidden", !validationMode);
+  pipelineEvidenceInspector?.classList.toggle("hidden", !evidenceMode);
   pipelineInspectorNav?.classList.toggle("hidden", !workerMode);
   if (workerMode) {
     setInspectorTab(currentInspectorTab);
@@ -1762,27 +1857,13 @@ function showPipelineWorkerInspector() {
   pipelineSelectedInputId = "";
   pipelineSelectedIntegrationId = "";
   pipelineSelectedValidationId = "";
+  pipelineSelectedEvidenceId = "";
   if (pipelineInspectorBadge) pipelineInspectorBadge.textContent = "W1";
   if (pipelineInspectorState) pipelineInspectorState.textContent = "Completed";
   renderPipelineInputCards(pipelineStudioState?.pipeline?.input_cards || selectedPipelinePayloadTemplate()?.required_inputs || selectedPipelineStudioTemplate()?.requiredInputs || []);
   renderPipelineIntegrationCards(pipelineStudioState?.pipeline?.integration || []);
   renderPipelineValidatorCards(pipelineStudioState?.pipeline?.validators || selectedPipelinePayloadTemplate()?.validators || []);
-}
-
-function updatePipelineInputEditorRow(inputId, values) {
-  const row = pipelineInputRowById(inputId);
-  if (!row) return;
-  const title = row.querySelector("[data-input-title]");
-  const type = row.querySelector("[data-input-type]");
-  const detail = row.querySelector("[data-input-detail]");
-  const status = row.querySelector("[data-input-status]");
-  const required = row.querySelector("[data-input-required]");
-  if (title) title.value = values.title || "";
-  if (type) type.value = pipelineInputType(values);
-  if (detail) detail.value = values.detail || "";
-  if (status) status.value = values.status || "missing";
-  if (required) required.checked = values.required !== false;
-  row.dataset.inputPayload = JSON.stringify(values);
+  renderPipelineEvidenceCards(pipelineStudioState?.pipeline?.evidence || []);
 }
 
 function updatePipelineInputTypeEditors(type) {
@@ -1804,6 +1885,7 @@ function showPipelineInputInspector(inputId, message = "") {
   pipelineSelectedInputId = inputId;
   pipelineSelectedIntegrationId = "";
   pipelineSelectedValidationId = "";
+  pipelineSelectedEvidenceId = "";
   setPipelineInspectorMode("input");
   setPipelineField("selectedWorker", input.title || "Input");
   if (pipelineInspectorBadge) pipelineInspectorBadge.textContent = "Input";
@@ -1811,7 +1893,10 @@ function showPipelineInputInspector(inputId, message = "") {
   if (pipelineInputTitleInput) pipelineInputTitleInput.value = input.title || "";
   if (pipelineInputTypeSelect) pipelineInputTypeSelect.value = pipelineInputType(input);
   if (pipelineInputDetailInput) pipelineInputDetailInput.value = input.detail || input.file || "";
-  if (pipelineInputStatusSelect) pipelineInputStatusSelect.value = status;
+  if (pipelineInputStatusSelect) {
+    pipelineInputStatusSelect.value = status;
+    pipelineInputStatusSelect.dataset.initialStatus = status;
+  }
   if (pipelineInputRequiredCheckbox) pipelineInputRequiredCheckbox.checked = input.required !== false;
   if (pipelineInputFormatInput) pipelineInputFormatInput.value = input.format || PIPELINE_INPUT_TYPES[pipelineInputType(input)]?.format || "";
   if (pipelineInputImageRefsInput) pipelineInputImageRefsInput.value = pipelineLinesToText(input.image_refs || input.images || input.references);
@@ -1821,18 +1906,36 @@ function showPipelineInputInspector(inputId, message = "") {
   if (pipelineInputPathPolicyInput) pipelineInputPathPolicyInput.value = input.path_policy || input.ownership_policy || "";
   if (pipelineInputArtifactsInput) pipelineInputArtifactsInput.value = pipelineLinesToText(input.artifacts || input.evidence_artifacts);
   if (pipelineInputEvidencePolicyInput) pipelineInputEvidencePolicyInput.value = input.evidence_policy || input.validation_policy || "";
+  if (pipelineInputAnswerInput) pipelineInputAnswerInput.value = input.answer || input.provided_answer || "";
+  if (pipelineInputAnswerValuesInput) pipelineInputAnswerValuesInput.value = pipelineLinesToText(input.answer_values || input.provided_values || input.provided_paths);
+  if (pipelineInputAnswerNotesInput) pipelineInputAnswerNotesInput.value = input.answer_notes || input.provided_notes || "";
+  if (pipelineInputAnswerState) {
+    pipelineInputAnswerState.textContent = pipelineInputAnswerPresent(input)
+      ? `Answer saved${input.provided_at ? ` at ${new Date(input.provided_at).toLocaleTimeString()}` : ""}`
+      : "No answer saved yet";
+  }
   if (pipelineInputManifestPath) pipelineInputManifestPath.textContent = input.manifest ? `Input manifest: ${input.manifest}` : "Input manifest output pending";
   updatePipelineInputTypeEditors(pipelineInputType(input));
-  if (pipelineInputInspectorStatus) pipelineInputInspectorStatus.textContent = message || "Edit the input contract, then save.";
+  if (pipelineInputInspectorStatus) pipelineInputInspectorStatus.textContent = message || "Edit the input contract or provide run configuration, then save.";
   renderPipelineInputCards(pipelineStudioState?.pipeline?.input_cards || selectedPipelinePayloadTemplate()?.required_inputs || selectedPipelineStudioTemplate()?.requiredInputs || []);
   renderPipelineIntegrationCards(pipelineStudioState?.pipeline?.integration || []);
   renderPipelineValidatorCards(pipelineStudioState?.pipeline?.validators || selectedPipelinePayloadTemplate()?.validators || []);
+  renderPipelineEvidenceCards(pipelineStudioState?.pipeline?.evidence || []);
   syncPipelineWorkerCards(pipelineStudioState?.pipeline?.workers || selectedPipelineStudioTemplate()?.workers || []);
 }
 
 function collectPipelineInputConfig() {
   const selected = selectedPipelineInput() || {};
   const kind = pipelineInputType({ kind: pipelineInputTypeSelect?.value || selected.kind || selected.input_type || selected.type });
+  const answer = pipelineInputAnswerInput?.value?.trim() || "";
+  const answerValues = pipelineTextToLines(pipelineInputAnswerValuesInput?.value || "");
+  const answerNotes = pipelineInputAnswerNotesInput?.value?.trim() || "";
+  const answerPresent = Boolean(answer || answerValues.length || answerNotes);
+  const selectedStatus = pipelineInputStatusSelect?.value || "missing";
+  const initialStatus = pipelineInputStatusSelect?.dataset.initialStatus || selected.status || "missing";
+  const status = answerPresent && selectedStatus === initialStatus && selectedStatus !== "optional"
+    ? "provided"
+    : selectedStatus;
   return {
     ...selected,
     id: pipelineSelectedInputId,
@@ -1840,7 +1943,7 @@ function collectPipelineInputConfig() {
     detail: pipelineInputDetailInput?.value?.trim() || "",
     kind,
     input_type: kind,
-    status: pipelineInputStatusSelect?.value || "missing",
+    status,
     required: Boolean(pipelineInputRequiredCheckbox?.checked),
     format: pipelineInputFormatInput?.value?.trim() || PIPELINE_INPUT_TYPES[kind]?.format || "",
     image_refs: pipelineTextToLines(pipelineInputImageRefsInput?.value || ""),
@@ -1850,6 +1953,11 @@ function collectPipelineInputConfig() {
     path_policy: pipelineInputPathPolicyInput?.value?.trim() || "",
     artifacts: pipelineTextToLines(pipelineInputArtifactsInput?.value || ""),
     evidence_policy: pipelineInputEvidencePolicyInput?.value?.trim() || "",
+    answer,
+    answer_values: answerValues,
+    answer_notes: answerNotes,
+    answer_present: answerPresent,
+    provided_at: answerPresent ? selected.provided_at || new Date().toISOString() : "",
     manifest: selected.manifest || ""
   };
 }
@@ -1857,13 +1965,10 @@ function collectPipelineInputConfig() {
 async function savePipelineSelectedInput() {
   if (!pipelineSelectedInputId) return;
   const values = collectPipelineInputConfig();
-  updatePipelineInputEditorRow(pipelineSelectedInputId, values);
   if (pipelineInputInspectorStatus) pipelineInputInspectorStatus.textContent = "Saving input...";
-  const payload = await savePipelineDraft("save", { includeManifest: false });
+  const payload = await savePipelineDraft("save_input", { includeManifest: false, inputConfig: values });
   if (payload) {
-    pipelineSelectedInputId = values.title
-      ? (pipelineInputRowById(pipelineSelectedInputId)?.dataset.inputId || pipelineSelectedInputId)
-      : pipelineSelectedInputId;
+    pipelineSelectedInputId = values.id || pipelineSelectedInputId;
     showPipelineInputInspector(pipelineSelectedInputId, `Saved ${values.title}.`);
   }
 }
@@ -1877,6 +1982,74 @@ function updatePipelineValidationModeButtons(mode) {
   document.querySelectorAll("[data-validation-editor]").forEach((editor) => {
     editor.classList.toggle("active", editor.dataset.validationEditor === mode);
   });
+  if (pipelineValidationRunButton) {
+    pipelineValidationRunButton.textContent = `Run ${validationModeLabel(mode)}`;
+  }
+  const validator = selectedPipelineValidator();
+  if (validator) renderPipelineValidationRunResults(validator, mode);
+}
+
+function validationModeLabel(mode = "commands") {
+  const labels = {
+    commands: "commands",
+    evidence: "evidence",
+    gates: "gates",
+    schema: "schema"
+  };
+  return labels[mode] || "validation";
+}
+
+function validationResultLabel(item = {}) {
+  return item.command || item.path || item.gate || item.resolved_path || item.id || "validation result";
+}
+
+function renderPipelineValidationRunResults(validator = {}, mode = "commands") {
+  if (!pipelineValidationRunResults) return;
+  const results = validator.results && typeof validator.results === "object" ? validator.results : {};
+  const items = Array.isArray(results[mode]) ? results[mode] : [];
+  const status = validator.last_run_status || validator.status || "configured";
+  if (pipelineValidationRunStatus) {
+    const activeStatus = items.length ? resultCollectionStatus(items) : "";
+    const lastMode = validator.last_run_mode ? validationModeLabel(validator.last_run_mode) : "";
+    const when = validator.executed_at ? ` at ${new Date(validator.executed_at).toLocaleTimeString()}` : "";
+    pipelineValidationRunStatus.textContent = items.length
+      ? `${validationModeLabel(mode)} ${activeStatus}${when}`
+      : validator.executed_at
+        ? `Last run: ${lastMode} ${status}${when}`
+        : "No execution yet";
+  }
+  if (!items.length) {
+    pipelineValidationRunResults.innerHTML = `
+      <header><strong>${escapeHtml(validationModeLabel(mode))} results</strong><span>Run this tab to write execution results.</span></header>
+      <p>No ${escapeHtml(validationModeLabel(mode))} results recorded yet.</p>
+    `;
+    return;
+  }
+  pipelineValidationRunResults.innerHTML = `
+    <header><strong>${escapeHtml(validationModeLabel(mode))} results</strong><span>${items.length} check${items.length === 1 ? "" : "s"} recorded</span></header>
+    <div>
+      ${items.map((item) => {
+        const resultStatus = String(item.status || "configured").toLowerCase();
+        const details = item.details || (typeof item.returncode !== "undefined" ? `exit ${item.returncode}` : "");
+        return `
+          <article class="${escapeHtml(resultStatus)}">
+            <b>${escapeHtml(resultStatus)}</b>
+            <strong>${escapeHtml(validationResultLabel(item))}</strong>
+            <span>${escapeHtml(details)}</span>
+          </article>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function resultCollectionStatus(items) {
+  const statuses = new Set((items || []).map((item) => String(item.status || "").toLowerCase()).filter(Boolean));
+  if (!statuses.size) return "not run";
+  if (statuses.has("failed")) return "failed";
+  if (statuses.has("warning")) return "warning";
+  if ([...statuses].every((status) => status === "passed" || status === "accepted")) return "passed";
+  return "recorded";
 }
 
 function updatePipelineIntegrationView(view = pipelineIntegrationActiveView) {
@@ -1905,6 +2078,7 @@ function showPipelineIntegrationInspector(integrationId, message = "") {
   pipelineSelectedIntegrationId = integrationId;
   pipelineSelectedInputId = "";
   pipelineSelectedValidationId = "";
+  pipelineSelectedEvidenceId = "";
   setPipelineInspectorMode("integration");
   setPipelineField("selectedWorker", integration.title || "Integration");
   if (pipelineInspectorBadge) pipelineInspectorBadge.textContent = "Integrator";
@@ -1925,6 +2099,7 @@ function showPipelineIntegrationInspector(integrationId, message = "") {
   renderPipelineInputCards(pipelineStudioState?.pipeline?.input_cards || selectedPipelinePayloadTemplate()?.required_inputs || selectedPipelineStudioTemplate()?.requiredInputs || []);
   renderPipelineIntegrationCards(pipelineStudioState?.pipeline?.integration || []);
   renderPipelineValidatorCards(pipelineStudioState?.pipeline?.validators || selectedPipelinePayloadTemplate()?.validators || []);
+  renderPipelineEvidenceCards(pipelineStudioState?.pipeline?.evidence || []);
   syncPipelineWorkerCards(pipelineStudioState?.pipeline?.workers || selectedPipelineStudioTemplate()?.workers || []);
 }
 
@@ -1968,6 +2143,7 @@ function showPipelineValidationInspector(validatorId, message = "") {
   pipelineSelectedValidationId = validatorId;
   pipelineSelectedInputId = "";
   pipelineSelectedIntegrationId = "";
+  pipelineSelectedEvidenceId = "";
   setPipelineInspectorMode("validation");
   setPipelineField("selectedWorker", validator.title || "Validation");
   if (pipelineInspectorBadge) pipelineInspectorBadge.textContent = "Validator";
@@ -1991,6 +2167,7 @@ function showPipelineValidationInspector(validatorId, message = "") {
   renderPipelineInputCards(pipelineStudioState?.pipeline?.input_cards || selectedPipelinePayloadTemplate()?.required_inputs || selectedPipelineStudioTemplate()?.requiredInputs || []);
   renderPipelineIntegrationCards(pipelineStudioState?.pipeline?.integration || []);
   renderPipelineValidatorCards(pipelineStudioState?.pipeline?.validators || selectedPipelinePayloadTemplate()?.validators || []);
+  renderPipelineEvidenceCards(pipelineStudioState?.pipeline?.evidence || []);
   syncPipelineWorkerCards(pipelineStudioState?.pipeline?.workers || selectedPipelineStudioTemplate()?.workers || []);
 }
 
@@ -2025,6 +2202,78 @@ async function savePipelineSelectedValidation() {
   }
 }
 
+async function runPipelineSelectedValidation() {
+  if (!pipelineSelectedValidationId) return;
+  const validationConfig = collectPipelineValidationConfig();
+  const validationRunMode = pipelineValidationModeSelect?.value || validationConfig.mode || "commands";
+  if (pipelineValidationInspectorStatus) pipelineValidationInspectorStatus.textContent = `Running ${validationModeLabel(validationRunMode)} validation...`;
+  if (pipelineValidationRunStatus) pipelineValidationRunStatus.textContent = `Running ${validationModeLabel(validationRunMode)}...`;
+  const payload = await savePipelineDraft("run_validation", { includeManifest: false, validationConfig, validationRunMode });
+  if (payload) {
+    showPipelineValidationInspector(pipelineSelectedValidationId, `Ran ${validationModeLabel(validationRunMode)} for ${validationConfig.title}.`);
+  }
+}
+
+function showPipelineEvidenceInspector(evidenceId, message = "") {
+  const evidence = selectedPipelineEvidence(evidenceId);
+  if (!evidence) {
+    pipelineSelectedEvidenceId = "";
+    showPipelineWorkerInspector();
+    return;
+  }
+  const status = String(evidence.state || evidence.status || "configured").toLowerCase().replace(/\s+/g, "-");
+  pipelineSelectedEvidenceId = evidenceId;
+  pipelineSelectedInputId = "";
+  pipelineSelectedIntegrationId = "";
+  pipelineSelectedValidationId = "";
+  setPipelineInspectorMode("evidence");
+  setPipelineField("selectedWorker", evidence.title || "Evidence");
+  if (pipelineInspectorBadge) pipelineInspectorBadge.textContent = "Evidence";
+  if (pipelineInspectorState) pipelineInspectorState.textContent = titleCasePipelineStatus(status);
+  if (pipelineEvidenceTitleInput) pipelineEvidenceTitleInput.value = evidence.title || "";
+  if (pipelineEvidenceStatusSelect) pipelineEvidenceStatusSelect.value = status;
+  if (pipelineEvidenceKindSelect) pipelineEvidenceKindSelect.value = evidence.kind || "artifact";
+  if (pipelineEvidencePathInput) pipelineEvidencePathInput.value = evidence.path || "";
+  if (pipelineEvidenceSourcesInput) pipelineEvidenceSourcesInput.value = pipelineLinesToText(evidence.required_sources);
+  if (pipelineEvidencePublishInput) pipelineEvidencePublishInput.value = evidence.publish_policy || "";
+  if (pipelineEvidenceRetentionInput) pipelineEvidenceRetentionInput.value = evidence.retention_policy || "";
+  if (pipelineEvidenceNotesInput) pipelineEvidenceNotesInput.value = evidence.review_notes || "";
+  if (pipelineEvidenceConfigPath) pipelineEvidenceConfigPath.textContent = evidence.config ? `Config: ${evidence.config}` : "Config output pending";
+  if (pipelineEvidenceArtifactPath) pipelineEvidenceArtifactPath.textContent = evidence.path ? `Artifact: ${evidence.path}` : "Artifact output pending";
+  if (pipelineEvidenceInspectorStatus) pipelineEvidenceInspectorStatus.textContent = message || "Choose and configure this evidence artifact, then save outputs.";
+  renderPipelineInputCards(pipelineStudioState?.pipeline?.input_cards || selectedPipelinePayloadTemplate()?.required_inputs || selectedPipelineStudioTemplate()?.requiredInputs || []);
+  renderPipelineIntegrationCards(pipelineStudioState?.pipeline?.integration || []);
+  renderPipelineValidatorCards(pipelineStudioState?.pipeline?.validators || selectedPipelinePayloadTemplate()?.validators || []);
+  renderPipelineEvidenceCards(pipelineStudioState?.pipeline?.evidence || []);
+  syncPipelineWorkerCards(pipelineStudioState?.pipeline?.workers || selectedPipelineStudioTemplate()?.workers || []);
+}
+
+function collectPipelineEvidenceConfig() {
+  const selected = selectedPipelineEvidence();
+  return {
+    id: pipelineSelectedEvidenceId,
+    title: pipelineEvidenceTitleInput?.value?.trim() || selected?.title || "Evidence artifact",
+    status: pipelineEvidenceStatusSelect?.value || selected?.state || "configured",
+    kind: pipelineEvidenceKindSelect?.value || selected?.kind || "artifact",
+    path: pipelineEvidencePathInput?.value?.trim() || selected?.path || "",
+    required_sources: pipelineTextToLines(pipelineEvidenceSourcesInput?.value || ""),
+    publish_policy: pipelineEvidencePublishInput?.value?.trim() || "",
+    retention_policy: pipelineEvidenceRetentionInput?.value?.trim() || "",
+    review_notes: pipelineEvidenceNotesInput?.value?.trim() || "",
+    config_path: selected?.config?.replace(/^.*workspace\/runs\/dev-pipeline-studio\/docs-pages\/latest\//, "") || ""
+  };
+}
+
+async function savePipelineSelectedEvidence() {
+  if (!pipelineSelectedEvidenceId) return;
+  const evidenceConfig = collectPipelineEvidenceConfig();
+  if (pipelineEvidenceInspectorStatus) pipelineEvidenceInspectorStatus.textContent = "Saving evidence outputs...";
+  const payload = await savePipelineDraft("save_evidence", { includeManifest: false, evidenceConfig });
+  if (payload) {
+    showPipelineEvidenceInspector(pipelineSelectedEvidenceId, `Saved ${evidenceConfig.title}.`);
+  }
+}
+
 function populatePipelineEditor() {
   const project = selectedPipelinePayloadProject();
   const template = selectedPipelinePayloadTemplate();
@@ -2037,7 +2286,6 @@ function populatePipelineEditor() {
   if (pipelineRiskSelect) pipelineRiskSelect.value = template?.risk || inspector.summary?.risk_level || "medium";
   if (pipelineBudgetCapInput) pipelineBudgetCapInput.value = template?.budget_cap_usd ?? "";
   if (pipelineReadPathsInput) pipelineReadPathsInput.value = Array.isArray(project?.read_paths) ? project.read_paths.join("\n") : "";
-  renderPipelineRequiredInputsEditor(template?.required_inputs || []);
   const manifestText = JSON.stringify(inspector.manifest || {}, null, 2);
   if (pipelineManifestEditor) pipelineManifestEditor.value = manifestText;
   if (pipelineManifestCode) pipelineManifestCode.textContent = manifestText;
@@ -2080,6 +2328,12 @@ function pipelineEditorPayload(action = "save", options = {}) {
   const includeManifest = options.includeManifest !== false;
   const workerManifest = includeManifest ? parsePipelineManifestEditor() : null;
   const selectedWorker = options.workerId || workerManifest?.task_id || template?.selected_worker || pipelineStudioState?.pipeline?.workers?.find((worker) => worker.selected)?.id || "";
+  const selectedTemplateId = pipelineStudioState?.selected?.template_id || pipelineTemplateSelect?.value || "";
+  const workerStageLabel = selectedTemplateId === "generic-task"
+    ? "2. Repo Discovery"
+    : (pipelineExecutionModelSelect?.value || template?.execution_model) === "ordered"
+      ? "2. Task Execution"
+      : "2. Workers (Parallel)";
   const payload = {
     action,
     project_id: pipelineStudioState?.selected?.project_id || pipelineProjectSelect?.value || "",
@@ -2102,21 +2356,27 @@ function pipelineEditorPayload(action = "save", options = {}) {
       budget_spent_usd: template?.budget_spent_usd ?? 0,
       budget_cap_usd: pipelineBudgetCapInput?.value || template?.budget_cap_usd || 0,
       execution_model: pipelineExecutionModelSelect?.value || template?.execution_model || "ordered",
-      worker_stage_label: (pipelineExecutionModelSelect?.value || template?.execution_model) === "ordered" ? "2. Task Execution" : "2. Workers (Parallel)",
-      selected_worker: selectedWorker,
-      required_inputs: collectPipelineRequiredInputs()
+      worker_stage_label: workerStageLabel,
+      factory_stage_label: "4. Factory Execution",
+      selected_worker: selectedWorker
     },
     worker_manifest: workerManifest
   };
   if (options.validationConfig) payload.validation_config = options.validationConfig;
+  if (options.validationRunMode) payload.validation_run_mode = options.validationRunMode;
   if (options.integrationConfig) payload.integration_config = options.integrationConfig;
+  if (options.evidenceConfig) payload.evidence_config = options.evidenceConfig;
+  if (options.inputConfig) payload.input_config = options.inputConfig;
+  if (options.elementType) payload.element_type = options.elementType;
+  if (options.elementId) payload.element_id = options.elementId;
+  if (options.elementStage) payload.element_stage = options.elementStage;
   return payload;
 }
 
 async function savePipelineDraft(action = "save", options = {}) {
   if (!pipelineProjectSelect || !pipelineTemplateSelect) return null;
   try {
-    setPipelineSaveStatus(action === "select_worker" ? "Selecting worker..." : action === "save_integration" ? "Saving integration outputs..." : action === "save_validation" ? "Saving validation outputs..." : "Saving pipeline draft...");
+    setPipelineSaveStatus(action === "select_worker" ? "Selecting worker..." : action === "save_input" ? "Saving input contract..." : action === "save_integration" ? "Saving integration outputs..." : action === "save_validation" ? "Saving validation outputs..." : action === "run_validation" ? "Running validation..." : action === "save_evidence" ? "Saving evidence outputs..." : action === "add_element" ? "Adding pipeline element..." : action === "delete_element" ? "Removing pipeline element..." : "Saving pipeline draft...");
     const response = await fetch(`${API_BASE}/dev-pipeline-studio`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -2126,12 +2386,95 @@ async function savePipelineDraft(action = "save", options = {}) {
     if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
     normalizePipelineState(payload);
     applyPipelineStudioContext();
-    const verb = action === "duplicate" ? "Duplicated" : action === "new" ? "Created" : action === "select_worker" ? "Selected" : action === "save_integration" ? "Saved integration" : action === "save_validation" ? "Saved validation" : "Saved";
+    const verb = action === "duplicate" ? "Duplicated" : action === "new" ? "Created" : action === "select_worker" ? "Selected" : action === "save_input" ? "Saved input" : action === "save_integration" ? "Saved integration" : action === "save_validation" ? "Saved validation" : action === "run_validation" ? "Ran validation" : action === "save_evidence" ? "Saved evidence" : action === "add_element" ? "Added element" : action === "delete_element" ? "Removed element" : "Saved";
     setPipelineSaveStatus(`${verb} ${payload.selected?.template_id || "pipeline"} at ${new Date().toLocaleTimeString()}`);
     return payload;
   } catch (error) {
     setPipelineSaveStatus(`Save failed: ${error.message}`, true);
     return null;
+  }
+}
+
+async function savePipelineSelectedManifest() {
+  try {
+    parsePipelineManifestEditor();
+  } catch (error) {
+    return;
+  }
+  setPipelineManifestStatus("Saving worker manifest...");
+  const payload = await savePipelineDraft("save", { includeManifest: true });
+  if (!payload) {
+    setPipelineManifestStatus("Worker manifest save failed", true);
+    return;
+  }
+  setInspectorTab("manifest");
+  const manifestPath = payload?.pipeline?.inspector?.manifest_path || "";
+  setPipelineManifestStatus(manifestPath ? `Saved ${manifestPath}` : "Worker manifest saved");
+}
+
+function openPipelineElementEditor(type, id) {
+  const elementType = String(type || "");
+  const elementId = String(id || "");
+  if (!elementId) return;
+  if (elementType === "input") {
+    showPipelineInputInspector(elementId);
+    return;
+  }
+  if (elementType === "integration") {
+    showPipelineIntegrationInspector(elementId);
+    return;
+  }
+  if (elementType === "validation") {
+    showPipelineValidationInspector(elementId);
+    return;
+  }
+  if (elementType === "evidence") {
+    showPipelineEvidenceInspector(elementId);
+    return;
+  }
+  if (elementType === "worker") {
+    pipelineSelectedInputId = "";
+    pipelineSelectedIntegrationId = "";
+    pipelineSelectedValidationId = "";
+    pipelineSelectedEvidenceId = "";
+    showPipelineWorkerInspector();
+    void savePipelineDraft("select_worker", { workerId: elementId, includeManifest: false });
+  }
+}
+
+async function addPipelineStageElement(type, stage) {
+  const payload = await savePipelineDraft("add_element", {
+    includeManifest: false,
+    elementType: type,
+    elementStage: stage || type
+  });
+  const mutation = payload?.mutation || {};
+  const elementType = mutation.element_type || type;
+  const elementId = mutation.element_id || "";
+  if (elementId) {
+    openPipelineElementEditor(elementType, elementId);
+    setPipelineSaveStatus(`Added ${mutation.title || elementId}`);
+  }
+}
+
+async function deletePipelineStageElement(type, id) {
+  const elementType = String(type || "");
+  const elementId = String(id || "");
+  if (!elementType || !elementId) return;
+  const label = `${elementType} ${elementId}`;
+  if (!window.confirm(`Remove ${label} from this pipeline?`)) return;
+  if (pipelineSelectedInputId === elementId) pipelineSelectedInputId = "";
+  if (pipelineSelectedIntegrationId === elementId) pipelineSelectedIntegrationId = "";
+  if (pipelineSelectedValidationId === elementId) pipelineSelectedValidationId = "";
+  if (pipelineSelectedEvidenceId === elementId) pipelineSelectedEvidenceId = "";
+  const payload = await savePipelineDraft("delete_element", {
+    includeManifest: false,
+    elementType,
+    elementId
+  });
+  if (payload) {
+    showPipelineWorkerInspector();
+    setPipelineSaveStatus(`Removed ${label}`);
   }
 }
 
@@ -2153,6 +2496,7 @@ function applyPipelineStudioContext() {
     setPipelineField("runName", pipeline.run_name || "");
     setPipelineField("inputCount", pipeline.input_count || "");
     setPipelineField("workerStageLabel", pipeline.worker_stage_label || "2. Workers (Parallel)");
+    setPipelineField("factoryStageLabel", pipeline.factory_stage_label || "4. Factory Execution");
     setPipelineField("workerCount", pipeline.worker_count || "");
     setPipelineField("integrationCount", pipeline.integration_count || "");
     setPipelineField("selectedWorker", inspector.selected_worker || "");
@@ -2161,8 +2505,10 @@ function applyPipelineStudioContext() {
     setPipelineField("validationTier", summary.validation_tier || pipeline.validation?.tier || "");
     setPipelineField("riskLevel", summary.risk_level || "");
     renderPipelineInputCards(pipeline.input_cards || []);
+    renderPipelineWorkerCards(pipeline.workers || []);
     renderPipelineIntegrationCards(pipeline.integration || []);
     renderPipelineValidatorCards(pipeline.validators || []);
+    renderPipelineEvidenceCards(pipeline.evidence || []);
     renderPipelineCards("data-pipeline-input", pipeline.input_cards || [], [["title", "title"], ["file", "file"], ["status", "status"]]);
     renderPipelineCards("data-pipeline-worker", pipeline.workers || [], [["title", "title"], ["file", "detail"]]);
     renderPipelineCards("data-pipeline-integrate", pipeline.integration || [], [["title", "title"]]);
@@ -2177,6 +2523,8 @@ function applyPipelineStudioContext() {
       showPipelineIntegrationInspector(pipelineSelectedIntegrationId);
     } else if (pipelineSelectedValidationId) {
       showPipelineValidationInspector(pipelineSelectedValidationId);
+    } else if (pipelineSelectedEvidenceId) {
+      showPipelineEvidenceInspector(pipelineSelectedEvidenceId);
     } else if (pipelineSelectedInputId) {
       showPipelineInputInspector(pipelineSelectedInputId);
     } else {
@@ -2187,6 +2535,9 @@ function applyPipelineStudioContext() {
       card.classList.toggle("active", isActive);
       card.setAttribute("aria-pressed", String(isActive));
     });
+    if (manifestExplorerEl?.dataset.initialized) {
+      refreshManifestExplorer({ preserveSelection: true });
+    }
     return;
   }
   if (!pipelineProjectSelect || !pipelineTemplateSelect) return;
@@ -2229,8 +2580,16 @@ function applyPipelineStudioContext() {
   setPipelineField("runName", runName);
   setPipelineField("inputCount", `${(template.requiredInputs || []).length} inputs`);
   setPipelineField("workerStageLabel", template.workerStageLabel || "2. Workers (Parallel)");
+  setPipelineField("factoryStageLabel", "4. Factory Execution");
   setPipelineField("workerCount", `${template.workers.length} workers`);
-  setPipelineField("integrationCount", `${template.workers.length} integration steps`);
+  const fallbackFactorySteps = template.factorySteps || [
+    { id: "checkout", title: "checkout_branch", file: "execution_manifest.json", status: "Queued" },
+    { id: "snapshot", title: "snapshot_repo_state", file: "repo_snapshot.json", status: "Queued" },
+    { id: "apply", title: "apply_change_units", file: "factory_apply_receipt.json", status: "Queued" },
+    { id: "focused-tests", title: "run_focused_tests", file: "focused_tests.log", status: "Queued" },
+    { id: "collect", title: "collect_diff_and_logs", file: "evidence_manifest.json", status: "Queued" }
+  ];
+  setPipelineField("integrationCount", `${fallbackFactorySteps.length} execution steps`);
   setPipelineField("selectedWorker", selectedWorker.title);
   setPipelineField("ownedPathCount", "1 path");
   setPipelineField("readPathCount", `${readPaths.length} paths`);
@@ -2239,16 +2598,13 @@ function applyPipelineStudioContext() {
   updateIndexedPipelineText("data-pipeline-worker-title", template.workers.map((worker) => worker.title));
   updateIndexedPipelineText("data-pipeline-worker-file", workerFiles);
   updateIndexedPipelineText("data-pipeline-integrate-title", workerFiles.map((file) => `Integrate: ${file}`));
-  renderPipelineIntegrationCards(template.workers.map((worker) => ({
-    id: worker.id,
-    title: `Integrate: ${worker.file}`,
-    file: "integration_receipt.json",
-    status: "Accepted",
-    dependencies: worker.dependencies || [],
-    artifacts: [`${project.ownedRoot}/${worker.file}`],
-    gates: ["Dependencies integrated first", "No owned-path conflict", "Receipt written before validation starts"],
-    rollback_plan: ["Reject this integration step and preserve worker artifact for retry"],
-    mode: "dependency-order"
+  renderPipelineWorkerCards(template.workers || []);
+  renderPipelineIntegrationCards(fallbackFactorySteps.map((step) => ({
+    id: step.id,
+    title: step.title,
+    file: step.file || "execution_receipt.json",
+    status: step.status || "Queued",
+    mode: "deterministic"
   })));
   renderPipelineInputCards(template.requiredInputs || []);
   renderPipelineValidatorCards(template.validators || []);
@@ -2280,6 +2636,717 @@ async function loadPipelineStudioState() {
     console.warn("Dev Pipeline Studio backend unavailable; using local fallback.", error);
     pipelineStudioState = null;
     applyPipelineStudioContext();
+  }
+}
+
+// ── Manifest Explorer ─────────────────────────────────────────────────────────
+
+let manifestExplorerPayload = null;
+let currentManifestId = "";
+let currentManifestView = "json";
+let currentManifestReferenceKind = "all";
+
+function manifestSlug(value, fallback = "manifest") {
+  const slug = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return slug || fallback;
+}
+
+function manifestPathFile(path, fallback = "manifest.json") {
+  const parts = String(path || "").split("/").filter(Boolean);
+  return parts.length ? parts[parts.length - 1] : fallback;
+}
+
+function manifestPathDir(path, fallback = "workspace/runs/dev-pipeline-studio/docs-pages/latest/") {
+  const clean = String(path || "").trim();
+  if (!clean) return fallback;
+  const index = clean.lastIndexOf("/");
+  return index >= 0 ? `${clean.slice(0, index + 1)}` : fallback;
+}
+
+function manifestStatusClass(status) {
+  const normalized = String(status || "active").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  if (normalized.includes("pass")) return "passed";
+  if (normalized.includes("complete") || normalized.includes("accept") || normalized.includes("merge")) return "completed";
+  if (normalized.includes("fail") || normalized.includes("block") || normalized.includes("reject")) return "failed";
+  return "active";
+}
+
+function manifestDisplayUpdated(value) {
+  const raw = String(value || "current").trim();
+  const date = new Date(raw);
+  if (!Number.isNaN(date.getTime())) return date.toISOString().slice(0, 16).replace("T", " ");
+  return raw.length > 22 ? `${raw.slice(0, 19)}...` : raw;
+}
+
+function manifestTypeGlyph(type) {
+  const glyphs = {
+    pipeline: "▣",
+    input: "▤",
+    worker: "▧",
+    integration: "⌁",
+    validator: "▦",
+    evidence: "▥",
+  };
+  return glyphs[type] || "▧";
+}
+
+function manifestSchemaName(type) {
+  const schemas = {
+    pipeline: "pipeline_manifest.schema.json",
+    input: "input_manifest.schema.json",
+    worker: "worker_manifest.schema.json",
+    integration: "integration_config.schema.json",
+    validator: "validator_manifest.schema.json",
+    evidence: "evidence_manifest.schema.json",
+  };
+  return schemas[type] || "manifest.schema.json";
+}
+
+function manifestReference(kind, name, path, description, usedIn = "") {
+  return {
+    kind,
+    name: String(name || path || "reference"),
+    path: String(path || ""),
+    description: String(description || ""),
+    usedIn: String(usedIn || ""),
+  };
+}
+
+function manifestEntry(options) {
+  const file = options.file || manifestPathFile(options.path, `${options.id}.json`);
+  const status = options.status || "Active";
+  return {
+    id: options.id,
+    type: options.type || "worker",
+    name: options.name || options.id,
+    file,
+    path: options.path || file,
+    version: options.version || "v1",
+    active: options.active !== false,
+    status,
+    updated: options.updated || "Current run",
+    schema: options.schema || manifestSchemaName(options.type),
+    source: options.source || manifestPathDir(options.path),
+    tags: options.tags || [options.type || "manifest"],
+    lineage: options.lineage || [],
+    downstream: options.downstream || [],
+    validation: options.validation || [
+      { label: "Schema valid", detail: options.schema || manifestSchemaName(options.type), passed: true },
+      { label: "References resolved", detail: "Inputs and artifacts found in active pipeline state", passed: true },
+    ],
+    references: options.references || [],
+    payload: options.payload || {},
+  };
+}
+
+function selectedPipelineManifestTemplate() {
+  const payloadTemplate = selectedPipelinePayloadTemplate();
+  if (payloadTemplate) return payloadTemplate;
+  const fallback = selectedPipelineStudioTemplate();
+  return {
+    id: fallback.id,
+    label: fallback.label,
+    detail: fallback.detail,
+    validation_tier: fallback.validationTier,
+    risk: fallback.risk,
+    execution_model: fallback.executionModel || "ordered",
+    required_inputs: fallback.requiredInputs || [],
+    workers: fallback.workers || [],
+    validators: [
+      { id: "smoke-plus", title: "Smoke-plus Validator", mode: "commands", status: "Passed" },
+      { id: "contract", title: "Contract Validator", mode: "schema", status: "Passed" },
+      { id: "evidence", title: "Evidence Validator", mode: "evidence", status: "Passed" },
+    ],
+  };
+}
+
+function selectedPipelineManifestProject() {
+  const payloadProject = selectedPipelinePayloadProject();
+  if (payloadProject) return payloadProject;
+  const fallback = selectedPipelineStudioProject();
+  return {
+    id: fallback.key,
+    label: fallback.name,
+    surface: fallback.surface,
+    surface_value: fallback.surfaceValue,
+    owned_root: fallback.ownedRoot,
+    read_paths: fallback.readPaths || [],
+  };
+}
+
+function buildPipelineManifestExplorerData() {
+  const project = selectedPipelineManifestProject();
+  const template = selectedPipelineManifestTemplate();
+  const root = pipelineStudioState?.root || "workspace/runs/dev-pipeline-studio/docs-pages/latest";
+  const generatedAt = pipelineStudioState?.generated_at || new Date().toISOString();
+  const pipeline = pipelineStudioState?.pipeline || {};
+  const templateId = template.id || pipelineStudioState?.selected?.template_id || "generic-task";
+  const inputCards = pipeline.input_cards || template.required_inputs || [];
+  const workers = pipeline.workers || template.workers || [];
+  const integrations = pipeline.integration || [];
+  const validators = pipeline.validators || template.validators || [];
+  const evidence = pipeline.evidence || [];
+  const groupEntries = {
+    pipeline: [],
+    input: [],
+    worker: [],
+    integration: [],
+    validator: [],
+    evidence: [],
+  };
+  const entries = [];
+  const add = (group, entry) => {
+    groupEntries[group].push(entry);
+    entries.push(entry);
+    return entry;
+  };
+  const downstreamWorkers = workers.map((worker) => ({
+    label: worker.title || worker.id || "Worker",
+    file: worker.file || `${worker.id}.json`,
+    type: "worker",
+  }));
+  const pipelinePath = `${root}/pipeline_manifest.json`;
+  add("pipeline", manifestEntry({
+    id: "pipeline_manifest",
+    type: "pipeline",
+    name: pipeline.template ? `${pipeline.template} Pipeline` : "Pipeline Manifest",
+    file: "pipeline_manifest.json",
+    path: pipelinePath,
+    version: "v3",
+    status: pipeline.status || "Healthy",
+    updated: generatedAt,
+    schema: "pipeline_manifest.schema.json",
+    source: root,
+    tags: ["pipeline", templateId, template.execution_model || pipeline.execution_model || "ordered"],
+    downstream: downstreamWorkers,
+    references: [
+      ...inputCards.map((item, index) => manifestReference("input", item.title || `Input ${index + 1}`, item.manifest || item.file || "", item.detail || "Required operator input", "Pipeline Manifest")),
+      ...workers.map((worker) => manifestReference("worker", worker.title || worker.id, worker.file || `${worker.id}.json`, worker.detail || worker.description || "Worker contract", "Pipeline Manifest")),
+      ...validators.map((validator) => manifestReference("command", validator.title || validator.id, validator.receipt || validator.file || "", validator.summary || "Validation command set", "Validation lane")),
+      ...evidence.map((item) => manifestReference("artifact", item.title || item.id, item.path || item.file || "", item.review_notes || "Evidence artifact", "Evidence bundle")),
+    ],
+    payload: {
+      schema_version: "cento.pipeline_manifest.explorer.v1",
+      id: pipeline.id || `${templateId}-pipeline`,
+      run_name: pipeline.run_name || `${templateId}-${project.id}`,
+      status: pipeline.status || "Healthy",
+      status_detail: pipeline.status_detail || "",
+      project: {
+        id: project.id,
+        label: project.label,
+        surface: project.surface,
+        read_paths: project.read_paths || [],
+      },
+      template: {
+        id: templateId,
+        label: template.label,
+        detail: template.detail,
+        execution_model: template.execution_model || pipeline.execution_model || "ordered",
+        validation_tier: template.validation_tier || pipeline.validation?.tier || "",
+        risk: template.risk || "",
+      },
+      manifests: {
+        inputs: inputCards.map((item, index) => pipelineInputId(item, index)),
+        workers: workers.map((worker) => worker.id || worker.title),
+        integration: integrations.map((item, index) => pipelineIntegrationId(item, index)),
+        validators: validators.map((item, index) => pipelineValidatorId(item, index)),
+        evidence: evidence.map((item, index) => pipelineEvidenceId(item, index)),
+      },
+      budget: {
+        spent: pipeline.budget || "",
+        detail: pipeline.budget_detail || "",
+      },
+    },
+  }));
+
+  inputCards.forEach((input, index) => {
+    const inputId = pipelineInputId(input, index);
+    const path = input.manifest ? `${root}/${input.manifest}` : `${root}/inputs/${templateId}_${inputId}.json`;
+    add("input", manifestEntry({
+      id: `input_${manifestSlug(inputId)}`,
+      type: "input",
+      name: input.title || `Input ${index + 1}`,
+      file: manifestPathFile(path),
+      path,
+      status: input.status || "Configured",
+      updated: generatedAt,
+      tags: ["input", pipelineInputType(input), input.required === false ? "optional" : "required"],
+      lineage: [
+        { label: "Pipeline Manifest", file: "pipeline_manifest.json", type: "pipeline" },
+        { label: input.title || inputId, file: manifestPathFile(path), type: "input", current: true },
+      ],
+      downstream: workers.slice(0, 3).map((worker) => ({ label: worker.title || worker.id, file: worker.file || `${worker.id}.json`, type: "worker" })),
+      references: [
+        ...(input.paths || []).map((pathValue) => manifestReference("input", pathValue, pathValue, input.path_policy || "Read path", input.title)),
+        ...(input.artifacts || []).map((artifact) => manifestReference("artifact", manifestPathFile(artifact), artifact, input.evidence_policy || "Input artifact", input.title)),
+        ...(input.questions || []).map((question) => manifestReference("input", question.prompt || question.id, question.id || "", question.required === false ? "Optional question" : "Required question", input.title)),
+      ],
+      payload: {
+        schema_version: "cento.input_manifest.v1",
+        id: inputId,
+        project: project.id,
+        template_id: templateId,
+        title: input.title || "",
+        kind: pipelineInputType(input),
+        status: String(input.status || "configured").toLowerCase(),
+        required: input.required !== false,
+        detail: input.detail || input.file || "",
+        format: input.format || "",
+        image_refs: input.image_refs || [],
+        questions: input.questions || [],
+        paths: input.paths || [],
+        artifacts: input.artifacts || [],
+        evidence_policy: input.evidence_policy || "",
+      },
+    }));
+  });
+
+  workers.forEach((worker, index) => {
+    const workerId = String(worker.id || `worker-${index + 1}`);
+    const templateWorker = (template.workers || []).find((item) => String(item.id || "") === workerId) || {};
+    const selectedManifest = pipeline.inspector?.manifest?.task_id === workerId ? pipeline.inspector.manifest : null;
+    const manifestPayload = selectedManifest || {
+      schema_version: "cento.worker_manifest.v1",
+      id: `${workerId}_worker_01`,
+      project: project.id,
+      template_id: templateId,
+      type: template.worker_type || "pipeline_worker",
+      task_id: workerId,
+      description: worker.detail || worker.description || templateWorker.description || "",
+      owned_paths: [`${project.owned_root || "workspace/generated"}/${worker.file || `${workerId}.json`}`],
+      read_paths: [...(project.read_paths || []), `templates/pipelines/${templateId}.json`],
+      dependencies: templateWorker.dependencies || worker.dependencies || [],
+      acceptance: [
+        "Template output is valid",
+        "Only declared owned paths change",
+        "Validation evidence is attached before review",
+      ],
+      validation: { tier: template.validation_tier || pipeline.validation?.tier || "" },
+    };
+    const path = `${root}/workers/${templateId}_${workerId}.json`;
+    const dependencies = manifestPayload.dependencies || [];
+    add("worker", manifestEntry({
+      id: `worker_${manifestSlug(workerId)}`,
+      type: "worker",
+      name: worker.title || templateWorker.title || workerId,
+      file: manifestPathFile(path),
+      path,
+      status: worker.status || "Completed",
+      updated: generatedAt,
+      tags: ["worker", worker.stage || workerStageKey(worker, index), template.validation_tier || "validation"],
+      lineage: [
+        { label: "Pipeline Manifest", file: "pipeline_manifest.json", type: "pipeline" },
+        ...dependencies.map((dependency) => ({ label: dependency, file: `${dependency}.json`, type: "worker" })),
+        { label: worker.title || workerId, file: manifestPathFile(path), type: "worker", current: true },
+      ],
+      downstream: integrations.filter((item) => (item.dependencies || []).includes(workerId) || item.id === workerId).map((item) => ({ label: item.title || item.id, file: item.receipt || item.file || "integration_receipt.json", type: "integration" })),
+      references: [
+        ...(manifestPayload.read_paths || []).map((pathValue) => manifestReference("input", manifestPathFile(pathValue, pathValue), pathValue, "Read path", worker.title || workerId)),
+        ...(manifestPayload.owned_paths || []).map((pathValue) => manifestReference("artifact", manifestPathFile(pathValue), pathValue, "Owned output", worker.title || workerId)),
+        ...dependencies.map((dependency) => manifestReference("worker", dependency, `${dependency}.json`, "Worker dependency", worker.title || workerId)),
+      ],
+      payload: manifestPayload,
+    }));
+  });
+
+  integrations.forEach((integration, index) => {
+    const integrationId = pipelineIntegrationId(integration, index);
+    const path = integration.config || integration.receipt || `integration/configs/${integrationId}.json`;
+    add("integration", manifestEntry({
+      id: `integration_${manifestSlug(integrationId)}`,
+      type: "integration",
+      name: integration.title || integrationId,
+      file: manifestPathFile(path),
+      path: path.startsWith("workspace/") ? path : `${root}/${path}`,
+      status: integration.status || "Accepted",
+      updated: generatedAt,
+      tags: ["integration", integration.mode || "dependency-order", integration.status || "accepted"],
+      lineage: [
+        ...((integration.dependencies || []).map((dependency) => ({ label: dependency, file: `${dependency}.json`, type: "worker" }))),
+        { label: integration.title || integrationId, file: manifestPathFile(path), type: "integration", current: true },
+      ],
+      downstream: validators.slice(0, 3).map((validator) => ({ label: validator.title || validator.id, file: validator.receipt || validator.file || "validator.json", type: "validator" })),
+      references: [
+        ...(integration.dependencies || []).map((dependency) => manifestReference("worker", dependency, `${dependency}.json`, "Dependency receipt", integration.title)),
+        ...(integration.artifacts || []).map((artifact) => manifestReference("artifact", manifestPathFile(artifact), artifact, "Integrated artifact", integration.title)),
+        ...(integration.gates || []).map((gate) => manifestReference("command", gate, "", "Receipt gate", integration.title)),
+        manifestReference("artifact", manifestPathFile(integration.receipt || "integration_receipt.json"), integration.receipt || "", "Integration receipt", integration.title),
+      ],
+      payload: {
+        schema_version: "cento.integration_manifest.v1",
+        ...integration,
+        id: integrationId,
+        project: project.id,
+        template_id: templateId,
+      },
+    }));
+  });
+
+  validators.forEach((validator, index) => {
+    const validatorId = pipelineValidatorId(validator, index);
+    const path = validator.config || validator.receipt || `validation/validator_configs/${validatorId}.json`;
+    add("validator", manifestEntry({
+      id: `validator_${manifestSlug(validatorId)}`,
+      type: "validator",
+      name: validator.title || validatorId,
+      file: manifestPathFile(path),
+      path: path.startsWith("workspace/") ? path : `${root}/${path}`,
+      status: validator.status || "Passed",
+      updated: validator.executed_at || generatedAt,
+      tags: ["validator", validator.tier || template.validation_tier || "smoke", validator.mode || "commands"],
+      lineage: [
+        ...(integrations.slice(-2).map((item) => ({ label: item.title || item.id, file: item.receipt || item.file || "integration_receipt.json", type: "integration" }))),
+        { label: validator.title || validatorId, file: manifestPathFile(path), type: "validator", current: true },
+      ],
+      downstream: evidence.slice(0, 3).map((item) => ({ label: item.title || item.id, file: item.file || item.path || "evidence.json", type: "evidence" })),
+      references: [
+        ...(validator.commands || []).map((command) => manifestReference("command", command, command, "Validation command", validator.title)),
+        ...(validator.evidence || []).map((artifact) => manifestReference("artifact", manifestPathFile(artifact), artifact, "Required evidence", validator.title)),
+        ...(validator.gates || []).map((gate) => manifestReference("command", gate, "", "Validation gate", validator.title)),
+        ...(validator.schema_paths || []).map((schema) => manifestReference("artifact", manifestPathFile(schema), schema, "Schema path", validator.title)),
+      ],
+      validation: [
+        { label: "Schema valid", detail: manifestSchemaName("validator"), passed: true },
+        { label: "References resolved", detail: `${(validator.commands || []).length} commands, ${(validator.evidence || []).length} evidence paths`, passed: true },
+        { label: "Blocking policy", detail: validator.blocking === false ? "Non-blocking validator" : "Blocks handoff on failure", passed: true },
+      ],
+      payload: {
+        schema_version: "cento.validator_manifest.v1",
+        ...validator,
+        id: validatorId,
+        project: project.id,
+        template_id: templateId,
+      },
+    }));
+  });
+
+  evidence.forEach((item, index) => {
+    const evidenceId = pipelineEvidenceId(item, index);
+    const path = item.config || item.path || `evidence/configs/${evidenceId}.json`;
+    add("evidence", manifestEntry({
+      id: `evidence_${manifestSlug(evidenceId)}`,
+      type: "evidence",
+      name: item.title || evidenceId,
+      file: manifestPathFile(path),
+      path: path.startsWith("workspace/") ? path : `${root}/${path}`,
+      status: item.status || "Configured",
+      updated: generatedAt,
+      tags: ["evidence", item.kind || "artifact", item.state || "configured"],
+      lineage: [
+        ...(validators.slice(-2).map((validator) => ({ label: validator.title || validator.id, file: validator.receipt || validator.file || "validator.json", type: "validator" }))),
+        { label: item.title || evidenceId, file: manifestPathFile(path), type: "evidence", current: true },
+      ],
+      references: [
+        ...(item.required_sources || []).map((source) => manifestReference("artifact", manifestPathFile(source), source, "Required source", item.title)),
+        manifestReference("artifact", manifestPathFile(item.path || item.file || "evidence.json"), item.path || item.file || "", item.publish_policy || "Published evidence", item.title),
+      ],
+      payload: {
+        schema_version: "cento.evidence_manifest.v1",
+        ...item,
+        id: evidenceId,
+        project: project.id,
+        template_id: templateId,
+      },
+    }));
+  });
+
+  return {
+    groups: [
+      { id: "pipeline", label: "Pipeline Manifest", entries: groupEntries.pipeline },
+      { id: "input", label: "Input Manifests", entries: groupEntries.input },
+      { id: "worker", label: "Worker Manifests", entries: groupEntries.worker },
+      { id: "integration", label: "Integration Manifests", entries: groupEntries.integration },
+      { id: "validator", label: "Validator Manifests", entries: groupEntries.validator },
+      { id: "evidence", label: "Evidence Manifests", entries: groupEntries.evidence },
+    ].filter((group) => group.entries.length),
+    entries,
+    defaultId: entries.find((entry) => entry.type === "validator")?.id || entries[0]?.id || "",
+  };
+}
+
+function findManifestEntry(manifestId) {
+  return (manifestExplorerPayload?.entries || []).find((entry) => entry.id === manifestId) || null;
+}
+
+function highlightManifestJson(json) {
+  return json
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/("(?:\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*"(?:\s*:)?|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g, (m) => {
+      if (/^"/.test(m)) return /:$/.test(m) ? `<span class="mjk">${m}</span>` : `<span class="mjs">${m}</span>`;
+      if (/true|false/.test(m)) return `<span class="mjb">${m}</span>`;
+      if (m === "null") return `<span class="mjn">${m}</span>`;
+      return `<span class="mjnum">${m}</span>`;
+    });
+}
+
+function renderManifestCode(jsonText) {
+  if (!manifestCodeEl || !manifestLineNumsEl) return;
+  const lines = jsonText.split("\n");
+  manifestLineNumsEl.innerHTML = lines.map((_, i) => `<span>${i + 1}</span>`).join("");
+  manifestCodeEl.innerHTML = highlightManifestJson(jsonText);
+}
+
+function renderManifestList() {
+  if (!manifestListScroll || !manifestExplorerPayload) return;
+  manifestListScroll.innerHTML = manifestExplorerPayload.groups.map((group) => `
+    <section class="manifestGroup">
+      <header><strong>${escapeHtml(group.label)}</strong><span class="manifestGroupCount">${group.entries.length}</span></header>
+      <ul>
+        ${group.entries.map((entry) => `
+          <li class="manifestItem ${entry.id === currentManifestId ? "selected" : ""}" data-manifest-id="${escapeHtml(entry.id)}" data-manifest-type="${escapeHtml(entry.type)}" tabindex="0">
+            <span class="manifestTypeIcon ${escapeHtml(entry.type)}" aria-hidden="true">${manifestTypeGlyph(entry.type)}</span>
+            <div>
+              <strong>${escapeHtml(entry.file)}</strong>
+              <small><span class="miBadge${entry.active ? " active" : ""}">${escapeHtml(entry.version)}${entry.active ? " (active)" : ""}</span> · ${escapeHtml(manifestDisplayUpdated(entry.updated))}</small>
+            </div>
+            <button type="button" class="manifestItemMenu" aria-label="Manifest options">⋮</button>
+          </li>
+        `).join("")}
+      </ul>
+    </section>
+  `).join("");
+}
+
+function manifestReferenceMatchesKind(reference, kind) {
+  if (kind === "all") return true;
+  if (kind === "artifact") return reference.kind === "artifact" || reference.kind === "schema";
+  return reference.kind === kind;
+}
+
+function renderManifestReferences(entry) {
+  const references = Array.isArray(entry.references) ? entry.references : [];
+  const visible = references.filter((reference) => manifestReferenceMatchesKind(reference, currentManifestReferenceKind));
+  if (manifestReferenceCount) manifestReferenceCount.textContent = String(references.length);
+  if (manifestReferenceSummary) {
+    manifestReferenceSummary.textContent = references.length
+      ? `${entry.name} resolves ${references.length} direct reference${references.length === 1 ? "" : "s"} from the active pipeline.`
+      : `${entry.name} has no direct references in the active pipeline.`;
+  }
+  if (manifestReferenceTabs) {
+    const counts = {
+      all: references.length,
+      input: references.filter((reference) => reference.kind === "input").length,
+      command: references.filter((reference) => reference.kind === "command").length,
+      artifact: references.filter((reference) => reference.kind === "artifact" || reference.kind === "schema").length,
+      worker: references.filter((reference) => reference.kind === "worker").length,
+    };
+    const labels = { all: "All", input: "Inputs", command: "Commands", artifact: "Artifacts", worker: "Workers" };
+    manifestReferenceTabs.querySelectorAll("a[data-reference-kind]").forEach((link) => {
+      const kind = link.dataset.referenceKind || "all";
+      link.classList.toggle("active", kind === currentManifestReferenceKind);
+      link.textContent = `${labels[kind] || kind} (${counts[kind] || 0})`;
+    });
+  }
+  if (!manifestReferenceRows) return;
+  if (!visible.length) {
+    manifestReferenceRows.innerHTML = `<p class="manifestReferenceEmpty">No ${escapeHtml(currentManifestReferenceKind === "all" ? "" : currentManifestReferenceKind)} references for this manifest.</p>`;
+    return;
+  }
+  manifestReferenceRows.innerHTML = `
+    <div class="manifestReferenceHeader" role="row">
+      <span>Type</span><span>Name / Path</span><span>Description</span><span>Used In</span>
+    </div>
+    ${visible.map((reference) => `
+      <div class="manifestReferenceRow" role="row">
+        <span>${escapeHtml(reference.kind)}</span>
+        <code>${escapeHtml(reference.path || reference.name)}</code>
+        <span>${escapeHtml(reference.description || "-")}</span>
+        <span>${escapeHtml(reference.usedIn || entry.name)}</span>
+      </div>
+    `).join("")}
+  `;
+}
+
+function manifestCodePayload(entry) {
+  if (currentManifestView === "schema") {
+    return {
+      schema: entry.schema,
+      type: entry.type,
+      status: "valid",
+      required_fields: Object.keys(entry.payload || {}).slice(0, 8),
+      source: entry.source,
+    };
+  }
+  if (currentManifestView === "references") {
+    return {
+      manifest: entry.id,
+      references: entry.references,
+      lineage: entry.lineage,
+      downstream: entry.downstream,
+    };
+  }
+  if (currentManifestView === "diff") {
+    return {
+      manifest: entry.id,
+      from: entry.previous_version || "previous",
+      to: entry.version,
+      status: "preview",
+      changed_fields: ["status", "updated", "references"],
+      note: "Diff preview is synthesized from the active pipeline state.",
+    };
+  }
+  if (currentManifestView === "raw") {
+    return {
+      path: entry.path,
+      payload: entry.payload,
+    };
+  }
+  return entry.payload;
+}
+
+function renderManifestCodeView(entry) {
+  renderManifestCode(JSON.stringify(manifestCodePayload(entry), null, 2));
+  manifestExplorerEl?.querySelectorAll(".manifestViewerTabs a[data-manifest-view]").forEach((link) => {
+    link.classList.toggle("active", link.dataset.manifestView === currentManifestView);
+  });
+}
+
+function selectManifest(manifestId) {
+  const meta = findManifestEntry(manifestId) || findManifestEntry(manifestExplorerPayload?.defaultId || "");
+  if (!meta) return;
+  currentManifestId = meta.id;
+  manifestExplorerEl?.querySelectorAll(".manifestItem").forEach((el) => {
+    el.classList.toggle("selected", el.dataset.manifestId === meta.id);
+  });
+  renderManifestCodeView(meta);
+  const set = (id, val) => { const el = document.querySelector(id); if (el) el.innerHTML = val; };
+  const nameEl = document.querySelector("#manifestViewerName");
+  const fileEl = document.querySelector("#manifestViewerFile");
+  const badgeEl = document.querySelector("#manifestViewerBadge");
+  const iconEl = manifestExplorerEl?.querySelector(".manifestViewer .manifestViewerTitle .manifestTypeIcon");
+  if (nameEl) nameEl.textContent = meta.name;
+  if (fileEl) fileEl.textContent = meta.file;
+  if (badgeEl) { badgeEl.textContent = meta.version + (meta.active ? " (active)" : ""); badgeEl.className = "miBadge" + (meta.active ? " active" : ""); }
+  if (iconEl) { iconEl.className = `manifestTypeIcon ${meta.type} large`; iconEl.textContent = manifestTypeGlyph(meta.type); }
+  set("#mdType", escapeHtml(meta.type));
+  set("#mdName", escapeHtml(meta.name));
+  set("#mdId", escapeHtml(meta.id));
+  set("#mdVersion", `<span class="miBadge${meta.active ? " active" : ""}">${escapeHtml(meta.version)}${meta.active ? " (active)" : ""}</span>`);
+  set("#mdStatus", `<span class="manifestStatusBadge ${manifestStatusClass(meta.status)}">${escapeHtml(meta.status)}</span>`);
+  set("#mdUpdated", escapeHtml(meta.updated));
+  set("#mdSchema", `<a href="#">${escapeHtml(meta.schema)}</a>`);
+  set("#mdSource", `<a href="#">${escapeHtml(meta.source)}</a>`);
+  const lineageEl = document.querySelector("#manifestLineage");
+  if (lineageEl) lineageEl.innerHTML = meta.lineage.length ? meta.lineage.map((n, i) => (i > 0 ? `<div class="lineageArrow" aria-hidden="true">↓</div>` : "") + `<div class="lineageNode ${n.type}${n.current ? " current" : ""}"><span class="lineageIcon ${n.type}" aria-hidden="true">${manifestTypeGlyph(n.type)}</span><div><strong>${escapeHtml(n.label)}</strong><small>${escapeHtml(n.file)}</small></div></div>`).join("") : '<p class="manifestNone">— No upstream manifests</p>';
+  const dsEl = document.querySelector("#manifestDownstream");
+  if (dsEl) dsEl.innerHTML = meta.downstream.length ? meta.downstream.map((n) => `<div class="lineageNode ${n.type}"><span class="lineageIcon ${n.type}" aria-hidden="true">${manifestTypeGlyph(n.type)}</span><div><strong>${escapeHtml(n.label)}</strong><small>${escapeHtml(n.file)}</small></div></div>`).join("") : "— No downstream manifests";
+  const valEl = document.querySelector("#manifestValidationList");
+  if (valEl) valEl.innerHTML = meta.validation.map((v) => `<div class="mvCheck ${v.passed ? "passed" : "failed"}"><span class="mvCheckIcon" aria-hidden="true">${v.passed ? "✓" : "✕"}</span><div><strong>${escapeHtml(v.label)}</strong><small>${escapeHtml(v.detail)}</small></div></div>`).join("");
+  const tagsEl = document.querySelector("#manifestTags");
+  if (tagsEl) tagsEl.innerHTML = meta.tags.map((t) => `<span class="manifestTag">${escapeHtml(t)}</span>`).join("");
+  renderManifestReferences(meta);
+}
+
+function refreshManifestExplorer(options = {}) {
+  if (!manifestExplorerEl) return;
+  manifestExplorerPayload = buildPipelineManifestExplorerData();
+  const hasCurrent = options.preserveSelection && currentManifestId && findManifestEntry(currentManifestId);
+  if (!hasCurrent) currentManifestId = manifestExplorerPayload.defaultId;
+  renderManifestList();
+  selectManifest(currentManifestId);
+  const q = (manifestSearchInput?.value || "").toLowerCase();
+  if (q) {
+    manifestExplorerEl.querySelectorAll(".manifestItem").forEach((el) => {
+      const text = `${el.querySelector("strong")?.textContent || ""} ${el.dataset.manifestType || ""}`.toLowerCase();
+      el.classList.toggle("manifestItemHidden", !text.includes(q));
+    });
+  }
+}
+
+function initManifestExplorer() {
+  refreshManifestExplorer();
+  manifestListScroll?.addEventListener("click", (e) => {
+    const item = e.target.closest(".manifestItem[data-manifest-id]");
+    if (!item || e.target.closest(".manifestItemMenu")) return;
+    selectManifest(item.dataset.manifestId);
+  });
+  manifestListScroll?.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const item = e.target.closest(".manifestItem[data-manifest-id]");
+    if (item) selectManifest(item.dataset.manifestId);
+  });
+  manifestSearchInput?.addEventListener("input", () => {
+    const q = (manifestSearchInput.value || "").toLowerCase();
+    manifestExplorerEl?.querySelectorAll(".manifestItem").forEach((el) => {
+      const text = `${el.querySelector("strong")?.textContent || ""} ${el.dataset.manifestType || ""}`.toLowerCase();
+      el.classList.toggle("manifestItemHidden", Boolean(q && !text.includes(q)));
+    });
+  });
+  manifestExplorerEl?.querySelector(".manifestViewerTabs")?.addEventListener("click", (e) => {
+    const link = e.target.closest("a[data-manifest-view]");
+    if (!link) return;
+    e.preventDefault();
+    currentManifestView = link.dataset.manifestView || "json";
+    const item = findManifestEntry(currentManifestId);
+    if (item) renderManifestCodeView(item);
+  });
+  manifestReferenceTabs?.addEventListener("click", (e) => {
+    const link = e.target.closest("a[data-reference-kind]");
+    if (!link) return;
+    e.preventDefault();
+    currentManifestReferenceKind = link.dataset.referenceKind || "all";
+    const item = findManifestEntry(currentManifestId);
+    if (item) renderManifestReferences(item);
+  });
+  manifestReferenceMode?.addEventListener("change", () => {
+    const item = findManifestEntry(currentManifestId);
+    if (item) renderManifestReferences(item);
+  });
+  document.querySelector("#manifestFormatBtn")?.addEventListener("click", () => {
+    const item = findManifestEntry(currentManifestId);
+    if (item) renderManifestCodeView(item);
+  });
+  document.querySelector("#manifestValidateBtn")?.addEventListener("click", () => {
+    document.querySelectorAll("#manifestValidationList .mvCheck").forEach((c) => c.classList.add("passed"));
+  });
+}
+
+const PIPELINE_TAB_HASHES = {
+  overview: "pipeline-overview",
+  contracts: "dev-pipeline-studio",
+  "execution-flow": "pipeline-flow",
+  "manifest-explorer": "manifest-explorer",
+  evidence: "pipeline-evidence",
+  "best-practices": "pipeline-practices",
+};
+
+function pipelineTabFromHash(hash = location.hash) {
+  const clean = String(hash || "").replace(/^#/, "");
+  const match = Object.entries(PIPELINE_TAB_HASHES).find(([, value]) => value === clean);
+  return match ? match[0] : "contracts";
+}
+
+function setPipelineTab(tab, options = {}) {
+  currentPipelineTab = tab;
+  document.querySelectorAll(".pipelineTabs a[data-pipeline-tab]").forEach((a) => {
+    a.classList.toggle("active", a.dataset.pipelineTab === tab);
+  });
+  const isExplorer = tab === "manifest-explorer";
+  document.querySelectorAll('.sdHubRailLinks a[href="/dev-pipeline-studio#manifest-explorer"]').forEach((link) => {
+    link.classList.toggle("active", isExplorer);
+    if (isExplorer) {
+      link.setAttribute("aria-current", "page");
+    } else {
+      link.removeAttribute("aria-current");
+    }
+  });
+  document.querySelector("#dev-pipeline-studio > .pipelineHero")?.classList.toggle("hidden", isExplorer);
+  document.querySelector("#dev-pipeline-studio > .pipelineContextPanel")?.classList.toggle("hidden", isExplorer);
+  document.querySelector("#dev-pipeline-studio .pipelineWorkbench")?.classList.toggle("hidden", isExplorer);
+  manifestExplorerEl?.classList.toggle("hidden", !isExplorer);
+  if (options.updateHash) {
+    const hash = PIPELINE_TAB_HASHES[tab] || PIPELINE_TAB_HASHES.contracts;
+    history.replaceState(null, "", `/dev-pipeline-studio#${hash}`);
+  }
+  if (isExplorer && manifestExplorerEl && !manifestExplorerEl.dataset.initialized) {
+    manifestExplorerEl.dataset.initialized = "1";
+    initManifestExplorer();
+  } else if (isExplorer) {
+    refreshManifestExplorer({ preserveSelection: true });
   }
 }
 
@@ -2323,6 +3390,15 @@ function initPipelineStudioControls() {
       void savePipelineDraft("new");
     });
   }
+  const pipelineTabsNav = document.querySelector(".pipelineTabs");
+  if (pipelineTabsNav) {
+    pipelineTabsNav.addEventListener("click", (event) => {
+      const link = event.target.closest("a[data-pipeline-tab]");
+      if (!link) return;
+      event.preventDefault();
+      setPipelineTab(link.dataset.pipelineTab || "contracts", { updateHash: true });
+    });
+  }
   if (pipelineInspectorNav) {
     pipelineInspectorNav.addEventListener("click", (event) => {
       const link = event.target.closest("a[data-inspector-tab]");
@@ -2355,11 +3431,9 @@ function initPipelineStudioControls() {
       }
     });
   }
-  if (pipelineAddInputButton) {
-    pipelineAddInputButton.addEventListener("click", () => {
-      const current = collectPipelineRequiredInputs();
-      current.push({ id: `input-${current.length + 1}`, title: "New input", detail: "", kind: "text", input_type: "text", status: "missing", required: true, format: "plain text" });
-      renderPipelineRequiredInputsEditor(current);
+  if (pipelineSaveManifestButton) {
+    pipelineSaveManifestButton.addEventListener("click", () => {
+      void savePipelineSelectedManifest();
     });
   }
   if (pipelineInputSaveButton) {
@@ -2377,9 +3451,19 @@ function initPipelineStudioControls() {
       void savePipelineSelectedValidation();
     });
   }
+  if (pipelineValidationRunButton) {
+    pipelineValidationRunButton.addEventListener("click", () => {
+      void runPipelineSelectedValidation();
+    });
+  }
   if (pipelineIntegrationSaveButton) {
     pipelineIntegrationSaveButton.addEventListener("click", () => {
       void savePipelineSelectedIntegration();
+    });
+  }
+  if (pipelineEvidenceSaveButton) {
+    pipelineEvidenceSaveButton.addEventListener("click", () => {
+      void savePipelineSelectedEvidence();
     });
   }
   document.querySelectorAll("[data-integration-view]").forEach((button) => {
@@ -2454,14 +3538,27 @@ function initPipelineStudioControls() {
       if (step) importPipelineIntegrationContext([step]);
     });
   }
-  if (pipelineRequiredInputsEditor) {
-    pipelineRequiredInputsEditor.addEventListener("click", (event) => {
-      const removeButton = event.target.closest("[data-remove-input]");
-      if (!removeButton) return;
-      removeButton.closest("[data-input-row]")?.remove();
-    });
-  }
   document.querySelector(".pipelineStageGrid")?.addEventListener("click", (event) => {
+    const addButton = event.target.closest("[data-pipeline-add-element]");
+    if (addButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      void addPipelineStageElement(addButton.dataset.pipelineAddElement || "", addButton.dataset.pipelineAddStage || "");
+      return;
+    }
+    const actionButton = event.target.closest("[data-pipeline-card-action]");
+    if (actionButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      const type = actionButton.dataset.elementType || "";
+      const id = actionButton.dataset.elementId || "";
+      if (actionButton.dataset.pipelineCardAction === "delete") {
+        void deletePipelineStageElement(type, id);
+      } else {
+        openPipelineElementEditor(type, id);
+      }
+      return;
+    }
     const inputCard = event.target.closest(".pipelineCard.operatorInput");
     const inputId = inputCard?.dataset?.inputId || "";
     if (inputId) {
@@ -2478,6 +3575,12 @@ function initPipelineStudioControls() {
     const validatorId = validatorCard?.dataset?.validatorId || "";
     if (validatorId) {
       showPipelineValidationInspector(validatorId);
+      return;
+    }
+    const evidenceCard = event.target.closest(".pipelineCard.evidence");
+    const evidenceId = evidenceCard?.dataset?.evidenceId || "";
+    if (evidenceId) {
+      showPipelineEvidenceInspector(evidenceId);
       return;
     }
     const card = event.target.closest(".pipelineCard.worker");
@@ -2508,6 +3611,13 @@ function initPipelineStudioControls() {
     if (validatorId) {
       event.preventDefault();
       showPipelineValidationInspector(validatorId);
+      return;
+    }
+    const evidenceCard = event.target.closest(".pipelineCard.evidence");
+    const evidenceId = evidenceCard?.dataset?.evidenceId || "";
+    if (evidenceId) {
+      event.preventDefault();
+      showPipelineEvidenceInspector(evidenceId);
       return;
     }
     const card = event.target.closest(".pipelineCard.worker");
@@ -3505,8 +4615,9 @@ function showDevPipelineStudio() {
   initPipelineStudioControls();
   if (pipelineControlsAlreadyReady) void loadPipelineStudioState();
   const hash = location.hash;
+  setPipelineTab(pipelineTabFromHash(hash));
   history.replaceState(null, "", `/dev-pipeline-studio${hash}`);
-  if (hash) {
+  if (hash && pipelineTabFromHash(hash) !== "manifest-explorer") {
     window.requestAnimationFrame(() => {
       const target = document.querySelector(hash);
       if (target) target.scrollIntoView({ block: "start" });
@@ -4168,7 +5279,13 @@ window.addEventListener("popstate", () => {
   }
 });
 
-window.addEventListener("hashchange", () => syncDocsHashNavigation({ scrollToHash: true }));
+window.addEventListener("hashchange", () => {
+  if (location.pathname === "/dev-pipeline-studio") {
+    setPipelineTab(pipelineTabFromHash(location.hash));
+    return;
+  }
+  syncDocsHashNavigation({ scrollToHash: true });
+});
 
 async function boot() {
   syncStateFromLocation();

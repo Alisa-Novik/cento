@@ -15,7 +15,9 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 STATE_DIR = Path.home() / ".local" / "state" / "cento"
 DEFAULT_TARGETS = {"builder": 4, "validator": 3, "small": 3, "coordinator": 1}
+DEFAULT_AGENT_RUNTIME = os.environ.get("CENTO_AGENT_RUNTIME", "claude-code")
 DEFAULT_CODEX_MODEL = os.environ.get("CENTO_POOL_CODEX_MODEL", "gpt-5.4-mini")
+DEFAULT_CLAUDE_MODEL = os.environ.get("CENTO_POOL_CLAUDE_MODEL", "claude-sonnet-4-6")
 ACTIVE_STATUSES = {"planned", "launching", "running"}
 ENDED_STATUSES = {"dry_run", "succeeded", "failed", "blocked", "stale", "exited_unknown"}
 LANES = ("validator", "small", "builder", "coordinator")
@@ -474,20 +476,20 @@ def dispatch(issue: dict[str, Any], lane: str, *, model_override: str | None = N
     if lane == "small":
         role = "builder"
         agent = "small-worker-pool"
-        runtime = "codex"
     elif lane == "validator":
         role = "validator"
         agent = "validator-pool"
-        runtime = "codex"
     elif lane == "coordinator":
         role = "coordinator"
         agent = "coordinator-pool"
-        runtime = "codex"
     else:
         role = "builder"
         agent = "builder-pool"
-        runtime = "codex"
-    model = model_override or DEFAULT_CHEAP_VALIDATOR_MODEL
+    runtime = DEFAULT_AGENT_RUNTIME
+    if runtime == "claude-code":
+        model = os.environ.get("CENTO_POOL_CLAUDE_MODEL") or DEFAULT_CLAUDE_MODEL
+    else:
+        model = model_override or DEFAULT_CHEAP_VALIDATOR_MODEL
     command = [
         "./scripts/cento.sh",
         "agent-work",
@@ -502,7 +504,7 @@ def dispatch(issue: dict[str, Any], lane: str, *, model_override: str | None = N
         "--runtime",
         runtime,
     ]
-    if runtime == "codex" and model:
+    if model:
         command.extend(["--model", model])
     result = run(command, timeout=90)
     return {

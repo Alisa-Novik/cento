@@ -71,6 +71,16 @@ def format_overview() -> str:
         lines.extend(["", "Notes:"])
         for note in notes:
             lines.append(f"  - {note}")
+    checklist = docs.get("checklist", [])
+    if checklist:
+        lines.extend(["", "Checklist:"])
+        for item in checklist:
+            if isinstance(item, dict):
+                name = item.get("name", "")
+                summary = item.get("summary", "")
+                lines.append(f"  - {name}: {summary}" if name else f"  - {summary}")
+            else:
+                lines.append(f"  - {item}")
     lines.extend(["", "Built-ins:"])
     for command in docs.get("commands", []):
         lines.append(f"  {command.get('usage', '')}  {command.get('summary', '')}")

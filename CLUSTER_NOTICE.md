@@ -1,8 +1,8 @@
-# Cluster Notice: Cheap Spark Worker Pool
+# Cluster Notice: Claude Worker Pool
 
-Updated: 2026-04-30
+Updated: 2026-05-01
 
-Cheap Spark/Codex workers are now an explicit coordination option.
+Claude Code workers are the active coordination option while Codex weekly limit is reserved for interactive coordination.
 
 Use this when there is queued work that is simple, bounded, validator-like, docs/evidence-oriented, or otherwise safe to delegate while the main agent keeps working.
 
@@ -15,10 +15,10 @@ cento agent-work dispatch-pool --limit 3
 cento agent-work dispatch-pool --limit 5 --json
 ```
 
-Defaults:
+Current defaults:
 
-- runtime: `codex`
-- model: `gpt-5.3-codex-spark`
+- runtime: `claude-code`
+- model: `claude-sonnet-4-6`
 - mode: plan-only
 - skips epics and non-dispatchable nodes unless explicitly overridden
 

@@ -1,0 +1,71 @@
+{
+  "schema_version": "cento.build.v1",
+  "id": "build_fixture_docs_page_001",
+  "task": {
+    "title": "Fixture docs page patch",
+    "description": "Convert the fixture docs page into a production-style operator page."
+  },
+  "mode": "fast",
+  "mode_policy": {
+    "time_budget_minutes": 5,
+    "validation_tier": "smoke",
+    "max_workers": 0,
+    "max_files_changed": 3,
+    "repair_attempts": 0,
+    "risk_acceptance": "medium"
+  },
+  "source": {
+    "base_ref": "HEAD",
+    "created_at": "2026-05-01T00:00:00Z"
+  },
+  "scope": {
+    "routes": [
+      "/fixture"
+    ],
+    "read_paths": [
+      "tests/fixtures/cento_build/**"
+    ],
+    "write_paths": [
+      "tests/fixtures/cento_build/app_page.html"
+    ],
+    "protected_paths": [
+      ".env",
+      ".env.*",
+      "package-lock.json",
+      "pnpm-lock.yaml",
+      "yarn.lock"
+    ]
+  },
+  "policies": {
+    "ask_policy": "blockers_only",
+    "dirty_repo_policy": "protect_unrelated",
+    "commit_policy": "none",
+    "push_policy": "none",
+    "allow_unowned_changes": false,
+    "allow_protected_changes": false,
+    "allow_dirty_owned": false
+  },
+  "validation": {
+    "tier": "smoke",
+    "commands": []
+  },
+  "workers": [
+    {
+      "id": "builder_1",
+      "type": "local",
+      "runtime": "codex",
+      "node": null,
+      "role": "builder",
+      "write_paths": [
+        "tests/fixtures/cento_build/app_page.html"
+      ],
+      "artifact_dir": ".cento/builds/build_fixture_docs_page_001/workers/builder_1"
+    }
+  ],
+  "acceptance": [
+    "Only owned paths are modified.",
+    "Patch applies cleanly.",
+    "Integration receipt is written.",
+    "Validation receipt is written."
+  ]
+}

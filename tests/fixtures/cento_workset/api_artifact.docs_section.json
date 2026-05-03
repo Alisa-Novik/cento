@@ -1,0 +1,32 @@
+{
+  "schema_version": "cento.api_worker_artifact.v1",
+  "worker_id": "section_hero",
+  "task_id": "hero",
+  "status": "completed",
+  "artifact_type": "docs_section",
+  "owned_paths": [
+    "tests/fixtures/cento_workset/generated/hero.json"
+  ],
+  "content": {
+    "schema_version": "docs_section.v1",
+    "title": "Kanji a Day",
+    "summary": "One kanji per day with stroke order, meaning, and progress tracking.",
+    "badges": [
+      "Development",
+      "v0.3.0"
+    ],
+    "body": "A compact hero section for the Kanji a Day docs page.",
+    "acceptance_criteria": [
+      "Shows the product name.",
+      "States the daily kanji learning loop."
+    ],
+    "owned_path_contents": [
+      {
+        "path": "tests/fixtures/cento_workset/generated/hero.json",
+        "content": "{\n  \"title\": \"Kanji a Day\",\n  \"summary\": \"One kanji per day with stroke order, meaning, and progress tracking.\",\n  \"badges\": [\"Development\", \"v0.3.0\"]\n}\n"
+      }
+    ]
+  },
+  "cost_usd_estimate": 0.08,
+  "errors": []
+}

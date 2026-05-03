@@ -105,6 +105,12 @@ The bias is toward low-dependency tooling that works well from a terminal and ca
   Generate `docs/tool-index.md` from the central registry.
 - `factory.py`
   Create no-model Factory runs with intake artifacts, validated `factory-plan.json`, story manifests, validation manifests, queue ledgers, owned-path lease simulation, worktree metadata, prompt bundles, patch collection, integration dry-runs, safe factory integration branches, rollback metadata, release candidates, release status, and static evidence hubs.
+- `cento_build.py`
+  Create manifest-owned build packages, run one local fixture or runtime-profile command builder, check worker artifacts, synthesize patch bundles, dry-run integration in an isolated worktree, apply accepted bundles, and write validation/integration/apply/evidence receipts.
+- `cento_runtime.py`
+  Inspect and validate `.cento/runtimes.yaml` profiles for hardened local builder execution.
+- `cento_workset.py`
+  Run small exclusive-path local worksets with parallel worker patch collection, structured API artifact workers, simple dependency gates, budget caps, and sequential integration/apply.
 - `storage.py`
   Catalog Cento run artifacts into SQLite, classify evidence/logs/screenshots/patches/manifests, plan no-delete lifecycle actions, verify hashes, and render storage reports before high-fanout Factory runs create artifact pressure.
 
@@ -174,6 +180,17 @@ make cento ARGS="factory release-candidate factory-integration-e2e"
 make cento ARGS="factory sync-taskstream factory-integration-e2e --dry-run"
 make cento ARGS="factory release workspace/runs/factory/factory-planning-e2e --json"
 make cento ARGS="factory render-hub workspace/runs/factory/factory-planning-e2e"
+make cento ARGS='run fast --task "Patch docs page title" --write apps/watch/KanjiADay/Preview/index.html --route /docs/apps/kanji-a-day'
+make cento ARGS='run fast --task "Patch docs page title" --write apps/watch/KanjiADay/Preview/index.html --route /docs/apps/kanji-a-day --local-builder fixture --fixture-case valid --apply --validation smoke --commit none'
+make cento ARGS='runtime check codex-fast'
+make cento ARGS='run fast --task "Patch docs page title" --write apps/watch/KanjiADay/Preview/index.html --route /docs/apps/kanji-a-day --runtime-profile codex-fast --apply --validation smoke --commit none'
+make cento ARGS="workset check tests/fixtures/cento_workset/workset.valid.json"
+make cento ARGS="workset run tests/fixtures/cento_workset/workset.valid.json --max-workers 2 --runtime-profile fixture-valid --apply sequential --validation smoke"
+make cento ARGS="workset execute tests/fixtures/cento_workset/workset.execute.fixture.json --max-parallel 3 --runtime fixture --integrate sequential --validation smoke"
+make cento ARGS="workset execute .cento/worksets/docs_page.json --max-parallel 6 --runtime api-openai --budget-usd 3 --max-budget-usd 5 --integrate sequential --apply --validation smoke"
+make cento ARGS="build artifact check tests/fixtures/cento_build/worker_artifact.valid.json"
+make cento ARGS="build bundle synthesize --manifest tests/fixtures/cento_build/manifest.valid.json --patch tests/fixtures/cento_build/patch.valid.diff"
+make cento ARGS="build integrate tests/fixtures/cento_build/manifest.valid.json --bundle .cento/builds/build_fixture_docs_page_001/integration/patch_bundle.json --dry-run"
 make cento ARGS="storage scan --root workspace/runs --db workspace/storage/catalog.sqlite"
 make cento ARGS="storage plan --dry-run"
 make cento ARGS="storage query --largest --limit 20"

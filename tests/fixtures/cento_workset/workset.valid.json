@@ -1,0 +1,38 @@
+{
+  "schema_version": "cento.workset.v1",
+  "id": "workset_fixture_parallel_001",
+  "mode": "fast",
+  "max_parallel": 2,
+  "routes": [
+    "/fixture"
+  ],
+  "tasks": [
+    {
+      "id": "cluster_notice",
+      "task": "Patch cluster notice fixture copy",
+      "write_paths": [
+        "CLUSTER_NOTICE.md"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "tui_standard",
+      "task": "Patch TUI standard fixture copy",
+      "write_paths": [
+        "standards/tui.md"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "mcp_standard",
+      "task": "Patch MCP standard fixture copy after prerequisites",
+      "write_paths": [
+        "standards/mcp.md"
+      ],
+      "depends_on": [
+        "cluster_notice",
+        "tui_standard"
+      ]
+    }
+  ]
+}

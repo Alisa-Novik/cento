@@ -1,0 +1,12 @@
+diff --git a/tests/fixtures/cento_build/app_page.html b/tests/fixtures/cento_build/app_page.html
+--- a/tests/fixtures/cento_build/app_page.html
++++ b/tests/fixtures/cento_build/app_page.html
+@@ -6,7 +6,7 @@
+   <body>
+     <main>
+       <h1>Fixture App</h1>
+-      <p>Draft docs page.</p>
++      <p>Production-style operator page.</p>
+     </main>
+   </body>
+ </html>

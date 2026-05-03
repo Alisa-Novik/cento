@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cento Taskstream Evidence v1",
+  "type": "object",
+  "required": ["schema_version", "type", "build_id", "mode", "manifest", "worker_artifacts", "patch_bundles", "status", "changed_files", "written_at"],
+  "properties": {
+    "schema_version": {"const": "cento.taskstream_evidence.v1"},
+    "type": {"const": "cento_build_evidence"},
+    "build_id": {"type": "string"},
+    "task_id": {"type": ["string", "null"]},
+    "mode": {"type": ["string", "null"]},
+    "manifest": {"type": "string"},
+    "worker_artifacts": {"type": "array", "items": {"type": "string"}},
+    "patch_bundles": {"type": "array", "items": {"type": "string"}},
+    "integration_receipt": {"type": ["string", "null"]},
+    "validation_receipt": {"type": ["string", "null"]},
+    "apply_receipt": {"type": ["string", "null"]},
+    "events": {"type": ["string", "null"]},
+    "changed_files": {"type": "array", "items": {"type": "string"}},
+    "status": {"type": "string"},
+    "risk_overrides": {"type": "array", "items": {"type": "string"}},
+    "screenshots": {"type": "array", "items": {"type": "string"}},
+    "written_at": {"type": "string"}
+  }
+}

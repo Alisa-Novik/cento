@@ -1,0 +1,41 @@
+runtimes:
+  codex-fast:
+    type: command
+    argv:
+      - codex
+      - exec
+      - --prompt-file
+      - "{prompt}"
+    timeout_seconds: 180
+    cwd: "{worktree}"
+    env_allowlist:
+      - PATH
+      - HOME
+      - LANG
+      - LC_ALL
+      - TERM
+    max_changed_files: 3
+    max_patch_lines: 600
+    allow_network: false
+
+  fixture-valid:
+    type: fixture
+    fixture_case: valid
+    timeout_seconds: 180
+    max_changed_files: 3
+    max_patch_lines: 600
+
+  python-fixture:
+    type: command
+    argv:
+      - python3
+      - -c
+      - "import json, os; from pathlib import Path; p=Path(json.loads(os.environ['CENTO_ALLOWED_WRITE_PATHS'])[0]); s=p.read_text(); p.write_text(s.replace('are now', 'remain', 1) if 'are now' in s else s.rstrip() + '\\n<!-- cento runtime profile touched -->\\n')"
+    timeout_seconds: 180
+    cwd: "{worktree}"
+    env_allowlist:
+      - PATH
+      - HOME
+    max_changed_files: 3
+    max_patch_lines: 600
+    allow_network: false

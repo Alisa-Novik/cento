@@ -8,11 +8,33 @@
     "Use `cento docs` or `cento interactive` when you need the built-in command surface explained from the canonical JSON source.",
     "`cento install terminal` installs the managed Zsh/Oh My Zsh completion init plus the Cento prompt segment."
   ],
+  "checklist": [
+    {
+      "name": "Discover",
+      "summary": "Start with `cento docs`, `cento tools`, and a repo search before adding a new command or workflow."
+    },
+    {
+      "name": "Task",
+      "summary": "For Cento feature, automation, MCP, cluster, mobile, UI, or command behavior changes, create an `agent-work` story manifest and task before implementation."
+    },
+    {
+      "name": "Align",
+      "summary": "Keep `data/cento-cli.json`, affected docs in `docs/`, and any generated indexes aligned with the actual command surface."
+    },
+    {
+      "name": "Validate",
+      "summary": "Run the narrow deterministic checks for the files changed, including JSON validation for docs sources."
+    },
+    {
+      "name": "Evidence",
+      "summary": "Leave validation evidence in the relevant `workspace/runs/agent-work/<issue-id>/` bundle and update Taskstream status."
+    }
+  ],
   "routing": [
     {
       "name": "tool-routing",
       "usage": "cento TOOL [args...]",
-      "summary": "Run a registered tool directly by id, including `cento factory` for plan, dispatch, and Safe Integrator artifacts."
+      "summary": "Run a registered tool directly by id, including `cento build` for manifest-owned local worker patch contracts and `cento factory` for plan, dispatch, and Safe Integrator artifacts."
     },
     {
       "name": "alias-routing",
@@ -150,8 +172,8 @@
     },
     {
       "name": "run",
-      "summary": "Run a registered tool by id, or create a fast/standard/thorough execution contract.",
-      "usage": "cento run TOOL [args...] | cento run fast|standard|thorough --task TEXT [--write PATH]",
+      "summary": "Run a registered tool by id, or create a fast/standard/thorough execution contract with optional one-local-builder patch collection for owned-path tasks.",
+      "usage": "cento run TOOL [args...] | cento run fast|standard|thorough --task TEXT [--write PATH] [--local-builder [RUNTIME] --apply]",
       "flags": [
         {
           "name": "--mode fast|standard|thorough",
@@ -167,6 +189,31 @@
           "name": "--write PATH",
           "summary": "Owned writable path for the generated contract. Repeatable.",
           "usage": "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html"
+        },
+        {
+          "name": "--local-builder [RUNTIME]",
+          "summary": "Run one local builder runtime, defaulting to the deterministic fixture runtime when no value is supplied.",
+          "usage": "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html --local-builder fixture"
+        },
+        {
+          "name": "--fixture-case valid|unowned|protected|delete|lockfile|binary",
+          "summary": "Select the deterministic fixture worker case.",
+          "usage": "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html --local-builder fixture --fixture-case valid"
+        },
+        {
+          "name": "--builder-command TEXT",
+          "summary": "Unsafe raw command template used when --local-builder command is selected; prefer --runtime-profile.",
+          "usage": "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html --local-builder command --builder-command \"codex exec --prompt-file {prompt}\" --allow-unsafe-command"
+        },
+        {
+          "name": "--runtime-profile NAME",
+          "summary": "Run one local builder from a named profile in .cento/runtimes.yaml.",
+          "usage": "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html --runtime-profile codex-fast --apply"
+        },
+        {
+          "name": "--apply",
+          "summary": "Apply the accepted local-builder patch bundle to the operator worktree.",
+          "usage": "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html --local-builder fixture --fixture-case valid --apply"
         }
       ],
       "examples": [
@@ -174,7 +221,73 @@
         "cento run crm docs",
         "cento run factory status workspace/runs/factory/factory-planning-e2e",
         "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html --route /docs/foo",
+        "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html --route /docs/foo --runtime-profile codex-fast --apply --validation smoke --commit none",
+        "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html --route /docs/foo --local-builder fixture --fixture-case valid --apply --validation smoke --commit none",
         "cento run --mode standard --task \"Polish Kanji docs\" --write templates/agent-work-app/index.html --validation focused"
+      ],
+      "details": [
+        "`cento run fast --task ... --write PATH` creates the execution contract and an implicit `.cento/builds/<id>/` manifest and Builder prompt. Without `--local-builder` or `--runtime-profile`, the integration receipt remains pending. With `--runtime-profile codex-fast --apply` or `--local-builder fixture --fixture-case valid --apply`, Cento launches one isolated local builder, collects a patch bundle, dry-runs integration, applies the accepted patch, runs smoke validation, and writes Taskstream evidence."
+      ]
+    },
+    {
+      "name": "build",
+      "summary": "Registered tool route for manifest-owned local build packages, local worker patch collection, worker artifact checks, patch bundles, dry-run integration, and safe apply.",
+      "usage": "cento build <init|check|prompt|worker|artifact|bundle|integrate|apply|receipt> [args...]",
+      "flags": [],
+      "examples": [
+        "cento build init --task \"Fixture docs page patch\" --mode fast --write tests/fixtures/cento_build/app_page.html --route /fixture",
+        "cento build check tests/fixtures/cento_build/manifest.valid.json",
+        "cento build prompt tests/fixtures/cento_build/manifest.valid.json",
+        "cento build artifact check tests/fixtures/cento_build/worker_artifact.valid.json",
+        "cento build worker run .cento/builds/<id>/manifest.json --worker builder_1 --runtime fixture --fixture-case valid --worktree --timeout 180",
+        "cento build worker run .cento/builds/<id>/manifest.json --worker builder_1 --runtime-profile codex-fast --worktree",
+        "cento runtime check codex-fast",
+        "cento build bundle synthesize --manifest tests/fixtures/cento_build/manifest.valid.json --patch tests/fixtures/cento_build/patch.valid.diff",
+        "cento build integrate .cento/builds/<id>/manifest.json --bundle .cento/builds/<id>/workers/builder_1/patch_bundle.json --worktree --dry-run",
+        "cento build apply .cento/builds/<id>/manifest.json --bundle .cento/builds/<id>/workers/builder_1/patch_bundle.json --from-receipt .cento/builds/<id>/integration_receipt.json",
+        "cento build receipt .cento/builds/build_fixture_docs_page_001"
+      ],
+      "details": [
+        "This command is routed through data/tools.json and scripts/cento_build.py.",
+        "Build v1.2 is local-only and deterministic. It creates manifests and Builder prompts, can run one fixture/local builder in an isolated worktree, checks worker artifacts, synthesizes patch bundles, rejects raw patch integration outside dev mode, rejects dirty owned paths by default, rejects unowned/protected/hostile patch paths, supports hardened runtime profiles, dry-runs in an isolated worktree, applies only from accepted integration receipts, writes validation/integration/apply/evidence receipts, and leaves cloud workers, API calls, schedulers, PRs, and automatic model patch generation for later Factory layers."
+      ]
+    },
+    {
+      "name": "runtime",
+      "summary": "Registered tool route for local builder runtime profile inspection.",
+      "usage": "cento runtime <list|check> [args...]",
+      "flags": [],
+      "examples": [
+        "cento runtime list",
+        "cento runtime check codex-fast",
+        "cento runtime check codex-fast --json",
+        "cento runtime check python-fixture --require-executable"
+      ],
+      "details": [
+        "Runtime profiles live in `.cento/runtimes.yaml` and define argv-array command runtimes or deterministic fixture profiles.",
+        "`cento runtime check` validates the profile shape and reports executable availability without launching a worker."
+      ]
+    },
+    {
+      "name": "workset",
+      "summary": "Registered tool route for local N-worker worksets and structured API worker artifacts.",
+      "usage": "cento workset <check|run|execute|materialize-artifact> [args...]",
+      "flags": [],
+      "examples": [
+        "cento workset check tests/fixtures/cento_workset/workset.valid.json",
+        "cento workset check tests/fixtures/cento_workset/workset.overlap.json",
+        "cento workset run tests/fixtures/cento_workset/workset.valid.json --max-workers 2 --runtime-profile fixture-valid --apply sequential --validation smoke",
+        "cento workset run workset.json --max-workers 3 --runtime-profile codex-fast --apply sequential --validation smoke",
+        "cento workset execute tests/fixtures/cento_workset/workset.execute.fixture.json --max-parallel 3 --runtime fixture --integrate sequential --validation smoke",
+        "cento workset execute .cento/worksets/docs_page.json --max-parallel 6 --runtime api-openai --budget-usd 3 --max-budget-usd 5 --integrate sequential --apply --validation smoke",
+        "cento workset materialize-artifact .cento/worksets/<run_id>/workers/<worker_id>/artifact.json"
+      ],
+      "details": [
+        "Workset v1 requires exclusive write_paths for each task. No shared files, overlapping paths, or glob write paths are accepted.",
+        "Workers run in parallel only for patch or structured artifact collection. Integration and apply are always sequential.",
+        "OpenAI API workers use Responses API structured outputs and never mutate repo files directly.",
+        "API worker budgets have a target and hard max; budget-blocked workers still write cost receipts.",
+        "Simple depends_on gates are supported; a task dispatches only after dependencies are completed and applied."
       ]
     },
     {

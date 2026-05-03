@@ -9,15 +9,15 @@ Runtime registry: `data/agent-runtimes.json`
 - `codex`
   - Provider: OpenAI
   - Default model: `gpt-5.3-codex-spark`
-  - Weight: `75`
-  - Role: preferred majority runtime
+  - Weight: `0`
+  - Role: temporarily disabled while Codex weekly limit is reserved for interactive coordination
 
 - `claude-code`
   - Provider: Anthropic
   - Default model: `claude-sonnet-4-6`
   - Plan: personal Pro
-  - Weight: `25`
-  - Role: secondary runtime for roughly 20-30% of automatic task dispatches
+  - Weight: `100`
+  - Role: temporary Claude-only runtime for automatic task dispatches
 
 ## Routing
 
@@ -27,10 +27,9 @@ Automatic routing is deterministic and weighted by issue id, role, and package.
 python3 scripts/agent_work.py runtimes --sample 1000
 ```
 
-Expected result should stay near:
+Expected result while Claude-only mode is active:
 
-- Codex: about 70-80%
-- Claude Code: about 20-30%
+- Claude Code: `100%`
 
 ## Dispatch Examples
 
@@ -58,7 +57,7 @@ Spark worker pool planning:
 python3 scripts/agent_work.py dispatch-pool --limit 3
 ```
 
-`dispatch-pool` defaults to `runtime=codex` and `model=gpt-5.3-codex-spark`. It prints planned dispatch commands without mutating issues. Add `--execute` only when the operator wants those cheap workers started.
+`dispatch-pool` honors `CENTO_AGENT_RUNTIME` and currently defaults to `claude-code`. It prints planned dispatch commands without mutating issues. Add `--execute` only when the operator wants workers started.
 
 ## Overrides
 
@@ -69,4 +68,4 @@ python3 scripts/agent_work.py dispatch-pool --limit 3
 
 ## Cost Policy
 
-Codex remains the primary runtime. Claude Code is registered at 25% because its budget is materially lower.
+Claude-only mode is temporary. Restore the Codex weights when the weekly limit is no longer constrained.

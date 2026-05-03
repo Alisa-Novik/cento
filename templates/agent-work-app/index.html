@@ -86,8 +86,8 @@
             <section class="sdHubRailLinks" aria-label="Software Delivery Hub links">
               <h2>Surfaces</h2>
               <a href="/software-delivery-hub" data-sd-hub-route="software-delivery"><span class="navIcon">⌁</span>Overview</a>
-              <a href="/dev-pipeline-studio#hub-artifacts"><span class="navIcon">▧</span>Artifacts</a>
-              <a href="/dev-pipeline-studio#hub-evidence"><span class="navIcon">▥</span>Evidence</a>
+              <a href="/dev-pipeline-studio#manifest-explorer"><span class="navIcon">▦</span>Manifest Explorer</a>
+              <a href="/dev-pipeline-studio#pipeline-evidence"><span class="navIcon">▥</span>Evidence</a>
               <a href="/docs#factory"><span class="navIcon">▧</span>Factory Docs</a>
             </section>
           </nav>
@@ -246,7 +246,7 @@
                   <a href="/dev-pipeline-studio"><span>▣</span>Pipeline docs-app-page-kanji deployed to production<time>2m ago</time></a>
                   <a href="/factory"><span>▧</span>Factory run factory-autopilot-runtime-v1 completed<time>5m ago</time></a>
                   <a href="/issues/1000120"><span>▤</span>Issue #1000120 assigned to codex<time>10m ago</time></a>
-                  <a href="/dev-pipeline-studio#hub-evidence"><span>▥</span>Evidence bundle generated for release 2026.05.01<time>15m ago</time></a>
+                  <a href="/dev-pipeline-studio#pipeline-evidence"><span>▥</span>Evidence bundle generated for release 2026.05.01<time>15m ago</time></a>
                 </section>
                 <section class="hubPanel hubHealthList" aria-labelledby="health-title">
                   <h2 id="health-title">System Health</h2>
@@ -265,8 +265,8 @@
                   <button type="button"><span>＋</span><strong>New Issue</strong><small>Create a new task or request</small></button>
                   <a href="/factory"><span>▣</span><strong>Start Factory Run</strong><small>Execute integration or release</small></a>
                   <a href="/dev-pipeline-studio"><span>⌘</span><strong>View Pipelines</strong><small>Open Dev Pipeline Studio</small></a>
-                  <a href="/dev-pipeline-studio#hub-artifacts"><span>▧</span><strong>Browse Artifacts</strong><small>Search and view artifacts</small></a>
-                  <a href="/dev-pipeline-studio#hub-settings"><span>⚙</span><strong>System Settings</strong><small>Configure platform settings</small></a>
+                  <a href="/dev-pipeline-studio#manifest-explorer"><span>▧</span><strong>Browse Manifests</strong><small>Search and view pipeline manifests</small></a>
+                  <a href="/dev-pipeline-studio"><span>⚙</span><strong>Pipeline Settings</strong><small>Configure studio defaults</small></a>
                 </div>
               </section>
               <section class="hubPanel">
@@ -292,9 +292,8 @@
                   <a href="/factory"><span class="navIcon">▣</span>Factory</a>
                   <a href="/issues"><span class="navIcon">▤</span>Taskstream</a>
                   <a href="/dev-pipeline-studio"><span class="navIcon">⌘</span>Dev Pipeline Studio</a>
-                  <a href="/dev-pipeline-studio#hub-artifacts"><span class="navIcon">▧</span>Artifacts</a>
-                  <a href="/dev-pipeline-studio#hub-evidence"><span class="navIcon">▥</span>Evidence</a>
-                  <a href="/dev-pipeline-studio#hub-settings"><span class="navIcon">⚙</span>Settings</a>
+                  <a href="/dev-pipeline-studio#pipeline-evidence"><span class="navIcon">▥</span>Evidence</a>
+                  <a href="/dev-pipeline-studio"><span class="navIcon">⚙</span>Settings</a>
                 </section>
                 <section>
                   <h2>Cluster</h2>
@@ -363,6 +362,7 @@
                     <a href="/issues"><span>▤</span>Taskstream</a>
                     <a href="/factory"><span>▣</span>Factory</a>
                     <a class="active" href="/dev-pipeline-studio" aria-current="page"><span>⌘</span>Dev Pipeline Studio</a>
+                    <a href="/dev-pipeline-studio#manifest-explorer"><span>▦</span>Manifest Explorer</a>
                   </nav>
                 </header>
                 <header class="pipelineHero">
@@ -393,7 +393,7 @@
                     <label>
                       <span>Template</span>
                       <select id="pipelineTemplateSelect">
-                        <option value="generic-task">Generic easy-medium task</option>
+                        <option value="generic-task">Automation blueprint task</option>
                         <option value="doc-page">Doc page creation</option>
                         <option value="dashboard-module">Dashboard module</option>
                         <option value="release-page">Release evidence page</option>
@@ -402,7 +402,7 @@
                     <label>
                       <span>Target surface</span>
                       <select id="pipelineSurfaceSelect" aria-label="Target surface for selected project">
-                        <option value="generic-task">Cento code task</option>
+                        <option value="generic-task">Cento repo task</option>
                         <option value="docs-app-page">Docs app page</option>
                         <option value="console-doc-page">Console documentation page</option>
                         <option value="crm-page">CRM app page</option>
@@ -416,9 +416,9 @@
                   </div>
                   <div class="pipelineTemplateLibrary" aria-label="Reusable pipeline templates">
                     <button class="pipelineTemplateCard active" type="button" data-template-card="generic-task" aria-pressed="true">
-                      <strong>Generic easy-medium task</strong>
-                      <span>Clarify, inspect, implement, validate, and hand off a bounded easy-to-medium change.</span>
-                      <small>Default bounded task pipeline</small>
+                      <strong>Automation blueprint task</strong>
+                      <span>Bounded programming task contracts with deterministic discovery, Factory execution, validation, and evidence.</span>
+                      <small>Generic non-UI easy/medium blueprint</small>
                     </button>
                     <button class="pipelineTemplateCard" type="button" data-template-card="doc-page" aria-pressed="false">
                       <strong>Doc page creation</strong>
@@ -436,7 +436,11 @@
                       <small>Evidence and compliance template</small>
                     </button>
                   </div>
-                  <section class="pipelineEditPanel" aria-label="Pipeline definition editor">
+                  <details class="pipelineEditPanel" aria-label="Pipeline definition editor">
+                    <summary>
+                      <span>Pipeline details</span>
+                      <small id="pipelineSaveStatus">Loaded from pipeline manifest</small>
+                    </summary>
                     <div class="pipelineEditorGrid">
                       <label><span>Project name</span><input id="pipelineProjectLabelInput" type="text" autocomplete="off"></label>
                       <label><span>Template name</span><input id="pipelineTemplateLabelInput" type="text" autocomplete="off"></label>
@@ -447,25 +451,17 @@
                       <label><span>Budget cap</span><input id="pipelineBudgetCapInput" type="number" min="0" step="0.01"></label>
                       <label class="wide"><span>Read paths</span><textarea id="pipelineReadPathsInput" spellcheck="false"></textarea></label>
                     </div>
-                    <section class="pipelineRequiredInputsPanel" aria-label="Required operator inputs">
-                      <header>
-                        <strong>Required Operator Inputs</strong>
-                        <button id="pipelineAddInputButton" type="button">Add input</button>
-                      </header>
-                      <div id="pipelineRequiredInputsEditor" class="pipelineRequiredInputsEditor"></div>
-                    </section>
-                    <span id="pipelineSaveStatus">Loaded from pipeline manifest</span>
-                  </section>
+                  </details>
                 </section>
 
                 <nav class="pipelineTabs" aria-label="Development pipeline views">
-                  <a href="#pipeline-overview">Overview</a>
-                  <a class="active" href="#dev-pipeline-studio">Contracts Visualization</a>
-                  <a href="#pipeline-flow">Execution Flow</a>
-                  <a href="#pipeline-manifests">Manifest Explorer</a>
-	                  <a href="#pipeline-evidence">Evidence</a>
-	                  <a href="#pipeline-practices">Best Practices</a>
-	                </nav>
+                  <a href="#pipeline-overview" data-pipeline-tab="overview">Overview</a>
+                  <a class="active" href="#dev-pipeline-studio" data-pipeline-tab="contracts">Contracts Visualization</a>
+                  <a href="#pipeline-flow" data-pipeline-tab="execution-flow">Execution Flow</a>
+                  <a href="#manifest-explorer" data-pipeline-tab="manifest-explorer">Manifest Explorer</a>
+                  <a href="#pipeline-evidence" data-pipeline-tab="evidence">Evidence</a>
+                  <a href="#pipeline-practices" data-pipeline-tab="best-practices">Best Practices</a>
+                </nav>
 
                 <div class="pipelineWorkbench">
                   <section id="pipeline-stages" class="pipelineCanvas" aria-label="Parallelized execution contracts visualization">
@@ -487,26 +483,25 @@
                     </header>
 
                     <div class="pipelineStageGrid">
-                      <article class="pipelineStage stageInput">
-                        <header><b>1</b><div><strong>1. Input</strong><span data-pipeline-field="inputCount">2 artifacts</span></div></header>
+                      <article class="pipelineStage stageInput" data-pipeline-stage="input">
+                        <header><b>1</b><div><strong>1. Input Contract</strong><span data-pipeline-field="inputCount">2 artifacts</span></div><button class="pipelineStageAddButton" type="button" data-pipeline-add-element="input" data-pipeline-add-stage="input" aria-label="Add input contract" title="Add input contract"></button></header>
                         <div class="pipelineCard manifest"><i>▧</i><strong data-pipeline-input-title="0">Pipeline Manifest</strong><span data-pipeline-input-file="0">pipeline_manifest.json</span><em data-pipeline-input-status="0">Valid</em></div>
                         <div class="pipelineCard manifest"><i>▧</i><strong data-pipeline-input-title="1">Workset Manifest</strong><span data-pipeline-input-file="1">workset.json</span><em data-pipeline-input-status="1">Valid</em></div>
                         <button type="button">View all (2)</button>
                       </article>
 
-                      <article class="pipelineStage stageWorkers">
-                        <header><b>2</b><div><strong data-pipeline-field="workerStageLabel">2. Workers (Parallel)</strong><span data-pipeline-field="workerCount">6 workers</span></div></header>
-                        <div class="pipelineCard worker selected"><i>▧</i><strong data-pipeline-worker-title="0">Hero Section Worker</strong><span data-pipeline-worker-file="0">hero.json</span><em>Completed</em></div>
-                        <div class="pipelineCard worker"><i>▧</i><strong data-pipeline-worker-title="1">Body Sections Worker</strong><span data-pipeline-worker-file="1">sections.json</span><em>Completed</em></div>
-                        <div class="pipelineCard worker"><i>▧</i><strong data-pipeline-worker-title="2">Metadata Worker</strong><span data-pipeline-worker-file="2">metadata.json</span><em>Completed</em></div>
-                        <div class="pipelineCard worker"><i>▧</i><strong data-pipeline-worker-title="3">Release Notes Worker</strong><span data-pipeline-worker-file="3">release.json</span><em>Completed</em></div>
-                        <div class="pipelineCard worker"><i>▧</i><strong data-pipeline-worker-title="4">Operations Worker</strong><span data-pipeline-worker-file="4">operations.json</span><em>Completed</em></div>
-                        <div class="pipelineCard worker"><i>▧</i><strong data-pipeline-worker-title="5">Links Worker</strong><span data-pipeline-worker-file="5">links.json</span><em>Completed</em></div>
-                        <button type="button">View all (6)</button>
+                      <article class="pipelineStage stageWorkers" data-pipeline-stage="worker" data-worker-stage="repo">
+                        <header><b>2</b><div><strong>2. Repo Discovery</strong><span data-worker-stage-count="repo">0 contracts</span></div><button class="pipelineStageAddButton" type="button" data-pipeline-add-element="worker" data-pipeline-add-stage="repo" aria-label="Add repo discovery contract" title="Add repo discovery contract"></button></header>
+                        <button type="button">View all (0)</button>
                       </article>
 
-                      <article class="pipelineStage stageIntegrate">
-                        <header><b>3</b><div><strong>3. Integration</strong><span data-pipeline-field="integrationCount">6 integration steps</span></div></header>
+                      <article class="pipelineStage stageBlueprint" data-pipeline-stage="worker" data-worker-stage="blueprint">
+                        <header><b>3</b><div><strong>3. Change Blueprint</strong><span data-worker-stage-count="blueprint">0 contracts</span></div><button class="pipelineStageAddButton" type="button" data-pipeline-add-element="worker" data-pipeline-add-stage="blueprint" aria-label="Add change blueprint contract" title="Add change blueprint contract"></button></header>
+                        <button type="button">View all (0)</button>
+                      </article>
+
+                      <article class="pipelineStage stageIntegrate" data-pipeline-stage="integration">
+                        <header><b>4</b><div><strong data-pipeline-field="factoryStageLabel">4. Factory Execution</strong><span data-pipeline-field="integrationCount">6 execution steps</span></div><button class="pipelineStageAddButton" type="button" data-pipeline-add-element="integration" data-pipeline-add-stage="integration" aria-label="Add factory execution step" title="Add factory execution step"></button></header>
                         <div class="pipelineCard receipt"><i>▧</i><strong data-pipeline-integrate-title="0">Integrate: hero.json</strong><span>integration_receipt.json</span><em>Accepted</em></div>
                         <div class="pipelineCard receipt"><i>▧</i><strong data-pipeline-integrate-title="1">Integrate: sections.json</strong><span>integration_receipt.json</span><em>Accepted</em></div>
                         <div class="pipelineCard receipt"><i>▧</i><strong data-pipeline-integrate-title="2">Integrate: metadata.json</strong><span>integration_receipt.json</span><em>Accepted</em></div>
@@ -516,8 +511,8 @@
                         <button type="button">View all (6)</button>
                       </article>
 
-                      <article class="pipelineStage stageValidate">
-                        <header><b>4</b><div><strong>4. Validation</strong><span>3 validators</span></div></header>
+                      <article class="pipelineStage stageValidate" data-pipeline-stage="validation">
+                        <header><b>5</b><div><strong>5. Deterministic Validation</strong><span>3 validators</span></div><button class="pipelineStageAddButton" type="button" data-pipeline-add-element="validation" data-pipeline-add-stage="validation" aria-label="Add validator" title="Add validator"></button></header>
                         <div class="pipelineCard validator"><i>▧</i><strong data-pipeline-validator-title="0">Smoke Validator</strong><span data-pipeline-validator-file="0">smoke_receipt.json</span><em data-pipeline-validator-status="0">Passed</em></div>
                         <div class="pipelineCard validator screenshotCard">
                           <i>▧</i><strong data-pipeline-validator-title="1">Screenshot Validator</strong><span data-pipeline-validator-file="1">screenshot_receipt.json</span><em data-pipeline-validator-status="1">Passed</em>
@@ -527,8 +522,8 @@
                         <button type="button">View all (3)</button>
                       </article>
 
-                      <article class="pipelineStage stageEvidence">
-                        <header><b>5</b><div><strong>5. Evidence</strong><span>5 artifacts</span></div></header>
+                      <article id="pipeline-evidence" class="pipelineStage stageEvidence" data-pipeline-stage="evidence">
+                        <header><b>6</b><div><strong>6. Evidence / Handoff</strong><span>5 artifacts</span></div><button class="pipelineStageAddButton" type="button" data-pipeline-add-element="evidence" data-pipeline-add-stage="evidence" aria-label="Add evidence artifact" title="Add evidence artifact"></button></header>
                         <div class="pipelineCard evidence"><i>▧</i><strong data-pipeline-evidence-title="0">Pipeline Receipt</strong><span data-pipeline-evidence-file="0">pipeline_receipt.json</span><em data-pipeline-evidence-status="0">Completed</em></div>
                         <div class="pipelineCard evidence"><i>▧</i><strong data-pipeline-evidence-title="1">Events Log</strong><span data-pipeline-evidence-file="1">events.ndjson</span><small data-pipeline-evidence-status="1">142 events</small></div>
                         <div class="pipelineCard evidence"><i>▧</i><strong data-pipeline-evidence-title="2">Evidence Bundle</strong><span data-pipeline-evidence-file="2">evidence_bundle.json</span><em data-pipeline-evidence-status="2">Attached</em></div>
@@ -541,29 +536,20 @@
                     <section id="pipeline-flow" class="pipelineDataFlow" aria-label="Pipeline data flow">
                       <h2>Pipeline Data Flow</h2>
                       <div>
-                        <article><strong>Manifests</strong><p>Pipeline and workset manifests define tasks, ownership, and dependencies.</p><span>pipeline_manifest.json</span><span>workset.json</span></article>
+                        <article><strong>Input Contract</strong><p>Task kind, surfaces, allowed changes, forbidden changes, and acceptance boundaries.</p><span>input_manifest.json</span><span>pipeline_manifest.json</span></article>
                         <b>→</b>
-                        <article><strong>Worker Artifacts</strong><p>Task workers produce scoped outputs with dependencies and owned paths.</p><span>*.json artifacts</span><span>worker_artifact.json</span></article>
+                        <article><strong>Repo Discovery</strong><p>Languages, test commands, ownership hints, and dependency graph sources are discovered deterministically.</p><span>repo_context.json</span><span>repo_index</span></article>
                         <b>→</b>
-                        <article><strong>Integration Receipts</strong><p>Sequential integration ensures safe application.</p><span>integration_receipt.json</span></article>
+                        <article><strong>Change Blueprint</strong><p>Structured change units and test units constrain AI use before Factory execution.</p><span>change_plan.json</span></article>
                         <b>→</b>
-                        <article><strong>Validation Receipts</strong><p>Quality gates validate outputs.</p><span>smoke_receipt.json</span><span>screenshot.png</span></article>
+                        <article><strong>Factory Execution</strong><p>Checkout, snapshot, apply, format, test, collect diff, and collect logs.</p><span>execution_manifest.json</span><span>integration_receipt.json</span></article>
                         <b>→</b>
-                        <article><strong>Evidence</strong><p>Receipts, logs, and metrics for auditability.</p><span>evidence.json</span><span>pipeline_receipt.json</span></article>
+                        <article><strong>Deterministic Validation</strong><p>Cheap checks gate the result before optional AI review is allowed.</p><span>validation_manifest.json</span><span>validation_report.json</span></article>
+                        <b>→</b>
+                        <article><strong>Evidence / Handoff</strong><p>Diffs, logs, validation reports, acceptance maps, risk notes, and PR templates.</p><span>evidence_manifest.json</span><span>handoff_packet.json</span></article>
                       </div>
                     </section>
 
-                    <footer class="pipelineLegend" aria-label="Status legend">
-                      <strong>Legend</strong>
-                      <span class="done">Completed</span>
-                      <span class="working">In Progress</span>
-                      <span class="queued">Queued</span>
-                      <span class="blocked">Blocked</span>
-                      <span class="partial">Partial</span>
-                      <span>▧ Artifact</span>
-                      <span>▧ Receipt</span>
-                      <span>▧ Manifest</span>
-                    </footer>
                   </section>
 
                   <aside id="pipeline-manifests" class="pipelineInspector" aria-label="Selected worker manifest inspector">
@@ -611,6 +597,16 @@
                           <label><span>Evidence policy</span><textarea id="pipelineInputEvidencePolicyInput" spellcheck="false" placeholder="Attach before review, must parse, must show visible UI state"></textarea></label>
                         </section>
                       </div>
+                      <section class="pipelineInputAnswerPanel" aria-label="Run configuration answer">
+                        <header>
+                          <strong>Run Configuration</strong>
+                          <span>Provide the concrete answer this pipeline run should consume. Template presets can be layered on later.</span>
+                        </header>
+                        <label><span>Provided answer</span><textarea id="pipelineInputAnswerInput" spellcheck="false" placeholder="Answer the selected input for this run"></textarea></label>
+                        <label><span>Supplied paths / artifacts</span><textarea id="pipelineInputAnswerValuesInput" spellcheck="false" placeholder="AGENTS.md&#10;scripts/**&#10;workspace/runs/.../evidence.png"></textarea></label>
+                        <label><span>Run notes</span><textarea id="pipelineInputAnswerNotesInput" spellcheck="false" placeholder="Anything the eventual pipeline runner should preserve or treat carefully"></textarea></label>
+                        <div class="pipelineInputAnswerState"><span id="pipelineInputAnswerState">No answer saved yet</span></div>
+                      </section>
                       <div class="pipelineInputManifestOutput">
                         <span id="pipelineInputManifestPath">Input manifest output pending</span>
                       </div>
@@ -707,11 +703,35 @@
                         <span id="pipelineValidationConfigPath">Config output pending</span>
                         <span id="pipelineValidationReceiptPath">Receipt output pending</span>
                       </div>
-                      <button id="pipelineValidationSaveButton" type="button">Save validation</button>
+                      <div class="pipelineValidationRunBar">
+                        <button id="pipelineValidationSaveButton" type="button">Save validation</button>
+                        <button id="pipelineValidationRunButton" type="button">Run active tab</button>
+                        <span id="pipelineValidationRunStatus">No execution yet</span>
+                      </div>
+                      <section id="pipelineValidationRunResults" class="pipelineValidationRunResults" aria-label="Validation run results"></section>
                       <span id="pipelineValidationInspectorStatus">Select a validation card to configure it.</span>
+                    </section>
+                    <section id="pipelineEvidenceInspector" class="pipelineEvidenceInspector hidden" aria-label="Selected evidence inspector">
+                      <div class="pipelineEvidenceInspectorGrid">
+                        <label><span>Artifact</span><input id="pipelineEvidenceTitleInput" type="text" autocomplete="off"></label>
+                        <label><span>Status</span><select id="pipelineEvidenceStatusSelect"><option value="configured">Configured</option><option value="completed">Completed</option><option value="attached">Attached</option><option value="review">Review</option><option value="logged">Logged</option><option value="within-budget">Within budget</option><option value="missing">Missing</option><option value="failed">Failed</option></select></label>
+                        <label><span>Kind</span><select id="pipelineEvidenceKindSelect"><option value="receipt">Receipt</option><option value="event-log">Event log</option><option value="bundle">Bundle</option><option value="budget">Budget</option><option value="taskstream">Taskstream</option><option value="artifact">Artifact</option></select></label>
+                        <label class="wide"><span>Output path</span><input id="pipelineEvidencePathInput" type="text" autocomplete="off" placeholder="evidence/evidence_bundle.json"></label>
+                        <label class="wide"><span>Required sources</span><textarea id="pipelineEvidenceSourcesInput" spellcheck="false" placeholder="pipeline_manifest.json&#10;integration_receipts/*.json&#10;validation/validation_receipt.json"></textarea></label>
+                        <label class="wide"><span>Publish policy</span><textarea id="pipelineEvidencePublishInput" spellcheck="false" placeholder="Attach to evidence bundle before Taskstream review"></textarea></label>
+                        <label class="wide"><span>Retention policy</span><textarea id="pipelineEvidenceRetentionInput" spellcheck="false" placeholder="Keep with the pipeline run artifacts"></textarea></label>
+                        <label class="wide"><span>Review notes</span><textarea id="pipelineEvidenceNotesInput" spellcheck="false" placeholder="What a reviewer should verify before closing this pipeline"></textarea></label>
+                      </div>
+                      <div class="pipelineEvidenceOutputs">
+                        <span id="pipelineEvidenceConfigPath">Config output pending</span>
+                        <span id="pipelineEvidenceArtifactPath">Artifact output pending</span>
+                      </div>
+                      <button id="pipelineEvidenceSaveButton" type="button">Save evidence</button>
+                      <span id="pipelineEvidenceInspectorStatus">Select an evidence card to configure it.</span>
                     </section>
                     <div id="pipelineWorkerInspectorActions" class="pipelineInspectorActions">
                       <button id="pipelineFormatManifestButton" type="button">Format JSON</button>
+                      <button id="pipelineSaveManifestButton" type="button">Save manifest</button>
                       <span id="pipelineManifestStatus">Worker manifest loaded</span>
                     </div>
                     <textarea id="pipelineManifestEditor" class="pipelineManifestEditor" spellcheck="false">{
@@ -847,33 +867,174 @@
                   </aside>
                 </div>
 
-                <section id="hub-artifacts" class="pipelineArtifactInventory" aria-label="Parallel execution artifacts">
-                  <span id="pipeline-evidence" class="hubAnchor"></span>
-                  <h2>Parallel Execution Artifacts</h2>
-                  <div>
-                    <article><strong>claimed_paths</strong><p>Lease records that prevent parallel workers from editing the same owned output path.</p></article>
-                    <article><strong>worker_manifest</strong><p>Per-worker contract with ownership, read paths, dependencies, acceptance checks, and validation tier.</p></article>
-                    <article><strong>worker_artifact</strong><p>The worker's proposed payload, patch bundle, structured output, or generated section data.</p></article>
-                    <article><strong>integration_receipt</strong><p>Sequential application record showing which artifact was accepted, rejected, or merged.</p></article>
-                    <article><strong>validator_manifest</strong><p>Checks to execute, including command scripts, file assertions, JSON field checks, screenshots, and manual review gates.</p></article>
-                    <article><strong>evidence_bundle</strong><p>Final audit package linking manifests, events, logs, receipts, screenshots, costs, and Taskstream evidence.</p></article>
+                <section id="manifestExplorer" class="manifestExplorer hidden" aria-label="Manifest Explorer">
+                  <aside class="manifestExplorerSidebar" aria-label="Manifest list">
+                    <div class="manifestSearch">
+                      <input type="search" id="manifestSearchInput" placeholder="Search manifests..." autocomplete="off" aria-label="Search manifests">
+                    </div>
+                    <div class="manifestListScroll" id="manifestListScroll">
+                      <section class="manifestGroup">
+                        <header><strong>Pipeline Manifest</strong></header>
+                        <ul>
+                          <li class="manifestItem" data-manifest-id="pipeline_manifest" data-manifest-type="pipeline" tabindex="0">
+                            <span class="manifestTypeIcon pipeline" aria-hidden="true">▣</span>
+                            <div><strong>pipeline_manifest.json</strong><small><span class="miBadge active">v3 (active)</span> · 2m ago</small></div>
+                            <button type="button" class="manifestItemMenu" aria-label="Options">⋮</button>
+                          </li>
+                        </ul>
+                      </section>
+                      <section class="manifestGroup">
+                        <header><strong>Worker Manifests</strong><span class="manifestGroupCount">6</span></header>
+                        <ul>
+                          <li class="manifestItem" data-manifest-id="scope_acceptance_worker" data-manifest-type="worker" tabindex="0"><span class="manifestTypeIcon worker" aria-hidden="true">▧</span><div><strong>scope_acceptance_worker.json</strong><small>v2 · 10m ago</small></div><button type="button" class="manifestItemMenu" aria-label="Options">⋮</button></li>
+                          <li class="manifestItem" data-manifest-id="context_discovery_worker" data-manifest-type="worker" tabindex="0"><span class="manifestTypeIcon worker" aria-hidden="true">▧</span><div><strong>context_discovery_worker.json</strong><small>v2 · 9m ago</small></div><button type="button" class="manifestItemMenu" aria-label="Options">⋮</button></li>
+                          <li class="manifestItem" data-manifest-id="change_plan_worker" data-manifest-type="worker" tabindex="0"><span class="manifestTypeIcon worker" aria-hidden="true">▧</span><div><strong>change_plan_worker.json</strong><small>v2 · 8m ago</small></div><button type="button" class="manifestItemMenu" aria-label="Options">⋮</button></li>
+                          <li class="manifestItem" data-manifest-id="implementation_worker" data-manifest-type="worker" tabindex="0"><span class="manifestTypeIcon worker" aria-hidden="true">▧</span><div><strong>implementation_worker.json</strong><small>v2 · 7m ago</small></div><button type="button" class="manifestItemMenu" aria-label="Options">⋮</button></li>
+                          <li class="manifestItem" data-manifest-id="validation_worker" data-manifest-type="worker" tabindex="0"><span class="manifestTypeIcon worker" aria-hidden="true">▧</span><div><strong>validation_worker.json</strong><small>v2 · 6m ago</small></div><button type="button" class="manifestItemMenu" aria-label="Options">⋮</button></li>
+                          <li class="manifestItem" data-manifest-id="evidence_worker" data-manifest-type="worker" tabindex="0"><span class="manifestTypeIcon worker" aria-hidden="true">▧</span><div><strong>evidence_worker.json</strong><small>v2 · 5m ago</small></div><button type="button" class="manifestItemMenu" aria-label="Options">⋮</button></li>
+                        </ul>
+                      </section>
+                      <section class="manifestGroup">
+                        <header><strong>Validator Manifests</strong><span class="manifestGroupCount">3</span></header>
+                        <ul>
+                          <li class="manifestItem selected" data-manifest-id="smoke_plus_validator" data-manifest-type="validator" tabindex="0"><span class="manifestTypeIcon validator" aria-hidden="true">▦</span><div><strong>smoke_plus_validator.json</strong><small><span class="miBadge active">v2 (active)</span> · 1m ago</small></div><button type="button" class="manifestItemMenu" aria-label="Options">⋮</button></li>
+                          <li class="manifestItem" data-manifest-id="contract_validator" data-manifest-type="validator" tabindex="0"><span class="manifestTypeIcon validator" aria-hidden="true">▦</span><div><strong>contract_validator.json</strong><small>v2 · 12m ago</small></div><button type="button" class="manifestItemMenu" aria-label="Options">⋮</button></li>
+                          <li class="manifestItem" data-manifest-id="evidence_validator" data-manifest-type="validator" tabindex="0"><span class="manifestTypeIcon validator" aria-hidden="true">▦</span><div><strong>evidence_validator.json</strong><small>v2 · 11m ago</small></div><button type="button" class="manifestItemMenu" aria-label="Options">⋮</button></li>
+                        </ul>
+                      </section>
+                      <section class="manifestGroup">
+                        <header><strong>Integration Manifests</strong><span class="manifestGroupCount">6</span></header>
+                        <ul>
+                          <li class="manifestItem" data-manifest-id="scope_integration" data-manifest-type="integration" tabindex="0"><span class="manifestTypeIcon integration" aria-hidden="true">⌁</span><div><strong>scope.json</strong><small>v2 · 15m ago</small></div><button type="button" class="manifestItemMenu" aria-label="Options">⋮</button></li>
+                          <li class="manifestItem" data-manifest-id="context_integration" data-manifest-type="integration" tabindex="0"><span class="manifestTypeIcon integration" aria-hidden="true">⌁</span><div><strong>context.json</strong><small>v2 · 15m ago</small></div><button type="button" class="manifestItemMenu" aria-label="Options">⋮</button></li>
+                          <li class="manifestItem" data-manifest-id="plan_integration" data-manifest-type="integration" tabindex="0"><span class="manifestTypeIcon integration" aria-hidden="true">⌁</span><div><strong>plan.json</strong><small>v2 · 15m ago</small></div><button type="button" class="manifestItemMenu" aria-label="Options">⋮</button></li>
+                        </ul>
+                        <button type="button" class="manifestViewAll">View all (6)</button>
+                      </section>
+                    </div>
+                  </aside>
+
+                  <div class="manifestViewer" aria-label="Manifest content viewer">
+                    <header class="manifestViewerHeader">
+                      <div class="manifestViewerTitle">
+                        <span class="manifestTypeIcon validator large" aria-hidden="true">▦</span>
+                        <div>
+                          <h2 id="manifestViewerName">Smoke-plus Validator</h2>
+                          <div class="manifestViewerMeta">
+                            <code id="manifestViewerFile">smoke_plus_validator.json</code>
+                            <span id="manifestViewerBadge" class="miBadge active">v2 (active)</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="manifestViewerActions">
+                        <button type="button" class="manifestActionBtn">⟳ View History</button>
+                        <button type="button" class="manifestActionBtn">⊞ Compare</button>
+                        <button type="button" class="manifestActionBtn primary" id="manifestEditButton">Edit ▾</button>
+                        <button type="button" class="manifestActionBtn icon" aria-label="More options">⋯</button>
+                      </div>
+                    </header>
+                    <nav class="manifestViewerTabs" aria-label="Manifest view tabs">
+                      <a class="active" href="#" data-manifest-view="json">Manifest</a>
+                      <a href="#" data-manifest-view="schema">Schema</a>
+                      <a href="#" data-manifest-view="references">References</a>
+                      <a href="#" data-manifest-view="diff">Diff (v1..v2)</a>
+                      <a href="#" data-manifest-view="raw">Raw</a>
+                    </nav>
+                    <div class="manifestViewerToolbar">
+                      <button type="button" class="manifestToolBtn" id="manifestFormatBtn">⊞ Format</button>
+                      <button type="button" class="manifestToolBtn" id="manifestValidateBtn">✓ Validate</button>
+                      <button type="button" class="manifestToolBtn" id="manifestExpandBtn">↕ Expand All</button>
+                      <button type="button" class="manifestToolBtn" id="manifestCollapseBtn">↕ Collapse All</button>
+                      <label class="manifestThemePicker">
+                        <span>Theme:</span>
+                        <select id="manifestThemeSelect" aria-label="Editor theme">
+                          <option value="dark">Dark</option>
+                          <option value="light">Light</option>
+                        </select>
+                      </label>
+                      <button type="button" class="manifestToolBtn manifestFullscreenBtn" id="manifestFullscreenBtn" aria-label="Fullscreen">⤢</button>
+                    </div>
+                    <div class="manifestCodeWrap" id="manifestCodeWrap">
+                      <div class="manifestLineNums" id="manifestLineNums" aria-hidden="true"></div>
+                      <pre class="manifestCodePre" id="manifestCodePre" spellcheck="false"><code id="manifestCode"></code></pre>
+                    </div>
+                    <section class="manifestReferencesPanel" aria-label="Manifest references">
+                      <header>
+                        <div>
+                          <h3>References (<span id="manifestReferenceCount">0</span>)</h3>
+                          <p id="manifestReferenceSummary">Select a manifest to inspect resolved inputs, commands, artifacts, and worker links.</p>
+                        </div>
+                        <label>
+                          <span>Show</span>
+                          <select id="manifestReferenceMode" aria-label="Reference scope">
+                            <option value="direct">Direct References</option>
+                            <option value="all">All References</option>
+                          </select>
+                        </label>
+                      </header>
+                      <nav id="manifestReferenceTabs" class="manifestReferenceTabs" aria-label="Reference filters">
+                        <a class="active" href="#" data-reference-kind="all">All</a>
+                        <a href="#" data-reference-kind="input">Inputs</a>
+                        <a href="#" data-reference-kind="command">Commands</a>
+                        <a href="#" data-reference-kind="artifact">Artifacts</a>
+                        <a href="#" data-reference-kind="worker">Workers</a>
+                      </nav>
+                      <div id="manifestReferenceRows" class="manifestReferenceRows" role="table" aria-label="Manifest reference rows"></div>
+                    </section>
                   </div>
+
+                  <aside class="manifestDetailPanel" aria-label="Manifest details">
+                    <section class="manifestDetailSection">
+                      <h3>Manifest Details</h3>
+                      <dl class="manifestDetailList" id="manifestDetailList">
+                        <div><dt>Type</dt><dd id="mdType">validator</dd></div>
+                        <div><dt>Name</dt><dd id="mdName">Smoke-plus Validator</dd></div>
+                        <div><dt>ID</dt><dd id="mdId">smoke_plus_validator</dd></div>
+                        <div><dt>Version</dt><dd id="mdVersion"><span class="miBadge active">2.0.0 (active)</span></dd></div>
+                        <div><dt>Status</dt><dd id="mdStatus"><span class="manifestStatusBadge passed">Passed</span></dd></div>
+                        <div class="mdTall"><dt>Updated</dt><dd id="mdUpdated">1m ago (2026-05-03T01:53:10Z)</dd></div>
+                        <div><dt>Schema</dt><dd id="mdSchema"><a href="#">validator.schema.json</a></dd></div>
+                        <div class="mdTall"><dt>Source</dt><dd id="mdSource"><a href="#">workspace/manifests/validators/</a></dd></div>
+                      </dl>
+                    </section>
+
+                    <section class="manifestDetailSection">
+                      <h3>Lineage (Upstream)</h3>
+                      <div class="manifestLineage" id="manifestLineage">
+                        <div class="lineageNode worker"><span class="lineageIcon worker" aria-hidden="true">▧</span><div><strong>Implementation Worker</strong><small>implementation_worker.json</small></div></div>
+                        <div class="lineageArrow" aria-hidden="true">↓</div>
+                        <div class="lineageNode worker"><span class="lineageIcon worker" aria-hidden="true">▧</span><div><strong>Validation Worker</strong><small>validation_worker.json</small></div></div>
+                        <div class="lineageArrow" aria-hidden="true">↓</div>
+                        <div class="lineageNode validator current"><span class="lineageIcon validator" aria-hidden="true">▦</span><div><strong>Smoke-plus Validator</strong><small>smoke_plus_validator.json</small></div></div>
+                      </div>
+                    </section>
+
+                    <section class="manifestDetailSection">
+                      <h3>Used By (Downstream)</h3>
+                      <p class="manifestNone" id="manifestDownstream">— No downstream manifests</p>
+                    </section>
+
+                    <section class="manifestDetailSection">
+                      <h3>Validation</h3>
+                      <div class="manifestValidationList" id="manifestValidationList">
+                        <div class="mvCheck passed"><span class="mvCheckIcon" aria-hidden="true">✓</span><div><strong>Schema valid</strong><small>validator.schema.json</small></div></div>
+                        <div class="mvCheck passed"><span class="mvCheckIcon" aria-hidden="true">✓</span><div><strong>References resolved</strong><small>All inputs and commands found</small></div></div>
+                        <div class="mvCheck passed"><span class="mvCheckIcon" aria-hidden="true">✓</span><div><strong>No circular dependencies</strong><small>Dependency graph is valid</small></div></div>
+                      </div>
+                    </section>
+
+                    <section class="manifestDetailSection">
+                      <h3>Tags <button type="button" class="manifestTagEditBtn" aria-label="Edit tags">✎</button></h3>
+                      <div class="manifestTags" id="manifestTags">
+                        <span class="manifestTag">validator</span>
+                        <span class="manifestTag">smoke-plus</span>
+                        <span class="manifestTag">quality</span>
+                        <span class="manifestTag">mandatory</span>
+                      </div>
+                    </section>
+                  </aside>
                 </section>
 
-                <div class="hubActivityGrid">
-                  <section id="hub-evidence" class="hubPanel hubHealthList" aria-labelledby="hub-evidence-title">
-                    <h2 id="hub-evidence-title">Evidence Readiness</h2>
-                    <p><span>✓</span>Worker manifests and claimed path leases recorded</p>
-                    <p><span>✓</span>Integration, validation, budget, and Taskstream receipts attached</p>
-                    <p><span>✓</span>Screenshot, schema, and smoke validation available for review</p>
-                  </section>
-                  <section id="hub-settings" class="hubPanel hubHealthList" aria-labelledby="hub-settings-title">
-                    <h2 id="hub-settings-title">Studio Settings</h2>
-                    <p><span>✓</span>Validation tier: smoke</p>
-                    <p><span>✓</span>Budget cap: $5.00</p>
-                    <p><span>✓</span>Parallel worker policy: exclusive owned paths</p>
-                  </section>
-                </div>
               </section>
             </section>
           </div>
@@ -1570,8 +1731,8 @@
                     <h3 id="pipeline-editor-ops-title">Operations</h3>
                     <div class="appActionList">
                       <a href="/dev-pipeline-studio"><span class="navIcon">⌘</span><strong>Open Template Editor</strong><small>Configure and save pipelines</small><b>↗</b></a>
-                      <a href="/dev-pipeline-studio#hub-artifacts"><span class="navIcon">▧</span><strong>View artifacts</strong><small>Pipeline manifest and outputs</small><b>→</b></a>
-                      <a href="/dev-pipeline-studio#hub-evidence"><span class="navIcon">▥</span><strong>View evidence</strong><small>Receipts and validation results</small><b>→</b></a>
+                      <a href="/dev-pipeline-studio#manifest-explorer"><span class="navIcon">▧</span><strong>View manifests</strong><small>Pipeline manifest and outputs</small><b>→</b></a>
+                      <a href="/dev-pipeline-studio#pipeline-evidence"><span class="navIcon">▥</span><strong>View evidence</strong><small>Receipts and validation results</small><b>→</b></a>
                       <a href="/issues"><span class="navIcon">▤</span><strong>Open in Taskstream</strong><small>Issues and agent handoff</small><b>→</b></a>
                     </div>
                   </section>

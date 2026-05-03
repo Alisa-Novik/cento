@@ -101,6 +101,7 @@ main() {
     log "Attempting quick connect"
     result=$(connect_device "$address" || true)
     printf '%s\n' "$result"
+    sleep 2
 
     if ! is_connected "$address"; then
         log "First connect attempt did not stick; retrying after a short disconnect"

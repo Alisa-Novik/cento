@@ -1,0 +1,30 @@
+openai:
+  enabled: true
+  budget_usd_default: 3
+  budget_usd_max: 5
+  max_parallel_requests: 6
+  timeout_seconds: 45
+  retry_attempts: 1
+  cost_usd_estimate_per_request: 0.10
+  minimum_cost_usd_estimate_per_request: 0.10
+  max_input_chars: 20000
+  max_output_tokens: 2000
+
+profiles:
+  api-planner:
+    provider: openai
+    endpoint: responses
+    model: "${CENTO_OPENAI_PLANNER_MODEL}"
+    output_schema: workset_plan.v1
+
+  api-section-worker:
+    provider: openai
+    endpoint: responses
+    model: "${CENTO_OPENAI_WORKER_MODEL}"
+    output_schema: docs_section.v1
+
+  api-reviewer:
+    provider: openai
+    endpoint: responses
+    model: "${CENTO_OPENAI_REVIEWER_MODEL}"
+    output_schema: validation_review.v1

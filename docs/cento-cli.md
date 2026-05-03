@@ -23,6 +23,20 @@ Use these entrypoints:
 - `cento tmux status`
   Show tmux badge integration state.
 
+Checklist included in `cento docs`:
+
+- Discover: start with `cento docs`, `cento tools`, and a repo search before
+  adding a new command or workflow.
+- Task: for Cento feature, automation, MCP, cluster, mobile, UI, or command
+  behavior changes, create an `agent-work` story manifest and task before
+  implementation.
+- Align: keep `data/cento-cli.json`, affected docs in `docs/`, and any
+  generated indexes aligned with the actual command surface.
+- Validate: run the narrow deterministic checks for the files changed,
+  including JSON validation for docs sources.
+- Evidence: leave validation evidence in the relevant
+  `workspace/runs/agent-work/<issue-id>/` bundle and update Taskstream status.
+
 Built-ins currently documented in JSON:
 
 - `help`
@@ -35,6 +49,37 @@ Built-ins currently documented in JSON:
 - `install`
 - `tmux`
 - `run`
+- `build`
+- `runtime`
+- `workset`
+- `factory`
+- `storage`
+
+Local build loop:
+
+- `cento run fast --task ... --write PATH --local-builder fixture --fixture-case valid --apply`
+  creates a manifest-owned build package, runs one isolated fixture/local builder,
+  dry-runs the patch bundle, applies the accepted patch, validates, and writes
+  Taskstream evidence.
+- `cento build worker run MANIFEST --worker builder_1 --runtime fixture --fixture-case valid --worktree`
+  collects `worker_artifact.json`, `patch_bundle.json`, `patch.diff`, and
+  `handoff.md`.
+- `cento runtime check codex-fast`
+  validates the hardened local command runtime profile.
+- `cento build worker run MANIFEST --runtime-profile codex-fast --worktree`
+  runs a local command adapter through an argv-array profile; raw shell commands
+  require `--allow-unsafe-command`.
+- `cento build apply MANIFEST --bundle PATCH_BUNDLE --from-receipt RECEIPT`
+  applies only from an accepted integration receipt.
+- `cento workset run WORKSET --max-workers 3 --runtime-profile codex-fast --apply sequential`
+  runs exclusive-path tasks in parallel worktrees, then integrates and applies
+  accepted patches one at a time.
+- `cento workset execute WORKSET --max-parallel 6 --runtime api-openai --budget-usd 3 --max-budget-usd 5 --integrate sequential --apply`
+  runs ready tasks in parallel, requires structured API artifacts, materializes
+  them locally into patch bundles, and keeps integration/apply sequential.
+- `cento workset materialize-artifact ARTIFACT`
+  converts one `cento.api_worker_artifact.v1` JSON artifact into a local build
+  patch bundle without letting the API worker mutate repository files.
 
 Routing rules:
 

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cento Patch Bundle v1",
+  "type": "object",
+  "required": ["schema_version", "manifest_id", "worker_id", "base_ref", "patch_file", "touched_paths", "owned_paths", "unowned_paths", "protected_paths_touched", "summary", "requires_integration"],
+  "properties": {
+    "schema_version": {"const": "cento.patch_bundle.v1"},
+    "id": {"type": "string"},
+    "manifest_id": {"type": "string"},
+    "worker_id": {"type": "string"},
+    "base_ref": {"type": "string"},
+    "patch_file": {"type": "string"},
+    "patch_sha256": {"type": "string"},
+    "touched_paths": {"type": "array", "items": {"type": "string"}},
+    "owned_paths": {"type": "array", "items": {"type": "string"}},
+    "unowned_paths": {"type": "array", "items": {"type": "string"}},
+    "protected_paths_touched": {"type": "array", "items": {"type": "string"}},
+    "summary": {"type": "string"},
+    "requires_integration": {"type": "boolean"}
+  }
+}
