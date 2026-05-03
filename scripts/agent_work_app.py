@@ -1178,6 +1178,76 @@ def dev_pipeline_text_list(value: Any, current: list[str]) -> list[str]:
     return [line.strip() for line in str(value).splitlines() if line.strip()]
 
 
+DEV_PIPELINE_INPUT_TYPES = {"text", "details", "image", "questionnaire", "path", "evidence"}
+
+
+def dev_pipeline_input_type(value: Any, fallback: str = "text") -> str:
+    raw = dev_pipeline_text(value, fallback) or fallback
+    kind = raw.lower().replace("_", "-").replace(" ", "-")
+    aliases = {
+        "detail": "details",
+        "images": "image",
+        "screenshot": "image",
+        "mockup": "image",
+        "questions": "questionnaire",
+        "question": "questionnaire",
+        "form": "questionnaire",
+        "paths": "path",
+        "route": "path",
+        "routes": "path",
+        "command": "path",
+        "artifact": "evidence",
+        "artifacts": "evidence",
+        "receipt": "evidence",
+    }
+    kind = aliases.get(kind, kind)
+    if kind in DEV_PIPELINE_INPUT_TYPES:
+        return kind
+    return fallback if fallback in DEV_PIPELINE_INPUT_TYPES else "text"
+
+
+def dev_pipeline_inferred_input_type(input_id: str, title: str) -> str:
+    text = f"{input_id} {title}".lower()
+    if any(token in text for token in ("image", "screenshot", "mockup", "visual", "reference")):
+        return "image"
+    if any(token in text for token in ("questionnaire", "question", "acceptance", "criteria")):
+        return "questionnaire"
+    if any(token in text for token in ("path", "surface", "route", "command", "file")):
+        return "path"
+    if any(token in text for token in ("evidence", "receipt", "artifact", "validation")):
+        return "evidence"
+    if any(token in text for token in ("detail", "brief", "objective", "constraint")):
+        return "details"
+    return "text"
+
+
+def dev_pipeline_question_items(value: Any, current: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    raw_items = value if isinstance(value, list) else current if isinstance(current, list) else []
+    questions: list[dict[str, Any]] = []
+    for index, item in enumerate(raw_items, start=1):
+        if isinstance(item, str):
+            prompt = item.strip()
+            source: dict[str, Any] = {}
+        elif isinstance(item, dict):
+            source = item
+            prompt = dev_pipeline_text(item.get("prompt", item.get("question")), "")
+        else:
+            continue
+        if not prompt:
+            continue
+        options = source.get("options") if isinstance(source, dict) else []
+        questions.append(
+            {
+                "id": dev_pipeline_slug(dev_pipeline_text(source.get("id") if isinstance(source, dict) else "", f"q-{index}"), f"q-{index}"),
+                "prompt": prompt,
+                "required": bool(source.get("required", True)) if isinstance(source, dict) else True,
+                "answer_type": dev_pipeline_text(source.get("answer_type", source.get("type")) if isinstance(source, dict) else "", "text"),
+                "options": dev_pipeline_text_list(options, []),
+            }
+        )
+    return questions
+
+
 def dev_pipeline_required_inputs(value: Any, current: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
     raw_items = value if isinstance(value, list) else current if isinstance(current, list) else []
     inputs: list[dict[str, Any]] = []
@@ -1190,58 +1260,581 @@ def dev_pipeline_required_inputs(value: Any, current: list[dict[str, Any]] | Non
         status = dev_pipeline_text(item.get("status"), "Missing").lower().replace("_", "-")
         if status not in {"provided", "configured", "missing", "optional"}:
             status = "missing"
-        inputs.append(
-            {
-                "id": dev_pipeline_slug(dev_pipeline_text(item.get("id"), title), f"input-{index}"),
-                "title": title,
-                "detail": dev_pipeline_text(item.get("detail"), ""),
-                "status": status,
-                "required": bool(item.get("required", status != "optional")),
-            }
-        )
+        item_id = dev_pipeline_slug(dev_pipeline_text(item.get("id"), title), f"input-{index}")
+        kind = dev_pipeline_input_type(item.get("kind", item.get("input_type", item.get("type"))), dev_pipeline_inferred_input_type(item_id, title))
+        normalized = {
+            "id": item_id,
+            "title": title,
+            "detail": dev_pipeline_text(item.get("detail"), ""),
+            "kind": kind,
+            "input_type": kind,
+            "format": dev_pipeline_text(item.get("format"), ""),
+            "status": status,
+            "required": bool(item.get("required", status != "optional")),
+            "image_refs": dev_pipeline_text_list(item.get("image_refs", item.get("images", item.get("references"))), []),
+            "image_notes": dev_pipeline_text(item.get("image_notes", item.get("reference_notes")), ""),
+            "questions": dev_pipeline_question_items(item.get("questions", item.get("questionnaire"))),
+            "paths": dev_pipeline_text_list(item.get("paths", item.get("target_paths", item.get("routes"))), []),
+            "path_policy": dev_pipeline_text(item.get("path_policy", item.get("ownership_policy")), ""),
+            "artifacts": dev_pipeline_text_list(item.get("artifacts", item.get("evidence_artifacts")), []),
+            "evidence_policy": dev_pipeline_text(item.get("evidence_policy", item.get("validation_policy")), ""),
+            "manifest": dev_pipeline_text(item.get("manifest"), ""),
+        }
+        if not normalized["format"]:
+            normalized["format"] = {
+                "text": "plain text",
+                "details": "markdown",
+                "image": "image reference list",
+                "questionnaire": "structured answers",
+                "path": "path list",
+                "evidence": "artifact list",
+            }.get(kind, "plain text")
+        inputs.append(normalized)
     return inputs
 
 
-def dev_pipeline_default_required_inputs(template_id: str) -> list[dict[str, Any]]:
-    if str(template_id or "") != "generic-task":
-        return []
-    return [
+def dev_pipeline_validation_status(value: Any, current: str = "configured") -> str:
+    status = dev_pipeline_text(value, current).lower().replace("_", "-").replace(" ", "-")
+    if status not in {"passed", "configured", "queued", "warning", "failed", "manual-review"}:
+        status = current if current in {"passed", "configured", "queued", "warning", "failed", "manual-review"} else "configured"
+    return status
+
+
+def dev_pipeline_integration_status(value: Any, current: str = "accepted") -> str:
+    status = dev_pipeline_text(value, current).lower().replace("_", "-").replace(" ", "-")
+    if status not in {"accepted", "configured", "queued", "merged", "blocked", "rejected"}:
+        status = current if current in {"accepted", "configured", "queued", "merged", "blocked", "rejected"} else "configured"
+    return status
+
+
+def dev_pipeline_integration_mode(value: Any = "") -> str:
+    mode = dev_pipeline_text(value, "sequential").lower().replace("_", "-").replace(" ", "-")
+    if mode in {"sequential", "dependency-order", "batch", "manual-gate"}:
+        return mode
+    return "dependency-order"
+
+
+def dev_pipeline_integration_gate_from_check(check: dict[str, Any]) -> str:
+    name = dev_pipeline_text(check.get("name"), "").lower().replace("_", "-")
+    status = dev_pipeline_text(check.get("status"), "passed").lower().replace("_", "-")
+    details = dev_pipeline_text(check.get("details"), "")
+    gate_map = {
+        "acceptance-criteria": "Acceptance criteria are captured",
+        "deterministic-checks": "Deterministic validation checks are declared",
+        "handoff-complete": "Handoff evidence is complete",
+        "no-owned-path-overlap": "No owned-path overlap",
+        "owned-path": "Owned path receipt recorded",
+        "plan-integration-receipt-accepted": "Plan integration receipt accepted",
+        "plan-scope": "Implementation plan scope is accepted",
+        "read-paths-indexed": "Cento context and read paths are indexed",
+        "rollback-plan-recorded": "Rollback plan recorded",
+        "schema": "Schema receipt recorded",
+    }
+    gate = gate_map.get(name, "")
+    if not gate:
+        if details and "workspace/runs/" not in details and not details.endswith(".json"):
+            gate = details
+        elif name:
+            gate = name.replace("-", " ").title()
+        else:
+            gate = "Receipt check recorded"
+    if status not in {"passed", "accepted"}:
+        gate = f"{gate} ({status})"
+    return gate
+
+
+def dev_pipeline_integration_config(
+    root: Path,
+    project: dict[str, Any],
+    template: dict[str, Any],
+    worker: dict[str, Any],
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    worker_id = dev_pipeline_slug(dev_pipeline_text((payload or {}).get("id"), str(worker.get("id") or "")), "integration")
+    receipt_rel = dev_pipeline_text((payload or {}).get("receipt"), str(worker.get("integration_receipt") or f"integration_receipts/{template.get('id')}_{worker_id}.json"))
+    config_rel = dev_pipeline_text((payload or {}).get("config_path"), str(worker.get("integration_config") or f"integration/configs/{worker_id}.json"))
+    receipt = dev_pipeline_artifact_json(root, receipt_rel)
+    existing_config = dev_pipeline_artifact_json(root, config_rel)
+    current = existing_config if existing_config else {}
+    source = payload if isinstance(payload, dict) else current
+    title = dev_pipeline_text(source.get("title"), f"Integrate: {worker.get('file') or f'{worker_id}.json'}")
+    status = dev_pipeline_integration_status(source.get("status"), str(current.get("status") or receipt.get("status") or "accepted"))
+    dependencies = dev_pipeline_text_list(source.get("dependencies"), [str(value) for value in worker.get("dependencies", []) if isinstance(value, str)])
+    artifacts = dev_pipeline_text_list(source.get("artifacts"), [str(item) for item in receipt.get("changed_files", []) if isinstance(item, str)])
+    if not artifacts:
+        artifacts = [f"{project.get('owned_root') or 'workspace/runs/generic-task/outputs'}/{worker.get('file') or f'{worker_id}.json'}"]
+    receipt_gates = [dev_pipeline_integration_gate_from_check(item) for item in receipt.get("checks", []) if isinstance(item, dict)]
+    gates = dev_pipeline_text_list(source.get("gates"), [item for item in receipt_gates if item])
+    if not gates:
+        gates = ["Dependencies integrated first", "No owned-path conflict", "Receipt written before validation starts"]
+    rollback_plan = dev_pipeline_text_list(source.get("rollback_plan"), [str(item) for item in current.get("rollback_plan", []) if isinstance(item, str)])
+    if not rollback_plan:
+        rollback_plan = ["Leave previous receipt untouched until apply succeeds", "Reject this integration step and preserve worker artifact for retry"]
+    if dependencies:
+        default_apply_policy = f"Apply this worker artifact after {', '.join(dependencies)} integration receipt{'s are' if len(dependencies) != 1 else ' is'} accepted"
+    else:
+        default_apply_policy = "Apply this worker artifact after pipeline and workset manifests are valid"
+    return {
+        "schema_version": "cento.integration_config.v1",
+        "id": worker_id,
+        "project": str(project.get("id") or ""),
+        "template_id": str(template.get("id") or ""),
+        "title": title,
+        "worker_file": str(worker.get("file") or f"{worker_id}.json"),
+        "status": status,
+        "mode": dev_pipeline_integration_mode(source.get("mode", current.get("mode", ""))),
+        "apply_policy": dev_pipeline_text(source.get("apply_policy"), str(current.get("apply_policy") or default_apply_policy)),
+        "conflict_policy": dev_pipeline_text(source.get("conflict_policy"), str(current.get("conflict_policy") or "Block on overlapping owned paths, rejected dependency receipts, or a missing rollback plan")),
+        "dependencies": dependencies,
+        "artifacts": artifacts,
+        "gates": gates,
+        "rollback_plan": rollback_plan,
+        "receipt": receipt_rel,
+        "config_path": config_rel,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def dev_pipeline_write_integration_outputs(root: Path, manifest: dict[str, Any], project: dict[str, Any], template: dict[str, Any], config: dict[str, Any]) -> None:
+    worker_id = str(config.get("id") or "integration")
+    workers = [item for item in template.get("workers", []) if isinstance(item, dict)]
+    worker = next((item for item in workers if str(item.get("id") or "") == worker_id), None)
+    if worker is None:
+        worker = {"id": worker_id, "file": str(config.get("worker_file") or f"{worker_id}.json")}
+        workers.append(worker)
+        template["workers"] = workers
+    worker["integration_config"] = str(config.get("config_path") or f"integration/configs/{worker_id}.json")
+    worker["integration_receipt"] = str(config.get("receipt") or f"integration_receipts/{template.get('id')}_{worker_id}.json")
+    worker["dependencies"] = [str(value) for value in config.get("dependencies", []) if isinstance(value, str)]
+    write_json_path(dev_pipeline_root_path(root, str(worker["integration_config"])), config)
+
+    receipt_payload = {
+        "schema_version": "cento.integration_receipt.v1",
+        "manifest_id": str(manifest.get("id") or ""),
+        "worker_id": worker_id,
+        "template_id": str(template.get("id") or ""),
+        "status": str(config.get("status") or "configured"),
+        "mode": str(config.get("mode") or "dependency-order"),
+        "apply_policy": str(config.get("apply_policy") or ""),
+        "conflict_policy": str(config.get("conflict_policy") or ""),
+        "dependencies": [str(value) for value in config.get("dependencies", []) if isinstance(value, str)],
+        "changed_files": [str(value) for value in config.get("artifacts", []) if isinstance(value, str)],
+        "checks": [
+            {"name": dev_pipeline_slug(value, f"gate-{index}"), "status": "passed", "details": value}
+            for index, value in enumerate([str(item) for item in config.get("gates", []) if isinstance(item, str)], start=1)
+        ],
+        "rollback_plan": [str(value) for value in config.get("rollback_plan", []) if isinstance(value, str)],
+        "config": str(worker["integration_config"]),
+        "written_at": datetime.now(timezone.utc).isoformat(),
+    }
+    write_json_path(dev_pipeline_root_path(root, str(worker["integration_receipt"])), receipt_payload)
+
+    lane_steps: list[dict[str, Any]] = []
+    for item in workers:
+        item_config = dev_pipeline_integration_config(root, project, template, item)
+        lane_steps.append(
+            {
+                "id": str(item_config.get("id") or ""),
+                "title": str(item_config.get("title") or ""),
+                "mode": str(item_config.get("mode") or ""),
+                "status": str(item_config.get("status") or ""),
+                "dependencies": [str(value) for value in item_config.get("dependencies", []) if isinstance(value, str)],
+                "artifacts": [str(value) for value in item_config.get("artifacts", []) if isinstance(value, str)],
+                "gates": [str(value) for value in item_config.get("gates", []) if isinstance(value, str)],
+                "rollback_plan": [str(value) for value in item_config.get("rollback_plan", []) if isinstance(value, str)],
+                "config": str(item_config.get("config_path") or ""),
+                "receipt": str(item_config.get("receipt") or ""),
+            }
+        )
+    lane_status = "configured"
+    statuses = [str(item.get("status") or "") for item in lane_steps]
+    if any(status in {"blocked", "rejected"} for status in statuses):
+        lane_status = "blocked"
+    elif statuses and all(status in {"accepted", "merged"} for status in statuses):
+        lane_status = "accepted"
+    integration_lane = {
+        "schema_version": "cento.integration_lane.v1",
+        "id": f"{template.get('id') or 'pipeline'}-integration-lane",
+        "project": str(project.get("id") or ""),
+        "template_id": str(template.get("id") or ""),
+        "mode": "dependency-ordered-apply",
+        "status": lane_status,
+        "apply_policy": "Integrate worker artifacts after declared dependencies and before validation validators run",
+        "conflict_policy": "Block on overlapping owned paths, rejected receipts, or missing dependency outputs",
+        "steps": lane_steps,
+        "written_at": datetime.now(timezone.utc).isoformat(),
+    }
+    write_json_path(dev_pipeline_root_path(root, "integration/integration_lane.json"), integration_lane)
+
+
+def dev_pipeline_default_validation_commands(validator_id: str) -> list[str]:
+    if validator_id in {"smoke", "smoke-plus"}:
+        return [
+            "python3 -m json.tool workspace/runs/dev-pipeline-studio/docs-pages/latest/pipeline_manifest.json",
+            "node --check templates/agent-work-app/app.js",
+            "curl -fsS http://127.0.0.1:47910/api/dev-pipeline-studio?project=generic-easy-medium-task\\&template=generic-task",
+        ]
+    if validator_id in {"contract", "schema"}:
+        return [
+            "python3 -m json.tool workspace/runs/dev-pipeline-studio/docs-pages/latest/workset.json",
+            "python3 -m json.tool workspace/runs/dev-pipeline-studio/docs-pages/latest/pipeline_manifest.json",
+        ]
+    if validator_id in {"screenshot", "evidence"}:
+        return [
+            "npx --yes playwright screenshot http://127.0.0.1:47910/dev-pipeline-studio workspace/runs/agent-work/dev-pipeline-studio-validation-config/validation-inspector.png",
+        ]
+    return []
+
+
+def dev_pipeline_validator_mode(validator_id: str, value: Any = "") -> str:
+    mode = dev_pipeline_text(value, "").lower().replace("_", "-").replace(" ", "-")
+    if mode in {"commands", "evidence", "gates", "schema"}:
+        return mode
+    if validator_id in {"contract", "schema"}:
+        return "schema"
+    if validator_id in {"screenshot", "evidence"}:
+        return "evidence"
+    return "commands"
+
+
+def dev_pipeline_validator_config(
+    root: Path,
+    project: dict[str, Any],
+    template: dict[str, Any],
+    validator: dict[str, Any],
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    validator_id = dev_pipeline_slug(dev_pipeline_text((payload or {}).get("id"), str(validator.get("id") or "")), "validator")
+    receipt_rel = dev_pipeline_text((payload or {}).get("receipt"), str(validator.get("receipt") or f"validation/{validator_id}_receipt.json"))
+    config_rel = dev_pipeline_text((payload or {}).get("config_path"), str(validator.get("config") or f"validation/validator_configs/{validator_id}.json"))
+    existing_config = dev_pipeline_artifact_json(root, config_rel)
+    receipt = dev_pipeline_artifact_json(root, receipt_rel)
+    current = existing_config if existing_config else {}
+    source = payload if isinstance(payload, dict) else current
+    title = dev_pipeline_text(source.get("title"), str(validator.get("title") or validator_id))
+    status = dev_pipeline_validation_status(source.get("status"), str(current.get("status") or receipt.get("status") or "configured"))
+    mode = dev_pipeline_validator_mode(validator_id, source.get("mode", current.get("mode", "")))
+    commands = dev_pipeline_text_list(source.get("commands"), [str(item.get("command") or item.get("name") or "") for item in receipt.get("commands", []) if isinstance(item, dict)])
+    if not commands:
+        commands = dev_pipeline_default_validation_commands(validator_id)
+    evidence = dev_pipeline_text_list(source.get("evidence"), [str(item) for item in receipt.get("evidence", receipt.get("artifacts", [])) if isinstance(item, str)])
+    if not evidence and receipt_rel:
+        evidence = [receipt_rel]
+    gates = dev_pipeline_text_list(source.get("gates"), [str(item) for item in current.get("gates", []) if isinstance(item, str)])
+    if not gates:
+        gates = ["No failed validation command", "Receipt artifact is attached to evidence bundle", "Blocking validator prevents handoff until resolved"]
+    schema_paths = dev_pipeline_text_list(source.get("schema_paths"), [str(item) for item in current.get("schema_paths", []) if isinstance(item, str)])
+    if not schema_paths and validator_id in {"contract", "schema"}:
+        schema_paths = ["pipeline_manifest.json", "workset.json", "integration_receipts/*.json"]
+    summary = dev_pipeline_text(source.get("summary"), str(receipt.get("summary") or f"{title} configured for the integration lane"))
+    tier = dev_pipeline_text(source.get("tier"), str(template.get("validation_tier") or receipt.get("tier") or "smoke-plus"))
+    return {
+        "schema_version": "cento.validator_config.v1",
+        "id": validator_id,
+        "project": str(project.get("id") or ""),
+        "template_id": str(template.get("id") or ""),
+        "title": title,
+        "mode": mode,
+        "status": status,
+        "tier": tier,
+        "summary": summary,
+        "commands": commands,
+        "evidence": evidence,
+        "gates": gates,
+        "schema_paths": schema_paths,
+        "blocking": bool(source.get("blocking", current.get("blocking", True))),
+        "receipt": receipt_rel,
+        "config_path": config_rel,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def dev_pipeline_write_validation_outputs(root: Path, manifest: dict[str, Any], project: dict[str, Any], template: dict[str, Any], config: dict[str, Any]) -> None:
+    validator_id = str(config.get("id") or "validator")
+    validators = [item for item in template.get("validators", []) if isinstance(item, dict)]
+    validator = next((item for item in validators if str(item.get("id") or "") == validator_id), None)
+    if validator is None:
+        validator = {"id": validator_id}
+        validators.append(validator)
+        template["validators"] = validators
+    validator["id"] = validator_id
+    validator["title"] = str(config.get("title") or validator_id)
+    validator["file"] = Path(str(config.get("receipt") or f"validation/{validator_id}_receipt.json")).name
+    validator["receipt"] = str(config.get("receipt") or f"validation/{validator_id}_receipt.json")
+    validator["config"] = str(config.get("config_path") or f"validation/validator_configs/{validator_id}.json")
+    validator["mode"] = str(config.get("mode") or "commands")
+    validator["blocking"] = bool(config.get("blocking", True))
+    validator["status"] = str(config.get("status") or "configured")
+
+    config_path = dev_pipeline_root_path(root, str(validator["config"]))
+    write_json_path(config_path, config)
+
+    receipt_commands = [
         {
-            "id": "task-objective",
-            "title": "Task objective",
-            "detail": "User goal, target behavior, and project outcome",
-            "status": "provided",
-            "required": True,
-        },
-        {
-            "id": "target-surface",
-            "title": "Target surface",
-            "detail": "App, route, command, or file area the AI should change",
-            "status": "configured",
-            "required": True,
-        },
-        {
-            "id": "acceptance-criteria",
-            "title": "Acceptance criteria",
-            "detail": "Concrete conditions that prove the task is complete",
-            "status": "configured",
-            "required": True,
-        },
-        {
-            "id": "constraints",
-            "title": "Constraints",
-            "detail": "Owned paths, exclusions, style rules, and risk limits",
-            "status": "configured",
-            "required": True,
-        },
-        {
-            "id": "validation-evidence",
-            "title": "Validation evidence",
-            "detail": "Commands, screenshots, review gates, and handoff proof",
-            "status": "missing",
-            "required": True,
-        },
+            "name": dev_pipeline_slug(command.split()[0] if command else f"command-{index}", f"command-{index}"),
+            "command": command,
+            "status": str(config.get("status") or "configured"),
+        }
+        for index, command in enumerate(config.get("commands") or [], start=1)
     ]
+    receipt_payload = {
+        "schema_version": "cento.validator_receipt.v1",
+        "id": validator_id,
+        "status": str(config.get("status") or "configured"),
+        "tier": str(config.get("tier") or template.get("validation_tier") or ""),
+        "summary": str(config.get("summary") or ""),
+        "mode": str(config.get("mode") or "commands"),
+        "blocking": bool(config.get("blocking", True)),
+        "commands": receipt_commands,
+        "evidence": [str(item) for item in config.get("evidence", []) if isinstance(item, str)],
+        "gates": [str(item) for item in config.get("gates", []) if isinstance(item, str)],
+        "schema_paths": [str(item) for item in config.get("schema_paths", []) if isinstance(item, str)],
+        "config": str(validator["config"]),
+        "written_at": datetime.now(timezone.utc).isoformat(),
+    }
+    write_json_path(dev_pipeline_root_path(root, str(validator["receipt"])), receipt_payload)
+
+    validator_checks: list[dict[str, Any]] = []
+    aggregate_commands: list[dict[str, Any]] = []
+    aggregate_artifacts: list[str] = []
+    aggregate_statuses: list[str] = []
+    for item in validators:
+        item_id = str(item.get("id") or "")
+        item_config = dev_pipeline_validator_config(root, project, template, item)
+        aggregate_statuses.append(str(item_config.get("status") or "configured"))
+        aggregate_artifacts.extend([str(item_config.get("receipt") or ""), str(item_config.get("config_path") or "")])
+        validator_checks.append(
+            {
+                "id": item_id,
+                "title": str(item_config.get("title") or item_id),
+                "type": str(item_config.get("mode") or "commands"),
+                "status": str(item_config.get("status") or "configured"),
+                "blocking": bool(item_config.get("blocking", True)),
+                "commands": [str(value) for value in item_config.get("commands", []) if isinstance(value, str)],
+                "evidence": [str(value) for value in item_config.get("evidence", []) if isinstance(value, str)],
+                "gates": [str(value) for value in item_config.get("gates", []) if isinstance(value, str)],
+                "schema_paths": [str(value) for value in item_config.get("schema_paths", []) if isinstance(value, str)],
+                "config": str(item_config.get("config_path") or ""),
+                "receipt": str(item_config.get("receipt") or ""),
+            }
+        )
+        for command in item_config.get("commands", []):
+            if isinstance(command, str) and command.strip():
+                aggregate_commands.append(
+                    {
+                        "name": f"{item_id}_{dev_pipeline_slug(command.split()[0], 'command')}",
+                        "command": command,
+                        "status": str(item_config.get("status") or "configured"),
+                    }
+                )
+
+    artifacts = manifest.get("artifacts") if isinstance(manifest.get("artifacts"), dict) else {}
+    validator_manifest_rel = str(artifacts.get("validator_manifest") or "validation/validator_manifest.json")
+    validator_manifest = {
+        "schema_version": "cento.validator_manifest.v1",
+        "id": f"{template.get('id') or 'pipeline'}-validator",
+        "pipeline_manifest": "pipeline_manifest.json",
+        "project": str(project.get("id") or ""),
+        "template_id": str(template.get("id") or ""),
+        "validation_tier": str(config.get("tier") or template.get("validation_tier") or ""),
+        "validation_policy": {
+            "mode": "post-integration",
+            "blocking_validators": [str(item.get("id") or "") for item in validators if bool(item.get("blocking", True))],
+            "receipt_policy": "write validator config, validator receipt, aggregate validation receipt, and evidence references after integration receipts exist",
+        },
+        "checks": validator_checks,
+        "written_at": datetime.now(timezone.utc).isoformat(),
+    }
+    write_json_path(dev_pipeline_root_path(root, validator_manifest_rel), validator_manifest)
+
+    aggregate_status = "configured"
+    if any(status == "failed" for status in aggregate_statuses):
+        aggregate_status = "failed"
+    elif aggregate_statuses and all(status == "passed" for status in aggregate_statuses):
+        aggregate_status = "passed"
+    validation_receipt_rel = str(artifacts.get("validation_receipt") or "validation/validation_receipt.json")
+    validation_receipt = {
+        "schema_version": "cento.validation_receipt.v1",
+        "manifest_id": str(manifest.get("id") or ""),
+        "project": str(project.get("id") or ""),
+        "template_id": str(template.get("id") or ""),
+        "tier": str(config.get("tier") or template.get("validation_tier") or ""),
+        "status": aggregate_status,
+        "commands": aggregate_commands,
+        "artifacts": [item for item in dict.fromkeys(aggregate_artifacts) if item],
+        "validator_manifest": validator_manifest_rel,
+        "validation_policy": validator_manifest["validation_policy"],
+        "written_at": datetime.now(timezone.utc).isoformat(),
+    }
+    write_json_path(dev_pipeline_root_path(root, validation_receipt_rel), validation_receipt)
+
+
+def dev_pipeline_default_required_inputs(template_id: str) -> list[dict[str, Any]]:
+    template_id = str(template_id or "")
+    defaults: dict[str, list[dict[str, Any]]] = {
+        "generic-task": [
+            {
+                "id": "task-objective",
+                "title": "Task objective",
+                "detail": "User goal, target behavior, and project outcome",
+                "kind": "details",
+                "format": "markdown",
+                "status": "provided",
+                "required": True,
+            },
+            {
+                "id": "target-surface",
+                "title": "Target surface",
+                "detail": "App, route, command, or file area the AI should change",
+                "kind": "path",
+                "paths": ["templates/agent-work-app/**"],
+                "path_policy": "Scope owned paths, routes, and commands before workers start",
+                "status": "configured",
+                "required": True,
+            },
+            {
+                "id": "acceptance-criteria",
+                "title": "Acceptance criteria",
+                "detail": "Observable acceptance checks, edge cases, and regression expectations",
+                "kind": "questionnaire",
+                "questions": [
+                    {"id": "q-1", "prompt": "What user-visible behavior must change?", "required": True, "answer_type": "text", "options": []},
+                    {"id": "q-2", "prompt": "Which edge cases or regressions must be checked?", "required": True, "answer_type": "text", "options": []},
+                ],
+                "status": "configured",
+                "required": True,
+            },
+            {
+                "id": "constraints",
+                "title": "Constraints",
+                "detail": "Owned paths, exclusions, style rules, and risk limits",
+                "kind": "details",
+                "format": "JSON object",
+                "status": "configured",
+                "required": True,
+            },
+            {
+                "id": "validation-evidence",
+                "title": "Validation evidence",
+                "detail": "Smoke commands, focused tests, screenshots, and Taskstream handoff evidence",
+                "kind": "evidence",
+                "artifacts": ["workspace/runs/agent-work/<issue>/validation.png", "workspace/runs/agent-work/<issue>/validation-report.json"],
+                "evidence_policy": "Attach deterministic checks and screenshots before review handoff",
+                "status": "configured",
+                "required": True,
+            },
+        ],
+        "doc-page": [
+            {
+                "id": "page-brief",
+                "title": "Page brief",
+                "detail": "Audience, page objective, product surface, and desired outcome",
+                "kind": "details",
+                "format": "markdown",
+                "status": "provided",
+                "required": True,
+            },
+            {
+                "id": "reference-images",
+                "title": "Reference images",
+                "detail": "Screenshots, mockups, or visual references for the doc page",
+                "kind": "image",
+                "image_refs": ["Downloads/devpipelinestudio.png"],
+                "image_notes": "Inspect layout, hierarchy, visual density, and sidebar/content alignment",
+                "status": "configured",
+                "required": False,
+            },
+            {
+                "id": "content-questionnaire",
+                "title": "Content questionnaire",
+                "detail": "Structured questions required before workers generate sections",
+                "kind": "questionnaire",
+                "questions": [
+                    {"id": "q-1", "prompt": "What is the primary reader task?", "required": True, "answer_type": "text", "options": []},
+                    {"id": "q-2", "prompt": "Which sections are mandatory?", "required": True, "answer_type": "multi-select", "options": ["Overview", "User guide", "Data model", "Changelog"]},
+                    {"id": "q-3", "prompt": "Which links or external references must be included?", "required": False, "answer_type": "text", "options": []},
+                ],
+                "status": "configured",
+                "required": True,
+            },
+            {
+                "id": "target-doc-paths",
+                "title": "Target doc paths",
+                "detail": "Routes and files the doc page pipeline may read or write",
+                "kind": "path",
+                "paths": ["templates/agent-work-app/index.html", "templates/agent-work-app/styles.css", "/docs#pipeline-studio-template-editor"],
+                "path_policy": "Workers may only change declared doc page sections and route-owned assets",
+                "status": "configured",
+                "required": True,
+            },
+            {
+                "id": "evidence-requirements",
+                "title": "Evidence requirements",
+                "detail": "Screenshots, receipts, and validation outputs required for handoff",
+                "kind": "evidence",
+                "artifacts": ["workspace/runs/agent-work/<issue>/typed-inputs.png", "validation/validation_receipt.json"],
+                "evidence_policy": "Screenshot must show the typed input editor and manifest path after save",
+                "status": "missing",
+                "required": True,
+            },
+        ],
+    }
+    return dev_pipeline_required_inputs(defaults.get(template_id, []))
+
+
+def dev_pipeline_write_input_manifests(root: Path, manifest: dict[str, Any], project: dict[str, Any], template: dict[str, Any], inputs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    template_id = str(template.get("id") or "pipeline")
+    input_manifest_rel = str(template.get("input_manifest") or f"inputs/{template_id}_input_manifest.json")
+    normalized_inputs: list[dict[str, Any]] = []
+    for item in dev_pipeline_required_inputs(inputs):
+        input_id = str(item.get("id") or "input")
+        item_manifest_rel = str(item.get("manifest") or f"inputs/{template_id}_{input_id}.json")
+        typed_payload = {
+            "schema_version": "cento.input_manifest.v1",
+            "id": input_id,
+            "project": str(project.get("id") or ""),
+            "template_id": template_id,
+            "title": str(item.get("title") or ""),
+            "kind": str(item.get("kind") or item.get("input_type") or "text"),
+            "format": str(item.get("format") or ""),
+            "status": str(item.get("status") or "missing"),
+            "required": bool(item.get("required", True)),
+            "detail": str(item.get("detail") or ""),
+            "image_refs": [str(value) for value in item.get("image_refs", []) if isinstance(value, str)],
+            "image_notes": str(item.get("image_notes") or ""),
+            "questions": [question for question in item.get("questions", []) if isinstance(question, dict)],
+            "paths": [str(value) for value in item.get("paths", []) if isinstance(value, str)],
+            "path_policy": str(item.get("path_policy") or ""),
+            "artifacts": [str(value) for value in item.get("artifacts", []) if isinstance(value, str)],
+            "evidence_policy": str(item.get("evidence_policy") or ""),
+            "written_at": datetime.now(timezone.utc).isoformat(),
+        }
+        write_json_path(dev_pipeline_root_path(root, item_manifest_rel), typed_payload)
+        saved_item = deepcopy(item)
+        saved_item["manifest"] = item_manifest_rel
+        normalized_inputs.append(saved_item)
+
+    aggregate_manifest = {
+        "schema_version": "cento.input_manifest_set.v1",
+        "manifest_id": str(manifest.get("id") or ""),
+        "project": str(project.get("id") or ""),
+        "template_id": template_id,
+        "inputs": [
+            {
+                "id": str(item.get("id") or ""),
+                "title": str(item.get("title") or ""),
+                "kind": str(item.get("kind") or ""),
+                "status": str(item.get("status") or ""),
+                "required": bool(item.get("required", True)),
+                "manifest": str(item.get("manifest") or ""),
+            }
+            for item in normalized_inputs
+        ],
+        "written_at": datetime.now(timezone.utc).isoformat(),
+    }
+    write_json_path(dev_pipeline_root_path(root, input_manifest_rel), aggregate_manifest)
+    template["input_manifest"] = input_manifest_rel
+    return normalized_inputs
 
 
 def dev_pipeline_append_event(root: Path, manifest: dict[str, Any], event: str, project_id: str, template_id: str, details: dict[str, Any] | None = None) -> None:
@@ -1383,7 +1976,7 @@ def dev_pipeline_update(payload: dict[str, Any]) -> dict[str, Any]:
         raise AgentWorkAppError(f"Dev Pipeline Studio manifest not found: {dev_pipeline_relative(manifest_path)}")
 
     action = str(payload.get("action") or "save").strip() or "save"
-    if action not in {"save", "select_worker", "duplicate", "new"}:
+    if action not in {"save", "select_worker", "duplicate", "new", "save_validation", "save_integration"}:
         raise AgentWorkAppError(f"Unsupported Dev Pipeline Studio action: {action}")
 
     projects = [item for item in manifest.get("projects", []) if isinstance(item, dict)]
@@ -1437,7 +2030,13 @@ def dev_pipeline_update(payload: dict[str, Any]) -> dict[str, Any]:
     if "execution_model" in template_payload:
         template["execution_model"] = dev_pipeline_text(template_payload.get("execution_model"), str(template.get("execution_model") or ""))
     if "required_inputs" in template_payload:
-        template["required_inputs"] = dev_pipeline_required_inputs(template_payload.get("required_inputs"), template.get("required_inputs"))
+        template["required_inputs"] = dev_pipeline_write_input_manifests(
+            root,
+            manifest,
+            project,
+            template,
+            dev_pipeline_required_inputs(template_payload.get("required_inputs"), template.get("required_inputs")),
+        )
     template["budget_spent_usd"] = dev_pipeline_float(template_payload.get("budget_spent_usd"), float(template.get("budget_spent_usd", (manifest.get("budget") or {}).get("spent_usd", 0)) or 0))
     template["budget_cap_usd"] = dev_pipeline_float(template_payload.get("budget_cap_usd"), float(template.get("budget_cap_usd", (manifest.get("budget") or {}).get("cap_usd", 0)) or 0))
 
@@ -1468,13 +2067,39 @@ def dev_pipeline_update(payload: dict[str, Any]) -> dict[str, Any]:
                 worker_manifest_payload["validation"] = {"tier": str(template.get("validation_tier") or "smoke")}
             write_json_path(dev_pipeline_root_path(root, manifest_rel), worker_manifest_payload)
 
+    validation_config_payload = payload.get("validation_config")
+    if action == "save_validation":
+        if not isinstance(validation_config_payload, dict):
+            raise AgentWorkAppError("validation_config is required for save_validation")
+        validators = [item for item in template.get("validators", []) if isinstance(item, dict)]
+        requested_validator_id = dev_pipeline_slug(dev_pipeline_text(validation_config_payload.get("id"), ""), "validator")
+        selected_validator = next((item for item in validators if str(item.get("id") or "") == requested_validator_id), {"id": requested_validator_id})
+        config = dev_pipeline_validator_config(root, project, template, selected_validator, validation_config_payload)
+        template["validation_tier"] = str(config.get("tier") or template.get("validation_tier") or "")
+        dev_pipeline_write_validation_outputs(root, manifest, project, template, config)
+
+    integration_config_payload = payload.get("integration_config")
+    if action == "save_integration":
+        if not isinstance(integration_config_payload, dict):
+            raise AgentWorkAppError("integration_config is required for save_integration")
+        workers = [item for item in template.get("workers", []) if isinstance(item, dict)]
+        requested_integration_id = dev_pipeline_slug(dev_pipeline_text(integration_config_payload.get("id"), ""), "integration")
+        selected_integration = next((item for item in workers if str(item.get("id") or "") == requested_integration_id), {"id": requested_integration_id})
+        config = dev_pipeline_integration_config(root, project, template, selected_integration, integration_config_payload)
+        dev_pipeline_write_integration_outputs(root, manifest, project, template, config)
+
     defaults = manifest.get("defaults") if isinstance(manifest.get("defaults"), dict) else {}
     defaults["project_id"] = str(project.get("id") or "")
     defaults["template_id"] = str(template.get("id") or "")
     manifest["defaults"] = defaults
     manifest["active_run_id"] = f"{template.get('id')}-{project.get('id')}-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}"
-    manifest["status"] = "healthy"
-    manifest["status_detail"] = "Editable manifest saved; worker contract and pipeline execution metadata are in sync"
+    manifest["status"] = "configured" if action in {"save_validation", "save_integration"} else "healthy"
+    if action == "save_validation":
+        manifest["status_detail"] = "Validation configuration saved; validator manifests and receipts are in sync"
+    elif action == "save_integration":
+        manifest["status_detail"] = "Integration configuration saved; integration lane manifest and receipts are in sync"
+    else:
+        manifest["status_detail"] = "Editable manifest saved; worker contract and pipeline execution metadata are in sync"
 
     write_json_path(manifest_path, manifest)
     dev_pipeline_append_event(
@@ -1483,7 +2108,11 @@ def dev_pipeline_update(payload: dict[str, Any]) -> dict[str, Any]:
         f"pipeline_{action}",
         str(project.get("id") or ""),
         str(template.get("id") or ""),
-        {"selected_worker": str(template.get("selected_worker") or "")},
+        {
+            "selected_worker": str(template.get("selected_worker") or ""),
+            "selected_validator": str((validation_config_payload or {}).get("id") or "") if isinstance(validation_config_payload, dict) else "",
+            "selected_integration": str((integration_config_payload or {}).get("id") or "") if isinstance(integration_config_payload, dict) else "",
+        },
     )
     return dev_pipeline_studio_state(project_id=str(project.get("id") or ""), template_id=str(template.get("id") or ""))
 
@@ -1537,8 +2166,9 @@ def dev_pipeline_studio_state(project_id: str = "", template_id: str = "") -> di
         worker_id = str(worker.get("id") or "")
         file_name = str(worker.get("file") or f"{worker_id}.json")
         receipt_rel = str(worker.get("integration_receipt") or f"integration_receipts/{template.get('id')}_{worker_id}.json")
+        integration_config = dev_pipeline_integration_config(root, project, template, worker)
         receipt = dev_pipeline_artifact_json(root, receipt_rel)
-        receipt_status = str(receipt.get("status") or "accepted")
+        receipt_status = str(integration_config.get("status") or receipt.get("status") or "accepted")
         dependencies = [str(value) for value in worker.get("dependencies", []) if isinstance(value, str)]
         if dependencies:
             worker_detail = f"{file_name} after {', '.join(dependencies)}"
@@ -1559,26 +2189,47 @@ def dev_pipeline_studio_state(project_id: str = "", template_id: str = "") -> di
         integration_cards.append(
             {
                 "id": worker_id,
-                "title": f"Integrate: {file_name}",
+                "title": str(integration_config.get("title") or f"Integrate: {file_name}"),
                 "file": "integration_receipt.json",
                 "status": title_status(receipt_status, "Accepted"),
                 "path": dev_pipeline_relative(root / receipt_rel) if (root / receipt_rel).exists() else "",
+                "summary": str(integration_config.get("apply_policy") or ""),
+                "mode": str(integration_config.get("mode") or "dependency-order"),
+                "apply_policy": str(integration_config.get("apply_policy") or ""),
+                "conflict_policy": str(integration_config.get("conflict_policy") or ""),
+                "dependencies": [str(value) for value in integration_config.get("dependencies", []) if isinstance(value, str)],
+                "artifacts": [str(value) for value in integration_config.get("artifacts", []) if isinstance(value, str)],
+                "gates": [str(value) for value in integration_config.get("gates", []) if isinstance(value, str)],
+                "rollback_plan": [str(value) for value in integration_config.get("rollback_plan", []) if isinstance(value, str)],
+                "receipt": receipt_rel,
+                "config": dev_pipeline_relative(root / str(integration_config.get("config_path") or f"integration/configs/{worker_id}.json")),
             }
         )
 
     validator_cards: list[dict[str, Any]] = []
     for item in [entry for entry in template.get("validators", []) if isinstance(entry, dict)]:
         receipt_rel = str(item.get("receipt") or "")
+        config_rel = str(item.get("config") or f"validation/validator_configs/{item.get('id') or 'validator'}.json")
+        config = dev_pipeline_validator_config(root, project, template, item)
         receipt = dev_pipeline_artifact_json(root, receipt_rel)
-        receipt_status = str(receipt.get("status") or "passed")
+        receipt_status = str(config.get("status") or receipt.get("status") or item.get("status") or "passed")
         validator_cards.append(
             {
                 "id": str(item.get("id") or ""),
-                "title": str(item.get("title") or item.get("id") or "Validator"),
+                "title": str(config.get("title") or item.get("title") or item.get("id") or "Validator"),
                 "file": str(item.get("file") or Path(receipt_rel).name or "receipt.json"),
                 "status": title_status(receipt_status, "Passed"),
                 "path": dev_pipeline_relative(root / receipt_rel) if receipt_rel else "",
-                "summary": str(receipt.get("summary") or ""),
+                "summary": str(config.get("summary") or receipt.get("summary") or ""),
+                "mode": str(config.get("mode") or item.get("mode") or "commands"),
+                "tier": str(config.get("tier") or template.get("validation_tier") or ""),
+                "commands": [str(value) for value in config.get("commands", []) if isinstance(value, str)],
+                "evidence": [str(value) for value in config.get("evidence", []) if isinstance(value, str)],
+                "gates": [str(value) for value in config.get("gates", []) if isinstance(value, str)],
+                "schema_paths": [str(value) for value in config.get("schema_paths", []) if isinstance(value, str)],
+                "blocking": bool(config.get("blocking", True)),
+                "receipt": receipt_rel,
+                "config": dev_pipeline_relative(root / config_rel),
             }
         )
 
@@ -1622,7 +2273,9 @@ def dev_pipeline_studio_state(project_id: str = "", template_id: str = "") -> di
                 "selected_worker": str(item.get("selected_worker") or ""),
                 "execution_model": str(item.get("execution_model") or ("ordered" if str(item.get("id") or "") == "generic-task" else "parallel")),
                 "worker_stage_label": str(item.get("worker_stage_label") or ""),
+                "input_manifest": str(item.get("input_manifest") or ""),
                 "required_inputs": dev_pipeline_required_inputs(item.get("required_inputs")) or dev_pipeline_default_required_inputs(str(item.get("id") or "")),
+                "validators": [dev_pipeline_validator_config(root, project, item, validator) for validator in item.get("validators", []) if isinstance(validator, dict)],
             }
             for item in templates
         ],
@@ -1649,9 +2302,10 @@ def dev_pipeline_studio_state(project_id: str = "", template_id: str = "") -> di
             "integration_count": f"{len(workers)} integration steps",
             "input_cards": [
                 {
+                    **deepcopy(item),
                     "id": str(item.get("id") or ""),
                     "title": str(item.get("title") or ""),
-                    "file": str(item.get("detail") or ""),
+                    "file": str(item.get("detail") or item.get("manifest") or ""),
                     "status": title_status(str(item.get("status") or "missing"), "Missing"),
                     "required": bool(item.get("required", True)),
                 }
@@ -1666,6 +2320,7 @@ def dev_pipeline_studio_state(project_id: str = "", template_id: str = "") -> di
                 "tier": str(template.get("validation_tier") or validation_receipt.get("tier") or ""),
                 "receipt": dev_pipeline_relative(root / validation_receipt_rel),
                 "checks": len(validation_receipt.get("commands") or []),
+                "validator_manifest": dev_pipeline_relative(root / str(artifacts.get("validator_manifest") or "validation/validator_manifest.json")),
             },
             "inspector": {
                 "selected_worker": str(selected_worker.get("title") or selected_worker_id),

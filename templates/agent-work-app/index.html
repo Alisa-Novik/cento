@@ -568,17 +568,149 @@
 
                   <aside id="pipeline-manifests" class="pipelineInspector" aria-label="Selected worker manifest inspector">
                     <header>
-                      <div><span>Selected:</span><strong data-pipeline-field="selectedWorker">Hero Section Worker</strong><b>W1</b></div>
-                      <em>Completed</em>
+                      <div><span>Selected:</span><strong data-pipeline-field="selectedWorker">Hero Section Worker</strong><b id="pipelineInspectorBadge">W1</b></div>
+                      <em id="pipelineInspectorState">Completed</em>
                     </header>
-                    <nav aria-label="Inspector tabs">
-                      <a class="active" href="#pipeline-manifests">Manifest</a>
-                      <a href="#pipeline-contract">Contract</a>
-                      <a href="#pipeline-artifact">Artifact</a>
-                      <a href="#pipeline-logs">Logs</a>
-                      <a href="#pipeline-cost">Cost</a>
+                    <nav id="pipelineInspectorNav" aria-label="Inspector tabs">
+                      <a class="active" href="#pipeline-manifests" data-inspector-tab="manifest">Manifest</a>
+                      <a href="#pipeline-contract" data-inspector-tab="contract">Contract</a>
+                      <a href="#pipeline-artifact" data-inspector-tab="artifact">Artifact</a>
+                      <a href="#pipeline-logs" data-inspector-tab="logs">Logs</a>
+                      <a href="#pipeline-cost" data-inspector-tab="cost">Cost</a>
                     </nav>
-                    <div class="pipelineInspectorActions">
+                    <section id="pipelineInputInspector" class="pipelineInputInspector hidden" aria-label="Selected input inspector">
+                      <div class="pipelineInputInspectorGrid">
+                        <label class="wide"><span>Input</span><input id="pipelineInputTitleInput" type="text" autocomplete="off"></label>
+                        <label><span>Type</span><select id="pipelineInputTypeSelect"><option value="text">Text</option><option value="details">Details</option><option value="image">Image</option><option value="questionnaire">Questionnaire</option><option value="path">Path target</option><option value="evidence">Evidence artifact</option></select></label>
+                        <label><span>Status</span><select id="pipelineInputStatusSelect"><option value="provided">Provided</option><option value="configured">Configured</option><option value="missing">Missing</option><option value="optional">Optional</option></select></label>
+                        <label class="wide"><span>Details</span><textarea id="pipelineInputDetailInput" spellcheck="false"></textarea></label>
+                        <label class="pipelineInputRequiredToggle"><input id="pipelineInputRequiredCheckbox" type="checkbox">Required before AI work starts</label>
+                      </div>
+                      <div class="pipelineInputTypeEditors">
+                        <section class="pipelineInputTypeEditor" data-input-type-editor="text details" aria-label="Text input details">
+                          <header><strong>Text Contract</strong><span>Freeform operator context, goals, constraints, or implementation notes.</span></header>
+                          <label><span>Expected format</span><input id="pipelineInputFormatInput" type="text" autocomplete="off" placeholder="plain text, markdown, JSON object"></label>
+                        </section>
+                        <section class="pipelineInputTypeEditor" data-input-type-editor="image" aria-label="Image input details">
+                          <header><strong>Image References</strong><span>Screenshots, mockups, wireframes, or visual assets used by the pipeline.</span></header>
+                          <label><span>Image paths or URLs</span><textarea id="pipelineInputImageRefsInput" spellcheck="false" placeholder="Downloads/devpipelinestudio.png"></textarea></label>
+                          <label><span>Image notes</span><textarea id="pipelineInputImageNotesInput" spellcheck="false" placeholder="What should workers inspect in these images?"></textarea></label>
+                        </section>
+                        <section class="pipelineInputTypeEditor" data-input-type-editor="questionnaire" aria-label="Questionnaire input details">
+                          <header><strong>Questionnaire</strong><span>Operator questions captured before the pipeline starts.</span></header>
+                          <label><span>Questions</span><textarea id="pipelineInputQuestionsInput" spellcheck="false" placeholder="Question text | required | answer type | option A, option B"></textarea></label>
+                        </section>
+                        <section class="pipelineInputTypeEditor" data-input-type-editor="path" aria-label="Path input details">
+                          <header><strong>Path Targets</strong><span>Routes, files, commands, or owned path boundaries.</span></header>
+                          <label><span>Paths / routes / commands</span><textarea id="pipelineInputPathsInput" spellcheck="false" placeholder="/docs#pipeline-studio-template-editor"></textarea></label>
+                          <label><span>Path policy</span><textarea id="pipelineInputPathPolicyInput" spellcheck="false" placeholder="Read-only, owned output, exclusion, or change boundary"></textarea></label>
+                        </section>
+                        <section class="pipelineInputTypeEditor" data-input-type-editor="evidence" aria-label="Evidence input details">
+                          <header><strong>Evidence Artifacts</strong><span>Receipts, screenshots, logs, reports, or handoff proof required by validators.</span></header>
+                          <label><span>Artifact paths</span><textarea id="pipelineInputArtifactsInput" spellcheck="false" placeholder="workspace/runs/.../typed-inputs.png"></textarea></label>
+                          <label><span>Evidence policy</span><textarea id="pipelineInputEvidencePolicyInput" spellcheck="false" placeholder="Attach before review, must parse, must show visible UI state"></textarea></label>
+                        </section>
+                      </div>
+                      <div class="pipelineInputManifestOutput">
+                        <span id="pipelineInputManifestPath">Input manifest output pending</span>
+                      </div>
+                      <button id="pipelineInputSaveButton" type="button">Save input</button>
+                      <span id="pipelineInputInspectorStatus">Select an input card to configure it.</span>
+                    </section>
+                    <section id="pipelineIntegrationInspector" class="pipelineIntegrationInspector hidden" aria-label="Selected integration inspector">
+                      <div class="pipelineIntegrationModeBar" role="tablist" aria-label="Integration configuration view">
+                        <button type="button" data-integration-view="order">Run order</button>
+                        <button type="button" data-integration-view="apply">Apply output</button>
+                        <button type="button" data-integration-view="conflicts">Blockers</button>
+                        <button type="button" data-integration-view="receipts">Proof</button>
+                      </div>
+                      <div class="pipelineIntegrationInspectorGrid">
+                        <label><span>Step</span><input id="pipelineIntegrationTitleInput" type="text" autocomplete="off"></label>
+                        <label><span>Status</span><select id="pipelineIntegrationStatusSelect"><option value="configured">Configured</option><option value="accepted">Accepted</option><option value="merged">Merged</option><option value="queued">Queued</option><option value="blocked">Blocked</option><option value="rejected">Rejected</option></select></label>
+                        <label data-integration-section="apply"><span>Apply mode</span><select id="pipelineIntegrationModeSelect"><option value="dependency-order">Dependency order</option><option value="sequential">Sequential</option><option value="batch">Batch</option><option value="manual-gate">Manual gate</option></select></label>
+                        <label class="wide" data-integration-section="apply"><span>Apply policy</span><textarea id="pipelineIntegrationApplyInput" placeholder="When this artifact may be applied to the shared lane" spellcheck="false"></textarea></label>
+                        <label class="wide" data-integration-section="conflicts"><span>Conflict policy</span><textarea id="pipelineIntegrationConflictInput" placeholder="What blocks this artifact from being accepted" spellcheck="false"></textarea></label>
+                        <label class="wide" data-integration-section="order"><span>Dependencies</span><textarea id="pipelineIntegrationDependenciesInput" placeholder="No upstream worker receipts; first step runs after input manifests are valid" spellcheck="false"></textarea></label>
+                        <label class="wide" data-integration-section="apply receipts"><span>Integrated artifacts</span><textarea id="pipelineIntegrationArtifactsInput" placeholder="Files or artifacts applied by this integration step" spellcheck="false"></textarea></label>
+                        <label class="wide" data-integration-section="conflicts receipts"><span>Receipt gates</span><textarea id="pipelineIntegrationGatesInput" placeholder="Evidence required before the receipt is accepted" spellcheck="false"></textarea></label>
+                        <label class="wide" data-integration-section="conflicts"><span>Rollback plan</span><textarea id="pipelineIntegrationRollbackInput" placeholder="What to preserve or revert if apply fails" spellcheck="false"></textarea></label>
+                      </div>
+                      <div class="pipelineIntegrationOutputs" data-integration-section="receipts">
+                        <span id="pipelineIntegrationConfigPath">Config output pending</span>
+                        <span id="pipelineIntegrationReceiptPath">Receipt output pending</span>
+                      </div>
+                      <button id="pipelineIntegrationSaveButton" type="button">Save integration</button>
+                      <span id="pipelineIntegrationInspectorStatus">Select an integration receipt to configure it.</span>
+                    </section>
+                    <section id="pipelineValidationInspector" class="pipelineValidationInspector hidden" aria-label="Selected validation inspector">
+                      <div class="pipelineValidationModeBar" role="tablist" aria-label="Validation configuration mode">
+                        <button type="button" data-validation-mode="commands">Commands</button>
+                        <button type="button" data-validation-mode="evidence">Evidence</button>
+                        <button type="button" data-validation-mode="gates">Gates</button>
+                        <button type="button" data-validation-mode="schema">Schema</button>
+                      </div>
+                      <section class="pipelineValidationConsultPanel" aria-label="Integration consultation">
+                        <header>
+                          <div>
+                            <strong>Consult Integration Lane</strong>
+                            <span>Pull accepted dependencies, artifacts, and receipt gates into this validator.</span>
+                          </div>
+                          <button id="pipelineValidationUseIntegrationButton" type="button">Use lane context</button>
+                        </header>
+                        <div id="pipelineValidationIntegrationContext" class="pipelineValidationIntegrationContext"></div>
+                      </section>
+                      <div class="pipelineValidationInspectorGrid">
+                        <label><span>Validator</span><input id="pipelineValidationTitleInput" type="text" autocomplete="off"></label>
+                        <label><span>Status</span><select id="pipelineValidationStatusSelect"><option value="configured">Configured</option><option value="passed">Passed</option><option value="queued">Queued</option><option value="warning">Warning</option><option value="failed">Failed</option><option value="manual-review">Manual review</option></select></label>
+                        <label><span>Tier</span><select id="pipelineValidationTierSelect"><option value="smoke">Smoke</option><option value="smoke-plus">Smoke plus</option><option value="contract">Contract</option><option value="release">Release</option></select></label>
+                        <label><span>Mode</span><select id="pipelineValidationModeSelect"><option value="commands">Commands</option><option value="evidence">Evidence</option><option value="gates">Gates</option><option value="schema">Schema</option></select></label>
+                        <label class="wide"><span>Summary</span><textarea id="pipelineValidationSummaryInput" spellcheck="false"></textarea></label>
+                      </div>
+                      <div class="pipelineValidationTypedEditors">
+                        <section class="pipelineValidationTypedEditor" data-validation-editor="commands" aria-label="Command validation checks">
+                          <header>
+                            <div><strong>Command Checks</strong><span>Each row becomes a validator command receipt entry.</span></div>
+                            <button id="pipelineValidationAddCommandButton" type="button">Add command</button>
+                          </header>
+                          <div id="pipelineValidationCommandRows" class="pipelineValidationRows"></div>
+                        </section>
+                        <section class="pipelineValidationTypedEditor" data-validation-editor="evidence" aria-label="Evidence validation outputs">
+                          <header>
+                            <div><strong>Evidence Outputs</strong><span>Receipts, screenshots, logs, or review artifacts this validator must attach.</span></div>
+                            <button id="pipelineValidationAddEvidenceButton" type="button">Add evidence</button>
+                          </header>
+                          <div id="pipelineValidationEvidenceRows" class="pipelineValidationRows"></div>
+                        </section>
+                        <section class="pipelineValidationTypedEditor" data-validation-editor="gates" aria-label="Validation gates">
+                          <header>
+                            <div><strong>Validation Gates</strong><span>Blocking handoff conditions checked before evidence handoff.</span></div>
+                            <button id="pipelineValidationAddGateButton" type="button">Add gate</button>
+                          </header>
+                          <div id="pipelineValidationGateRows" class="pipelineValidationRows"></div>
+                        </section>
+                        <section class="pipelineValidationTypedEditor" data-validation-editor="schema" aria-label="Schema and contract paths">
+                          <header>
+                            <div><strong>Schema Paths</strong><span>Manifests, receipts, and contracts that must parse or match schema.</span></div>
+                            <button id="pipelineValidationAddSchemaButton" type="button">Add schema</button>
+                          </header>
+                          <div id="pipelineValidationSchemaRows" class="pipelineValidationRows"></div>
+                        </section>
+                      </div>
+                      <div class="pipelineValidationInspectorGrid pipelineValidationBulkGrid" aria-label="Bulk validation field mirrors">
+                        <label class="wide"><span>Commands</span><textarea id="pipelineValidationCommandsInput" spellcheck="false"></textarea></label>
+                        <label class="wide"><span>Evidence outputs</span><textarea id="pipelineValidationEvidenceInput" spellcheck="false"></textarea></label>
+                        <label class="wide"><span>Validation gates</span><textarea id="pipelineValidationGatesInput" spellcheck="false"></textarea></label>
+                        <label class="wide"><span>Schema paths</span><textarea id="pipelineValidationSchemaInput" spellcheck="false"></textarea></label>
+                        <label class="pipelineValidationBlockingToggle"><input id="pipelineValidationBlockingCheckbox" type="checkbox">Blocks handoff when this validator fails</label>
+                      </div>
+                      <div class="pipelineValidationOutputs">
+                        <span id="pipelineValidationConfigPath">Config output pending</span>
+                        <span id="pipelineValidationReceiptPath">Receipt output pending</span>
+                      </div>
+                      <button id="pipelineValidationSaveButton" type="button">Save validation</button>
+                      <span id="pipelineValidationInspectorStatus">Select a validation card to configure it.</span>
+                    </section>
+                    <div id="pipelineWorkerInspectorActions" class="pipelineInspectorActions">
                       <button id="pipelineFormatManifestButton" type="button">Format JSON</button>
                       <span id="pipelineManifestStatus">Worker manifest loaded</span>
                     </div>
@@ -607,15 +739,110 @@
   }
 }</textarea>
                     <pre class="pipelineManifestPreview" hidden><code id="pipelineManifestCode"></code></pre>
-                    <section class="contractSummary" aria-label="Contract summary">
+                    <section id="pipelineContractSummary" class="contractSummary" aria-label="Contract summary">
                       <h2>Contract Summary</h2>
                       <dl>
-                        <div><dt>Owned paths</dt><dd data-pipeline-field="ownedPathCount">1 path</dd></div>
-                        <div><dt>Read paths</dt><dd data-pipeline-field="readPathCount">2 paths</dd></div>
-                        <div><dt>Dependencies</dt><dd>None</dd></div>
-                        <div><dt>Validation tier</dt><dd data-pipeline-field="validationTier">smoke</dd></div>
-                        <div><dt>Risk level</dt><dd data-pipeline-field="riskLevel">low</dd></div>
+                        <div><dt><span class="contractCheck">⊙</span>Owned paths</dt><dd data-pipeline-field="ownedPathCount">1 path</dd></div>
+                        <div><dt><span class="contractCheck">⊙</span>Read paths</dt><dd data-pipeline-field="readPathCount">2 paths</dd></div>
+                        <div><dt><span class="contractCheck">⊙</span>Dependencies</dt><dd>None</dd></div>
+                        <div><dt><span class="contractCheck">⊙</span>Validation tier</dt><dd data-pipeline-field="validationTier">smoke</dd></div>
+                        <div><dt><span class="contractCheck">⊙</span>Risk level</dt><dd data-pipeline-field="riskLevel">low</dd></div>
                       </dl>
+                    </section>
+
+                    <section id="pipelineContractPanel" class="pipelineInspectorPanel hidden" aria-label="Worker contract detail">
+                      <div class="contractPanelGroup">
+                        <h3>Owned Paths</h3>
+                        <ul id="contractOwnedPaths" class="contractPathList"></ul>
+                      </div>
+                      <div class="contractPanelGroup">
+                        <h3>Read Paths</h3>
+                        <ul id="contractReadPaths" class="contractPathList"></ul>
+                      </div>
+                      <div class="contractPanelGroup">
+                        <h3>Dependencies</h3>
+                        <ul id="contractDependencies" class="contractPathList"></ul>
+                      </div>
+                      <div class="contractPanelGroup">
+                        <h3>Acceptance Criteria</h3>
+                        <ul id="contractAcceptance" class="contractAcceptanceList"></ul>
+                      </div>
+                      <dl class="contractMeta">
+                        <div><dt>Validation tier</dt><dd id="contractValidationTier">—</dd></div>
+                        <div><dt>Risk level</dt><dd id="contractRiskLevel">—</dd></div>
+                      </dl>
+                    </section>
+
+                    <section id="pipelineArtifactPanel" class="pipelineInspectorPanel hidden" aria-label="Worker artifact output">
+                      <div class="artifactHeader">
+                        <div>
+                          <code id="artifactFilePath">workspace/runs/generic-task/outputs/context.json</code>
+                          <em id="artifactStatus" class="done">Completed</em>
+                        </div>
+                        <small id="artifactSize">2.4 KB</small>
+                      </div>
+                      <pre class="pipelineArtifactPreview"><code id="pipelineArtifactCode">{
+  "schema_version": "cento.worker_artifact.v1",
+  "worker_id": "context_discovery_worker",
+  "status": "completed",
+  "owned_paths_changed": [
+    "workspace/runs/generic-task/outputs/context.json"
+  ],
+  "integration_status": "accepted",
+  "evidence": {
+    "smoke_passed": true,
+    "validation_tier": "smoke-plus",
+    "receipt": "integration_receipts/context.json"
+  }
+}</code></pre>
+                      <dl class="artifactMeta">
+                        <div><dt>Integration</dt><dd id="artifactIntegration">Accepted</dd></div>
+                        <div><dt>Receipt</dt><dd>integration_receipt.json</dd></div>
+                        <div><dt>Schema</dt><dd>cento.worker_artifact.v1</dd></div>
+                      </dl>
+                    </section>
+
+                    <section id="pipelineLogsPanel" class="pipelineInspectorPanel hidden" aria-label="Worker execution logs">
+                      <div class="logsToolbar">
+                        <span id="logsCount">12 events</span>
+                        <button type="button" id="logsCopyButton">Copy</button>
+                      </div>
+                      <div class="logsScroll" id="logsScroll">
+                        <div class="logEntry info"><time>10:05:01</time><span>Worker started: context_discovery_worker</span></div>
+                        <div class="logEntry info"><time>10:05:02</time><span>Reading manifest: pipeline_manifest.json</span></div>
+                        <div class="logEntry info"><time>10:05:03</time><span>Dependency resolved: scope (step 1/6)</span></div>
+                        <div class="logEntry info"><time>10:05:04</time><span>Reading AGENTS.md, README.md</span></div>
+                        <div class="logEntry info"><time>10:05:08</time><span>Reading scripts/**, templates/agent-work-app/**</span></div>
+                        <div class="logEntry info"><time>10:05:10</time><span>Reading templates/pipelines/generic-task.json</span></div>
+                        <div class="logEntry info"><time>10:05:14</time><span>Context analysis complete</span></div>
+                        <div class="logEntry info"><time>10:05:15</time><span>Writing: workspace/runs/generic-task/outputs/context.json</span></div>
+                        <div class="logEntry done"><time>10:05:16</time><span>Artifact written — 2.4 KB</span></div>
+                        <div class="logEntry info"><time>10:05:17</time><span>Integration queued</span></div>
+                        <div class="logEntry done"><time>10:05:22</time><span>Integration accepted</span></div>
+                        <div class="logEntry done"><time>10:05:23</time><span>Worker completed</span></div>
+                      </div>
+                    </section>
+
+                    <section id="pipelineCostPanel" class="pipelineInspectorPanel hidden" aria-label="Worker execution cost">
+                      <div class="costSummary">
+                        <div class="costTotal">
+                          <strong id="costTotalDisplay">$0.24</strong>
+                          <span>of <strong id="costBudgetDisplay">$3.00</strong> budget</span>
+                        </div>
+                        <div class="costBar" aria-label="Budget used" role="meter" aria-valuenow="8" aria-valuemax="100">
+                          <div class="costBarFill" id="costBarFill" style="width: 8%"></div>
+                        </div>
+                        <span class="costBarLabel">8% of budget used</span>
+                      </div>
+                      <dl class="costBreakdown">
+                        <div><dt>Input tokens</dt><dd id="costInputTokens">8,420</dd></div>
+                        <div><dt>Output tokens</dt><dd id="costOutputTokens">1,247</dd></div>
+                        <div><dt>Total tokens</dt><dd id="costTotalTokens">9,667</dd></div>
+                        <div><dt>API calls</dt><dd id="costApiCalls">3</dd></div>
+                        <div><dt>Model</dt><dd id="costModel">claude-sonnet-4-6</dd></div>
+                        <div><dt>Estimated cost</dt><dd id="costEstimate">$0.24</dd></div>
+                      </dl>
+                      <p class="costNote"><span>▧</span> Cost estimated from token counts at standard pricing. Actual billing may vary.</p>
                     </section>
                   </aside>
                 </div>
@@ -841,52 +1068,71 @@
                 <summary>Cento</summary>
                 <a class="active" href="#overview"><span class="navIcon">⌂</span>Overview</a>
                 <a href="#getting-started"><span class="navIcon">◉</span>Getting started</a>
-                <a href="#tool-registry"><span class="navIcon">⌘</span>Tool registry</a>
-                <a href="#validation"><span class="navIcon">▧</span>Validation</a>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">⌘</span>Tool registry</span>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">▧</span>Validation</span>
               </details>
               <details open>
-                <summary>Platform</summary>
-                <a href="#architecture"><span class="navIcon">▱</span>Architecture</a>
-                <a href="#components"><span class="navIcon">▦</span>Components</a>
+                <summary>Software Delivery Hub</summary>
+                <a href="#software-delivery-hub-docs"><span class="navIcon">⌁</span>Overview</a>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">▤</span>Taskstream</span>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">▣</span>Factory</span>
+                <details class="docsNestedGroup docsPipelineTree" open>
+                  <summary><span class="navIcon">⌘</span><span>Dev Pipeline Studio</span></summary>
+                  <div class="docsSubNav docsTreeSubNav">
+                    <span class="docsMutedLink" aria-disabled="true">Overview</span>
+                    <span class="docsMutedLink" aria-disabled="true">Pipeline gallery</span>
+                    <a href="#pipeline-studio-template-editor">Template editor</a>
+                    <span class="docsMutedLink" aria-disabled="true">Contracts visualization</span>
+                    <span class="docsMutedLink" aria-disabled="true">Execution flow</span>
+                    <a class="docsPipelineParentLink" href="#pipeline-studio-input-docs">Input documentation</a>
+                    <span class="docsMutedLink" aria-disabled="true">Manifest explorer</span>
+                    <span class="docsMutedLink" aria-disabled="true">Evidence explorer</span>
+                    <span class="docsMutedLink" aria-disabled="true">Best practices</span>
+                  </div>
+                </details>
                 <a class="docsParallelParentLink" href="#parallel-execution"><span class="navIcon">⌁</span>Parallel Execution</a>
-                <a href="#security"><span class="navIcon">◇</span>Security</a>
-                <a href="#api-reference"><span class="navIcon">⌘</span>CLI Reference</a>
               </details>
               <details open>
-                <summary>Taskstream</summary>
-                <a href="#taskstream"><span class="navIcon">▥</span>Overview</a>
-                <a href="#agent"><span class="navIcon">◫</span>Agent</a>
-                <a href="#issues"><span class="navIcon">▤</span>Issues</a>
-                <a href="#review"><span class="navIcon">▥</span>Review</a>
-                <a href="#logs"><span class="navIcon">≣</span>Logs</a>
-                <a href="#decision"><span class="navIcon">⌁</span>Decision</a>
-                <a href="#webhooks"><span class="navIcon">⊙</span>Webhooks</a>
-                <a href="#api-reference"><span class="navIcon">⌘</span>API Reference</a>
+                <summary>Research Center</summary>
+                <a href="#research-center-docs"><span class="navIcon">▤</span>Overview</a>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">▣</span>Research Overview</span>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">⌘</span>Codebase Intelligence</span>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">▧</span>Research report</span>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">◫</span>AI optimization</span>
               </details>
-              <details open>
+              <details>
+                <summary>Platform</summary>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">▱</span>Architecture</span>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">▦</span>Components</span>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">◇</span>Security</span>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">⌘</span>CLI Reference</span>
+              </details>
+              <details>
                 <summary>Cluster</summary>
-                <a href="#cluster"><span class="navIcon">▧</span>Overview</a>
-                <a href="#nodes"><span class="navIcon">⊙</span>Nodes</a>
-                <a href="#packages"><span class="navIcon">▩</span>Packages</a>
-                <a href="#updates"><span class="navIcon">▣</span>Updates</a>
-                <a href="#configuration"><span class="navIcon">◧</span>Configuration</a>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">▧</span>Overview</span>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">⊙</span>Nodes</span>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">▩</span>Packages</span>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">▣</span>Updates</span>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">◧</span>Configuration</span>
               </details>
-              <details open>
+              <details>
                 <summary>Consulting</summary>
-                <a href="#consulting"><span class="navIcon">♙</span>Overview</a>
-                <a href="#services"><span class="navIcon">⊚</span>Services</a>
-                <a href="#engagements"><span class="navIcon">◉</span>Engagements</a>
-                <a href="#reports"><span class="navIcon">▧</span>Reports</a>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">♙</span>Overview</span>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">⊚</span>Services</span>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">◉</span>Engagements</span>
+                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">▧</span>Reports</span>
               </details>
               <details open>
                 <summary>Apps</summary>
-                <a class="docsAppParentLink" href="#kanji-a-day"><span class="navIcon">日</span>Kanji a Day</a>
-                <div class="docsSubNav">
-                  <a href="#kanji-a-day"><span class="navIcon">▸</span>Overview</a>
-                  <a href="#kanji-user-guide"><span class="navIcon">▸</span>User Guide</a>
-                  <a href="#kanji-data-model"><span class="navIcon">▸</span>Data Model</a>
-                  <a href="#kanji-changelog"><span class="navIcon">▸</span>Changelog</a>
-                </div>
+                <details class="docsNestedGroup docsAppTree" open>
+                  <summary><span class="navIcon">日</span><span>Kanji a Day</span></summary>
+                  <div class="docsSubNav docsTreeSubNav">
+                    <a href="#kanji-a-day">Overview</a>
+                    <a href="#kanji-user-guide">User Guide</a>
+                    <a href="#kanji-data-model">Data Model</a>
+                    <a href="#kanji-changelog">Changelog</a>
+                  </div>
+                </details>
               </details>
             </nav>
             <a class="docsHelpCard docsOverviewOnly" href="#need-help" data-doc-section="help-card">
@@ -911,80 +1157,440 @@
 
             <section id="getting-started" class="docsSection docsOverviewOnly" data-doc-section="explore">
               <h2>Explore by area</h2>
-              <div class="docsExploreGrid">
-                <a class="docsAreaCard" href="#taskstream">
-                  <span class="docGlyph">▥</span>
-                  <div>
-                    <h3>Taskstream</h3>
-                    <p>Issues, review queues, validation evidence, journals, saved filters, and agent handoff status.</p>
+              <div class="docsExploreSections">
+                <section id="software-delivery-hub-docs" class="docsExploreGroup" aria-labelledby="docs-sd-hub-title">
+                  <header>
+                    <span>Software Delivery Hub</span>
+                    <h3 id="docs-sd-hub-title">Delivery, validation, and pipeline surfaces</h3>
+                  </header>
+                  <div class="docsExploreGrid">
+                    <a class="docsAreaCard" href="/software-delivery-hub">
+                      <span class="docGlyph">⌁</span>
+                      <div>
+                        <h3>Hub overview</h3>
+                        <p>Taskstream, Factory, and Dev Pipeline Studio grouped under the delivery control surface.</p>
+                      </div>
+                      <b>↗</b>
+                    </a>
+                    <a class="docsAreaCard" href="/issues">
+                      <span class="docGlyph">▥</span>
+                      <div>
+                        <h3>Taskstream</h3>
+                        <p>Issues, review queues, validation evidence, journals, saved filters, and agent handoff status.</p>
+                      </div>
+                      <b>↗</b>
+                    </a>
+                    <a class="docsAreaCard" href="/factory">
+                      <span class="docGlyph stacked">▣</span>
+                      <div>
+                        <h3>Factory</h3>
+                        <p>Manifest-driven queues, runtime adapters, owned-path leases, dry-run integration, and release evidence.</p>
+                      </div>
+                      <b>↗</b>
+                    </a>
+                    <a class="docsAreaCard" href="#pipeline-studio-template-editor">
+                      <span class="docGlyph">⌘</span>
+                      <div>
+                        <h3>Dev Pipeline Studio</h3>
+                        <p>Project-aware web pipeline templates, worker contracts, validator receipts, and evidence flow.</p>
+                      </div>
+                      <b>↗</b>
+                    </a>
+                    <a class="docsAreaCard" href="#parallel-execution">
+                      <span class="docGlyph">⌁</span>
+                      <div>
+                        <h3>Parallel Execution</h3>
+                        <p>Local worksets, structured API artifacts, exclusive path leases, sequential integration, and receipts.</p>
+                      </div>
+                      <b>↗</b>
+                    </a>
                   </div>
-                  <b>↗</b>
-                </a>
-                <a class="docsAreaCard" href="#factory">
-                  <span class="docGlyph stacked">▣</span>
-                  <div>
-                    <h3>Factory</h3>
-                    <p>Manifest-driven queues, runtime adapters, owned-path leases, dry-run integration, and release evidence.</p>
+                </section>
+
+                <section id="research-center-docs" class="docsExploreGroup" aria-labelledby="docs-research-title">
+                  <header>
+                    <span>Research Center</span>
+                    <h3 id="docs-research-title">Research, mapping, and code intelligence</h3>
+                  </header>
+                  <div class="docsExploreGrid">
+                    <a class="docsAreaCard" href="/research-center">
+                      <span class="docGlyph">▤</span>
+                      <div>
+                        <h3>Research overview</h3>
+                        <p>Deep research reports and implementation mapping live in their own console section.</p>
+                      </div>
+                      <b>↗</b>
+                    </a>
+                    <a class="docsAreaCard" href="/codebase-intelligence">
+                      <span class="docGlyph">⌘</span>
+                      <div>
+                        <h3>Codebase Intelligence</h3>
+                        <p>Capability maps, dependency views, route ownership, and code inspection for the repo.</p>
+                      </div>
+                      <b>↗</b>
+                    </a>
+                    <a class="docsAreaCard" href="#ai-optimization">
+                      <span class="docGlyph">◫</span>
+                      <div>
+                        <h3>AI optimization</h3>
+                        <p>No-model validation, prompt budgets, execution modes, and evidence-first delivery constraints.</p>
+                      </div>
+                      <b>↗</b>
+                    </a>
                   </div>
-                  <b>↗</b>
-                </a>
-                <a class="docsAreaCard" href="#parallel-execution">
-                  <span class="docGlyph">⌁</span>
-                  <div>
-                    <h3>Parallel Execution</h3>
-                    <p>Local worksets, structured API artifacts, exclusive path leases, sequential integration, receipts, and current gaps.</p>
+                </section>
+
+                <section class="docsExploreGroup" aria-labelledby="docs-platform-title">
+                  <header>
+                    <span>Platform</span>
+                    <h3 id="docs-platform-title">Infrastructure, service areas, and apps</h3>
+                  </header>
+                  <div class="docsExploreGrid">
+                    <a class="docsAreaCard" href="#cluster">
+                      <span class="docGlyph">⊙</span>
+                      <div>
+                        <h3>Cluster</h3>
+                        <p>Node inventory, package support, capability scans, update status, and platform contracts.</p>
+                      </div>
+                      <b>↗</b>
+                    </a>
+                    <a class="docsAreaCard" href="#consulting">
+                      <span class="docGlyph">♙</span>
+                      <div>
+                        <h3>Consulting</h3>
+                        <p>CRM workspace, intake workflows, funnel reports, and client delivery modules.</p>
+                      </div>
+                      <b>↗</b>
+                    </a>
+                    <a class="docsAreaCard" href="#api-reference">
+                      <span class="docGlyph">⌘</span>
+                      <div>
+                        <h3>API Reference</h3>
+                        <p>Local endpoint contracts, CLI surfaces, generated tool index, and integration boundaries.</p>
+                      </div>
+                      <b>↗</b>
+                    </a>
+                    <a class="docsAreaCard" href="#kanji-a-day">
+                      <span class="docGlyph">日</span>
+                      <div>
+                        <h3>Kanji a Day</h3>
+                        <p>Watch-friendly daily kanji app with stroke practice, meaning reveal, local progress, and history.</p>
+                      </div>
+                      <b>↗</b>
+                    </a>
                   </div>
-                  <b>↗</b>
-                </a>
-                <a class="docsAreaCard" href="#cluster">
-                  <span class="docGlyph">⊙</span>
-                  <div>
-                    <h3>Cluster</h3>
-                    <p>Node inventory, package support, capability scans, update status, and platform contracts.</p>
-                  </div>
-                  <b>↗</b>
-                </a>
-                <a class="docsAreaCard" href="#consulting">
-                  <span class="docGlyph">♙</span>
-                  <div>
-                    <h3>Consulting</h3>
-                    <p>CRM workspace, intake workflows, funnel reports, and client delivery modules.</p>
-                  </div>
-                  <b>↗</b>
-                </a>
-                <a class="docsAreaCard" href="/research-center">
-                  <span class="docGlyph">▤</span>
-                  <div>
-                    <h3>Research Center</h3>
-                    <p>Deep research reports and implementation mapping live in their own console section.</p>
-                  </div>
-                  <b>↗</b>
-                </a>
-                <a class="docsAreaCard" href="#api-reference">
-                  <span class="docGlyph">⌘</span>
-                  <div>
-                    <h3>API Reference</h3>
-                    <p>Local endpoint contracts, CLI surfaces, generated tool index, and integration boundaries.</p>
-                  </div>
-                  <b>↗</b>
-                </a>
-                <a class="docsAreaCard" href="#ai-optimization">
-                  <span class="docGlyph">◫</span>
-                  <div>
-                    <h3>AI optimization</h3>
-                    <p>No-model validation, prompt budgets, execution modes, and evidence-first delivery constraints.</p>
-                  </div>
-                  <b>↗</b>
-                </a>
-                <a class="docsAreaCard" href="#kanji-a-day">
-                  <span class="docGlyph">日</span>
-                  <div>
-                    <h3>Kanji a Day</h3>
-                    <p>Watch-friendly daily kanji app with stroke practice, meaning reveal, local progress, and history.</p>
-                  </div>
-                  <b>↗</b>
-                </a>
+                </section>
               </div>
+            </section>
+
+            <section id="pipeline-studio-input-docs" class="docsSection docsPipelineOnly pipelineInputDocPage" data-doc-section="pipeline-studio-input-docs">
+              <div class="docsBreadcrumb docsPipelineOnly" aria-label="Breadcrumb">
+                <span>Docs</span>
+                <b>›</b>
+                <span>Software Delivery Hub</span>
+                <b>›</b>
+                <span>Dev Pipeline Studio</span>
+                <b>›</b>
+                <strong>Input documentation</strong>
+              </div>
+
+              <header class="pipelineInputDocHeader">
+                <div>
+                  <h1>Input documentation <span>Template</span></h1>
+                  <p>Define the required input for AI task execution. Each input provides the context and constraints needed for the AI to perform the work and produce acceptable results.</p>
+                </div>
+                <form class="pipelineTemplateControls" aria-label="Pipeline template controls">
+                  <label>
+                    <span>Template</span>
+                    <select aria-label="Template">
+                      <option>Generic easy-medium task</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Version</span>
+                    <select aria-label="Version">
+                      <option>v1.0.0</option>
+                    </select>
+                  </label>
+                  <button type="button">View template</button>
+                </form>
+              </header>
+
+              <div class="pipelineInputDocGrid">
+                <article class="pipelineDocPanel pipelineInputOverview" aria-labelledby="pipeline-input-overview-title">
+                  <header>
+                    <h2 id="pipeline-input-overview-title">Inputs overview</h2>
+                    <p>Inputs are the required pieces of information provided to the AI to complete a task. All inputs are validated before task execution begins.</p>
+                  </header>
+
+                  <div class="pipelineInputStats" aria-label="Input totals">
+                    <div class="total"><strong>5</strong><span>Total inputs</span><small>Required to run</small></div>
+                    <div class="provided"><strong>4</strong><span>Configured</span><small>Provided by user</small></div>
+                    <div class="missing"><strong>1</strong><span>Missing</span><small>Must be provided</small></div>
+                    <div class="structured"><strong>⌘</strong><span>Structured</span><small>JSON format</small></div>
+                  </div>
+
+                  <section id="pipeline-input-elements" class="pipelineInputElements">
+                    <h3>Elements of input</h3>
+                    <p>Each input element has a specific purpose in task execution.</p>
+                    <div class="pipelineInputRows" role="list">
+                      <div class="pipelineInputRow" role="listitem">
+                        <div><i class="required"></i><strong>Task objective</strong><span>User goal, target behavior, and project outcome</span></div>
+                        <em class="provided">Provided</em>
+                        <small>Type: string</small>
+                        <b>Required</b>
+                      </div>
+                      <div class="pipelineInputRow" role="listitem">
+                        <div><i class="configured"></i><strong>Target surface</strong><span>App, route, command, or file area the AI should change</span></div>
+                        <em class="configured">Configured</em>
+                        <small>Type: string</small>
+                        <b>Required</b>
+                      </div>
+                      <div class="pipelineInputRow" role="listitem">
+                        <div><i class="configured"></i><strong>Acceptance criteria</strong><span>Concrete conditions that prove the task is complete</span></div>
+                        <em class="configured">Configured</em>
+                        <small>Type: string</small>
+                        <b>Required</b>
+                      </div>
+                      <div class="pipelineInputRow" role="listitem">
+                        <div><i class="configured"></i><strong>Constraints</strong><span>Owned paths, exclusions, style rules, and risk limits</span></div>
+                        <em class="configured">Configured</em>
+                        <small>Type: object</small>
+                        <b>Required</b>
+                      </div>
+                      <div class="pipelineInputRow" role="listitem">
+                        <div><i class="missing"></i><strong>Validation evidence</strong><span>Commands, screenshots, review gates, and handoff proof</span></div>
+                        <em class="missing">Missing</em>
+                        <small>Type: object</small>
+                        <b>Required</b>
+                      </div>
+                    </div>
+                  </section>
+
+                  <aside class="pipelineInputNotice">
+                    <span>i</span>
+                    <p>All inputs marked as <strong>Required</strong> must be provided before the task can be executed. Missing inputs will block task execution and must be completed by the user.</p>
+                  </aside>
+                </article>
+
+                <article class="pipelineDocPanel pipelineInputFormat" aria-labelledby="pipeline-input-format-title">
+                  <header>
+                    <h2 id="pipeline-input-format-title">Input format</h2>
+                    <p>Inputs are defined in JSON format and passed to the AI task executor.</p>
+                  </header>
+
+                  <div class="pipelineFormatBadges" aria-label="Input format rules">
+                    <div><strong class="json">▧</strong><span>JSON</span><small>Structured format</small></div>
+                    <div><strong class="valid">▣</strong><span>Validated</span><small>Schema validation</small></div>
+                    <div><strong class="required">⌘</strong><span>Required</span><small>All fields must be present</small></div>
+                  </div>
+
+                  <section id="pipeline-input-json" class="pipelineExampleJson">
+                    <header>
+                      <div>
+                        <h3>Example input (JSON)</h3>
+                        <p>Sample of a complete input configuration.</p>
+                      </div>
+                      <button type="button">Copy example</button>
+                    </header>
+                    <pre><code>{
+  "task_objective": "Add health check endpoint to the user service",
+  "target_surface": "services/user-service/src/health/",
+  "acceptance_criteria": "Health endpoint returns 200 OK and includes service status",
+  "constraints": {
+    "owned_paths": ["services/user-service/**"],
+    "excluded_paths": ["**/node_modules/**", "**/dist/**"],
+    "style_rules": "Follow existing code style and conventions",
+    "risk_limits": "No breaking changes, backward compatible"
+  },
+  "validation_evidence": {
+    "commands": [
+      "curl -f http://localhost:8080/health",
+      "npm test -- --testPathPattern=health"
+    ],
+    "screenshots": ["health-endpoint-response.png"],
+    "review_gates": ["unit_tests_pass", "code_review_required"],
+    "handoff_proof": "Health endpoint documented and tested"
+  }
+}</code></pre>
+                    <p>The JSON structure must include all required fields. See individual field descriptions for details.</p>
+                  </section>
+                </article>
+              </div>
+
+              <section id="pipeline-input-legend" class="pipelineDocPanel pipelineInputLegend" aria-labelledby="pipeline-input-legend-title">
+                <header>
+                  <h2 id="pipeline-input-legend-title">Input legend</h2>
+                  <p>Understanding the status and configuration of each input element.</p>
+                </header>
+                <div>
+                  <article><span class="required"></span><strong>Required</strong><p>Input must be provided. Task execution blocked if missing.</p></article>
+                  <article><span class="provided"></span><strong>Provided</strong><p>Input has been supplied. Ready for task execution.</p></article>
+                  <article><span class="configured"></span><strong>Configured</strong><p>Input configured with defaults. May be customized.</p></article>
+                  <article><span class="missing"></span><strong>Missing</strong><p>Input not provided. Task execution blocked.</p></article>
+                  <article><span class="type"></span><strong>Type</strong><p>Data type and format. Validation rules apply.</p></article>
+                </div>
+              </section>
+            </section>
+
+            <section id="pipeline-studio-template-editor" class="docsSection docsPipelineOnly appOverviewPage" data-doc-section="pipeline-studio-template-editor">
+              <div class="docsBreadcrumb docsPipelineOnly" aria-label="Breadcrumb">
+                <span>Docs</span>
+                <b>›</b>
+                <span>Software Delivery Hub</span>
+                <b>›</b>
+                <span>Dev Pipeline Studio</span>
+                <b>›</b>
+                <strong>Template Editor</strong>
+              </div>
+
+              <div class="appOverviewHero">
+                <div class="appIdentity">
+                  <span class="appIcon" aria-hidden="true">⌘</span>
+                  <div>
+                    <span class="eyebrow">Dev Pipeline Studio</span>
+                    <h2>Template Editor</h2>
+                    <p>Configure reusable web delivery pipelines per project. Select a project, start from a template, then edit worker contracts, validators, receipts, and evidence flow in one place.</p>
+                    <div class="appMetaRow" aria-label="Template Editor release state">
+                      <span class="statePill partial">Development</span>
+                      <span class="versionPill">v1.0.0</span>
+                      <time datetime="2026-05-02">Updated 2026-05-02</time>
+                    </div>
+                  </div>
+                </div>
+
+                <figure class="appPreviewCard" aria-label="Pipeline status preview">
+                  <div class="pipelineStatusMini" aria-hidden="true">
+                    <div class="pipelineStatusMiniRow">
+                      <span class="pipelineStatusDot healthy"></span>
+                      <strong>Healthy</strong>
+                      <small>Manifest saved</small>
+                    </div>
+                    <div class="pipelineStatusMiniRow">
+                      <span>Tasks</span>
+                      <strong>9 / 9</strong>
+                    </div>
+                    <div class="pipelineStatusMiniRow">
+                      <span>Budget</span>
+                      <strong>$1.42 / $3.00</strong>
+                    </div>
+                    <div class="pipelineStatusMiniRow">
+                      <span>Template</span>
+                      <strong>Generic easy-medium</strong>
+                    </div>
+                    <div class="pipelineStatusMiniRow">
+                      <span>Execution</span>
+                      <strong>Ordered steps</strong>
+                    </div>
+                  </div>
+                </figure>
+
+                <aside class="appControlCard" aria-label="Template Editor control strip">
+                  <a href="/dev-pipeline-studio">
+                    <strong>Live App URL</strong>
+                    <span>/dev-pipeline-studio ↗</span>
+                  </a>
+                  <a href="https://github.com/Alisa-Novik/cento" target="_blank" rel="noreferrer">
+                    <strong>Repository URL</strong>
+                    <span>Alisa-Novik/cento ↗</span>
+                  </a>
+                  <a href="/issues">
+                    <strong>Taskstream</strong>
+                    <span>Open Taskstream ↗</span>
+                  </a>
+                </aside>
+              </div>
+
+              <section class="appDashboardCard" aria-labelledby="pipeline-editor-dashboard-title">
+                <h3 id="pipeline-editor-dashboard-title">Project Dashboard</h3>
+                <div class="appMetricGrid">
+                  <div><span>Status</span><strong><i class="metricDot"></i>Active</strong></div>
+                  <div><span>Version</span><strong>1.0.0</strong></div>
+                  <div><span>Environment</span><strong>local preview</strong></div>
+                  <div><span>Last Validation</span><strong>2026-05-02</strong></div>
+                  <div><span>Templates</span><strong>4 loaded</strong></div>
+                  <div><span>Execution Model</span><strong>Ordered task steps</strong></div>
+                  <div><span>Budget Ceiling</span><strong>$3.00</strong></div>
+                </div>
+              </section>
+
+              <div class="appOverviewGrid">
+                <div class="appMainColumn">
+                  <section class="appInfoCard" aria-labelledby="pipeline-editor-about-title">
+                    <h3 id="pipeline-editor-about-title">About Template Editor</h3>
+                    <p>Template Editor is the pipeline configuration surface inside Dev Pipeline Studio. Operators select a project and template, configure worker contracts, required inputs, execution model, risk, and budget cap. Each saved draft produces a manifest-driven pipeline that agents execute end-to-end.</p>
+                    <div class="appFeatureGrid">
+                      <div><span class="featureIcon">⌘</span><strong>Project + Template</strong><small>Scope pipelines per project</small></div>
+                      <div><span class="featureIcon">▣</span><strong>Template Library</strong><small>4 built-in templates</small></div>
+                      <div><span class="featureIcon">◉</span><strong>Worker Contracts</strong><small>Editable ordered task steps</small></div>
+                      <div><span class="featureIcon">▧</span><strong>Required Inputs</strong><small>Validated before execution</small></div>
+                      <div><span class="featureIcon">⌁</span><strong>Save Draft</strong><small>Writes pipeline_manifest.json</small></div>
+                      <div><span class="featureIcon">⚙</span><strong>Execution Models</strong><small>Ordered, parallel, sequential</small></div>
+                    </div>
+                    <a class="appPrimaryLink" href="#pipeline-studio-input-docs">Input documentation <span>→</span></a>
+                  </section>
+                </div>
+
+                <div class="appMainColumn">
+                  <section class="appInfoCard" aria-labelledby="pipeline-editor-release-title">
+                    <h3 id="pipeline-editor-release-title">Current Release</h3>
+                    <dl class="releaseFacts">
+                      <div><dt>Version</dt><dd>1.0.0</dd></div>
+                      <div><dt>Build</dt><dd>1000114</dd></div>
+                      <div><dt>Release Date</dt><dd>2026-05-02</dd></div>
+                    </dl>
+                    <strong class="releaseLabel">Release Notes</strong>
+                    <ul class="releaseList">
+                      <li>Project-scoped pipeline selector with 4 templates loaded</li>
+                      <li>Template editor with ordered task steps execution model</li>
+                      <li>5 required operator inputs: objective, surface, criteria, constraints, evidence</li>
+                      <li>Manifest save draft writes validated pipeline_manifest.json</li>
+                      <li>Pipeline status header: health, tasks, budget, and project metadata</li>
+                    </ul>
+                  </section>
+                </div>
+
+                <section class="appInfoCard appArchitectureCard" aria-labelledby="pipeline-editor-arch-title">
+                  <h3 id="pipeline-editor-arch-title">System Architecture</h3>
+                  <div class="appArchitecture" aria-label="Template Editor system architecture">
+                    <div><span class="archIcon">⌘</span><strong>Template Selector</strong><small>project + template</small></div>
+                    <b>→</b>
+                    <div><span class="archIcon">◉</span><strong>Worker Editor</strong><small>contracts + inputs</small></div>
+                    <b>→</b>
+                    <div><span class="archIcon">▣</span><strong>Pipeline Manifest</strong><small>pipeline_manifest.json</small></div>
+                    <b>→</b>
+                    <div><span class="archIcon">⌁</span><strong>Agent Execution</strong><small>ordered task steps</small></div>
+                    <b>→</b>
+                    <div><span class="archIcon">▧</span><strong>Evidence Bundle</strong><small>receipts + artifacts</small></div>
+                  </div>
+                </section>
+
+                <aside class="appActionColumn">
+                  <section class="appInfoCard" aria-labelledby="pipeline-editor-ops-title">
+                    <h3 id="pipeline-editor-ops-title">Operations</h3>
+                    <div class="appActionList">
+                      <a href="/dev-pipeline-studio"><span class="navIcon">⌘</span><strong>Open Template Editor</strong><small>Configure and save pipelines</small><b>↗</b></a>
+                      <a href="/dev-pipeline-studio#hub-artifacts"><span class="navIcon">▧</span><strong>View artifacts</strong><small>Pipeline manifest and outputs</small><b>→</b></a>
+                      <a href="/dev-pipeline-studio#hub-evidence"><span class="navIcon">▥</span><strong>View evidence</strong><small>Receipts and validation results</small><b>→</b></a>
+                      <a href="/issues"><span class="navIcon">▤</span><strong>Open in Taskstream</strong><small>Issues and agent handoff</small><b>→</b></a>
+                    </div>
+                  </section>
+
+                  <section class="appInfoCard" aria-labelledby="pipeline-editor-links-title">
+                    <h3 id="pipeline-editor-links-title">Links + Entry Points</h3>
+                    <div class="appActionList supportList">
+                      <a href="#pipeline-studio-input-docs"><span class="navIcon">▧</span><strong>Input documentation</strong><small>Required operator inputs guide</small><b>→</b></a>
+                      <a href="/dev-pipeline-studio"><span class="navIcon">▣</span><strong>Template Editor</strong><small>Live configuration surface</small><b>↗</b></a>
+                      <a href="/docs"><span class="navIcon">⌂</span><strong>Docs home</strong><small>Cento documentation overview</small><b>→</b></a>
+                    </div>
+                  </section>
+                </aside>
+              </div>
+
+              <section class="docsCallout">
+                <strong>Template Library</strong>
+                <p>Four templates ship at v1.0.0: <strong>Generic easy-medium task</strong> (bounded code change pipeline), <strong>Doc page creation</strong> (hero, content sections, links, release notes, validation), <strong>Dashboard module</strong> (metrics, panels, actions, data adapters, screenshots), and <strong>Release evidence page</strong> (change summary, approvals, artifacts, costs, audit trail). Each ships with preconfigured worker contracts, validators, and required inputs.</p>
+              </section>
             </section>
 
             <section id="parallel-execution" class="docsSection parallelDocSection docsParallelOnly" data-doc-section="parallel-execution">
@@ -1353,6 +1959,7 @@ cento workset materialize-artifact .cento/worksets/&lt;run_id&gt;/workers/&lt;wo
             <section id="updates" class="docsSection docsOverviewOnly" data-doc-section="updates">
               <h2>Recent updates</h2>
               <div class="docsUpdates">
+                <div><strong>Pipeline Studio Template Editor docs page added</strong><time datetime="2026-05-02">May 2, 2026</time></div>
                 <div><strong>Parallel Execution Engine docs page added</strong><time datetime="2026-05-02">May 2, 2026</time></div>
                 <div><strong>Kanji a Day docs page added</strong><time datetime="2026-05-01">May 1, 2026</time></div>
                 <div><strong>Factory runtime adapters v1</strong><time datetime="2026-05-01">May 1, 2026</time></div>
@@ -1375,6 +1982,8 @@ cento workset materialize-artifact .cento/worksets/&lt;run_id&gt;/workers/&lt;wo
             <h2>On this page</h2>
             <a class="active docsOverviewOnly" href="#overview">Overview</a>
             <a class="docsOverviewOnly" href="#getting-started">Explore by area</a>
+            <a class="docsOverviewOnly" href="#software-delivery-hub-docs">Software Delivery Hub</a>
+            <a class="docsOverviewOnly" href="#research-center-docs">Research Center</a>
             <a class="docsParallelOnly" href="#parallel-execution">Parallel Execution</a>
             <a class="docsParallelOnly" href="#parallel-flow">Execution flow</a>
             <a class="docsParallelOnly" href="#parallel-shipped">Done now</a>

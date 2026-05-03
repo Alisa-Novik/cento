@@ -847,6 +847,16 @@ body.docsPipelinePage #docsView > .docsToc {
   padding: 1.25rem 1.05rem 1.9rem;
 }
 
+@media (min-width: 761px) {
+  #docsView:not(.hidden) > .docsSidebar {
+    position: sticky;
+    top: 67px;
+    align-self: start;
+    max-height: calc(100vh - 67px);
+    overflow-y: auto;
+  }
+}
+
 .docsSidebar details {
   margin: 0 0 0.85rem;
   padding-bottom: 0.75rem;
@@ -905,6 +915,116 @@ body.docsPipelinePage #docsView > .docsToc {
   padding: 0 0.55rem;
   border: 1px solid transparent;
   font-size: 0.92rem;
+}
+
+.docsSidebar nav .docsMutedLink {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 1.85rem;
+  padding: 0 0.55rem;
+  border: 1px solid transparent;
+  color: rgba(168, 156, 145, 0.48);
+  cursor: default;
+  font-size: 0.92rem;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.docsSidebar nav .docsMutedLink .navIcon {
+  color: rgba(255, 90, 0, 0.48);
+}
+
+.docsSidebar .docsNestedGroup {
+  margin: 0.15rem 0;
+  padding: 0;
+  border: 0;
+}
+
+.docsSidebar .docsNestedGroup > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 1.95rem;
+  margin: 0;
+  padding: 0 0.55rem;
+  border: 1px solid transparent;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.docsSidebar .docsNestedGroup > summary span:last-of-type {
+  white-space: nowrap;
+}
+
+.docsSidebar .docsNestedGroup > summary::after {
+  content: "›";
+  margin-left: auto;
+  color: var(--orange);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.82rem;
+}
+
+.docsSidebar .docsNestedGroup[open] > summary::after {
+  content: "⌄";
+}
+
+body.docsPipelinePage .docsSidebar .docsPipelineTree > summary {
+  color: var(--orange);
+  border-color: rgba(255, 90, 0, 0.34);
+  background: rgba(255, 90, 0, 0.18);
+}
+
+body.docsAppPage .docsSidebar .docsAppTree > summary {
+  color: var(--orange);
+  border-color: rgba(255, 90, 0, 0.34);
+  background: rgba(255, 90, 0, 0.18);
+}
+
+.docsTreeSubNav {
+  display: grid;
+  gap: 0.05rem;
+  margin: 0.28rem 0 0.42rem 1.92rem;
+}
+
+.docsSidebar nav .docsTreeSubNav a,
+.docsSidebar nav .docsTreeSubNav .docsMutedLink {
+  display: grid;
+  grid-template-columns: 0.9rem minmax(0, 1fr);
+  gap: 0.42rem;
+  align-items: center;
+  min-height: 1.78rem;
+  padding: 0 0.45rem 0 0;
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: 0.84rem;
+  white-space: nowrap;
+}
+
+.docsTreeSubNav a::before,
+.docsTreeSubNav .docsMutedLink::before {
+  content: "▸";
+  color: var(--muted);
+  font-size: 0.64rem;
+  line-height: 1;
+  text-align: center;
+}
+
+.docsSidebar nav .docsTreeSubNav a.active {
+  color: var(--orange);
+  border-color: transparent;
+  background: transparent;
+}
+
+.docsTreeSubNav a.active::before {
+  content: "";
+  width: 2px;
+  height: 1.3rem;
+  margin-left: 0.34rem;
+  background: var(--orange);
 }
 
 .docsSidebar nav a.active,
@@ -1298,6 +1418,37 @@ body.docsAppPage .appOverviewPage {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.1rem 1.45rem;
+}
+
+.docsExploreSections {
+  display: grid;
+  gap: 1.35rem;
+}
+
+.docsExploreGroup {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.docsExploreGroup > header {
+  display: grid;
+  gap: 0.25rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid rgba(168, 156, 145, 0.16);
+}
+
+.docsExploreGroup > header span {
+  color: var(--orange);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.docsExploreGroup > header h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.03rem;
 }
 
 .docsAreaCard {
@@ -1700,6 +1851,465 @@ body.docsPipelinePage .docsMain {
   padding: 1.65rem 1.9rem 2rem;
 }
 
+body.docsPipelinePage .pipelineInputDocPage {
+  display: grid !important;
+  gap: 1rem;
+  max-width: none;
+  scroll-margin-top: 5.6rem;
+}
+
+.pipelineInputDocHeader {
+  display: grid;
+  grid-template-columns: minmax(25rem, 1fr) minmax(31rem, 0.78fr);
+  gap: 1.2rem;
+  align-items: end;
+  padding: 0.15rem 0 0.25rem;
+}
+
+.pipelineInputDocHeader > *,
+.pipelineInputDocGrid > *,
+.pipelineTemplateControls {
+  min-width: 0;
+}
+
+.pipelineInputDocHeader h1 {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  color: var(--paper);
+  font-size: clamp(2rem, 3vw, 2.55rem);
+  line-height: 1;
+}
+
+.pipelineInputDocHeader h1 span {
+  padding: 0.24rem 0.55rem;
+  border: 1px solid rgba(139, 92, 246, 0.48);
+  border-radius: 999px;
+  background: rgba(139, 92, 246, 0.13);
+  color: #b39cff;
+  font-size: 0.72rem;
+}
+
+.pipelineInputDocHeader p {
+  max-width: 58rem;
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.pipelineTemplateControls {
+  display: grid;
+  grid-template-columns: minmax(13rem, 1fr) minmax(9rem, 0.72fr) minmax(10rem, 0.64fr);
+  gap: 0.85rem;
+  align-items: end;
+}
+
+.pipelineTemplateControls label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.pipelineTemplateControls select,
+.pipelineTemplateControls button {
+  min-width: 0;
+  width: 100%;
+  height: 2.55rem;
+  border: 1px solid var(--panel-line);
+  border-radius: 5px;
+  background: rgba(11, 11, 10, 0.92);
+  color: var(--text);
+  font: inherit;
+}
+
+.pipelineTemplateControls select {
+  padding: 0 0.8rem;
+}
+
+.pipelineTemplateControls button {
+  color: var(--paper);
+  font-weight: 800;
+}
+
+.pipelineInputDocGrid {
+  display: grid;
+  grid-template-columns: minmax(30rem, 1.08fr) minmax(29rem, 0.98fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.pipelineDocPanel {
+  border: 1px solid var(--panel-line);
+  border-radius: 6px;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(255, 90, 0, 0.045), transparent 15rem),
+    linear-gradient(180deg, rgba(19, 20, 19, 0.86), rgba(9, 10, 9, 0.96));
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.015) inset;
+}
+
+.pipelineDocPanel > header,
+.pipelineInputFormat > header,
+.pipelineInputOverview > header {
+  padding: 1.15rem 1.1rem 0.3rem;
+}
+
+.pipelineDocPanel h2,
+.pipelineDocPanel h3 {
+  margin: 0;
+  color: var(--paper);
+}
+
+.pipelineDocPanel h2 {
+  font-size: 1.02rem;
+}
+
+.pipelineDocPanel h3 {
+  font-size: 1rem;
+}
+
+.pipelineDocPanel p {
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+  line-height: 1.48;
+}
+
+.pipelineInputStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 0.8rem 1.1rem 1rem;
+  border-bottom: 1px solid rgba(168, 156, 145, 0.14);
+}
+
+.pipelineInputStats div,
+.pipelineFormatBadges div,
+.pipelineInputLegend article {
+  border: 1px solid rgba(168, 156, 145, 0.14);
+  border-radius: 5px;
+  background: rgba(9, 10, 10, 0.72);
+}
+
+.pipelineInputStats div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.08rem 0.6rem;
+  min-height: 4rem;
+  padding: 0.8rem;
+}
+
+.pipelineInputStats strong {
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  min-width: 2rem;
+  height: 2rem;
+  border-radius: 4px;
+  background: rgba(139, 92, 246, 0.18);
+  color: #b39cff;
+  font-size: 1.35rem;
+}
+
+.pipelineInputStats .provided strong {
+  background: rgba(16, 185, 129, 0.16);
+  color: var(--green);
+}
+
+.pipelineInputStats .missing strong {
+  background: rgba(255, 77, 109, 0.15);
+  color: var(--red);
+}
+
+.pipelineInputStats .structured strong {
+  background: rgba(56, 189, 248, 0.13);
+  color: var(--cyan);
+  font-size: 1rem;
+}
+
+.pipelineInputStats span {
+  color: var(--paper);
+  font-weight: 900;
+}
+
+.pipelineInputStats small {
+  color: var(--muted);
+}
+
+.pipelineInputElements {
+  padding: 0.95rem 1.1rem 1.1rem;
+}
+
+.pipelineInputRows {
+  display: grid;
+  gap: 0.24rem;
+  margin-top: 0.85rem;
+}
+
+.pipelineInputRow {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1fr) auto minmax(7.6rem, auto) auto;
+  gap: 0.75rem;
+  align-items: center;
+  min-height: 3.9rem;
+  padding: 0.68rem 0.78rem;
+  border: 1px solid rgba(168, 156, 145, 0.13);
+  border-radius: 4px;
+  background: rgba(9, 10, 10, 0.72);
+}
+
+.pipelineInputRow > div {
+  display: grid;
+  grid-template-columns: 1.15rem minmax(0, 1fr);
+  gap: 0 0.7rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.pipelineInputRow i,
+.pipelineInputLegend span {
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+}
+
+.pipelineInputRow i {
+  grid-row: 1 / span 2;
+}
+
+.pipelineInputRow strong {
+  color: #d6c8ff;
+  font-weight: 900;
+}
+
+.pipelineInputRow span {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.pipelineInputRow small {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.pipelineInputRow em,
+.pipelineInputRow b {
+  padding: 0.22rem 0.46rem;
+  border-radius: 4px;
+  font-style: normal;
+  font-size: 0.72rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.pipelineInputRow b {
+  background: rgba(139, 92, 246, 0.18);
+  color: #c7b6ff;
+}
+
+.pipelineInputRow em.provided {
+  background: rgba(16, 185, 129, 0.14);
+  color: var(--green);
+}
+
+.pipelineInputRow em.configured {
+  background: rgba(56, 189, 248, 0.13);
+  color: var(--cyan);
+}
+
+.pipelineInputRow em.missing {
+  background: rgba(255, 77, 109, 0.14);
+  color: var(--red);
+}
+
+.pipelineInputRow i.required,
+.pipelineInputLegend .required {
+  color: #b39cff;
+  background: rgba(139, 92, 246, 0.14);
+}
+
+.pipelineInputRow i.configured,
+.pipelineInputLegend .configured {
+  color: var(--cyan);
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.pipelineInputRow i.missing,
+.pipelineInputLegend .missing {
+  color: var(--red);
+  background: rgba(255, 77, 109, 0.12);
+}
+
+.pipelineInputLegend .provided {
+  color: var(--green);
+  background: rgba(16, 185, 129, 0.13);
+}
+
+.pipelineInputLegend .type {
+  color: var(--cyan);
+  border-radius: 50%;
+  background: rgba(56, 189, 248, 0.1);
+}
+
+.pipelineInputNotice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 5px;
+  background: rgba(69, 43, 122, 0.18);
+}
+
+.pipelineInputNotice span {
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border: 1px solid #b39cff;
+  border-radius: 50%;
+  color: #b39cff;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+.pipelineInputNotice p {
+  margin: 0;
+}
+
+.pipelineFormatBadges {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  padding: 0.95rem 1.1rem 1rem;
+}
+
+.pipelineFormatBadges div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.05rem 0.7rem;
+  min-height: 4.2rem;
+  padding: 0.82rem;
+}
+
+.pipelineFormatBadges strong {
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+.pipelineFormatBadges .json {
+  color: #b39cff;
+  background: rgba(139, 92, 246, 0.15);
+}
+
+.pipelineFormatBadges .valid {
+  color: var(--green);
+  background: rgba(16, 185, 129, 0.13);
+}
+
+.pipelineFormatBadges .required {
+  color: var(--cyan);
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.pipelineFormatBadges span {
+  color: var(--paper);
+  font-weight: 900;
+}
+
+.pipelineFormatBadges small {
+  color: var(--muted);
+}
+
+.pipelineExampleJson {
+  padding: 0.55rem 1.1rem 1rem;
+}
+
+.pipelineExampleJson > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 0.7rem;
+}
+
+.pipelineExampleJson button {
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--panel-line);
+  border-radius: 4px;
+  background: rgba(10, 10, 9, 0.9);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.pipelineExampleJson pre {
+  max-height: 24rem;
+  margin: 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(168, 156, 145, 0.16);
+  border-radius: 5px;
+  background: #070807;
+  overflow: auto;
+}
+
+.pipelineExampleJson code {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #d1d5db;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.pipelineInputLegend {
+  padding: 1rem 1.1rem 1.15rem;
+}
+
+.pipelineInputLegend > header {
+  padding: 0;
+}
+
+.pipelineInputLegend > div {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.pipelineInputLegend article {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.12rem 0.6rem;
+  min-height: 4.5rem;
+  padding: 0.75rem;
+}
+
+.pipelineInputLegend span {
+  grid-row: 1 / span 2;
+  margin-top: 0.1rem;
+}
+
+.pipelineInputLegend strong {
+  color: var(--paper);
+  font-size: 0.86rem;
+}
+
+.pipelineInputLegend p {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
 .pipelineHero {
   display: grid;
   grid-template-columns: minmax(24rem, 1fr) minmax(42rem, 0.95fr);
@@ -1960,7 +2570,7 @@ body.docsPipelinePage .docsMain {
 
 .pipelineInputConfigRow {
   display: grid;
-  grid-template-columns: minmax(9rem, 0.85fr) minmax(12rem, 1.35fr) minmax(7rem, 0.5fr) auto 2rem;
+  grid-template-columns: minmax(8rem, 0.8fr) minmax(7.6rem, 0.58fr) minmax(12rem, 1.35fr) minmax(7rem, 0.5fr) auto 2rem;
   gap: 0.42rem;
   align-items: center;
   min-width: 0;
@@ -2359,6 +2969,19 @@ body.docsPipelinePage .docsMain {
 .pipelineCard.operatorInput {
   border-color: rgba(126, 81, 255, 0.62);
   color: #a683ff;
+  cursor: pointer;
+}
+
+.pipelineCard.operatorInput i {
+  grid-row: 1 / span 4;
+  min-width: 1.1rem;
+  font-size: 0.66rem;
+  font-weight: 900;
+}
+
+.pipelineCard.operatorInput.selected {
+  background: rgba(36, 23, 68, 0.78);
+  box-shadow: 0 0 0 1px rgba(166, 131, 255, 0.16), 0 0 18px rgba(126, 81, 255, 0.13);
 }
 
 .pipelineCard.operatorInput.missing {
@@ -2400,11 +3023,57 @@ body.docsPipelinePage .docsMain {
 .pipelineCard.receipt {
   border-color: rgba(255, 119, 0, 0.55);
   color: var(--orange);
+  cursor: pointer;
+}
+
+.pipelineCard.receipt.selected {
+  background: rgba(64, 31, 7, 0.76);
+  box-shadow: 0 0 0 1px rgba(255, 119, 0, 0.16), 0 0 18px rgba(255, 119, 0, 0.13);
+}
+
+.pipelineCard.receipt.configured em,
+.pipelineCard.receipt.queued em {
+  color: var(--orange);
+  background: rgba(255, 90, 0, 0.12);
+}
+
+.pipelineCard.receipt.blocked,
+.pipelineCard.receipt.rejected {
+  border-color: rgba(255, 77, 94, 0.58);
+  color: #ff5b68;
+}
+
+.pipelineCard.receipt.blocked em,
+.pipelineCard.receipt.rejected em {
+  color: #ff5b68;
+  background: rgba(255, 77, 94, 0.12);
 }
 
 .pipelineCard.validator {
   border-color: rgba(16, 182, 106, 0.55);
   color: var(--green);
+  cursor: pointer;
+}
+
+.pipelineCard.validator.selected {
+  background: rgba(5, 42, 27, 0.76);
+  box-shadow: 0 0 0 1px rgba(16, 182, 106, 0.16), 0 0 18px rgba(16, 182, 106, 0.13);
+}
+
+.pipelineCard.validator.configured em,
+.pipelineCard.validator.warning em {
+  color: var(--orange);
+  background: rgba(255, 90, 0, 0.12);
+}
+
+.pipelineCard.validator.failed {
+  border-color: rgba(255, 77, 94, 0.58);
+  color: #ff5b68;
+}
+
+.pipelineCard.validator.failed em {
+  color: #ff5b68;
+  background: rgba(255, 77, 94, 0.12);
 }
 
 .pipelineCard.evidence {
@@ -2641,6 +3310,13 @@ body.docsPipelinePage .docsMain {
   overflow-x: auto;
 }
 
+#pipelineInspectorNav.hidden,
+#pipelineWorkerInspectorActions.hidden,
+#pipelineManifestEditor.hidden,
+#pipelineContractSummary.hidden {
+  display: none;
+}
+
 .pipelineInspector nav a {
   display: flex;
   align-items: center;
@@ -2691,6 +3367,592 @@ body.docsPipelinePage .docsMain {
   background: rgba(42, 157, 244, 0.09);
   font-size: 0.68rem;
   font-weight: 900;
+}
+
+.pipelineInputInspector {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0.85rem 0.9rem 0;
+  padding: 0.85rem;
+  border: 1px solid rgba(126, 81, 255, 0.28);
+  border-radius: 5px;
+  background: rgba(9, 6, 15, 0.78);
+}
+
+.pipelineInputInspector.hidden {
+  display: none;
+}
+
+.pipelineInputInspectorGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.58rem;
+}
+
+.pipelineInputInspectorGrid label {
+  display: grid;
+  gap: 0.32rem;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pipelineInputInspectorGrid label.wide {
+  grid-column: 1 / -1;
+}
+
+.pipelineInputInspectorGrid input[type="text"],
+.pipelineInputInspectorGrid select,
+.pipelineInputInspectorGrid textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0 0.55rem;
+  border: 1px solid rgba(168, 156, 145, 0.22);
+  border-radius: 4px;
+  color: var(--text);
+  background: #080909;
+  font: inherit;
+  font-size: 0.74rem;
+  outline: none;
+}
+
+.pipelineInputInspectorGrid textarea {
+  min-height: 5.4rem;
+  padding: 0.5rem 0.55rem;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  line-height: 1.35;
+  resize: vertical;
+}
+
+.pipelineInputRequiredToggle {
+  grid-column: 1 / -1;
+  display: flex !important;
+  grid-template-columns: none !important;
+  align-items: center;
+  gap: 0.45rem;
+  text-transform: none !important;
+}
+
+.pipelineInputInspectorGrid input:focus,
+.pipelineInputInspectorGrid select:focus,
+.pipelineInputInspectorGrid textarea:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 1px rgba(255, 90, 0, 0.16);
+}
+
+.pipelineInputTypeEditors {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.pipelineInputTypeEditor {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.68rem;
+  border: 1px solid rgba(168, 156, 145, 0.14);
+  border-radius: 5px;
+  background: rgba(6, 7, 8, 0.68);
+}
+
+.pipelineInputTypeEditor.hidden {
+  display: none;
+}
+
+.pipelineInputTypeEditor header {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.pipelineInputTypeEditor strong {
+  color: var(--text);
+  font-size: 0.74rem;
+}
+
+.pipelineInputTypeEditor span,
+.pipelineInputManifestOutput {
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.pipelineInputTypeEditor label {
+  display: grid;
+  gap: 0.32rem;
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pipelineInputTypeEditor input,
+.pipelineInputTypeEditor textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0 0.55rem;
+  border: 1px solid rgba(168, 156, 145, 0.22);
+  border-radius: 4px;
+  color: var(--text);
+  background: #080909;
+  font: inherit;
+  font-size: 0.74rem;
+  outline: none;
+}
+
+.pipelineInputTypeEditor textarea {
+  min-height: 4.2rem;
+  padding: 0.5rem 0.55rem;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  line-height: 1.35;
+  resize: vertical;
+}
+
+.pipelineInputTypeEditor input:focus,
+.pipelineInputTypeEditor textarea:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 1px rgba(255, 90, 0, 0.16);
+}
+
+.pipelineInputManifestOutput {
+  display: flex;
+  align-items: center;
+  min-height: 1.55rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgba(126, 81, 255, 0.16);
+  border-radius: 4px;
+  background: rgba(126, 81, 255, 0.08);
+}
+
+.pipelineCard.operatorInput small {
+  justify-self: start;
+  color: #b99bff;
+  font-family: inherit;
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+#pipelineInputSaveButton {
+  justify-self: start;
+  min-height: 1.95rem;
+  padding: 0 0.65rem;
+  border-color: rgba(255, 90, 0, 0.38);
+  color: var(--orange);
+  background: rgba(255, 90, 0, 0.1);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+#pipelineInputInspectorStatus {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.pipelineIntegrationInspector {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0.85rem 0.9rem 0;
+  padding: 0.85rem;
+  border: 1px solid rgba(255, 119, 0, 0.32);
+  border-radius: 5px;
+  background: rgba(17, 9, 3, 0.84);
+}
+
+.pipelineIntegrationInspector.hidden {
+  display: none;
+}
+
+.pipelineIntegrationInspector [data-integration-section].hidden {
+  display: none;
+}
+
+.pipelineIntegrationModeBar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.pipelineIntegrationModeBar button {
+  min-height: 1.95rem;
+  border-color: rgba(255, 119, 0, 0.24);
+  color: var(--muted);
+  background: rgba(8, 9, 9, 0.78);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.pipelineIntegrationModeBar button.active {
+  color: var(--orange);
+  border-color: rgba(255, 119, 0, 0.55);
+  background: rgba(255, 90, 0, 0.12);
+}
+
+.pipelineIntegrationInspectorGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.42fr);
+  gap: 0.58rem;
+}
+
+.pipelineIntegrationInspectorGrid label {
+  display: grid;
+  gap: 0.32rem;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pipelineIntegrationInspectorGrid label.wide {
+  grid-column: 1 / -1;
+}
+
+.pipelineIntegrationInspectorGrid input[type="text"],
+.pipelineIntegrationInspectorGrid select,
+.pipelineIntegrationInspectorGrid textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0 0.55rem;
+  border: 1px solid rgba(168, 156, 145, 0.22);
+  border-radius: 4px;
+  color: var(--text);
+  background: #080909;
+  font: inherit;
+  font-size: 0.74rem;
+  outline: none;
+}
+
+.pipelineIntegrationInspectorGrid textarea {
+  min-height: 4.35rem;
+  padding: 0.5rem 0.55rem;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  line-height: 1.35;
+  resize: vertical;
+}
+
+#pipelineIntegrationDependenciesInput,
+#pipelineIntegrationArtifactsInput,
+#pipelineIntegrationGatesInput,
+#pipelineIntegrationRollbackInput {
+  min-height: 4.85rem;
+}
+
+.pipelineIntegrationInspectorGrid input:focus,
+.pipelineIntegrationInspectorGrid select:focus,
+.pipelineIntegrationInspectorGrid textarea:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 1px rgba(255, 90, 0, 0.16);
+}
+
+.pipelineIntegrationOutputs {
+  display: grid;
+  gap: 0.32rem;
+  color: var(--muted);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.66rem;
+}
+
+#pipelineIntegrationSaveButton {
+  justify-self: start;
+  min-height: 1.95rem;
+  padding: 0 0.65rem;
+  border-color: rgba(255, 119, 0, 0.4);
+  color: var(--orange);
+  background: rgba(255, 90, 0, 0.1);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+#pipelineIntegrationInspectorStatus {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.pipelineValidationInspector {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0.85rem 0.9rem 0;
+  padding: 0.85rem;
+  border: 1px solid rgba(16, 182, 106, 0.28);
+  border-radius: 5px;
+  background: rgba(3, 15, 10, 0.82);
+}
+
+.pipelineValidationInspector.hidden {
+  display: none;
+}
+
+.pipelineValidationModeBar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.pipelineValidationModeBar button {
+  min-height: 1.95rem;
+  border-color: rgba(16, 182, 106, 0.24);
+  color: var(--muted);
+  background: rgba(8, 9, 9, 0.78);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.pipelineValidationModeBar button.active {
+  color: var(--green);
+  border-color: rgba(16, 182, 106, 0.55);
+  background: rgba(16, 182, 106, 0.12);
+}
+
+.pipelineValidationConsultPanel,
+.pipelineValidationTypedEditor {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 0.7rem;
+  border: 1px solid rgba(16, 182, 106, 0.18);
+  border-radius: 5px;
+  background: rgba(4, 9, 7, 0.72);
+}
+
+.pipelineValidationConsultPanel > header,
+.pipelineValidationTypedEditor > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.pipelineValidationConsultPanel strong,
+.pipelineValidationTypedEditor strong {
+  display: block;
+  color: var(--text);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.pipelineValidationConsultPanel span,
+.pipelineValidationTypedEditor span {
+  display: block;
+  margin-top: 0.12rem;
+  color: var(--muted);
+  font-size: 0.66rem;
+  line-height: 1.35;
+}
+
+.pipelineValidationConsultPanel button,
+.pipelineValidationTypedEditor button {
+  min-height: 1.85rem;
+  padding: 0 0.55rem;
+  border-color: rgba(16, 182, 106, 0.32);
+  color: var(--green);
+  background: rgba(16, 182, 106, 0.09);
+  font-size: 0.66rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.pipelineValidationIntegrationContext {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.pipelineValidationIntegrationContext p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.pipelineValidationIntegrationContext article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.35rem 0.55rem;
+  align-items: center;
+  min-width: 0;
+  padding: 0.52rem;
+  border: 1px solid rgba(168, 156, 145, 0.14);
+  border-radius: 4px;
+  background: rgba(6, 7, 7, 0.72);
+}
+
+.pipelineValidationIntegrationContext article small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.62rem;
+  overflow-wrap: anywhere;
+}
+
+.pipelineValidationTypedEditors {
+  display: grid;
+  gap: 0.58rem;
+}
+
+.pipelineValidationTypedEditor {
+  display: none;
+}
+
+.pipelineValidationTypedEditor.active {
+  display: grid;
+}
+
+.pipelineValidationRows {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.pipelineValidationRow {
+  display: grid;
+  grid-template-columns: minmax(6.1rem, 0.42fr) minmax(0, 1fr) auto;
+  gap: 0.4rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.pipelineValidationRow.commandRow {
+  grid-template-columns: 1.8rem minmax(0, 1fr) auto;
+}
+
+.pipelineValidationRow > span {
+  display: grid;
+  place-items: center;
+  min-height: 1.95rem;
+  border: 1px solid rgba(16, 182, 106, 0.18);
+  border-radius: 4px;
+  color: var(--green);
+  background: rgba(16, 182, 106, 0.09);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.pipelineValidationRow input,
+.pipelineValidationRow select {
+  width: 100%;
+  min-width: 0;
+  min-height: 1.95rem;
+  padding: 0 0.52rem;
+  border: 1px solid rgba(168, 156, 145, 0.22);
+  border-radius: 4px;
+  color: var(--text);
+  background: #080909;
+  font: inherit;
+  font-size: 0.7rem;
+  outline: none;
+}
+
+.pipelineValidationRow input:focus,
+.pipelineValidationRow select:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px rgba(16, 182, 106, 0.16);
+}
+
+.pipelineValidationRow [data-validation-row-remove] {
+  border-color: rgba(255, 77, 94, 0.25);
+  color: #ff7f89;
+  background: rgba(255, 77, 94, 0.08);
+}
+
+.pipelineValidationBulkGrid {
+  padding-top: 0.2rem;
+  border-top: 1px solid rgba(16, 182, 106, 0.14);
+}
+
+.pipelineValidationInspectorGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.42fr);
+  gap: 0.58rem;
+}
+
+.pipelineValidationInspectorGrid label {
+  display: grid;
+  gap: 0.32rem;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pipelineValidationInspectorGrid label.wide {
+  grid-column: 1 / -1;
+}
+
+.pipelineValidationInspectorGrid input[type="text"],
+.pipelineValidationInspectorGrid select,
+.pipelineValidationInspectorGrid textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0 0.55rem;
+  border: 1px solid rgba(168, 156, 145, 0.22);
+  border-radius: 4px;
+  color: var(--text);
+  background: #080909;
+  font: inherit;
+  font-size: 0.74rem;
+  outline: none;
+}
+
+.pipelineValidationInspectorGrid textarea {
+  min-height: 4.35rem;
+  padding: 0.5rem 0.55rem;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  line-height: 1.35;
+  resize: vertical;
+}
+
+#pipelineValidationCommandsInput,
+#pipelineValidationEvidenceInput,
+#pipelineValidationGatesInput,
+#pipelineValidationSchemaInput {
+  min-height: 5.25rem;
+}
+
+.pipelineValidationBlockingToggle {
+  grid-column: 1 / -1;
+  display: flex !important;
+  grid-template-columns: none !important;
+  align-items: center;
+  gap: 0.45rem;
+  text-transform: none !important;
+}
+
+.pipelineValidationInspectorGrid input:focus,
+.pipelineValidationInspectorGrid select:focus,
+.pipelineValidationInspectorGrid textarea:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px rgba(16, 182, 106, 0.16);
+}
+
+.pipelineValidationOutputs {
+  display: grid;
+  gap: 0.32rem;
+  color: var(--muted);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.66rem;
+}
+
+#pipelineValidationSaveButton {
+  justify-self: start;
+  min-height: 1.95rem;
+  padding: 0 0.65rem;
+  border-color: rgba(16, 182, 106, 0.38);
+  color: var(--green);
+  background: rgba(16, 182, 106, 0.1);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+#pipelineValidationInspectorStatus {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
 }
 
 #pipelineManifestStatus {
@@ -2749,23 +4011,343 @@ body.docsPipelinePage .docsMain {
   gap: 0.45rem;
 }
 
-.contractSummary dt::before {
-  content: "✓";
-  display: grid;
-  place-items: center;
-  width: 0.9rem;
-  height: 0.9rem;
-  border: 1px solid rgba(16, 182, 106, 0.55);
-  border-radius: 50%;
-  color: var(--green);
-  font-size: 0.55rem;
-}
 
 .contractSummary dd {
   margin: 0;
   color: var(--text);
   font-weight: 800;
   text-align: right;
+}
+
+.contractCheck {
+  display: inline-grid;
+  place-items: center;
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 1px solid rgba(16, 182, 106, 0.55);
+  border-radius: 50%;
+  color: var(--green);
+  font-size: 0.6rem;
+  flex-shrink: 0;
+}
+
+/* Inspector tab panels */
+.pipelineInspectorPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem 1rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.contractPanelGroup {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.contractPanelGroup h3 {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.contractPathList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.28rem;
+}
+
+.contractPathList li {
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.contractPathList code {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.78rem;
+  color: var(--orange);
+  word-break: break-all;
+}
+
+.contractPathList .contractNone,
+.contractAcceptanceList .contractNone {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.contractAcceptanceList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.contractAcceptanceList li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.contractMeta {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgba(168, 156, 145, 0.14);
+  border-radius: 5px;
+  background: rgba(17, 17, 16, 0.6);
+  display: grid;
+  gap: 0.45rem;
+}
+
+.contractMeta div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.contractMeta dt {
+  color: var(--muted);
+}
+
+.contractMeta dd {
+  margin: 0;
+  color: var(--text);
+  font-weight: 700;
+  text-align: right;
+}
+
+/* Artifact panel */
+.artifactHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(168, 156, 145, 0.14);
+  border-radius: 5px;
+  background: rgba(17, 17, 16, 0.6);
+}
+
+.artifactHeader div {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.artifactHeader code {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.76rem;
+  color: var(--orange);
+  word-break: break-all;
+}
+
+.artifactHeader small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pipelineArtifactPreview {
+  margin: 0;
+  padding: 0.75rem;
+  background: rgba(12, 12, 11, 0.9);
+  border: 1px solid rgba(168, 156, 145, 0.12);
+  border-radius: 5px;
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.pipelineArtifactPreview code {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.76rem;
+  color: var(--orange);
+  white-space: pre;
+}
+
+.artifactMeta {
+  margin: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.artifactMeta div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.artifactMeta dt {
+  color: var(--muted);
+}
+
+.artifactMeta dd {
+  margin: 0;
+  color: var(--text);
+  font-weight: 700;
+  text-align: right;
+}
+
+/* Logs panel */
+.logsToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.logsToolbar span {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.logsToolbar button {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid rgba(168, 156, 145, 0.2);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.logsToolbar button:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.logsScroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: 0.1rem;
+  background: rgba(12, 12, 11, 0.9);
+  border: 1px solid rgba(168, 156, 145, 0.12);
+  border-radius: 5px;
+  padding: 0.6rem 0.75rem;
+}
+
+.logEntry {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: 0.5rem;
+  font-size: 0.76rem;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  line-height: 1.5;
+}
+
+.logEntry time {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.logEntry.done span { color: var(--green); }
+.logEntry.info span { color: var(--text); }
+.logEntry.warn span { color: #e6b44a; }
+.logEntry.error span { color: #e05a4a; }
+
+/* Cost panel */
+.costSummary {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(168, 156, 145, 0.14);
+  border-radius: 5px;
+  background: rgba(17, 17, 16, 0.6);
+}
+
+.costTotal {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.costTotal strong {
+  font-size: 1.45rem;
+  font-weight: 900;
+  color: var(--text);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+.costTotal span {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.costBar {
+  height: 4px;
+  background: rgba(168, 156, 145, 0.14);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.costBarFill {
+  height: 100%;
+  background: var(--orange);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+.costBarLabel {
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.costBreakdown {
+  margin: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.costBreakdown div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid rgba(168, 156, 145, 0.08);
+}
+
+.costBreakdown div:last-child {
+  border-bottom: 0;
+}
+
+.costBreakdown dt {
+  color: var(--muted);
+}
+
+.costBreakdown dd {
+  margin: 0;
+  color: var(--text);
+  font-weight: 700;
+  text-align: right;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.78rem;
+}
+
+.costNote {
+  font-size: 0.76rem;
+  color: var(--muted);
+  display: flex;
+  gap: 0.4rem;
+  align-items: flex-start;
+  line-height: 1.5;
 }
 
 .pipelineArtifactInventory {
@@ -2947,6 +4529,45 @@ body.docsPipelinePage .docsMain {
 .miniWatchButtons strong {
   background: #ff4937;
   color: white;
+}
+
+.pipelineStatusMini {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.9rem 1.1rem;
+  width: 100%;
+}
+
+.pipelineStatusMiniRow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.83rem;
+  color: var(--muted);
+}
+
+.pipelineStatusMiniRow strong {
+  margin-left: auto;
+  color: var(--text);
+  font-size: 0.83rem;
+}
+
+.pipelineStatusMiniRow small {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.pipelineStatusDot {
+  width: 0.52rem;
+  height: 0.52rem;
+  border-radius: 50%;
+  background: rgba(168, 156, 145, 0.4);
+  flex-shrink: 0;
+}
+
+.pipelineStatusDot.healthy {
+  background: #4caf82;
+  box-shadow: 0 0 0 2px rgba(76, 175, 130, 0.2);
 }
 
 .appControlCard {
@@ -5929,6 +7550,17 @@ body.studioMode #dev-pipeline-studio .pipelineStatusGrid {
     grid-template-columns: 1fr;
   }
 
+  .pipelineInputInspectorGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .pipelineValidationInspectorGrid,
+  .pipelineValidationModeBar,
+  .pipelineIntegrationInspectorGrid,
+  .pipelineIntegrationModeBar {
+    grid-template-columns: 1fr;
+  }
+
   .sidebar {
     display: none;
   }
@@ -6574,5 +8206,54 @@ body.studioMode #dev-pipeline-studio .pipelineStatusGrid {
 
   .docsUpdates time {
     text-align: left;
+  }
+}
+
+@media (max-width: 1180px) {
+  .pipelineInputDocHeader,
+  .pipelineInputDocGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .pipelineTemplateControls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pipelineTemplateControls button {
+    grid-column: 1 / -1;
+  }
+
+  .pipelineInputLegend > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  body.docsPipelinePage .pipelineInputDocPage {
+    scroll-margin-top: 12.5rem;
+  }
+
+  .pipelineTemplateControls,
+  .pipelineInputStats,
+  .pipelineFormatBadges,
+  .pipelineInputLegend > div {
+    grid-template-columns: 1fr;
+  }
+
+  .pipelineInputRow {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+    align-items: start;
+  }
+
+  .pipelineInputRow small,
+  .pipelineInputRow em,
+  .pipelineInputRow b {
+    justify-self: start;
+  }
+
+  .pipelineExampleJson > header {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

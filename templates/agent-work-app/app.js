@@ -63,6 +63,72 @@ const pipelineBudgetCapInput = document.querySelector("#pipelineBudgetCapInput")
 const pipelineReadPathsInput = document.querySelector("#pipelineReadPathsInput");
 const pipelineRequiredInputsEditor = document.querySelector("#pipelineRequiredInputsEditor");
 const pipelineAddInputButton = document.querySelector("#pipelineAddInputButton");
+const pipelineInspectorBadge = document.querySelector("#pipelineInspectorBadge");
+const pipelineInspectorState = document.querySelector("#pipelineInspectorState");
+const pipelineInspectorNav = document.querySelector("#pipelineInspectorNav");
+const pipelineInputInspector = document.querySelector("#pipelineInputInspector");
+const pipelineInputTitleInput = document.querySelector("#pipelineInputTitleInput");
+const pipelineInputTypeSelect = document.querySelector("#pipelineInputTypeSelect");
+const pipelineInputDetailInput = document.querySelector("#pipelineInputDetailInput");
+const pipelineInputStatusSelect = document.querySelector("#pipelineInputStatusSelect");
+const pipelineInputRequiredCheckbox = document.querySelector("#pipelineInputRequiredCheckbox");
+const pipelineInputFormatInput = document.querySelector("#pipelineInputFormatInput");
+const pipelineInputImageRefsInput = document.querySelector("#pipelineInputImageRefsInput");
+const pipelineInputImageNotesInput = document.querySelector("#pipelineInputImageNotesInput");
+const pipelineInputQuestionsInput = document.querySelector("#pipelineInputQuestionsInput");
+const pipelineInputPathsInput = document.querySelector("#pipelineInputPathsInput");
+const pipelineInputPathPolicyInput = document.querySelector("#pipelineInputPathPolicyInput");
+const pipelineInputArtifactsInput = document.querySelector("#pipelineInputArtifactsInput");
+const pipelineInputEvidencePolicyInput = document.querySelector("#pipelineInputEvidencePolicyInput");
+const pipelineInputManifestPath = document.querySelector("#pipelineInputManifestPath");
+const pipelineInputSaveButton = document.querySelector("#pipelineInputSaveButton");
+const pipelineInputInspectorStatus = document.querySelector("#pipelineInputInspectorStatus");
+const pipelineIntegrationInspector = document.querySelector("#pipelineIntegrationInspector");
+const pipelineIntegrationTitleInput = document.querySelector("#pipelineIntegrationTitleInput");
+const pipelineIntegrationStatusSelect = document.querySelector("#pipelineIntegrationStatusSelect");
+const pipelineIntegrationModeSelect = document.querySelector("#pipelineIntegrationModeSelect");
+const pipelineIntegrationApplyInput = document.querySelector("#pipelineIntegrationApplyInput");
+const pipelineIntegrationConflictInput = document.querySelector("#pipelineIntegrationConflictInput");
+const pipelineIntegrationDependenciesInput = document.querySelector("#pipelineIntegrationDependenciesInput");
+const pipelineIntegrationArtifactsInput = document.querySelector("#pipelineIntegrationArtifactsInput");
+const pipelineIntegrationGatesInput = document.querySelector("#pipelineIntegrationGatesInput");
+const pipelineIntegrationRollbackInput = document.querySelector("#pipelineIntegrationRollbackInput");
+const pipelineIntegrationSaveButton = document.querySelector("#pipelineIntegrationSaveButton");
+const pipelineIntegrationInspectorStatus = document.querySelector("#pipelineIntegrationInspectorStatus");
+const pipelineIntegrationConfigPath = document.querySelector("#pipelineIntegrationConfigPath");
+const pipelineIntegrationReceiptPath = document.querySelector("#pipelineIntegrationReceiptPath");
+const pipelineValidationInspector = document.querySelector("#pipelineValidationInspector");
+const pipelineValidationTitleInput = document.querySelector("#pipelineValidationTitleInput");
+const pipelineValidationStatusSelect = document.querySelector("#pipelineValidationStatusSelect");
+const pipelineValidationTierSelect = document.querySelector("#pipelineValidationTierSelect");
+const pipelineValidationModeSelect = document.querySelector("#pipelineValidationModeSelect");
+const pipelineValidationSummaryInput = document.querySelector("#pipelineValidationSummaryInput");
+const pipelineValidationCommandsInput = document.querySelector("#pipelineValidationCommandsInput");
+const pipelineValidationEvidenceInput = document.querySelector("#pipelineValidationEvidenceInput");
+const pipelineValidationGatesInput = document.querySelector("#pipelineValidationGatesInput");
+const pipelineValidationSchemaInput = document.querySelector("#pipelineValidationSchemaInput");
+const pipelineValidationBlockingCheckbox = document.querySelector("#pipelineValidationBlockingCheckbox");
+const pipelineValidationSaveButton = document.querySelector("#pipelineValidationSaveButton");
+const pipelineValidationInspectorStatus = document.querySelector("#pipelineValidationInspectorStatus");
+const pipelineValidationConfigPath = document.querySelector("#pipelineValidationConfigPath");
+const pipelineValidationReceiptPath = document.querySelector("#pipelineValidationReceiptPath");
+const pipelineValidationUseIntegrationButton = document.querySelector("#pipelineValidationUseIntegrationButton");
+const pipelineValidationIntegrationContext = document.querySelector("#pipelineValidationIntegrationContext");
+const pipelineValidationCommandRows = document.querySelector("#pipelineValidationCommandRows");
+const pipelineValidationEvidenceRows = document.querySelector("#pipelineValidationEvidenceRows");
+const pipelineValidationGateRows = document.querySelector("#pipelineValidationGateRows");
+const pipelineValidationSchemaRows = document.querySelector("#pipelineValidationSchemaRows");
+const pipelineValidationAddCommandButton = document.querySelector("#pipelineValidationAddCommandButton");
+const pipelineValidationAddEvidenceButton = document.querySelector("#pipelineValidationAddEvidenceButton");
+const pipelineValidationAddGateButton = document.querySelector("#pipelineValidationAddGateButton");
+const pipelineValidationAddSchemaButton = document.querySelector("#pipelineValidationAddSchemaButton");
+const pipelineWorkerInspectorActions = document.querySelector("#pipelineWorkerInspectorActions");
+const pipelineContractSummary = document.querySelector("#pipelineContractSummary");
+const pipelineContractPanel = document.querySelector("#pipelineContractPanel");
+const pipelineArtifactPanel = document.querySelector("#pipelineArtifactPanel");
+const pipelineLogsPanel = document.querySelector("#pipelineLogsPanel");
+const pipelineCostPanel = document.querySelector("#pipelineCostPanel");
+let currentInspectorTab = "manifest";
 const clusterView = document.querySelector("#clusterView");
 const consultingView = document.querySelector("#consultingView");
 const factoryView = document.querySelector("#factoryView");
@@ -1011,6 +1077,10 @@ let pipelineStudioTemplates = {
 let pipelineStudioControlsInitialized = false;
 let pipelineStudioState = null;
 let pipelineStudioOptionsReady = false;
+let pipelineSelectedInputId = "";
+let pipelineSelectedIntegrationId = "";
+let pipelineSelectedValidationId = "";
+let pipelineIntegrationActiveView = "order";
 
 function setPipelineField(name, value) {
   document.querySelectorAll(`[data-pipeline-field="${name}"]`).forEach((element) => {
@@ -1152,10 +1222,60 @@ function setPipelineManifestStatus(message, isError = false) {
   }
 }
 
+const PIPELINE_INPUT_TYPES = {
+  text: { label: "Text", icon: "T", format: "plain text" },
+  details: { label: "Details", icon: "D", format: "markdown" },
+  image: { label: "Image", icon: "IMG", format: "image reference" },
+  questionnaire: { label: "Questionnaire", icon: "Q", format: "structured answers" },
+  path: { label: "Path target", icon: "P", format: "path list" },
+  evidence: { label: "Evidence", icon: "E", format: "artifact list" }
+};
+
+function pipelineInputType(item) {
+  const raw = String(item?.kind || item?.input_type || item?.type || "text").trim().toLowerCase().replaceAll("_", "-");
+  if (raw === "images" || raw === "screenshot" || raw === "mockup") return "image";
+  if (raw === "question" || raw === "questions" || raw === "form") return "questionnaire";
+  if (raw === "paths" || raw === "route" || raw === "routes" || raw === "command") return "path";
+  if (raw === "artifact" || raw === "artifacts" || raw === "receipt") return "evidence";
+  if (raw === "detail") return "details";
+  return Object.prototype.hasOwnProperty.call(PIPELINE_INPUT_TYPES, raw) ? raw : "text";
+}
+
+function pipelineInputTypeLabel(type) {
+  return PIPELINE_INPUT_TYPES[type]?.label || PIPELINE_INPUT_TYPES.text.label;
+}
+
+function pipelineInputTypeIcon(type) {
+  return PIPELINE_INPUT_TYPES[type]?.icon || PIPELINE_INPUT_TYPES.text.icon;
+}
+
+function pipelineInputTypeOptions(selected = "text") {
+  return Object.entries(PIPELINE_INPUT_TYPES)
+    .map(([value, meta]) => `<option value="${escapeHtml(value)}" ${value === selected ? "selected" : ""}>${escapeHtml(meta.label)}</option>`)
+    .join("");
+}
+
+function safeParsePipelineInputPayload(row) {
+  try {
+    const parsed = JSON.parse(row?.dataset?.inputPayload || "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
 function pipelineInputStatusOptions(selected = "missing") {
   return ["provided", "configured", "missing", "optional"]
     .map((status) => `<option value="${status}" ${status === selected ? "selected" : ""}>${escapeHtml(status.replace("-", " "))}</option>`)
     .join("");
+}
+
+function pipelineInputId(item, index = 0) {
+  const existing = String(item?.id || "").trim();
+  if (existing) return existing;
+  const title = String(item?.title || "").trim();
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return slug || `input-${index + 1}`;
 }
 
 function renderPipelineRequiredInputsEditor(inputs) {
@@ -1164,15 +1284,20 @@ function renderPipelineRequiredInputsEditor(inputs) {
     { id: "task-request", title: "Task request", detail: "What should the AI change or build?", status: "missing", required: true }
   ];
   pipelineRequiredInputsEditor.innerHTML = rows
-    .map((item) => `
-      <div class="pipelineInputConfigRow" data-input-row>
+    .map((item, index) => {
+      const inputType = pipelineInputType(item);
+      const inputStatus = String(item.status || "missing").toLowerCase().replaceAll("_", "-").replaceAll(" ", "-");
+      return `
+      <div class="pipelineInputConfigRow" data-input-row data-input-id="${escapeHtml(pipelineInputId(item, index))}" data-input-payload="${escapeHtml(JSON.stringify({ ...item, kind: inputType }))}">
         <input data-input-title type="text" value="${escapeHtml(item.title || "")}" aria-label="Input title">
+        <select data-input-type aria-label="Input type">${pipelineInputTypeOptions(inputType)}</select>
         <input data-input-detail type="text" value="${escapeHtml(item.detail || "")}" aria-label="Input detail">
-        <select data-input-status aria-label="Input status">${pipelineInputStatusOptions(item.status || "missing")}</select>
+        <select data-input-status aria-label="Input status">${pipelineInputStatusOptions(inputStatus)}</select>
         <label><input data-input-required type="checkbox" ${item.required === false ? "" : "checked"}>Required</label>
         <button type="button" data-remove-input>×</button>
       </div>
-    `)
+    `;
+    })
     .join("");
 }
 
@@ -1180,14 +1305,21 @@ function collectPipelineRequiredInputs() {
   if (!pipelineRequiredInputsEditor) return [];
   return Array.from(pipelineRequiredInputsEditor.querySelectorAll("[data-input-row]"))
     .map((row, index) => {
+      const existing = safeParsePipelineInputPayload(row);
       const title = row.querySelector("[data-input-title]")?.value?.trim() || "";
       const detail = row.querySelector("[data-input-detail]")?.value?.trim() || "";
+      const kind = pipelineInputType({ kind: row.querySelector("[data-input-type]")?.value || existing.kind || existing.input_type || existing.type });
       const status = row.querySelector("[data-input-status]")?.value || "missing";
       const required = Boolean(row.querySelector("[data-input-required]")?.checked);
+      const existingId = String(row.dataset.inputId || "").trim();
+      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
       return {
-        id: title ? title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `input-${index + 1}` : `input-${index + 1}`,
+        ...existing,
+        id: existingId || slug || `input-${index + 1}`,
         title,
         detail,
+        kind,
+        input_type: kind,
         status,
         required
       };
@@ -1200,19 +1332,697 @@ function renderPipelineInputCards(items) {
   if (!inputStage) return;
   inputStage.querySelectorAll(".pipelineCard").forEach((card) => card.remove());
   const button = inputStage.querySelector("button");
-  (items || []).forEach((item) => {
+  (items || []).forEach((item, index) => {
     const card = document.createElement("div");
     const status = String(item.status || "Missing").toLowerCase();
-    card.className = `pipelineCard operatorInput ${status}`;
+    const inputId = pipelineInputId(item, index);
+    const inputType = pipelineInputType(item);
+    card.className = `pipelineCard operatorInput ${status} inputType-${inputType} ${pipelineSelectedInputId === inputId ? "selected" : ""}`;
+    card.dataset.inputId = inputId;
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+    card.setAttribute("aria-pressed", String(pipelineSelectedInputId === inputId));
     card.innerHTML = `
-      <i>▧</i>
+      <i>${escapeHtml(pipelineInputTypeIcon(inputType))}</i>
       <strong>${escapeHtml(item.title || "")}</strong>
-      <span>${escapeHtml(item.file || item.detail || "")}</span>
+      <span>${escapeHtml(item.detail || item.file || item.manifest || "")}</span>
+      <small>${escapeHtml(pipelineInputTypeLabel(inputType))}</small>
       <em>${escapeHtml(item.status || "Missing")}</em>
     `;
     inputStage.insertBefore(card, button || null);
   });
   if (button) button.textContent = `View all (${(items || []).length})`;
+}
+
+function pipelineValidatorId(item, index = 0) {
+  const existing = String(item?.id || "").trim();
+  if (existing) return existing;
+  const title = String(item?.title || "").trim();
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return slug || `validator-${index + 1}`;
+}
+
+function pipelineIntegrationId(item, index = 0) {
+  const existing = String(item?.id || "").trim();
+  if (existing) return existing;
+  const title = String(item?.title || "").trim();
+  const slug = title.toLowerCase().replace(/^integrate-?/, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return slug || `integration-${index + 1}`;
+}
+
+function renderPipelineIntegrationCards(items) {
+  const integrationStage = document.querySelector(".stageIntegrate");
+  if (!integrationStage) return;
+  integrationStage.querySelectorAll(".pipelineCard.receipt").forEach((card) => card.remove());
+  const button = integrationStage.querySelector("button");
+  (items || []).forEach((item, index) => {
+    const integrationId = pipelineIntegrationId(item, index);
+    const status = String(item.status || "Accepted").toLowerCase().replace(/\s+/g, "-");
+    const card = document.createElement("div");
+    card.className = `pipelineCard receipt ${status} ${pipelineSelectedIntegrationId === integrationId ? "selected" : ""}`;
+    card.dataset.integrationId = integrationId;
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+    card.setAttribute("aria-pressed", String(pipelineSelectedIntegrationId === integrationId));
+    card.innerHTML = `
+      <i>▧</i>
+      <strong>${escapeHtml(item.title || "")}</strong>
+      <span>${escapeHtml(item.file || item.receipt || "integration_receipt.json")}</span>
+      <em>${escapeHtml(item.status || "Accepted")}</em>
+    `;
+    integrationStage.insertBefore(card, button || null);
+  });
+  const headerCount = integrationStage.querySelector("header span");
+  if (headerCount) headerCount.textContent = `${(items || []).length} integration steps`;
+  if (button) button.textContent = `View all (${(items || []).length})`;
+}
+
+function renderPipelineValidatorCards(items) {
+  const validateStage = document.querySelector(".stageValidate");
+  if (!validateStage) return;
+  validateStage.querySelectorAll(".pipelineCard.validator").forEach((card) => card.remove());
+  const button = validateStage.querySelector("button");
+  (items || []).forEach((item, index) => {
+    const validatorId = pipelineValidatorId(item, index);
+    const status = String(item.status || "Configured").toLowerCase().replace(/\s+/g, "-");
+    const mode = String(item.mode || "").toLowerCase();
+    const card = document.createElement("div");
+    card.className = `pipelineCard validator ${status} ${mode === "evidence" || validatorId === "screenshot" ? "screenshotCard" : ""} ${pipelineSelectedValidationId === validatorId ? "selected" : ""}`;
+    card.dataset.validatorId = validatorId;
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+    card.setAttribute("aria-pressed", String(pipelineSelectedValidationId === validatorId));
+    card.innerHTML = `
+      <i>▧</i>
+      <strong>${escapeHtml(item.title || "")}</strong>
+      <span>${escapeHtml(item.file || item.receipt || "")}</span>
+      <em>${escapeHtml(item.status || "Configured")}</em>
+      ${mode === "evidence" || validatorId === "screenshot" ? `<div class="pipelineThumb" aria-hidden="true"><span></span><span></span><span></span><span></span></div>` : ""}
+    `;
+    validateStage.insertBefore(card, button || null);
+  });
+  const headerCount = validateStage.querySelector("header span");
+  if (headerCount) headerCount.textContent = `${(items || []).length} validators`;
+  if (button) button.textContent = `View all (${(items || []).length})`;
+}
+
+function selectedPipelineInput(inputId = pipelineSelectedInputId) {
+  const inputs = pipelineStudioState?.pipeline?.input_cards || selectedPipelinePayloadTemplate()?.required_inputs || selectedPipelineStudioTemplate()?.requiredInputs || [];
+  return (inputs || []).find((item, index) => pipelineInputId(item, index) === inputId) || null;
+}
+
+function selectedPipelineValidator(validatorId = pipelineSelectedValidationId) {
+  const validators = pipelineStudioState?.pipeline?.validators || selectedPipelinePayloadTemplate()?.validators || [];
+  return (validators || []).find((item, index) => pipelineValidatorId(item, index) === validatorId) || null;
+}
+
+function selectedPipelineIntegration(integrationId = pipelineSelectedIntegrationId) {
+  const integrations = pipelineStudioState?.pipeline?.integration || [];
+  return (integrations || []).find((item, index) => pipelineIntegrationId(item, index) === integrationId) || null;
+}
+
+function pipelineLinesToText(value) {
+  if (Array.isArray(value)) return value.map((item) => String(item || "").trim()).filter(Boolean).join("\n");
+  return String(value || "").trim();
+}
+
+function pipelineTextToLines(value) {
+  return String(value || "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+}
+
+function uniquePipelineLines(values) {
+  return Array.from(new Set((values || []).map((value) => String(value || "").trim()).filter(Boolean)));
+}
+
+function setPipelineTextareaLines(textarea, values) {
+  if (!textarea) return;
+  textarea.value = uniquePipelineLines(values).join("\n");
+}
+
+function appendPipelineTextareaLines(textarea, values) {
+  if (!textarea) return;
+  setPipelineTextareaLines(textarea, [...pipelineTextToLines(textarea.value), ...values]);
+}
+
+function pipelineQuestionItemsToText(value) {
+  if (!Array.isArray(value)) return String(value || "").trim();
+  return value
+    .map((item) => {
+      if (typeof item === "string") return item.trim();
+      if (!item || typeof item !== "object") return "";
+      const prompt = String(item.prompt || item.question || "").trim();
+      const required = item.required === false ? "optional" : "required";
+      const answerType = String(item.answer_type || item.type || "text").trim();
+      const options = Array.isArray(item.options) ? item.options.join(", ") : String(item.options || "").trim();
+      return [prompt, required, answerType, options].filter(Boolean).join(" | ");
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+function pipelineTextToQuestionItems(value) {
+  return String(value || "")
+    .split(/\r?\n/)
+    .map((line, index) => {
+      const parts = line.split("|").map((part) => part.trim());
+      const prompt = parts[0] || "";
+      if (!prompt) return null;
+      const requiredText = (parts[1] || "required").toLowerCase();
+      const answerType = parts[2] || "text";
+      const options = (parts[3] || "").split(",").map((option) => option.trim()).filter(Boolean);
+      return {
+        id: `q-${index + 1}`,
+        prompt,
+        required: requiredText !== "optional" && requiredText !== "false",
+        answer_type: answerType,
+        options
+      };
+    })
+    .filter(Boolean);
+}
+
+function renderValidationCommandRows(commands) {
+  if (!pipelineValidationCommandRows) return;
+  const rows = uniquePipelineLines(commands);
+  pipelineValidationCommandRows.innerHTML = rows.map((command, index) => `
+    <div class="pipelineValidationRow commandRow" data-validation-command-row>
+      <span>${index + 1}</span>
+      <input data-validation-command-value type="text" value="${escapeHtml(command)}" aria-label="Validation command ${index + 1}">
+      <button type="button" data-validation-row-remove>Remove</button>
+    </div>
+  `).join("");
+}
+
+function renderValidationEvidenceRows(evidence) {
+  if (!pipelineValidationEvidenceRows) return;
+  const rows = uniquePipelineLines(evidence);
+  pipelineValidationEvidenceRows.innerHTML = rows.map((item, index) => {
+    const type = item.match(/\.(png|jpg|jpeg|webp)$/i) ? "screenshot" : item.match(/\.(ndjson|log|txt)$/i) ? "log" : item.includes("receipt") ? "receipt" : "artifact";
+    return `
+      <div class="pipelineValidationRow evidenceRow" data-validation-evidence-row>
+        <select data-validation-evidence-type aria-label="Evidence type ${index + 1}">
+          <option value="receipt" ${type === "receipt" ? "selected" : ""}>Receipt</option>
+          <option value="screenshot" ${type === "screenshot" ? "selected" : ""}>Screenshot</option>
+          <option value="artifact" ${type === "artifact" ? "selected" : ""}>Artifact</option>
+          <option value="log" ${type === "log" ? "selected" : ""}>Log</option>
+        </select>
+        <input data-validation-evidence-value type="text" value="${escapeHtml(item)}" aria-label="Evidence path ${index + 1}">
+        <button type="button" data-validation-row-remove>Remove</button>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderValidationGateRows(gates) {
+  if (!pipelineValidationGateRows) return;
+  const rows = uniquePipelineLines(gates);
+  pipelineValidationGateRows.innerHTML = rows.map((gate, index) => `
+    <div class="pipelineValidationRow gateRow" data-validation-gate-row>
+      <select data-validation-gate-severity aria-label="Gate severity ${index + 1}">
+        <option value="blocking" selected>Blocking</option>
+        <option value="warning">Warning</option>
+        <option value="review">Review</option>
+      </select>
+      <input data-validation-gate-value type="text" value="${escapeHtml(gate)}" aria-label="Validation gate ${index + 1}">
+      <button type="button" data-validation-row-remove>Remove</button>
+    </div>
+  `).join("");
+}
+
+function renderValidationSchemaRows(paths) {
+  if (!pipelineValidationSchemaRows) return;
+  const rows = uniquePipelineLines(paths);
+  pipelineValidationSchemaRows.innerHTML = rows.map((path, index) => {
+    const scope = path.includes("integration") ? "integration" : path.includes("validation") ? "validation" : "pipeline";
+    return `
+      <div class="pipelineValidationRow schemaRow" data-validation-schema-row>
+        <select data-validation-schema-scope aria-label="Schema scope ${index + 1}">
+          <option value="pipeline" ${scope === "pipeline" ? "selected" : ""}>Pipeline</option>
+          <option value="integration" ${scope === "integration" ? "selected" : ""}>Integration</option>
+          <option value="validation" ${scope === "validation" ? "selected" : ""}>Validation</option>
+          <option value="evidence" ${scope === "evidence" ? "selected" : ""}>Evidence</option>
+        </select>
+        <input data-validation-schema-value type="text" value="${escapeHtml(path)}" aria-label="Schema path ${index + 1}">
+        <button type="button" data-validation-row-remove>Remove</button>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderPipelineValidationTypedEditors(validator = {}) {
+  renderValidationCommandRows(validator.commands || pipelineTextToLines(pipelineValidationCommandsInput?.value || ""));
+  renderValidationEvidenceRows(validator.evidence || pipelineTextToLines(pipelineValidationEvidenceInput?.value || ""));
+  renderValidationGateRows(validator.gates || pipelineTextToLines(pipelineValidationGatesInput?.value || ""));
+  renderValidationSchemaRows(validator.schema_paths || pipelineTextToLines(pipelineValidationSchemaInput?.value || ""));
+}
+
+function collectValidationRowValues(selector, valueSelector) {
+  return Array.from(document.querySelectorAll(selector))
+    .map((row) => row.querySelector(valueSelector)?.value?.trim() || "")
+    .filter(Boolean);
+}
+
+function syncValidationRowsToTextareas() {
+  setPipelineTextareaLines(pipelineValidationCommandsInput, collectValidationRowValues("[data-validation-command-row]", "[data-validation-command-value]"));
+  setPipelineTextareaLines(pipelineValidationEvidenceInput, collectValidationRowValues("[data-validation-evidence-row]", "[data-validation-evidence-value]"));
+  setPipelineTextareaLines(pipelineValidationGatesInput, collectValidationRowValues("[data-validation-gate-row]", "[data-validation-gate-value]"));
+  setPipelineTextareaLines(pipelineValidationSchemaInput, collectValidationRowValues("[data-validation-schema-row]", "[data-validation-schema-value]"));
+}
+
+function ensureValidationIntegrationGate() {
+  const referencesIntegrationLane = [
+    pipelineValidationEvidenceInput?.value || "",
+    pipelineValidationSchemaInput?.value || "",
+    pipelineValidationCommandsInput?.value || ""
+  ].some((value) => value.includes("integration/integration_lane.json"));
+  if (!referencesIntegrationLane) return;
+  appendPipelineTextareaLines(pipelineValidationGatesInput, ["Integration lane has no blocked or rejected receipts"]);
+}
+
+function syncValidationTextareaToRows(kind) {
+  if (kind === "commands") renderValidationCommandRows(pipelineTextToLines(pipelineValidationCommandsInput?.value || ""));
+  if (kind === "evidence") renderValidationEvidenceRows(pipelineTextToLines(pipelineValidationEvidenceInput?.value || ""));
+  if (kind === "gates") renderValidationGateRows(pipelineTextToLines(pipelineValidationGatesInput?.value || ""));
+  if (kind === "schema") renderValidationSchemaRows(pipelineTextToLines(pipelineValidationSchemaInput?.value || ""));
+}
+
+function addPipelineValidationRow(kind, value = "") {
+  if (kind === "commands") {
+    renderValidationCommandRows([...collectValidationRowValues("[data-validation-command-row]", "[data-validation-command-value]"), value || ""]);
+    return;
+  }
+  if (kind === "evidence") {
+    renderValidationEvidenceRows([...collectValidationRowValues("[data-validation-evidence-row]", "[data-validation-evidence-value]"), value || ""]);
+    return;
+  }
+  if (kind === "gates") {
+    renderValidationGateRows([...collectValidationRowValues("[data-validation-gate-row]", "[data-validation-gate-value]"), value || ""]);
+    return;
+  }
+  renderValidationSchemaRows([...collectValidationRowValues("[data-validation-schema-row]", "[data-validation-schema-value]"), value || ""]);
+}
+
+function integrationValidationContext(steps = []) {
+  const selectedSteps = Array.isArray(steps) ? steps : [];
+  const receipts = selectedSteps.map((step) => step.receipt || step.path || "").filter(Boolean);
+  const artifacts = selectedSteps.flatMap((step) => Array.isArray(step.artifacts) ? step.artifacts : []);
+  const dependencies = selectedSteps.flatMap((step) => Array.isArray(step.dependencies) ? step.dependencies : []);
+  const gates = selectedSteps.flatMap((step) => Array.isArray(step.gates) ? step.gates : []);
+  return {
+    commands: ["python3 -m json.tool workspace/runs/dev-pipeline-studio/docs-pages/latest/integration/integration_lane.json"],
+    evidence: uniquePipelineLines(["integration/integration_lane.json", ...receipts, ...artifacts]),
+    gates: uniquePipelineLines([
+      ...gates,
+      ...dependencies.map((dependency) => `Dependency receipt accepted: ${dependency}`),
+      "Integration lane has no blocked or rejected receipts"
+    ]),
+    schema: uniquePipelineLines(["integration/integration_lane.json", "integration_receipts/*.json"])
+  };
+}
+
+function importPipelineIntegrationContext(steps) {
+  const context = integrationValidationContext(steps);
+  appendPipelineTextareaLines(pipelineValidationCommandsInput, context.commands);
+  appendPipelineTextareaLines(pipelineValidationEvidenceInput, context.evidence);
+  appendPipelineTextareaLines(pipelineValidationGatesInput, context.gates);
+  appendPipelineTextareaLines(pipelineValidationSchemaInput, context.schema);
+  renderPipelineValidationTypedEditors({
+    commands: pipelineTextToLines(pipelineValidationCommandsInput?.value || ""),
+    evidence: pipelineTextToLines(pipelineValidationEvidenceInput?.value || ""),
+    gates: pipelineTextToLines(pipelineValidationGatesInput?.value || ""),
+    schema_paths: pipelineTextToLines(pipelineValidationSchemaInput?.value || "")
+  });
+  updatePipelineValidationModeButtons(pipelineValidationModeSelect?.value || "commands");
+  if (pipelineValidationInspectorStatus) {
+    pipelineValidationInspectorStatus.textContent = `Imported ${steps.length} integration step${steps.length === 1 ? "" : "s"} into this validator. Save validation to write receipts.`;
+  }
+}
+
+function renderPipelineValidationConsultation() {
+  if (!pipelineValidationIntegrationContext) return;
+  const integrations = pipelineStudioState?.pipeline?.integration || [];
+  if (!integrations.length) {
+    pipelineValidationIntegrationContext.innerHTML = `<p>No integration steps are configured for this template yet.</p>`;
+    return;
+  }
+  pipelineValidationIntegrationContext.innerHTML = integrations.map((step, index) => `
+    <article>
+      <div>
+        <strong>${escapeHtml(step.title || step.id || `Integration ${index + 1}`)}</strong>
+        <span>${escapeHtml(step.status || "Configured")} · ${escapeHtml(step.mode || "dependency-order")}</span>
+      </div>
+      <small>${escapeHtml((step.artifacts || []).slice(0, 2).join(", ") || step.receipt || "artifact pending")}</small>
+      <button type="button" data-import-integration-step="${index}">Use step</button>
+    </article>
+  `).join("");
+}
+
+function pipelineInputRowById(inputId) {
+  return Array.from(pipelineRequiredInputsEditor?.querySelectorAll("[data-input-row]") || [])
+    .find((row) => row.dataset.inputId === inputId) || null;
+}
+
+function setPipelineInspectorMode(mode) {
+  const inputMode = mode === "input";
+  const integrationMode = mode === "integration";
+  const validationMode = mode === "validation";
+  const workerMode = !inputMode && !integrationMode && !validationMode;
+  pipelineInputInspector?.classList.toggle("hidden", !inputMode);
+  pipelineIntegrationInspector?.classList.toggle("hidden", !integrationMode);
+  pipelineValidationInspector?.classList.toggle("hidden", !validationMode);
+  pipelineInspectorNav?.classList.toggle("hidden", !workerMode);
+  if (workerMode) {
+    setInspectorTab(currentInspectorTab);
+  } else {
+    pipelineWorkerInspectorActions?.classList.add("hidden");
+    pipelineManifestEditor?.classList.add("hidden");
+    pipelineContractSummary?.classList.add("hidden");
+    pipelineContractPanel?.classList.add("hidden");
+    pipelineArtifactPanel?.classList.add("hidden");
+    pipelineLogsPanel?.classList.add("hidden");
+    pipelineCostPanel?.classList.add("hidden");
+  }
+}
+
+function setInspectorTab(tabName) {
+  currentInspectorTab = tabName || "manifest";
+  const isManifest = currentInspectorTab === "manifest";
+  const isContract = currentInspectorTab === "contract";
+  const isArtifact = currentInspectorTab === "artifact";
+  const isLogs = currentInspectorTab === "logs";
+  const isCost = currentInspectorTab === "cost";
+  pipelineInspectorNav?.querySelectorAll("a[data-inspector-tab]").forEach((link) => {
+    link.classList.toggle("active", link.dataset.inspectorTab === currentInspectorTab);
+  });
+  pipelineWorkerInspectorActions?.classList.toggle("hidden", !isManifest);
+  pipelineManifestEditor?.classList.toggle("hidden", !isManifest);
+  pipelineContractSummary?.classList.toggle("hidden", !isManifest);
+  pipelineContractPanel?.classList.toggle("hidden", !isContract);
+  pipelineArtifactPanel?.classList.toggle("hidden", !isArtifact);
+  pipelineLogsPanel?.classList.toggle("hidden", !isLogs);
+  pipelineCostPanel?.classList.toggle("hidden", !isCost);
+  if (isContract) populateContractPanel();
+}
+
+function populateContractPanel() {
+  let manifest = null;
+  try { manifest = parsePipelineManifestEditor(); } catch { manifest = {}; }
+  const ownedPaths = manifest?.owned_paths || [];
+  const readPaths = manifest?.read_paths || [];
+  const dependencies = manifest?.dependencies || [];
+  const acceptance = manifest?.acceptance || [];
+  const tier = manifest?.validation?.tier || manifest?.validation_tier || "—";
+  const risk = manifest?.validation?.risk || manifest?.risk || "—";
+  const noneItem = '<li class="contractNone">None</li>';
+  const pathItem = (p) => `<li><code>${escapeHtml(String(p))}</code></li>`;
+  const acceptItem = (a) => `<li><span class="contractCheck">⊙</span>${escapeHtml(String(a))}</li>`;
+  const owned = document.querySelector("#contractOwnedPaths");
+  const read = document.querySelector("#contractReadPaths");
+  const deps = document.querySelector("#contractDependencies");
+  const acc = document.querySelector("#contractAcceptance");
+  const tierEl = document.querySelector("#contractValidationTier");
+  const riskEl = document.querySelector("#contractRiskLevel");
+  if (owned) owned.innerHTML = ownedPaths.length ? ownedPaths.map(pathItem).join("") : noneItem;
+  if (read) read.innerHTML = readPaths.length ? readPaths.map(pathItem).join("") : noneItem;
+  if (deps) deps.innerHTML = dependencies.length ? dependencies.map(pathItem).join("") : noneItem;
+  if (acc) acc.innerHTML = acceptance.length ? acceptance.map(acceptItem).join("") : noneItem;
+  if (tierEl) tierEl.textContent = tier;
+  if (riskEl) riskEl.textContent = risk;
+}
+
+function titleCasePipelineStatus(status) {
+  const raw = String(status || "").trim();
+  if (!raw) return "Input";
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+}
+
+function showPipelineWorkerInspector() {
+  currentInspectorTab = "manifest";
+  setPipelineInspectorMode("worker");
+  pipelineSelectedInputId = "";
+  pipelineSelectedIntegrationId = "";
+  pipelineSelectedValidationId = "";
+  if (pipelineInspectorBadge) pipelineInspectorBadge.textContent = "W1";
+  if (pipelineInspectorState) pipelineInspectorState.textContent = "Completed";
+  renderPipelineInputCards(pipelineStudioState?.pipeline?.input_cards || selectedPipelinePayloadTemplate()?.required_inputs || selectedPipelineStudioTemplate()?.requiredInputs || []);
+  renderPipelineIntegrationCards(pipelineStudioState?.pipeline?.integration || []);
+  renderPipelineValidatorCards(pipelineStudioState?.pipeline?.validators || selectedPipelinePayloadTemplate()?.validators || []);
+}
+
+function updatePipelineInputEditorRow(inputId, values) {
+  const row = pipelineInputRowById(inputId);
+  if (!row) return;
+  const title = row.querySelector("[data-input-title]");
+  const type = row.querySelector("[data-input-type]");
+  const detail = row.querySelector("[data-input-detail]");
+  const status = row.querySelector("[data-input-status]");
+  const required = row.querySelector("[data-input-required]");
+  if (title) title.value = values.title || "";
+  if (type) type.value = pipelineInputType(values);
+  if (detail) detail.value = values.detail || "";
+  if (status) status.value = values.status || "missing";
+  if (required) required.checked = values.required !== false;
+  row.dataset.inputPayload = JSON.stringify(values);
+}
+
+function updatePipelineInputTypeEditors(type) {
+  const activeType = pipelineInputType({ kind: type });
+  document.querySelectorAll("[data-input-type-editor]").forEach((editor) => {
+    const supported = String(editor.getAttribute("data-input-type-editor") || "").split(/\s+/);
+    editor.classList.toggle("hidden", !supported.includes(activeType));
+  });
+}
+
+function showPipelineInputInspector(inputId, message = "") {
+  const input = selectedPipelineInput(inputId);
+  if (!input) {
+    pipelineSelectedInputId = "";
+    showPipelineWorkerInspector();
+    return;
+  }
+  const status = String(input.status || "missing").toLowerCase();
+  pipelineSelectedInputId = inputId;
+  pipelineSelectedIntegrationId = "";
+  pipelineSelectedValidationId = "";
+  setPipelineInspectorMode("input");
+  setPipelineField("selectedWorker", input.title || "Input");
+  if (pipelineInspectorBadge) pipelineInspectorBadge.textContent = "Input";
+  if (pipelineInspectorState) pipelineInspectorState.textContent = titleCasePipelineStatus(status);
+  if (pipelineInputTitleInput) pipelineInputTitleInput.value = input.title || "";
+  if (pipelineInputTypeSelect) pipelineInputTypeSelect.value = pipelineInputType(input);
+  if (pipelineInputDetailInput) pipelineInputDetailInput.value = input.detail || input.file || "";
+  if (pipelineInputStatusSelect) pipelineInputStatusSelect.value = status;
+  if (pipelineInputRequiredCheckbox) pipelineInputRequiredCheckbox.checked = input.required !== false;
+  if (pipelineInputFormatInput) pipelineInputFormatInput.value = input.format || PIPELINE_INPUT_TYPES[pipelineInputType(input)]?.format || "";
+  if (pipelineInputImageRefsInput) pipelineInputImageRefsInput.value = pipelineLinesToText(input.image_refs || input.images || input.references);
+  if (pipelineInputImageNotesInput) pipelineInputImageNotesInput.value = input.image_notes || input.reference_notes || "";
+  if (pipelineInputQuestionsInput) pipelineInputQuestionsInput.value = pipelineQuestionItemsToText(input.questions || input.questionnaire);
+  if (pipelineInputPathsInput) pipelineInputPathsInput.value = pipelineLinesToText(input.paths || input.target_paths || input.routes);
+  if (pipelineInputPathPolicyInput) pipelineInputPathPolicyInput.value = input.path_policy || input.ownership_policy || "";
+  if (pipelineInputArtifactsInput) pipelineInputArtifactsInput.value = pipelineLinesToText(input.artifacts || input.evidence_artifacts);
+  if (pipelineInputEvidencePolicyInput) pipelineInputEvidencePolicyInput.value = input.evidence_policy || input.validation_policy || "";
+  if (pipelineInputManifestPath) pipelineInputManifestPath.textContent = input.manifest ? `Input manifest: ${input.manifest}` : "Input manifest output pending";
+  updatePipelineInputTypeEditors(pipelineInputType(input));
+  if (pipelineInputInspectorStatus) pipelineInputInspectorStatus.textContent = message || "Edit the input contract, then save.";
+  renderPipelineInputCards(pipelineStudioState?.pipeline?.input_cards || selectedPipelinePayloadTemplate()?.required_inputs || selectedPipelineStudioTemplate()?.requiredInputs || []);
+  renderPipelineIntegrationCards(pipelineStudioState?.pipeline?.integration || []);
+  renderPipelineValidatorCards(pipelineStudioState?.pipeline?.validators || selectedPipelinePayloadTemplate()?.validators || []);
+  syncPipelineWorkerCards(pipelineStudioState?.pipeline?.workers || selectedPipelineStudioTemplate()?.workers || []);
+}
+
+function collectPipelineInputConfig() {
+  const selected = selectedPipelineInput() || {};
+  const kind = pipelineInputType({ kind: pipelineInputTypeSelect?.value || selected.kind || selected.input_type || selected.type });
+  return {
+    ...selected,
+    id: pipelineSelectedInputId,
+    title: pipelineInputTitleInput?.value?.trim() || selected.title || "Untitled input",
+    detail: pipelineInputDetailInput?.value?.trim() || "",
+    kind,
+    input_type: kind,
+    status: pipelineInputStatusSelect?.value || "missing",
+    required: Boolean(pipelineInputRequiredCheckbox?.checked),
+    format: pipelineInputFormatInput?.value?.trim() || PIPELINE_INPUT_TYPES[kind]?.format || "",
+    image_refs: pipelineTextToLines(pipelineInputImageRefsInput?.value || ""),
+    image_notes: pipelineInputImageNotesInput?.value?.trim() || "",
+    questions: pipelineTextToQuestionItems(pipelineInputQuestionsInput?.value || ""),
+    paths: pipelineTextToLines(pipelineInputPathsInput?.value || ""),
+    path_policy: pipelineInputPathPolicyInput?.value?.trim() || "",
+    artifacts: pipelineTextToLines(pipelineInputArtifactsInput?.value || ""),
+    evidence_policy: pipelineInputEvidencePolicyInput?.value?.trim() || "",
+    manifest: selected.manifest || ""
+  };
+}
+
+async function savePipelineSelectedInput() {
+  if (!pipelineSelectedInputId) return;
+  const values = collectPipelineInputConfig();
+  updatePipelineInputEditorRow(pipelineSelectedInputId, values);
+  if (pipelineInputInspectorStatus) pipelineInputInspectorStatus.textContent = "Saving input...";
+  const payload = await savePipelineDraft("save", { includeManifest: false });
+  if (payload) {
+    pipelineSelectedInputId = values.title
+      ? (pipelineInputRowById(pipelineSelectedInputId)?.dataset.inputId || pipelineSelectedInputId)
+      : pipelineSelectedInputId;
+    showPipelineInputInspector(pipelineSelectedInputId, `Saved ${values.title}.`);
+  }
+}
+
+function updatePipelineValidationModeButtons(mode) {
+  document.querySelectorAll("[data-validation-mode]").forEach((button) => {
+    const active = button.dataset.validationMode === mode;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+  document.querySelectorAll("[data-validation-editor]").forEach((editor) => {
+    editor.classList.toggle("active", editor.dataset.validationEditor === mode);
+  });
+}
+
+function updatePipelineIntegrationView(view = pipelineIntegrationActiveView) {
+  const nextView = ["order", "apply", "conflicts", "receipts"].includes(view) ? view : "order";
+  pipelineIntegrationActiveView = nextView;
+  document.querySelectorAll("[data-integration-view]").forEach((button) => {
+    const active = button.dataset.integrationView === nextView;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+  document.querySelectorAll("[data-integration-section]").forEach((section) => {
+    const views = String(section.dataset.integrationSection || "").split(/\s+/).filter(Boolean);
+    section.classList.toggle("hidden", !views.includes(nextView));
+  });
+}
+
+function showPipelineIntegrationInspector(integrationId, message = "") {
+  const integration = selectedPipelineIntegration(integrationId);
+  if (!integration) {
+    pipelineSelectedIntegrationId = "";
+    showPipelineWorkerInspector();
+    return;
+  }
+  const status = String(integration.status || "configured").toLowerCase().replace(/\s+/g, "-");
+  const mode = String(integration.mode || "dependency-order").toLowerCase();
+  pipelineSelectedIntegrationId = integrationId;
+  pipelineSelectedInputId = "";
+  pipelineSelectedValidationId = "";
+  setPipelineInspectorMode("integration");
+  setPipelineField("selectedWorker", integration.title || "Integration");
+  if (pipelineInspectorBadge) pipelineInspectorBadge.textContent = "Integrator";
+  if (pipelineInspectorState) pipelineInspectorState.textContent = titleCasePipelineStatus(status);
+  if (pipelineIntegrationTitleInput) pipelineIntegrationTitleInput.value = integration.title || "";
+  if (pipelineIntegrationStatusSelect) pipelineIntegrationStatusSelect.value = status;
+  if (pipelineIntegrationModeSelect) pipelineIntegrationModeSelect.value = mode;
+  if (pipelineIntegrationApplyInput) pipelineIntegrationApplyInput.value = integration.apply_policy || integration.summary || "";
+  if (pipelineIntegrationConflictInput) pipelineIntegrationConflictInput.value = integration.conflict_policy || "";
+  if (pipelineIntegrationDependenciesInput) pipelineIntegrationDependenciesInput.value = pipelineLinesToText(integration.dependencies);
+  if (pipelineIntegrationArtifactsInput) pipelineIntegrationArtifactsInput.value = pipelineLinesToText(integration.artifacts);
+  if (pipelineIntegrationGatesInput) pipelineIntegrationGatesInput.value = pipelineLinesToText(integration.gates);
+  if (pipelineIntegrationRollbackInput) pipelineIntegrationRollbackInput.value = pipelineLinesToText(integration.rollback_plan);
+  if (pipelineIntegrationConfigPath) pipelineIntegrationConfigPath.textContent = integration.config ? `Config: ${integration.config}` : "Config output pending";
+  if (pipelineIntegrationReceiptPath) pipelineIntegrationReceiptPath.textContent = integration.receipt ? `Receipt: ${integration.receipt}` : integration.path ? `Receipt: ${integration.path}` : "Receipt output pending";
+  if (pipelineIntegrationInspectorStatus) pipelineIntegrationInspectorStatus.textContent = message || "Configure this integration lane view, then save outputs.";
+  updatePipelineIntegrationView(pipelineIntegrationActiveView);
+  renderPipelineInputCards(pipelineStudioState?.pipeline?.input_cards || selectedPipelinePayloadTemplate()?.required_inputs || selectedPipelineStudioTemplate()?.requiredInputs || []);
+  renderPipelineIntegrationCards(pipelineStudioState?.pipeline?.integration || []);
+  renderPipelineValidatorCards(pipelineStudioState?.pipeline?.validators || selectedPipelinePayloadTemplate()?.validators || []);
+  syncPipelineWorkerCards(pipelineStudioState?.pipeline?.workers || selectedPipelineStudioTemplate()?.workers || []);
+}
+
+function collectPipelineIntegrationConfig() {
+  const selected = selectedPipelineIntegration();
+  return {
+    id: pipelineSelectedIntegrationId,
+    title: pipelineIntegrationTitleInput?.value?.trim() || selected?.title || "Integration step",
+    status: pipelineIntegrationStatusSelect?.value || "configured",
+    mode: pipelineIntegrationModeSelect?.value || "dependency-order",
+    apply_policy: pipelineIntegrationApplyInput?.value?.trim() || "",
+    conflict_policy: pipelineIntegrationConflictInput?.value?.trim() || "",
+    dependencies: pipelineTextToLines(pipelineIntegrationDependenciesInput?.value || ""),
+    artifacts: pipelineTextToLines(pipelineIntegrationArtifactsInput?.value || ""),
+    gates: pipelineTextToLines(pipelineIntegrationGatesInput?.value || ""),
+    rollback_plan: pipelineTextToLines(pipelineIntegrationRollbackInput?.value || ""),
+    receipt: selected?.receipt || "",
+    config_path: selected?.config?.replace(/^.*workspace\/runs\/dev-pipeline-studio\/docs-pages\/latest\//, "") || ""
+  };
+}
+
+async function savePipelineSelectedIntegration() {
+  if (!pipelineSelectedIntegrationId) return;
+  const integrationConfig = collectPipelineIntegrationConfig();
+  if (pipelineIntegrationInspectorStatus) pipelineIntegrationInspectorStatus.textContent = "Saving integration outputs...";
+  const payload = await savePipelineDraft("save_integration", { includeManifest: false, integrationConfig });
+  if (payload) {
+    showPipelineIntegrationInspector(pipelineSelectedIntegrationId, `Saved ${integrationConfig.title}.`);
+  }
+}
+
+function showPipelineValidationInspector(validatorId, message = "") {
+  const validator = selectedPipelineValidator(validatorId);
+  if (!validator) {
+    pipelineSelectedValidationId = "";
+    showPipelineWorkerInspector();
+    return;
+  }
+  const status = String(validator.status || "configured").toLowerCase().replace(/\s+/g, "-");
+  const mode = String(validator.mode || "commands").toLowerCase();
+  pipelineSelectedValidationId = validatorId;
+  pipelineSelectedInputId = "";
+  pipelineSelectedIntegrationId = "";
+  setPipelineInspectorMode("validation");
+  setPipelineField("selectedWorker", validator.title || "Validation");
+  if (pipelineInspectorBadge) pipelineInspectorBadge.textContent = "Validator";
+  if (pipelineInspectorState) pipelineInspectorState.textContent = titleCasePipelineStatus(status);
+  if (pipelineValidationTitleInput) pipelineValidationTitleInput.value = validator.title || "";
+  if (pipelineValidationStatusSelect) pipelineValidationStatusSelect.value = status;
+  if (pipelineValidationTierSelect) pipelineValidationTierSelect.value = validator.tier || pipelineStudioState?.pipeline?.validation?.tier || "smoke-plus";
+  if (pipelineValidationModeSelect) pipelineValidationModeSelect.value = mode;
+  if (pipelineValidationSummaryInput) pipelineValidationSummaryInput.value = validator.summary || "";
+  if (pipelineValidationCommandsInput) pipelineValidationCommandsInput.value = pipelineLinesToText(validator.commands);
+  if (pipelineValidationEvidenceInput) pipelineValidationEvidenceInput.value = pipelineLinesToText(validator.evidence || validator.path || validator.receipt);
+  if (pipelineValidationGatesInput) pipelineValidationGatesInput.value = pipelineLinesToText(validator.gates);
+  if (pipelineValidationSchemaInput) pipelineValidationSchemaInput.value = pipelineLinesToText(validator.schema_paths);
+  if (pipelineValidationBlockingCheckbox) pipelineValidationBlockingCheckbox.checked = validator.blocking !== false;
+  if (pipelineValidationConfigPath) pipelineValidationConfigPath.textContent = validator.config ? `Config: ${validator.config}` : "Config output pending";
+  if (pipelineValidationReceiptPath) pipelineValidationReceiptPath.textContent = validator.receipt ? `Receipt: ${validator.receipt}` : validator.path ? `Receipt: ${validator.path}` : "Receipt output pending";
+  if (pipelineValidationInspectorStatus) pipelineValidationInspectorStatus.textContent = message || "Configure the validation lane, then save outputs.";
+  renderPipelineValidationTypedEditors(validator);
+  renderPipelineValidationConsultation();
+  updatePipelineValidationModeButtons(mode);
+  renderPipelineInputCards(pipelineStudioState?.pipeline?.input_cards || selectedPipelinePayloadTemplate()?.required_inputs || selectedPipelineStudioTemplate()?.requiredInputs || []);
+  renderPipelineIntegrationCards(pipelineStudioState?.pipeline?.integration || []);
+  renderPipelineValidatorCards(pipelineStudioState?.pipeline?.validators || selectedPipelinePayloadTemplate()?.validators || []);
+  syncPipelineWorkerCards(pipelineStudioState?.pipeline?.workers || selectedPipelineStudioTemplate()?.workers || []);
+}
+
+function collectPipelineValidationConfig() {
+  const selected = selectedPipelineValidator();
+  syncValidationRowsToTextareas();
+  ensureValidationIntegrationGate();
+  return {
+    id: pipelineSelectedValidationId,
+    title: pipelineValidationTitleInput?.value?.trim() || selected?.title || "Validator",
+    status: pipelineValidationStatusSelect?.value || "configured",
+    tier: pipelineValidationTierSelect?.value || pipelineStudioState?.pipeline?.validation?.tier || "smoke-plus",
+    mode: pipelineValidationModeSelect?.value || "commands",
+    summary: pipelineValidationSummaryInput?.value?.trim() || "",
+    commands: pipelineTextToLines(pipelineValidationCommandsInput?.value || ""),
+    evidence: pipelineTextToLines(pipelineValidationEvidenceInput?.value || ""),
+    gates: pipelineTextToLines(pipelineValidationGatesInput?.value || ""),
+    schema_paths: pipelineTextToLines(pipelineValidationSchemaInput?.value || ""),
+    blocking: Boolean(pipelineValidationBlockingCheckbox?.checked),
+    receipt: selected?.receipt || "",
+    config_path: selected?.config?.replace(/^.*workspace\/runs\/dev-pipeline-studio\/docs-pages\/latest\//, "") || ""
+  };
+}
+
+async function savePipelineSelectedValidation() {
+  if (!pipelineSelectedValidationId) return;
+  const validationConfig = collectPipelineValidationConfig();
+  if (pipelineValidationInspectorStatus) pipelineValidationInspectorStatus.textContent = "Saving validation outputs...";
+  const payload = await savePipelineDraft("save_validation", { includeManifest: false, validationConfig });
+  if (payload) {
+    showPipelineValidationInspector(pipelineSelectedValidationId, `Saved ${validationConfig.title}.`);
+  }
 }
 
 function populatePipelineEditor() {
@@ -1270,7 +2080,7 @@ function pipelineEditorPayload(action = "save", options = {}) {
   const includeManifest = options.includeManifest !== false;
   const workerManifest = includeManifest ? parsePipelineManifestEditor() : null;
   const selectedWorker = options.workerId || workerManifest?.task_id || template?.selected_worker || pipelineStudioState?.pipeline?.workers?.find((worker) => worker.selected)?.id || "";
-  return {
+  const payload = {
     action,
     project_id: pipelineStudioState?.selected?.project_id || pipelineProjectSelect?.value || "",
     template_id: pipelineStudioState?.selected?.template_id || pipelineTemplateSelect?.value || "",
@@ -1298,12 +2108,15 @@ function pipelineEditorPayload(action = "save", options = {}) {
     },
     worker_manifest: workerManifest
   };
+  if (options.validationConfig) payload.validation_config = options.validationConfig;
+  if (options.integrationConfig) payload.integration_config = options.integrationConfig;
+  return payload;
 }
 
 async function savePipelineDraft(action = "save", options = {}) {
-  if (!pipelineProjectSelect || !pipelineTemplateSelect) return;
+  if (!pipelineProjectSelect || !pipelineTemplateSelect) return null;
   try {
-    setPipelineSaveStatus(action === "select_worker" ? "Selecting worker..." : "Saving pipeline draft...");
+    setPipelineSaveStatus(action === "select_worker" ? "Selecting worker..." : action === "save_integration" ? "Saving integration outputs..." : action === "save_validation" ? "Saving validation outputs..." : "Saving pipeline draft...");
     const response = await fetch(`${API_BASE}/dev-pipeline-studio`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1313,10 +2126,12 @@ async function savePipelineDraft(action = "save", options = {}) {
     if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
     normalizePipelineState(payload);
     applyPipelineStudioContext();
-    const verb = action === "duplicate" ? "Duplicated" : action === "new" ? "Created" : action === "select_worker" ? "Selected" : "Saved";
+    const verb = action === "duplicate" ? "Duplicated" : action === "new" ? "Created" : action === "select_worker" ? "Selected" : action === "save_integration" ? "Saved integration" : action === "save_validation" ? "Saved validation" : "Saved";
     setPipelineSaveStatus(`${verb} ${payload.selected?.template_id || "pipeline"} at ${new Date().toLocaleTimeString()}`);
+    return payload;
   } catch (error) {
     setPipelineSaveStatus(`Save failed: ${error.message}`, true);
+    return null;
   }
 }
 
@@ -1346,6 +2161,8 @@ function applyPipelineStudioContext() {
     setPipelineField("validationTier", summary.validation_tier || pipeline.validation?.tier || "");
     setPipelineField("riskLevel", summary.risk_level || "");
     renderPipelineInputCards(pipeline.input_cards || []);
+    renderPipelineIntegrationCards(pipeline.integration || []);
+    renderPipelineValidatorCards(pipeline.validators || []);
     renderPipelineCards("data-pipeline-input", pipeline.input_cards || [], [["title", "title"], ["file", "file"], ["status", "status"]]);
     renderPipelineCards("data-pipeline-worker", pipeline.workers || [], [["title", "title"], ["file", "detail"]]);
     renderPipelineCards("data-pipeline-integrate", pipeline.integration || [], [["title", "title"]]);
@@ -1356,6 +2173,15 @@ function applyPipelineStudioContext() {
     }
     populatePipelineEditor();
     syncPipelineWorkerCards(pipeline.workers || []);
+    if (pipelineSelectedIntegrationId) {
+      showPipelineIntegrationInspector(pipelineSelectedIntegrationId);
+    } else if (pipelineSelectedValidationId) {
+      showPipelineValidationInspector(pipelineSelectedValidationId);
+    } else if (pipelineSelectedInputId) {
+      showPipelineInputInspector(pipelineSelectedInputId);
+    } else {
+      showPipelineWorkerInspector();
+    }
     pipelineTemplateCards.forEach((card) => {
       const isActive = card.dataset.templateCard === (pipelineStudioState.selected?.template_id || "");
       card.classList.toggle("active", isActive);
@@ -1413,12 +2239,25 @@ function applyPipelineStudioContext() {
   updateIndexedPipelineText("data-pipeline-worker-title", template.workers.map((worker) => worker.title));
   updateIndexedPipelineText("data-pipeline-worker-file", workerFiles);
   updateIndexedPipelineText("data-pipeline-integrate-title", workerFiles.map((file) => `Integrate: ${file}`));
+  renderPipelineIntegrationCards(template.workers.map((worker) => ({
+    id: worker.id,
+    title: `Integrate: ${worker.file}`,
+    file: "integration_receipt.json",
+    status: "Accepted",
+    dependencies: worker.dependencies || [],
+    artifacts: [`${project.ownedRoot}/${worker.file}`],
+    gates: ["Dependencies integrated first", "No owned-path conflict", "Receipt written before validation starts"],
+    rollback_plan: ["Reject this integration step and preserve worker artifact for retry"],
+    mode: "dependency-order"
+  })));
   renderPipelineInputCards(template.requiredInputs || []);
+  renderPipelineValidatorCards(template.validators || []);
   if (pipelineManifestCode) {
     pipelineManifestCode.textContent = JSON.stringify(manifest, null, 2);
   }
   if (pipelineManifestEditor) pipelineManifestEditor.value = JSON.stringify(manifest, null, 2);
   syncPipelineWorkerCards(template.workers || []);
+  showPipelineWorkerInspector();
   pipelineTemplateCards.forEach((card) => {
     const isActive = card.dataset.templateCard === template.id;
     card.classList.toggle("active", isActive);
@@ -1447,9 +2286,15 @@ async function loadPipelineStudioState() {
 function initPipelineStudioControls() {
   if (pipelineStudioControlsInitialized || !pipelineProjectSelect || !pipelineTemplateSelect) return;
   pipelineProjectSelect.addEventListener("change", () => {
+    pipelineSelectedInputId = "";
+    pipelineSelectedIntegrationId = "";
+    pipelineSelectedValidationId = "";
     void loadPipelineStudioState();
   });
   pipelineTemplateSelect.addEventListener("change", () => {
+    pipelineSelectedInputId = "";
+    pipelineSelectedIntegrationId = "";
+    pipelineSelectedValidationId = "";
     void loadPipelineStudioState();
   });
   if (pipelineTemplateLibrary) {
@@ -1457,6 +2302,9 @@ function initPipelineStudioControls() {
       const card = event.target.closest("[data-template-card]");
       if (!card || !pipelineTemplateSelect) return;
       pipelineTemplateSelect.value = card.dataset.templateCard || "generic-task";
+      pipelineSelectedInputId = "";
+      pipelineSelectedIntegrationId = "";
+      pipelineSelectedValidationId = "";
       void loadPipelineStudioState();
     });
   }
@@ -1475,6 +2323,27 @@ function initPipelineStudioControls() {
       void savePipelineDraft("new");
     });
   }
+  if (pipelineInspectorNav) {
+    pipelineInspectorNav.addEventListener("click", (event) => {
+      const link = event.target.closest("a[data-inspector-tab]");
+      if (!link) return;
+      event.preventDefault();
+      setInspectorTab(link.dataset.inspectorTab || "manifest");
+    });
+  }
+  const logsCopyButton = document.querySelector("#logsCopyButton");
+  if (logsCopyButton) {
+    logsCopyButton.addEventListener("click", () => {
+      const scroll = document.querySelector("#logsScroll");
+      if (!scroll) return;
+      const text = Array.from(scroll.querySelectorAll(".logEntry")).map((el) => {
+        const time = el.querySelector("time")?.textContent || "";
+        const msg = el.querySelector("span")?.textContent || "";
+        return `[${time}] ${msg}`;
+      }).join("\n");
+      navigator.clipboard?.writeText(text).catch(() => {});
+    });
+  }
   if (pipelineFormatManifestButton) {
     pipelineFormatManifestButton.addEventListener("click", () => {
       try {
@@ -1489,8 +2358,100 @@ function initPipelineStudioControls() {
   if (pipelineAddInputButton) {
     pipelineAddInputButton.addEventListener("click", () => {
       const current = collectPipelineRequiredInputs();
-      current.push({ id: `input-${current.length + 1}`, title: "New input", detail: "", status: "missing", required: true });
+      current.push({ id: `input-${current.length + 1}`, title: "New input", detail: "", kind: "text", input_type: "text", status: "missing", required: true, format: "plain text" });
       renderPipelineRequiredInputsEditor(current);
+    });
+  }
+  if (pipelineInputSaveButton) {
+    pipelineInputSaveButton.addEventListener("click", () => {
+      void savePipelineSelectedInput();
+    });
+  }
+  if (pipelineInputTypeSelect) {
+    pipelineInputTypeSelect.addEventListener("change", () => {
+      updatePipelineInputTypeEditors(pipelineInputTypeSelect.value || "text");
+    });
+  }
+  if (pipelineValidationSaveButton) {
+    pipelineValidationSaveButton.addEventListener("click", () => {
+      void savePipelineSelectedValidation();
+    });
+  }
+  if (pipelineIntegrationSaveButton) {
+    pipelineIntegrationSaveButton.addEventListener("click", () => {
+      void savePipelineSelectedIntegration();
+    });
+  }
+  document.querySelectorAll("[data-integration-view]").forEach((button) => {
+    button.addEventListener("click", () => {
+      updatePipelineIntegrationView(button.dataset.integrationView || "order");
+    });
+  });
+  if (pipelineValidationModeSelect) {
+    pipelineValidationModeSelect.addEventListener("change", () => {
+      updatePipelineValidationModeButtons(pipelineValidationModeSelect.value || "commands");
+    });
+  }
+  document.querySelectorAll("[data-validation-mode]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const mode = button.dataset.validationMode || "commands";
+      if (pipelineValidationModeSelect) pipelineValidationModeSelect.value = mode;
+      updatePipelineValidationModeButtons(mode);
+    });
+  });
+  if (pipelineValidationAddCommandButton) {
+    pipelineValidationAddCommandButton.addEventListener("click", () => {
+      addPipelineValidationRow("commands", "python3 -m json.tool workspace/runs/dev-pipeline-studio/docs-pages/latest/pipeline_manifest.json");
+      syncValidationRowsToTextareas();
+    });
+  }
+  if (pipelineValidationAddEvidenceButton) {
+    pipelineValidationAddEvidenceButton.addEventListener("click", () => {
+      addPipelineValidationRow("evidence", "validation/validator_manifest.json");
+      syncValidationRowsToTextareas();
+    });
+  }
+  if (pipelineValidationAddGateButton) {
+    pipelineValidationAddGateButton.addEventListener("click", () => {
+      addPipelineValidationRow("gates", "Blocking validator prevents handoff until resolved");
+      syncValidationRowsToTextareas();
+    });
+  }
+  if (pipelineValidationAddSchemaButton) {
+    pipelineValidationAddSchemaButton.addEventListener("click", () => {
+      addPipelineValidationRow("schema", "integration/integration_lane.json");
+      syncValidationRowsToTextareas();
+    });
+  }
+  [
+    [pipelineValidationCommandsInput, "commands"],
+    [pipelineValidationEvidenceInput, "evidence"],
+    [pipelineValidationGatesInput, "gates"],
+    [pipelineValidationSchemaInput, "schema"]
+  ].forEach(([textarea, kind]) => {
+    textarea?.addEventListener("input", () => syncValidationTextareaToRows(kind));
+  });
+  document.querySelector(".pipelineValidationTypedEditors")?.addEventListener("click", (event) => {
+    const removeButton = event.target.closest("[data-validation-row-remove]");
+    if (!removeButton) return;
+    removeButton.closest(".pipelineValidationRow")?.remove();
+    syncValidationRowsToTextareas();
+  });
+  document.querySelector(".pipelineValidationTypedEditors")?.addEventListener("input", () => {
+    syncValidationRowsToTextareas();
+  });
+  if (pipelineValidationUseIntegrationButton) {
+    pipelineValidationUseIntegrationButton.addEventListener("click", () => {
+      importPipelineIntegrationContext(pipelineStudioState?.pipeline?.integration || []);
+    });
+  }
+  if (pipelineValidationIntegrationContext) {
+    pipelineValidationIntegrationContext.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-import-integration-step]");
+      if (!button) return;
+      const index = Number.parseInt(button.dataset.importIntegrationStep || "0", 10);
+      const step = (pipelineStudioState?.pipeline?.integration || [])[index];
+      if (step) importPipelineIntegrationContext([step]);
     });
   }
   if (pipelineRequiredInputsEditor) {
@@ -1501,17 +2462,60 @@ function initPipelineStudioControls() {
     });
   }
   document.querySelector(".pipelineStageGrid")?.addEventListener("click", (event) => {
+    const inputCard = event.target.closest(".pipelineCard.operatorInput");
+    const inputId = inputCard?.dataset?.inputId || "";
+    if (inputId) {
+      showPipelineInputInspector(inputId);
+      return;
+    }
+    const integrationCard = event.target.closest(".pipelineCard.receipt");
+    const integrationId = integrationCard?.dataset?.integrationId || "";
+    if (integrationId) {
+      showPipelineIntegrationInspector(integrationId);
+      return;
+    }
+    const validatorCard = event.target.closest(".pipelineCard.validator");
+    const validatorId = validatorCard?.dataset?.validatorId || "";
+    if (validatorId) {
+      showPipelineValidationInspector(validatorId);
+      return;
+    }
     const card = event.target.closest(".pipelineCard.worker");
     const workerId = card?.dataset?.workerId || "";
     if (!workerId) return;
+    pipelineSelectedInputId = "";
+    showPipelineWorkerInspector();
     void savePipelineDraft("select_worker", { workerId, includeManifest: false });
   });
   document.querySelector(".pipelineStageGrid")?.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" && event.key !== " ") return;
+    const inputCard = event.target.closest(".pipelineCard.operatorInput");
+    const inputId = inputCard?.dataset?.inputId || "";
+    if (inputId) {
+      event.preventDefault();
+      showPipelineInputInspector(inputId);
+      return;
+    }
+    const integrationCard = event.target.closest(".pipelineCard.receipt");
+    const integrationId = integrationCard?.dataset?.integrationId || "";
+    if (integrationId) {
+      event.preventDefault();
+      showPipelineIntegrationInspector(integrationId);
+      return;
+    }
+    const validatorCard = event.target.closest(".pipelineCard.validator");
+    const validatorId = validatorCard?.dataset?.validatorId || "";
+    if (validatorId) {
+      event.preventDefault();
+      showPipelineValidationInspector(validatorId);
+      return;
+    }
     const card = event.target.closest(".pipelineCard.worker");
     const workerId = card?.dataset?.workerId || "";
     if (!workerId) return;
     event.preventDefault();
+    pipelineSelectedInputId = "";
+    showPipelineWorkerInspector();
     void savePipelineDraft("select_worker", { workerId, includeManifest: false });
   });
   pipelineStudioControlsInitialized = true;
@@ -1622,17 +2626,22 @@ function syncDocsHashNavigation(options = {}) {
   const activeHash = location.hash || "#overview";
   const isKanjiAppPage = activeHash.startsWith("#kanji");
   const isParallelPage = activeHash.startsWith("#parallel");
+  const isPipelinePage = activeHash.startsWith("#pipeline-");
+  const activePipelineSidebarHash = activeHash.startsWith("#pipeline-input-")
+    ? "#pipeline-studio-input-docs"
+    : activeHash;
   document.body.classList.toggle("docsAppPage", isKanjiAppPage);
+  document.body.classList.toggle("docsPipelinePage", isPipelinePage);
   document.body.classList.toggle("docsParallelPage", isParallelPage);
-  document.body.classList.remove("docsPipelinePage");
   docsHashLinks.forEach((link) => {
     const href = link.getAttribute("href") || "";
     const isSidebarKanjiParent = href === "#kanji-a-day" && link.classList.contains("docsAppParentLink");
     const isSidebarParallelParent = href === "#parallel-execution" && link.classList.contains("docsParallelParentLink");
     const isParallelParentActive = isSidebarParallelParent && isParallelPage;
-    link.classList.toggle("active", (href === activeHash && !isSidebarKanjiParent) || isParallelParentActive);
+    const isPipelineSubsectionActive = isPipelinePage && href === activePipelineSidebarHash;
+    link.classList.toggle("active", (href === activeHash && !isSidebarKanjiParent) || isParallelParentActive || isPipelineSubsectionActive);
   });
-  if (options.scrollToHash && (isKanjiAppPage || isParallelPage)) {
+  if (options.scrollToHash && (isKanjiAppPage || isPipelinePage || isParallelPage)) {
     window.requestAnimationFrame(() => {
       const target = document.querySelector(activeHash);
       if (target) target.scrollIntoView({ block: "start" });
