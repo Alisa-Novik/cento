@@ -37,6 +37,11 @@ def main() -> int:
             lines.append("- commands:")
             for command in commands:
                 lines.append(f"  - `{command}`")
+        docs = tool.get("docs", [])
+        if docs:
+            lines.append("- docs:")
+            for doc in docs:
+                lines.append(f"  - [`{doc}`](./{Path(doc).name})")
         lines.append("")
 
     output.parent.mkdir(parents=True, exist_ok=True)

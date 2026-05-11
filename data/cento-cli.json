@@ -6,6 +6,7 @@
     "Registered tools can be invoked directly as `cento TOOL [args...]`.",
     "Configured aliases can be invoked directly as `cento ALIAS [args...]`.",
     "Use `cento docs` or `cento interactive` when you need the built-in command surface explained from the canonical JSON source.",
+    "When an operator asks to save something in Docs, default to human-facing files under `docs/` and update navigation when discoverability matters; command-reference docs are a separate surface.",
     "`cento install terminal` installs the managed Zsh/Oh My Zsh completion init plus the Cento prompt segment."
   ],
   "checklist": [
@@ -40,6 +41,11 @@
       "name": "alias-routing",
       "usage": "cento ALIAS [args...]",
       "summary": "Run a configured alias directly from `~/.config/cento/aliases.sh`."
+    },
+    {
+      "name": "routing-nativeness-loop",
+      "usage": "cento walk-autopilot routing run --json",
+      "summary": "Collect counts-only routing, observability, Agent Work, skill usage, and cento-native drift stats; write a decision report; and create or update one bounded Agent Work follow-up without implementing from cron."
     }
   ],
   "commands": [
@@ -275,6 +281,7 @@
       "flags": [],
       "examples": [
         "cento workset check tests/fixtures/cento_workset/workset.valid.json",
+        "cento workset check tests/fixtures/cento_workset/workset.execute.api.json --runtime api-openai",
         "cento workset check tests/fixtures/cento_workset/workset.overlap.json",
         "cento workset run tests/fixtures/cento_workset/workset.valid.json --max-workers 2 --runtime-profile fixture-valid --apply sequential --validation smoke",
         "cento workset run workset.json --max-workers 3 --runtime-profile codex-fast --apply sequential --validation smoke",
@@ -284,6 +291,7 @@
       ],
       "details": [
         "Workset v1 requires exclusive write_paths for each task. No shared files, overlapping paths, or glob write paths are accepted.",
+        "Plain `cento workset check WORKSET` rejects missing write paths. API-worker-created file plans must declare `--runtime api-openai` or `--allow-creates`.",
         "Workers run in parallel only for patch or structured artifact collection. Integration and apply are always sequential.",
         "OpenAI API workers use Responses API structured outputs and never mutate repo files directly.",
         "API worker budgets have a target and hard max; budget-blocked workers still write cost receipts.",
@@ -293,7 +301,7 @@
     {
       "name": "factory",
       "summary": "Registered tool route for the no-model Cento Factory planning, dispatch dry-run, and Safe Integrator workflow.",
-      "usage": "cento factory <intake|plan|materialize|create-issues|preflight|queue|lease|dispatch|collect|validate|integrate|validate-integrated|release-candidate|sync-taskstream|release|render-hub|status|autopilot|autopilot-status|autopilot-render|runtime> [args...]",
+      "usage": "cento factory <intake|plan|materialize|create-issues|preflight|queue|lease|dispatch|collect|validate|integrate|validate-integrated|validate-fanout|release-candidate|merge|sync-taskstream|release|render-hub|status|autopilot|autopilot-status|autopilot-render|runtime> [args...]",
       "flags": [],
       "examples": [
         "cento factory intake \"develop me a career consulting module\" --dry-run --out workspace/runs/factory/factory-planning-e2e",
@@ -308,8 +316,11 @@
         "cento factory integrate factory-integration-e2e --plan",
         "cento factory integrate factory-integration-e2e --prepare-branch --branch factory/factory-integration-e2e/integration",
         "cento factory integrate factory-integration-e2e --apply --validate-each --limit 3",
+        "cento factory validate-fanout factory-integration-e2e --max-parallel 32 --json",
         "cento factory validate-integrated factory-integration-e2e",
         "cento factory release-candidate factory-integration-e2e",
+        "cento factory merge factory-integration-e2e --auto-merge-main --dry-run --json",
+        "cento factory merge factory-integration-e2e --auto-merge-main --push --json",
         "cento factory sync-taskstream factory-integration-e2e --dry-run",
         "cento factory release workspace/runs/factory/factory-planning-e2e --json",
         "cento factory render-hub workspace/runs/factory/factory-planning-e2e",
@@ -325,7 +336,81 @@
       ],
       "details": [
         "This command is routed through data/tools.json and scripts/factory.py.",
-        "Factory defaults to deterministic no-model planning, queueing, lease simulation, dry-run dispatch, patch collection, Safe Integrator branch/apply/validate gates, rollback metadata, merge readiness, release evidence, Autopilot dry-run control cycles, and runtime adapter contracts. Live Taskstream creation requires --apply, while integration Taskstream sync is a dry-run preview by default."
+        "Factory defaults to deterministic no-model planning, queueing, lease simulation, dry-run dispatch, patch collection, Safe Integrator branch/apply/validate gates, rollback metadata, merge readiness, release evidence, Autopilot dry-run control cycles, and runtime adapter contracts. Live Taskstream creation requires --apply, while integration Taskstream sync is a dry-run preview by default.",
+        "Factory validate-fanout runs cacheable candidate checks in parallel before serialized Safe Integrator apply.",
+        "Factory merge --auto-merge-main is the only automatic main/push gate and requires release, rollback, validation, clean-worktree, and post-merge receipts.",
+        "Factory merge --auto-merge-main --dry-run writes merge readiness evidence without merging or pushing."
+      ]
+    },
+    {
+      "name": "object-storage",
+      "summary": "Registered tool route for Oracle Object Storage dummy uploads and Cento image mirroring.",
+      "usage": "cento object-storage <status|ensure-bucket|put-dummy|e2e|plan-images|upload-images|verify-images> [args...]",
+      "flags": [
+        {
+          "name": "--bucket",
+          "summary": "OCI Object Storage bucket name. Defaults to CENTO_OBJECT_STORAGE_BUCKET.",
+          "usage": "cento object-storage put-dummy --bucket my-bucket"
+        },
+        {
+          "name": "--namespace",
+          "summary": "OCI Object Storage namespace. Defaults to CENTO_OBJECT_STORAGE_NAMESPACE or OCI CLI auto-discovery.",
+          "usage": "cento object-storage put-dummy --namespace mynamespace"
+        },
+        {
+          "name": "--region",
+          "summary": "OCI region for Object Storage calls, for example us-ashburn-1.",
+          "usage": "cento object-storage e2e --live --region us-ashburn-1"
+        },
+        {
+          "name": "--name",
+          "summary": "Bucket name for ensure-bucket.",
+          "usage": "cento object-storage ensure-bucket --name cento-images-standard"
+        },
+        {
+          "name": "--dry-run",
+          "summary": "Do not call OCI; copy the dummy file into the run-scoped uploaded directory.",
+          "usage": "cento object-storage put-dummy --dry-run"
+        },
+        {
+          "name": "--live",
+          "summary": "Run the e2e through the live OCI CLI upload path.",
+          "usage": "cento object-storage e2e --live --bucket my-bucket"
+        },
+        {
+          "name": "--json",
+          "summary": "Print machine-readable JSON.",
+          "usage": "cento object-storage e2e --json"
+        },
+        {
+          "name": "--manifest",
+          "summary": "Image migration manifest or upload receipt path.",
+          "usage": "cento object-storage upload-images --manifest workspace/runs/object-storage/<run-id>/manifest.json"
+        },
+        {
+          "name": "--sample",
+          "summary": "Number of unique uploaded image objects to verify; 0 means all.",
+          "usage": "cento object-storage verify-images --manifest workspace/runs/object-storage/<run-id>/upload-receipt.json --sample 10"
+        }
+      ],
+      "examples": [
+        "cento object-storage status",
+        "cento object-storage status --probe --json",
+        "cento object-storage ensure-bucket --name cento-images-standard --region us-ashburn-1 --namespace mynamespace --json",
+        "cento object-storage put-dummy --dry-run --json",
+        "cento object-storage put-dummy --region us-ashburn-1 --bucket my-bucket --namespace mynamespace --json",
+        "cento object-storage e2e --json",
+        "cento object-storage e2e --live --region us-ashburn-1 --bucket my-bucket --namespace mynamespace --json",
+        "cento object-storage plan-images --root workspace/runs --bucket cento-images-standard --namespace mynamespace --region us-ashburn-1 --json",
+        "cento object-storage upload-images --manifest workspace/runs/object-storage/<run-id>/manifest.json --live --json",
+        "cento object-storage verify-images --manifest workspace/runs/object-storage/<run-id>/upload-receipt.json --sample 10 --json"
+      ],
+      "details": [
+        "This command is routed through data/tools.json and scripts/object_storage.py.",
+        "The MVP writes workspace/runs/object-storage/<run-id>/dummy.txt, records receipt.json and summary.md, and uploads exactly one text object through `oci os object put` when live mode is configured.",
+        "Image migration writes a mirror-only manifest for workspace run images, blocks sensitive-looking paths, uploads content-addressed objects, and verifies downloads by sha256.",
+        "Dry-run image upload copies files under the run-scoped uploaded directory; live mode requires a private Standard OCI bucket.",
+        "Human runbook: docs/oci-image-migration.html; Markdown source: docs/oci-image-migration.md"
       ]
     },
     {

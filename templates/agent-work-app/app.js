@@ -9,6 +9,7 @@ const savedQuerySelect = document.querySelector("#savedQuerySelect");
 const queryNameInput = document.querySelector("#queryNameInput");
 const newIssueButton = document.querySelector("#newIssueButton");
 const headerNewIssueButton = document.querySelector("#headerNewIssueButton");
+const quickRunPipelineButton = document.querySelector("#quickRunPipelineButton");
 const saveQueryButton = document.querySelector("#saveQueryButton");
 const exportJsonButton = document.querySelector("#exportJsonButton");
 const exportCsvButton = document.querySelector("#exportCsvButton");
@@ -68,12 +69,16 @@ const pipelineInspectorNav = document.querySelector("#pipelineInspectorNav");
 const pipelineInputInspector = document.querySelector("#pipelineInputInspector");
 const pipelineInputTitleInput = document.querySelector("#pipelineInputTitleInput");
 const pipelineInputTypeSelect = document.querySelector("#pipelineInputTypeSelect");
+const pipelineInputSourceSelect = document.querySelector("#pipelineInputSourceSelect");
 const pipelineInputDetailInput = document.querySelector("#pipelineInputDetailInput");
 const pipelineInputStatusSelect = document.querySelector("#pipelineInputStatusSelect");
+const pipelineInputAutomationInput = document.querySelector("#pipelineInputAutomationInput");
 const pipelineInputRequiredCheckbox = document.querySelector("#pipelineInputRequiredCheckbox");
+const pipelineInputMutedCheckbox = document.querySelector("#pipelineInputMutedCheckbox");
 const pipelineInputFormatInput = document.querySelector("#pipelineInputFormatInput");
 const pipelineInputImageRefsInput = document.querySelector("#pipelineInputImageRefsInput");
 const pipelineInputImageNotesInput = document.querySelector("#pipelineInputImageNotesInput");
+const pipelineInputImagePreview = document.querySelector("#pipelineInputImagePreview");
 const pipelineInputQuestionsInput = document.querySelector("#pipelineInputQuestionsInput");
 const pipelineInputPathsInput = document.querySelector("#pipelineInputPathsInput");
 const pipelineInputPathPolicyInput = document.querySelector("#pipelineInputPathPolicyInput");
@@ -141,6 +146,7 @@ const pipelineEvidenceSaveButton = document.querySelector("#pipelineEvidenceSave
 const pipelineEvidenceInspectorStatus = document.querySelector("#pipelineEvidenceInspectorStatus");
 const pipelineEvidenceConfigPath = document.querySelector("#pipelineEvidenceConfigPath");
 const pipelineEvidenceArtifactPath = document.querySelector("#pipelineEvidenceArtifactPath");
+const pipelineEvidenceArtifactPreview = document.querySelector("#pipelineEvidenceArtifactPreview");
 const pipelineWorkerInspectorActions = document.querySelector("#pipelineWorkerInspectorActions");
 const pipelineContractSummary = document.querySelector("#pipelineContractSummary");
 const pipelineContractPanel = document.querySelector("#pipelineContractPanel");
@@ -149,7 +155,45 @@ const pipelineLogsPanel = document.querySelector("#pipelineLogsPanel");
 const pipelineCostPanel = document.querySelector("#pipelineCostPanel");
 let currentInspectorTab = "manifest";
 let currentPipelineTab = "contracts";
+let currentPipelineExecutionStageId = "factory";
+let currentPipelineExecutionLogFilter = "all";
+let currentPipelineExecutionRunId = "";
+let pendingRunPipelinePrompt = "";
+let currentRunPipelineTemplateId = "";
+let pipelineExecutionAnimationTimers = [];
+let pipelineExecutionAnimationSignature = "";
+let pipelineExecutionPollTimer = null;
+let pipelineExecutionPollingActive = false;
+let pipelineExecutionVisualTimer = null;
+const pipelineExecutionVisualRuns = new Map();
+let pipelineExecutionEvidenceLayoutRunId = "";
 const manifestExplorerEl = document.querySelector("#manifestExplorer");
+const pipelineExecutionPage = document.querySelector("#pipeline-flow.pipelineExecutionPage");
+const pipelineExecutionStageStrip = document.querySelector("#pipelineExecutionStageStrip");
+const pipelineExecutionTimelineBody = document.querySelector("#pipelineExecutionTimelineBody");
+const pipelineExecutionTimelineWindow = document.querySelector("#pipelineExecutionTimelineWindow");
+const pipelineExecutionSelectedTitle = document.querySelector("#pipelineExecutionSelectedTitle");
+const pipelineExecutionSelectedStatus = document.querySelector("#pipelineExecutionSelectedStatus");
+const pipelineExecutionSelectedMeta = document.querySelector("#pipelineExecutionSelectedMeta");
+const pipelineExecutionStepTable = document.querySelector("#pipelineExecutionStepTable");
+const pipelineExecutionArtifactCount = document.querySelector("#pipelineExecutionArtifactCount");
+const pipelineExecutionArtifactFacts = document.querySelector("#pipelineExecutionArtifactFacts");
+const pipelineExecutionArtifactList = document.querySelector("#pipelineExecutionArtifactList");
+const pipelineExecutionValidationResults = document.querySelector("#pipelineExecutionValidationResults");
+const pipelineExecutionLogFilters = document.querySelector("#pipelineExecutionLogFilters");
+const pipelineExecutionLogSearch = document.querySelector("#pipelineExecutionLogSearch");
+const pipelineExecutionLogRows = document.querySelector("#pipelineExecutionLogRows");
+const pipelineExecutionRunButton = document.querySelector("#pipelineExecutionRunButton");
+const pipelineExecutionRunsCount = document.querySelector("#pipelineExecutionRunsCount");
+const pipelineExecutionRunsList = document.querySelector("#pipelineExecutionRunsList");
+const pipelineExecutionLiveBadge = document.querySelector("#pipelineExecutionLiveBadge");
+const pipelineExecutionNowStatus = document.querySelector("#pipelineExecutionNowStatus");
+const pipelineExecutionNowTitle = document.querySelector("#pipelineExecutionNowTitle");
+const pipelineExecutionNowMessage = document.querySelector("#pipelineExecutionNowMessage");
+const pipelineExecutionProgressSteps = document.querySelector("#pipelineExecutionProgressSteps");
+const pipelineExecutionParallelPanel = document.querySelector("#pipelineExecutionParallelPanel");
+const pipelineExecutionProofStatus = document.querySelector("#pipelineExecutionProofStatus");
+const pipelineExecutionProofFacts = document.querySelector("#pipelineExecutionProofFacts");
 const manifestSearchInput = document.querySelector("#manifestSearchInput");
 const manifestCodeEl = document.querySelector("#manifestCode");
 const manifestLineNumsEl = document.querySelector("#manifestLineNums");
@@ -174,10 +218,47 @@ const factoryRunCount = document.querySelector("#factoryRunCount");
 const factoryDeliveredCount = document.querySelector("#factoryDeliveredCount");
 const factoryQueuedCount = document.querySelector("#factoryQueuedCount");
 const factoryAiCalls = document.querySelector("#factoryAiCalls");
+const patchSwarmView = document.querySelector("#patchSwarmView");
+const patchSwarmForm = document.querySelector("#patchSwarmForm");
+const patchSwarmRepoSelect = document.querySelector("#patchSwarmRepoSelect");
+const patchSwarmTask = document.querySelector("#patchSwarmTask");
+const patchSwarmCandidateTarget = document.querySelector("#patchSwarmCandidateTarget");
+const patchSwarmMaxAgents = document.querySelector("#patchSwarmMaxAgents");
+const patchSwarmMode = document.querySelector("#patchSwarmMode");
+const patchSwarmProviders = document.querySelector("#patchSwarmProviders");
+const patchSwarmRepoState = document.querySelector("#patchSwarmRepoState");
+const patchSwarmStartStatus = document.querySelector("#patchSwarmStartStatus");
+const patchSwarmStartButton = document.querySelector("#patchSwarmStartButton");
+const patchSwarmStartHint = document.querySelector("#patchSwarmStartHint");
+const patchSwarmRefreshRepos = document.querySelector("#patchSwarmRefreshRepos");
+const patchSwarmRunList = document.querySelector("#patchSwarmRunList");
+const patchSwarmCandidateList = document.querySelector("#patchSwarmCandidateList");
+const patchSwarmDiffPreview = document.querySelector("#patchSwarmDiffPreview");
+const patchSwarmDiffTitle = document.querySelector("#patchSwarmDiffTitle");
+const patchSwarmDiffMeta = document.querySelector("#patchSwarmDiffMeta");
+const patchSwarmRunSubtitle = document.querySelector("#patchSwarmRunSubtitle");
+const patchSwarmCandidateCount = document.querySelector("#patchSwarmCandidateCount");
+const patchSwarmSelectedCount = document.querySelector("#patchSwarmSelectedCount");
+const patchSwarmValidationStatus = document.querySelector("#patchSwarmValidationStatus");
+const patchSwarmCost = document.querySelector("#patchSwarmCost");
+const patchSwarmApprovalStatus = document.querySelector("#patchSwarmApprovalStatus");
+const patchSwarmApproveButton = document.querySelector("#patchSwarmApproveButton");
+const patchSwarmApplyButton = document.querySelector("#patchSwarmApplyButton");
+const patchSwarmRejectButton = document.querySelector("#patchSwarmRejectButton");
+const patchSwarmDetailEmpty = document.querySelector("#patchSwarmDetailEmpty");
+const patchSwarmStatsPanel = document.querySelector("#patchSwarmStats");
+const patchSwarmReviewGrid = document.querySelector("#patchSwarmReviewGrid");
+const patchSwarmEvidence = document.querySelector("#patchSwarmEvidence");
 const issueModal = document.querySelector("#issueModal");
 const issueForm = document.querySelector("#issueForm");
+const issueModalEyebrow = document.querySelector("#issueModalEyebrow");
 const issueModalTitle = document.querySelector("#issueModalTitle");
 const issueSubmitButton = document.querySelector("#issueSubmitButton");
+const runPipelineTemplateField = document.querySelector("#runPipelineTemplateField");
+const runPipelineTemplateSelect = document.querySelector("#runPipelineTemplateSelect");
+const runPipelineRouteTitle = document.querySelector("#runPipelineRouteTitle");
+const runPipelineRouteDescription = document.querySelector("#runPipelineRouteDescription");
+const runPipelineInputCards = document.querySelector("#runPipelineInputCards");
 const issueIdInput = document.querySelector("#issueId");
 const issueSubjectInput = document.querySelector("#issueSubject");
 const issueTrackerInput = document.querySelector("#issueTracker");
@@ -191,6 +272,8 @@ const issueNodeInput = document.querySelector("#issueNode");
 const issueDoneRatioInput = document.querySelector("#issueDoneRatio");
 const issueValidationReportInput = document.querySelector("#issueValidationReport");
 const issueDescriptionInput = document.querySelector("#issueDescription");
+const issueDescriptionField = document.querySelector("#issueDescriptionField");
+const runPipelineScreenshotInput = document.querySelector("#runPipelineScreenshot");
 const detailEditButton = document.querySelector("#detailEditButton");
 const statusForm = document.querySelector("#statusForm");
 const statusSelect = document.querySelector("#detailStatusSelect");
@@ -266,6 +349,10 @@ let detailLoadingId = null;
 let loadedIssueMode = "create";
 let codebaseIntelligenceInitialized = false;
 let codebaseIntelligencePayload = null;
+let patchSwarmRepos = [];
+let patchSwarmRuns = [];
+let patchSwarmDetail = null;
+let patchSwarmSelectedCandidateId = "";
 
 function clampInt(value, fallback, minValue = 1) {
   const parsed = Number.parseInt(value, 10);
@@ -278,6 +365,226 @@ function escapeHtml(value) {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
+}
+
+const DEV_PIPELINE_ARTIFACT_ROOT = "workspace/runs/dev-pipeline-studio/docs-pages/latest/";
+
+function pipelineArtifactAssetPath(value) {
+  let clean = String(value || "").trim();
+  if (!clean) return "";
+  if (/^https?:\/\//i.test(clean) || clean.startsWith("/api/artifacts?")) return clean;
+  clean = clean.replace(/^\/+/, "");
+  if (!clean.startsWith("workspace/") && /^(execution|evidence|validation|inputs|workers|integration|integration_receipts)\//.test(clean)) {
+    clean = `${DEV_PIPELINE_ARTIFACT_ROOT}${clean}`;
+  }
+  return clean;
+}
+
+function pipelineArtifactUrl(value) {
+  const path = pipelineArtifactAssetPath(value);
+  if (!path) return "";
+  if (/^https?:\/\//i.test(path) || path.startsWith("/api/artifacts?")) return path;
+  return `/api/artifacts?path=${encodeURIComponent(path)}`;
+}
+
+function pipelineArtifactName(value) {
+  const clean = String(value || "").split("?")[0].replace(/\/+$/, "");
+  return clean.split("/").filter(Boolean).pop() || "image";
+}
+
+function pipelineArtifactBaseName(value) {
+  return pipelineArtifactName(value).toLowerCase();
+}
+
+function pipelineIsImageArtifact(value) {
+  return /\.(png|jpe?g|webp|gif)$/i.test(String(value || "").split("?")[0]);
+}
+
+function pipelineExecutionArtifactKey(artifact) {
+  return String(artifact?.path || artifact?.name || "").trim().toLowerCase();
+}
+
+function pipelineExecutionArtifactFromValue(value, flow = pipelineExecutionData()) {
+  if (value && typeof value === "object") {
+    const path = String(value.path || "").trim();
+    const name = String(value.name || "").trim();
+    if (path || name) {
+      return {
+        name: name || pipelineArtifactName(path),
+        path,
+        size: String(value.size || ""),
+        exists: value.exists !== false,
+      };
+    }
+  }
+  const clean = String(value || "").trim();
+  if (!clean) return null;
+  const artifacts = Array.isArray(flow?.artifacts) ? flow.artifacts : [];
+  const cleanName = pipelineArtifactBaseName(clean);
+  const match = artifacts.find((artifact) => {
+    const artifactPath = String(artifact?.path || "");
+    const artifactName = String(artifact?.name || "");
+    return artifactPath === clean
+      || artifactName === clean
+      || pipelineArtifactBaseName(artifactPath) === cleanName
+      || pipelineArtifactBaseName(artifactName) === cleanName;
+  });
+  if (match) return match;
+  if (!clean.includes("/") && !clean.startsWith("workspace/")) return null;
+  return {
+    name: pipelineArtifactName(clean),
+    path: clean,
+    size: "",
+    exists: true,
+  };
+}
+
+function pipelineExecutionArtifactsForRow(row = {}, flow = pipelineExecutionData()) {
+  const seen = new Set();
+  const values = [
+    ...(Array.isArray(row.artifacts) ? row.artifacts : []),
+    row.file,
+    row.receipt,
+    row.stdout_log,
+    row.stderr_log,
+  ];
+  return values
+    .map((value) => pipelineExecutionArtifactFromValue(value, flow))
+    .filter(Boolean)
+    .filter((artifact) => {
+      const key = pipelineExecutionArtifactKey(artifact);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function pipelineExecutionArtifactsForRows(rows = [], flow = pipelineExecutionData()) {
+  const seen = new Set();
+  return (rows || [])
+    .flatMap((row) => pipelineExecutionArtifactsForRow(row, flow))
+    .filter((artifact) => {
+      const key = pipelineExecutionArtifactKey(artifact);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function renderPipelineExecutionArtifactLinks(artifacts = [], limit = 3) {
+  const visible = (artifacts || []).slice(0, limit);
+  const extra = Math.max(0, (artifacts || []).length - visible.length);
+  if (!visible.length) return `<span class="pipelineExecutionArtifactEmpty">-</span>`;
+  return `
+    ${visible.map((artifact) => {
+      const url = artifact.exists !== false && artifact.path ? pipelineArtifactUrl(artifact.path) : "";
+      const label = artifact.name || pipelineArtifactName(artifact.path) || "artifact";
+      return url
+        ? `<a href="${escapeHtml(url)}" target="_blank" rel="noreferrer" title="${escapeHtml(artifact.path || label)}">${escapeHtml(label)}</a>`
+        : `<span class="missing" title="${escapeHtml(artifact.path || label)}">${escapeHtml(label)}</span>`;
+    }).join("")}
+    ${extra ? `<span class="more">+${extra}</span>` : ""}
+  `;
+}
+
+function pipelineExecutionArtifactStats(flow = pipelineExecutionData()) {
+  const artifacts = Array.isArray(flow?.artifacts) ? flow.artifacts : [];
+  const ready = artifacts.filter((artifact) => artifact?.exists !== false).length;
+  return {
+    total: artifacts.length,
+    ready,
+    missing: Math.max(0, artifacts.length - ready),
+  };
+}
+
+function pipelineExecutionFactValue(flow, labels = []) {
+  for (const label of labels) {
+    const value = pipelineExecutionFact(flow, label);
+    if (value) return value;
+  }
+  return "";
+}
+
+function renderPipelineExecutionEvidenceSummary(flow = pipelineExecutionData()) {
+  const stats = pipelineExecutionArtifactStats(flow);
+  const result = flow?.validation_results || {};
+  const parallel = pipelineExecutionParallelModel(flow);
+  const cost = pipelineExecutionFactValue(flow, ["AI cost", "Cost"]) || (flow?.total_ai_cost_usd != null ? `$${Number(flow.total_ai_cost_usd).toFixed(6)}` : "$0.000000");
+  const budget = pipelineExecutionFactValue(flow, ["Budget"]) || flow?.budget || "-";
+  const engine = pipelineExecutionFactValue(flow, ["Engine"]) || flow?.source || "pipeline";
+  const runtime = pipelineExecutionFactValue(flow, ["Runtime"]) || flow?.run_mode || "-";
+  const laneLabel = parallel.enabled
+    ? `${Number(parallel.task_count || parallel.tasks?.length || 0)} lanes`
+    : pipelineExecutionFactValue(flow, ["Frontend lane", "Schema"]) || pipelineExecutionStatusText(flow?.status);
+  const cards = [
+    ["Run", pipelineExecutionStatusText(flow?.status), flow?.duration || "-"],
+    ["Evidence", `${stats.ready}/${stats.total} ready`, stats.missing ? `${stats.missing} missing` : "all linked"],
+    ["Work", laneLabel, runtime],
+    ["Gate", `${Number(result.passed || 0)}/${Number(result.total || 0)} validators`, parallel.enabled ? "serialized" : "deterministic"],
+    ["Cost", cost, budget],
+    ["Engine", engine, flow?.run_id || ""],
+  ];
+  return cards.map(([label, value, detail]) => `
+    <div>
+      <dt>${escapeHtml(label)}</dt>
+      <dd>${escapeHtml(value || "-")}</dd>
+      <small>${escapeHtml(detail || "")}</small>
+    </div>
+  `).join("");
+}
+
+function pipelineExecutionArtifactClass(artifact = {}) {
+  if (artifact.exists === false) return "missing";
+  if (pipelineIsImageArtifact(artifact.path || artifact.name)) return "image";
+  return "ready";
+}
+
+function pipelineExecutionArtifactKind(artifact = {}) {
+  const name = String(artifact.name || artifact.path || "").toLowerCase();
+  if (pipelineIsImageArtifact(name)) return "image";
+  if (name.includes("receipt")) return "receipt";
+  if (name.includes("manifest") || name.includes("workset")) return "manifest";
+  if (name.includes("plan") || name.includes("request")) return "plan";
+  if (name.includes("log") || name.includes("events")) return "log";
+  return "artifact";
+}
+
+function initializePipelineExecutionEvidenceLayout(flow = pipelineExecutionData()) {
+  const runId = String(flow?.run_id || "");
+  if (!runId || pipelineExecutionEvidenceLayoutRunId === runId) return;
+  pipelineExecutionEvidenceLayoutRunId = runId;
+  const factsDetails = pipelineExecutionArtifactFacts?.closest?.("details");
+  const listDetails = pipelineExecutionArtifactList?.closest?.("details");
+  const validationDetails = pipelineExecutionValidationResults?.closest?.("details");
+  if (factsDetails) factsDetails.open = true;
+  if (listDetails) listDetails.open = false;
+  if (validationDetails) validationDetails.open = false;
+}
+
+function uniquePipelineImagePaths(values) {
+  return Array.from(new Set((values || []).map(pipelineArtifactAssetPath).filter(pipelineIsImageArtifact)));
+}
+
+function pipelineValueList(value) {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  return String(value).split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+}
+
+function renderPipelineImagePreviews(container, values) {
+  if (!container) return;
+  const images = uniquePipelineImagePaths(values);
+  container.classList.toggle("hidden", !images.length);
+  container.innerHTML = images.map((path) => {
+    const href = pipelineArtifactUrl(path);
+    const name = pipelineArtifactName(path);
+    return `
+      <a class="pipelineImagePreviewCard" href="${escapeHtml(href)}" target="_blank" rel="noreferrer">
+        <img src="${escapeHtml(href)}" alt="${escapeHtml(name)}">
+        <span>${escapeHtml(name)}</span>
+      </a>
+    `;
+  }).join("");
 }
 
 function statusClass(status) {
@@ -946,8 +1253,11 @@ function issueFormPayload() {
 
 function setIssueFormMode(mode, issue = null) {
   loadedIssueMode = mode;
-  issueModalTitle.textContent = mode === "edit" ? `Edit prompt #${issue?.id || ""}`.trim() : "Create from prompt";
-  if (issueSubmitButton) issueSubmitButton.textContent = mode === "edit" ? "Save issue" : "Create issue";
+  const editing = mode === "edit";
+  if (issueModal) issueModal.dataset.mode = editing ? "edit" : "run";
+  if (issueModalEyebrow) issueModalEyebrow.textContent = editing ? "Issue editor" : "Pipeline runner";
+  issueModalTitle.textContent = editing ? `Edit prompt #${issue?.id || ""}`.trim() : "Run Pipeline";
+  if (issueSubmitButton) issueSubmitButton.textContent = editing ? "Save issue" : "Run pipeline";
   issueIdInput.value = issue?.id ? String(issue.id) : "";
   issueSubjectInput.value = issue?.subject || "";
   issueTrackerInput.value = issue?.tracker || "Agent Task";
@@ -961,13 +1271,78 @@ function setIssueFormMode(mode, issue = null) {
   issueDoneRatioInput.value = String(issue?.done_ratio || 0);
   issueValidationReportInput.value = issue?.validation_report || "";
   issueDescriptionInput.value = issue?.description || "";
+  issueDescriptionInput.required = editing;
+  issueDescriptionField?.classList.toggle("hidden", !editing);
+  if (runPipelineScreenshotInput) runPipelineScreenshotInput.value = "";
+  runPipelineTemplateField?.classList.toggle("hidden", editing);
+  if (runPipelineInputCards) {
+    runPipelineInputCards.classList.toggle("hidden", editing);
+    if (!editing) {
+      refreshRunPipelineTemplateSelect();
+      renderRunPipelineInputCards();
+    }
+  }
 }
 
 function openIssueModal(issue = null) {
-  setIssueFormMode(issue ? "edit" : "create", issue);
+  const editing = Boolean(issue);
+  setIssueFormMode(editing ? "edit" : "create", issue);
   issueModal.classList.remove("hidden");
   issueModal.setAttribute("aria-hidden", "false");
-  window.requestAnimationFrame(() => issueDescriptionInput.focus());
+  window.requestAnimationFrame(() => {
+    const modalCard = issueModal.querySelector(".modalCard");
+    if (modalCard) modalCard.scrollTop = 0;
+    if (editing) issueDescriptionInput.focus();
+  });
+}
+
+async function openRunPipelineModal(prompt = "", options = {}) {
+  try {
+    const useDefaultRoute = Boolean(options.forceDefaultRoute || prompt);
+    if (useDefaultRoute) {
+      if (pipelineProjectSelect) pipelineProjectSelect.value = "hard-proreq-project";
+      if (pipelineTemplateSelect) pipelineTemplateSelect.value = "hard-proreq-task";
+    }
+    const selectedTemplate = useDefaultRoute
+      ? "hard-proreq-task"
+      : options.templateId || pipelineTemplateSelect?.value || pipelineStudioState?.selected?.template_id || "hard-proreq-task";
+    currentRunPipelineTemplateId = selectedTemplate;
+    if (!pipelineStudioState || pipelineStudioState?.selected?.template_id !== selectedTemplate) {
+      if (pipelineTemplateSelect) pipelineTemplateSelect.value = selectedTemplate;
+      await loadPipelineStudioStateForRun("");
+    }
+  } catch {
+    // The modal can still use local fallback copy; submit will surface API errors.
+  }
+  openIssueModal();
+  if (prompt) issueDescriptionInput.value = prompt;
+  refreshRunPipelineTemplateSelect();
+  renderRunPipelineInputCards();
+  window.requestAnimationFrame(() => {
+    const modalCard = issueModal.querySelector(".modalCard");
+    if (modalCard) modalCard.scrollTop = 0;
+  });
+}
+
+function capturePrefilledIssuePromptFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const prompt = params.get("new_issue_prompt") || params.get("prompt") || "";
+  if (!prompt) return false;
+  pendingRunPipelinePrompt = prompt;
+  params.delete("new_issue_prompt");
+  params.delete("prompt");
+  const nextSearch = params.toString();
+  const cleanPath = location.pathname === "/issues/new" ? "/issues" : location.pathname;
+  history.replaceState(null, "", `${cleanPath}${nextSearch ? `?${nextSearch}` : ""}${location.hash}`);
+  return true;
+}
+
+function openPrefilledIssueModalFromUrl() {
+  if (!pendingRunPipelinePrompt) return false;
+  const prompt = pendingRunPipelinePrompt;
+  pendingRunPipelinePrompt = "";
+  void openRunPipelineModal(prompt, { forceDefaultRoute: true });
+  return true;
 }
 
 function closeIssueModal() {
@@ -983,6 +1358,30 @@ function currentIssueIdFromDetail() {
 }
 
 let pipelineStudioProjects = {
+  "hard-proreq-project": {
+    key: "hard-proreq-project",
+    name: "Hard Proreq Project",
+    surface: "Cento pro requirements route",
+    surfaceValue: "hard-proreq-task",
+    ownedRoot: "workspace/runs/hard-proreq/outputs",
+    readPaths: ["AGENTS.md", "README.md", "scripts/**", "templates/agent-work-app/**", "docs/**", "tests/**", "data/tools.json", ".cento/api_workers.yaml"]
+  },
+  "parallel-pipeline-project": {
+    key: "parallel-pipeline-project",
+    name: "Parallel Pipeline Project",
+    surface: "Cento workset parallel execution",
+    surfaceValue: "parallel-pipeline",
+    ownedRoot: "workspace/runs/parallel-pipeline/outputs",
+    readPaths: ["AGENTS.md", "README.md", "scripts/**", "templates/agent-work-app/**", "docs/**", "tests/**", "data/tools.json", ".cento/api_workers.yaml"]
+  },
+  "multipipeline-proreq-project": {
+    key: "multipipeline-proreq-project",
+    name: "Multipipeline ProReq Project",
+    surface: "Sequential ProReq meta-pipeline",
+    surfaceValue: "multipipeline-proreq-chain",
+    ownedRoot: "workspace/runs/multipipeline-proreq/outputs",
+    readPaths: ["AGENTS.md", "README.md", "scripts/**", "templates/agent-work-app/**", "docs/**", "tests/**", "data/tools.json", ".cento/api_workers.yaml"]
+  },
   "generic-easy-medium-task": {
     key: "generic-easy-medium-task",
     name: "Generic Easy Task",
@@ -1018,6 +1417,112 @@ let pipelineStudioProjects = {
 };
 
 let pipelineStudioTemplates = {
+  "hard-proreq-task": {
+    id: "hard-proreq-task",
+    label: "Hard proreq task",
+    detail: "Manifest-backed requirement planning with optional screenshot context",
+    slug: "hard-proreq-task",
+    workerType: "hard_proreq_worker",
+    validationTier: "proreq-contract",
+    risk: "high",
+    tasks: "0 / 10",
+    budget: "$0.00",
+    budgetDetail: "of $20.00 budget",
+    selectedIndex: 0,
+    requiredInputs: [
+      { id: "operator-thoughts", title: "Operator thoughts and full plan", detail: "Raw request, goals, constraints, assumptions, and complete plan text.", kind: "questionnaire", source: "user", status: "missing", required: true },
+      { id: "generated-cento-context", title: "Generated mini Cento context", detail: "Cento-native context and repo search generated from operator input.", kind: "path", source: "auto", automation: "cento-context", status: "configured", required: true },
+      { id: "ui-screenshot-request", title: "Optional muted screenshot context", detail: "Optional local screenshot path or OpenAI image edit request generated from the existing UI screenshot.", kind: "image", source: "auto", automation: "openai-image", status: "muted", required: false, muted: true, blocking: false },
+      { id: "pro-backend-schema", title: "GPT Pro backend schema manifest", detail: "Strict JSON Schema for backend planning output.", kind: "details", source: "auto", automation: "schema-artifact", status: "configured", required: true },
+      { id: "backend-work-handoff", title: "10-story backend handoff", detail: "Ten story manifests, parallel patch workset, manifest integration policy, validation plan, and evidence.", kind: "evidence", source: "auto", automation: "evidence-handoff", status: "configured", required: true }
+    ],
+    workers: [
+      { id: "mini-cento-context", title: "Mini Cento Context", file: "mini_cento_context.json", description: "Generate Cento-native context from the operator request", stage: "repo" },
+      { id: "proreq-splitter", title: "Prompt Splitter", file: "proreq_prompt_split.json", description: "Split optional screenshot context and backend story requests", stage: "blueprint", dependencies: ["mini-cento-context"] },
+      { id: "backend-work-materializer", title: "Backend Work Materializer", file: "backend_work_manifest.json", description: "Create ten story manifests, parallel workset, integration, and validation manifests", stage: "blueprint", dependencies: ["proreq-splitter"] }
+    ],
+    factorySteps: [
+      { id: "collect-operator-intake", title: "collect_operator_intake", file: "operator_intake.json", status: "Accepted" },
+      { id: "build-cento-context", title: "build_mini_cento_context", file: "mini_cento_context.json", status: "Accepted" },
+      { id: "write-ui-screenshot-request", title: "ui_screenshot_request_muted", file: "ui_screenshot_request.json", status: "Muted" },
+      { id: "prepare-pro-backend-request", title: "prepare_gpt_pro_backend_request", file: "pro_backend_request.json", status: "Accepted" },
+      { id: "dispatch-pro-backend-plan", title: "gpt_pro_backend_plan", file: "pro_backend_plan.json", status: "Accepted" },
+      { id: "materialize-backend-work", title: "materialize_10_story_backend_work", file: "backend_work_manifest.json", status: "Accepted" }
+    ]
+  },
+  "parallel-pipeline": {
+    id: "parallel-pipeline",
+    label: "Parallel workset pipeline",
+    detail: "Contract-first parallel workers with one serialized integration lane",
+    slug: "parallel-pipeline",
+    workerType: "parallel_workset_worker",
+    validationTier: "workset-contract",
+    risk: "high",
+    executionModel: "parallel",
+    tasks: "0 / 7",
+    budget: "$0.00",
+    budgetDetail: "of $20.00 budget",
+    selectedIndex: 0,
+    requiredInputs: [
+      { id: "parallel-objective", title: "Parallel pipeline objective", detail: "Operator goal, acceptance criteria, risk limits, and completion definition.", kind: "questionnaire", source: "user", status: "missing", required: true },
+      { id: "parallel-workstreams", title: "Parallel worker owned write paths", detail: "Exclusive repo-relative write paths, one independent worker task per path.", kind: "path", source: "user", status: "missing", required: true },
+      { id: "parallel-read-context", title: "Generated parallel read context", detail: "Shared read context for all parallel workers.", kind: "path", source: "auto", automation: "cento-context", status: "configured", required: true },
+      { id: "parallel-ui-config", title: "Parallel UI and runtime config", detail: "Max parallelism, runtime profile, budget, validation mode, and Execution Flow display policy.", kind: "details", source: "user", status: "missing", required: true },
+      { id: "parallel-integrator-gate", title: "Serialized integration gate", detail: "Auto evidence proving worker patches converge through one sequential integrator.", kind: "evidence", source: "auto", automation: "sequential-integrator", status: "configured", required: true },
+      { id: "parallel-validation-evidence", title: "Parallel validation and handoff evidence", detail: "Validator receipts, worker receipts, costs, logs, and residual risk notes.", kind: "evidence", source: "auto", automation: "parallel-evidence-handoff", status: "configured", required: true }
+    ],
+    workers: [
+      { id: "workset-config", title: "Workset Config Contract", file: "parallel_workset_config.json", description: "Normalize objective, runtime limits, read context, and exclusive write paths", stage: "repo" },
+      { id: "parallel-split", title: "Parallel Worker Split", file: "parallel_worker_split.json", description: "Split independent owned-path workstreams into runnable workset tasks", stage: "blueprint", dependencies: ["workset-config"] },
+      { id: "serialized-integrator", title: "Serialized Integrator", file: "parallel_integrator.json", description: "Accept worker receipts one at a time and preserve rollback evidence", stage: "blueprint", dependencies: ["parallel-split"] }
+    ],
+    factorySteps: [
+      { id: "resolve-parallel-inputs", title: "resolve_parallel_inputs", file: "execution_run.json", status: "Accepted" },
+      { id: "write-parallel-workset", title: "write_parallel_workset", file: "workset.json", status: "Accepted" },
+      { id: "dispatch-parallel-workers", title: "dispatch_parallel_workers", file: "workset_receipt.json", status: "Accepted" },
+      { id: "integrate-sequentially", title: "integrate_sequentially", file: "integration_receipts", status: "Accepted" },
+      { id: "run-parallel-validation", title: "run_parallel_validation", file: "validation_receipts", status: "Accepted" },
+      { id: "collect-parallel-evidence", title: "collect_parallel_evidence", file: "parallel_evidence.json", status: "Accepted" }
+    ]
+  },
+  "multipipeline-proreq-chain": {
+    id: "multipipeline-proreq-chain",
+    label: "Multipipeline ProReq chain",
+    detail: "Four sequential ProReq passes with guidance handoff",
+    slug: "multipipeline-proreq-chain",
+    workerType: "multipipeline_proreq_coordinator",
+    validationTier: "multipipeline-contract",
+    risk: "medium",
+    executionModel: "ordered",
+    tasks: "0 / 9",
+    budget: "$0.00",
+    budgetDetail: "request-only",
+    selectedIndex: 0,
+    requiredInputs: [
+      { id: "multipipeline-objective", title: "Multipipeline objective", detail: "Operator goal, target areas, boundaries, and success evidence for four sequential ProReq passes.", kind: "questionnaire", source: "user", status: "missing", required: true },
+      { id: "multipipeline-schedule-config", title: "Sequential schedule controls", detail: "Pass count, child pipeline, execution mode, UI screenshot request mode, Pro request mode, and handoff policy.", kind: "details", source: "user", status: "provided", required: true, answer: "passes: 4\nchild_pipeline: hard-proreq-task\nexecution_mode: request-artifacts\nui_screenshot: request-artifact\npro_call: request-artifact\nhandoff_policy: previous-guidance-required" },
+      { id: "multipipeline-context", title: "Generated Cento route context", detail: "Shared route context for all four ProReq pass requests.", kind: "path", source: "auto", automation: "cento-context", status: "configured", required: true },
+      { id: "ui-screenshot-request", title: "UI screenshot guidance request", detail: "Muted image prompt artifact for the multipipeline execution UI.", kind: "image", source: "auto", automation: "openai-image-request", status: "muted", required: false, muted: true, blocking: false },
+      { id: "multipipeline-pro-request", title: "ChatGPT Pro chain request", detail: "Request artifact for manifests, integration guidance, validation guidance, and next steps.", kind: "details", source: "auto", automation: "proreq-pro-request", status: "configured", required: true },
+      { id: "multipipeline-evidence", title: "Sequential chain evidence", detail: "Pass guidance, UI screenshot request, ChatGPT Pro request, roadmap, and validation evidence.", kind: "evidence", source: "auto", automation: "multipipeline-evidence-handoff", status: "configured", required: true }
+    ],
+    workers: [
+      { id: "chain-intake", title: "Meta-pipeline Intake", file: "operator_intake.json", description: "Normalize objective, boundaries, and compute policy", stage: "repo" },
+      { id: "chain-scheduler", title: "Sequential ProReq Scheduler", file: "multipipeline_schedule.json", description: "Schedule four ordered ProReq pass request artifacts", stage: "blueprint", dependencies: ["chain-intake"] },
+      { id: "chain-handoff", title: "Guidance And Evidence Handoff", file: "multipipeline_evidence.json", description: "Collect pass guidance, UI prompt, Pro request, roadmap, and evidence", stage: "blueprint", dependencies: ["chain-scheduler"] }
+    ],
+    factorySteps: [
+      { id: "collect-multipipeline-intake", title: "collect_multipipeline_intake", file: "operator_intake.json", status: "Accepted" },
+      { id: "write-multipipeline-schedule", title: "write_multipipeline_schedule", file: "multipipeline_schedule.json", status: "Accepted" },
+      { id: "run-proreq-pass-1", title: "proreq_pass_1_scope", file: "pass_01_proreq_request.json", status: "Accepted" },
+      { id: "run-proreq-pass-2", title: "proreq_pass_2_architecture", file: "pass_02_proreq_request.json", status: "Accepted" },
+      { id: "run-proreq-pass-3", title: "proreq_pass_3_integration", file: "pass_03_proreq_request.json", status: "Accepted" },
+      { id: "run-proreq-pass-4", title: "proreq_pass_4_validation", file: "pass_04_proreq_request.json", status: "Accepted" },
+      { id: "write-multipipeline-ui-screenshot-request", title: "write_ui_screenshot_request", file: "ui_screenshot_request.json", status: "Muted" },
+      { id: "write-multipipeline-pro-request", title: "write_chatgpt_pro_request", file: "chatgpt_pro_request.json", status: "Accepted" },
+      { id: "collect-multipipeline-evidence", title: "collect_multipipeline_evidence", file: "multipipeline_evidence.json", status: "Accepted" }
+    ]
+  },
   "generic-task": {
     id: "generic-task",
     label: "Generic easy task",
@@ -1133,11 +1638,11 @@ function updateIndexedPipelineText(attribute, values) {
 }
 
 function selectedPipelineStudioProject() {
-  return pipelineStudioProjects[pipelineProjectSelect?.value || "generic-easy-medium-task"] || pipelineStudioProjects["generic-easy-medium-task"];
+  return pipelineStudioProjects[pipelineProjectSelect?.value || "hard-proreq-project"] || pipelineStudioProjects["hard-proreq-project"] || pipelineStudioProjects["generic-easy-medium-task"];
 }
 
 function selectedPipelineStudioTemplate() {
-  return pipelineStudioTemplates[pipelineTemplateSelect?.value || "generic-task"] || pipelineStudioTemplates["generic-task"];
+  return pipelineStudioTemplates[pipelineTemplateSelect?.value || "hard-proreq-task"] || pipelineStudioTemplates["hard-proreq-task"] || pipelineStudioTemplates["generic-task"];
 }
 
 function optionMarkup(items, labelKey = "label") {
@@ -1199,6 +1704,7 @@ function normalizePipelineState(payload) {
         budgetDetail: payload.pipeline.budget_detail || "",
         budgetSpentUsd: Number(template.budget_spent_usd || 0),
         budgetCapUsd: Number(template.budget_cap_usd || 0),
+        maxParallel: Number(template.max_parallel || 1),
         executionModel: template.execution_model || payload.pipeline.execution_model || "",
         workerStageLabel: template.worker_stage_label || payload.pipeline.worker_stage_label || "",
         selectedWorker: template.selected_worker || "",
@@ -1234,6 +1740,989 @@ function renderPipelineCards(attributeBase, items, keys) {
   keys.forEach(([suffix, key]) => {
     updateIndexedPipelineText(`${attributeBase}-${suffix}`, items.map((item) => item[key] || ""));
   });
+}
+
+function pipelineExecutionStatusClass(status) {
+  const raw = String(status || "configured").toLowerCase().replace(/\s+/g, "-");
+  if (["completed", "passed", "accepted", "applied", "healthy"].includes(raw)) return "completed";
+  if (["muted", "separate-flow", "deferred"].includes(raw)) return "muted";
+  if (["blocked", "rejected", "budget-blocked", "budget-exceeded", "dependency-blocked"].includes(raw)) return "blocked";
+  if (["failed", "error"].includes(raw)) return "failed";
+  if (["running", "active", "in-progress"].includes(raw)) return "running";
+  if (["queued", "configured", "pending"].includes(raw)) return "queued";
+  return raw;
+}
+
+function pipelineExecutionStatusText(status) {
+  return titleCasePipelineStatus(String(status || "configured").replace(/-/g, " "));
+}
+
+function pipelineExecutionData() {
+  return pipelineStudioState?.pipeline?.execution_flow || null;
+}
+
+function pipelineExecutionIsLive(flow = pipelineExecutionData()) {
+  const status = String(flow?.status || "").toLowerCase().replace(/\s+/g, "-");
+  return ["running", "queued", "active", "in-progress"].includes(status);
+}
+
+function pipelineExecutionFact(flow, label) {
+  const item = (flow?.facts || []).find((fact) => String(fact?.label || "").toLowerCase() === String(label || "").toLowerCase());
+  return String(item?.value || "");
+}
+
+function pipelineExecutionPrimaryPath(flow) {
+  return (flow?.changed_paths || [])[0] || (flow?.target_paths || [])[0] || pipelineExecutionFact(flow, "Changed paths") || "";
+}
+
+function pipelineExecutionCurrentStep(flow) {
+  const steps = flow?.steps || [];
+  return steps.find((step) => pipelineExecutionStatusClass(step.status) === "running")
+    || steps.find((step) => pipelineExecutionStatusClass(step.status) === "queued")
+    || steps.find((step) => ["failed", "blocked"].includes(pipelineExecutionStatusClass(step.status)))
+    || [...steps].reverse().find((step) => pipelineExecutionStatusClass(step.status) === "completed")
+    || null;
+}
+
+function pipelineExecutionReadinessMessage(message) {
+  const raw = String(message || "").trim();
+  const dirty = raw.match(/^Target write path is already dirty:\s*(?:(\S{1,2})\s+)?(.+)$/i);
+  if (dirty) {
+    const status = dirty[1] || "";
+    const path = (dirty[2] || dirty[1] || "").trim();
+    const reason = status.includes("?") ? "untracked" : "modified";
+    return `Target path is already ${reason}: ${path}. Use a fresh target path or commit/remove the existing file before rerunning.`;
+  }
+  return raw;
+}
+
+function pipelineExecutionReadinessErrors(flow) {
+  return (flow?.readiness_errors || []).map(pipelineExecutionReadinessMessage).filter(Boolean);
+}
+
+function pipelineExecutionLiveMessage(flow, step) {
+  const status = pipelineExecutionStatusClass(flow?.status || "");
+  const stepId = String(step?.id || "");
+  const changedPath = pipelineExecutionPrimaryPath(flow);
+  const cost = pipelineExecutionFact(flow, "AI cost") || (flow?.total_ai_cost_usd != null ? `$${Number(flow.total_ai_cost_usd).toFixed(6)}` : "");
+  const readinessErrors = pipelineExecutionReadinessErrors(flow);
+  const parallel = pipelineExecutionParallelModel(flow);
+  if (readinessErrors.length) return `Blocked before dispatch: ${readinessErrors[0]}`;
+  if (status === "completed" && flow?.source === "cento-hard-proreq-pro") return "Hard proreq planning is complete. The schema-backed GPT pro request, backend work manifest, integration plan, validation plan, and muted frontend screenshot request are ready.";
+  if (status === "completed" && flow?.source === "cento-multipipeline-proreq-chain") return "Multipipeline ProReq chain is complete. Four pass requests, UI screenshot request, ChatGPT Pro request, roadmap, and evidence handoff are ready.";
+  if (status === "completed" && parallel.enabled) return `${parallel.task_count || parallel.tasks.length} parallel worker lanes converged through the serialized integration gate with evidence ready for handoff.`;
+  if (status === "completed") return `Applied ${changedPath || "the requested path"} with receipt-backed cost ${cost || "recorded"}.`;
+  if (status === "failed") return `Stopped at ${step?.title || "the current step"}. The receipt and logs below show the failure point.`;
+  if (status === "blocked") return `Blocked at ${step?.title || "readiness checks"}. No worktree change was applied.`;
+  if (parallel.enabled) {
+    const counts = pipelineExecutionParallelCounts(parallel.tasks);
+    if (counts.running || counts.queued) return `Fan-out is staging ${parallel.task_count || parallel.tasks.length} exclusive worker lane${(parallel.task_count || parallel.tasks.length) === 1 ? "" : "s"} before one sequential integration gate.`;
+    return "Parallel worker output is waiting for the serialized integration and validation gates.";
+  }
+  if (stepId === "collect-operator-intake") return "Capturing your prompt, plan, and questionnaire input into a run-scoped intake artifact.";
+  if (stepId === "collect-multipipeline-intake") return "Capturing the meta-pipeline objective, boundaries, and request-only compute policy.";
+  if (stepId === "write-multipipeline-schedule") return "Scheduling four ordered Hard ProReq pass requests with previous-guidance handoff gates.";
+  if (stepId?.startsWith("run-proreq-pass-")) return "Writing the next sequential ProReq request and guidance artifact from the previous pass.";
+  if (stepId === "write-multipipeline-ui-screenshot-request") return "Writing the muted UI screenshot guidance request for the four-pass execution view.";
+  if (stepId === "write-multipipeline-pro-request") return "Preparing the ChatGPT Pro request artifact for manifests, integration guidance, validation guidance, and next steps.";
+  if (stepId === "collect-multipipeline-evidence") return "Collecting pass guidance, UI request, Pro request, roadmap, validation status, and handoff evidence.";
+  if (stepId === "build-cento-context") return "Using Cento-native context and repo search to build the mini task context.";
+  if (stepId === "write-ui-screenshot-request") return "Writing the muted frontend screenshot request. Backend planning continues separately.";
+  if (stepId === "prepare-pro-backend-request") return "Preparing the GPT pro backend request with strict JSON Schema output.";
+  if (stepId === "dispatch-pro-backend-plan") return "Producing the backend plan artifact. Live Pro dispatch is gated by configuration.";
+  if (stepId === "materialize-backend-work") return "Converting the backend plan into Cento-native workstream and Codex exec commands.";
+  if (stepId === "api-worker") return "Calling the OpenAI patch worker. The worktree is unchanged until materialization and apply finish.";
+  if (stepId === "materialize-patch") return "Converting the structured API response into a local patch bundle.";
+  if (stepId === "integrate-sequential") return "Checking the patch in the sequential integration lane before apply.";
+  if (stepId === "apply-worktree") return "Applying the accepted patch to the local worktree now.";
+  if (stepId === "collect-receipts") return "Collecting cost, patch, validation, and handoff receipts.";
+  return "Run accepted. The worker dispatch waits briefly so this page can redirect before execution starts.";
+}
+
+function pipelineExecutionDurationText(seconds, fallback = "") {
+  const value = Number(seconds || 0);
+  if (!Number.isFinite(value) || value <= 0) return fallback || "0s";
+  if (value < 60) return `${Math.round(value)}s`;
+  const minutes = Math.floor(value / 60);
+  const remainder = Math.round(value % 60);
+  return remainder ? `${minutes}m ${remainder}s` : `${minutes}m`;
+}
+
+function pipelineExecutionCleanTitle(stage, fallback = "") {
+  const title = String(stage?.short_title || stage?.title || fallback || "").trim();
+  return title.replace(/^\d+\.\s*/, "");
+}
+
+function pipelineExecutionAggregateStatus(items) {
+  const statuses = (items || []).map((item) => pipelineExecutionStatusClass(item?.status));
+  if (statuses.includes("failed")) return "failed";
+  if (statuses.includes("blocked")) return "blocked";
+  if (statuses.includes("running")) return "running";
+  if (statuses.includes("queued")) return "queued";
+  if (statuses.length && statuses.every((status) => ["completed", "muted"].includes(status))) return "completed";
+  if (statuses.length && statuses.every((status) => status === "completed")) return "completed";
+  return statuses[0] || "queued";
+}
+
+function pipelineExecutionStageBounds(items) {
+  const started = (items || []).map((item) => item?.started).find(Boolean) || "";
+  const finished = [...(items || [])].reverse().map((item) => item?.finished).find(Boolean) || "";
+  const durationSeconds = (items || []).reduce((sum, item) => sum + Number(item?.duration_seconds || 0), 0);
+  return { started, finished, durationSeconds };
+}
+
+function pipelineExecutionDisplayStages(rawStages = []) {
+  const byId = new Map((rawStages || []).map((stage) => [stage.id, stage]));
+  const setupStages = ["input", "repo", "blueprint"].map((id) => byId.get(id)).filter(Boolean);
+  const display = [];
+  if (setupStages.length) {
+    const bounds = pipelineExecutionStageBounds(setupStages);
+    display.push({
+      id: "preflight",
+      index: 1,
+      title: "Preflight",
+      short_title: "Preflight",
+      status: pipelineExecutionAggregateStatus(setupStages),
+      count: "contract, repo, blueprint",
+      duration: pipelineExecutionDurationText(bounds.durationSeconds),
+      duration_seconds: bounds.durationSeconds,
+      started: bounds.started,
+      finished: bounds.finished,
+      steps: setupStages.map((stage) => ({
+        id: stage.id,
+        title: pipelineExecutionCleanTitle(stage),
+        status: stage.status,
+        duration: stage.duration,
+        duration_seconds: stage.duration_seconds,
+        started: stage.started,
+        finished: stage.finished,
+      })),
+    });
+  }
+  [
+    ["factory", setupStages.length ? 2 : 1, "Workset Delivery"],
+    ["validation", setupStages.length ? 3 : 2, "Deterministic Validation"],
+    ["handoff", setupStages.length ? 4 : 3, "Evidence / Handoff"],
+  ].forEach(([id, index, fallback]) => {
+    const stage = byId.get(id);
+    if (!stage) return;
+    display.push({
+      ...stage,
+      index,
+      title: pipelineExecutionCleanTitle(stage, fallback),
+      short_title: pipelineExecutionCleanTitle(stage, fallback),
+    });
+  });
+  return display.length ? display : rawStages;
+}
+
+function pipelineExecutionNormalizeStageSelection(stageId, stages, flow) {
+  const clean = String(stageId || "");
+  if (stages.some((stage) => stage.id === clean)) return clean;
+  if (["input", "repo", "blueprint"].includes(clean) && stages.some((stage) => stage.id === "preflight")) return "preflight";
+  const selected = String(flow?.selected_stage_id || "");
+  if (stages.some((stage) => stage.id === selected)) return selected;
+  if (["input", "repo", "blueprint"].includes(selected) && stages.some((stage) => stage.id === "preflight")) return "preflight";
+  return stages[0]?.id || "";
+}
+
+function renderPipelineExecutionLivePanel(flow, stages) {
+  const status = pipelineExecutionStatusClass(flow?.status || "");
+  const step = pipelineExecutionCurrentStep(flow);
+  const parallel = pipelineExecutionParallelModel(flow);
+  const changedPath = pipelineExecutionPrimaryPath(flow);
+  const worksetReceipt = flow?.workset_receipt || "";
+  const cost = pipelineExecutionFact(flow, "AI cost") || (flow?.total_ai_cost_usd != null ? `$${Number(flow.total_ai_cost_usd).toFixed(6)}` : "");
+  const budget = pipelineExecutionFact(flow, "Budget") || flow?.budget || "";
+  const engine = pipelineExecutionFact(flow, "Engine") || flow?.source || "";
+  const runtime = pipelineExecutionFact(flow, "Runtime") || "";
+  const readinessErrors = pipelineExecutionReadinessErrors(flow);
+
+  if (pipelineExecutionLiveBadge) {
+    pipelineExecutionLiveBadge.textContent = flow?.source === "cento-hard-proreq-pro"
+      ? "Hard proreq route"
+      : flow?.source === "cento-multipipeline-proreq-chain"
+      ? "Multipipeline proreq"
+      : (parallel.enabled ? "Parallel workset" : (flow?.source === "cento-workset-api-openai" ? "Real api-openai workset" : "Manifest run"));
+    pipelineExecutionLiveBadge.className = status;
+  }
+  if (pipelineExecutionNowStatus) {
+    pipelineExecutionNowStatus.textContent = pipelineExecutionStatusText(flow?.status || "configured");
+    pipelineExecutionNowStatus.className = status;
+  }
+  if (pipelineExecutionNowTitle) {
+    pipelineExecutionNowTitle.textContent = parallel.enabled
+      ? (status === "completed" ? "Parallel run complete" : `${pipelineExecutionParallelPhase(parallel)} in progress`)
+      : readinessErrors.length
+      ? "Target path needs cleanup"
+      : (step?.title || (status === "completed" ? (flow?.source === "cento-hard-proreq-pro" ? "Hard proreq plan ready" : flow?.source === "cento-multipipeline-proreq-chain" ? "Multipipeline chain ready" : "Delivery completed") : (flow?.source === "cento-hard-proreq-pro" ? "Preparing hard proreq" : flow?.source === "cento-multipipeline-proreq-chain" ? "Preparing multipipeline chain" : "Preparing delivery")));
+  }
+  if (pipelineExecutionNowMessage) {
+    pipelineExecutionNowMessage.textContent = pipelineExecutionLiveMessage(flow, step);
+  }
+  if (pipelineExecutionProgressSteps) {
+    const rows = parallel.enabled ? (stages || []).map((stage) => ({
+      id: stage.id,
+      title: stage.short_title || stage.title,
+      status: stage.status,
+      stage_id: stage.id,
+    })) : (flow?.steps || []).length ? flow.steps : (stages || []).map((stage) => ({
+      id: stage.id,
+      title: stage.short_title || stage.title,
+      status: stage.status,
+      stage_id: stage.id,
+    }));
+    pipelineExecutionProgressSteps.innerHTML = rows.map((row, index) => {
+      const rowStatus = pipelineExecutionStatusClass(row.status);
+      return `
+        <button type="button" class="${rowStatus} ${row.id === step?.id ? "current" : ""}" data-execution-stage="${escapeHtml(row.stage_id || row.stage || "factory")}">
+          <span>${index + 1}</span>
+          <strong>${escapeHtml(row.title || row.id || "")}</strong>
+          <em>${pipelineExecutionStatusText(row.status)}</em>
+        </button>
+      `;
+    }).join("");
+  }
+  if (pipelineExecutionProofStatus) {
+    pipelineExecutionProofStatus.textContent = worksetReceipt
+      ? "Receipt linked"
+      : (status === "blocked" ? "Blocked" : (status === "failed" ? "Failed" : (status === "completed" ? "Receipt pending" : "Waiting")));
+    pipelineExecutionProofStatus.className = worksetReceipt ? "completed" : status;
+  }
+  if (pipelineExecutionProofFacts) {
+    const facts = readinessErrors.length ? [
+      ["Blocker", readinessErrors[0]],
+      ["Next action", "Use a fresh target path, or commit/remove the dirty file, then run delivery again."],
+      ["Engine", engine],
+      ["Runtime", runtime],
+      ["Budget", budget || "-"],
+      ["Target path", changedPath || "-"],
+    ] : [
+      ["Engine", engine],
+      ["Runtime", runtime],
+      ["Cost", cost || "-"],
+      ["Budget", budget || "-"],
+      ["Changed path", changedPath || "-"],
+      ["Workset receipt", worksetReceipt || "-"],
+    ];
+    pipelineExecutionProofFacts.innerHTML = facts.map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || "-")}</dd>`).join("");
+  }
+}
+
+function pipelineExecutionStepRows(flow = pipelineExecutionData()) {
+  const steps = Array.isArray(flow?.steps) ? flow.steps : [];
+  if (steps.length) return steps;
+  return (flow?.stages || []).flatMap((stage) => Array.isArray(stage?.steps) ? stage.steps : []);
+}
+
+function pipelineExecutionShortPath(value = "") {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  const parts = text.split("/").filter(Boolean);
+  if (parts.length <= 3) return text;
+  return `${parts.slice(0, 2).join("/")}/.../${parts.slice(-1)[0]}`;
+}
+
+function pipelineExecutionWorkerTitle(value = "", fallback = "Worker lane") {
+  const clean = String(value || fallback)
+    .replace(/^Worker:\s*/i, "")
+    .replace(/^Implement exclusive workstream for\s*/i, "")
+    .trim();
+  if (/^(workspace|templates|scripts|docs|tests|data|\.cento)\//.test(clean) || /\.[a-z0-9]{1,8}$/i.test(clean)) return fallback;
+  return clean || fallback;
+}
+
+function pipelineExecutionParallelCounts(tasks = []) {
+  return tasks.reduce((counts, task) => {
+    const status = pipelineExecutionStatusClass(task.status);
+    counts[status] = (counts[status] || 0) + 1;
+    return counts;
+  }, { completed: 0, running: 0, queued: 0, blocked: 0, failed: 0, muted: 0 });
+}
+
+function pipelineExecutionParallelProgress(status, index = 0) {
+  const clean = pipelineExecutionStatusClass(status);
+  if (clean === "completed") return 100;
+  if (clean === "running") return 58 + ((index % 3) * 9);
+  if (clean === "queued") return 14;
+  if (clean === "blocked" || clean === "failed") return 100;
+  if (clean === "muted") return 8;
+  return 22;
+}
+
+function pipelineExecutionEase(value) {
+  const x = Math.max(0, Math.min(1, Number(value || 0)));
+  return 1 - Math.pow(1 - x, 3);
+}
+
+function pipelineExecutionVisualState(flow) {
+  const runId = String(flow?.run_id || "current");
+  const now = performance.now();
+  let state = pipelineExecutionVisualRuns.get(runId);
+  if (!state) {
+    const live = pipelineExecutionIsLive(flow);
+    const status = pipelineExecutionStatusClass(flow?.status);
+    state = {
+      createdAt: now,
+      sawLive: live,
+      completedAt: status === "completed" && !live ? now - 100000 : 0,
+    };
+    pipelineExecutionVisualRuns.set(runId, state);
+    if (pipelineExecutionVisualRuns.size > 8) {
+      const firstKey = pipelineExecutionVisualRuns.keys().next().value;
+      pipelineExecutionVisualRuns.delete(firstKey);
+    }
+  }
+  if (pipelineExecutionIsLive(flow)) state.sawLive = true;
+  if (pipelineExecutionStatusClass(flow?.status) === "completed" && !state.completedAt) {
+    state.completedAt = state.sawLive ? now : now - 100000;
+  }
+  return state;
+}
+
+function pipelineExecutionParallelVisualModel(flow, parallel) {
+  const tasks = Array.isArray(parallel?.tasks) ? parallel.tasks : [];
+  const gateSteps = Array.isArray(parallel?.gate_steps) ? parallel.gate_steps : [];
+  const flowStatus = pipelineExecutionStatusClass(flow?.status);
+  const state = pipelineExecutionVisualState(flow);
+  const now = performance.now();
+  if (flowStatus === "failed" || flowStatus === "blocked") {
+    return {
+      tasks: tasks.map((task, index) => ({ ...task, visual_status: pipelineExecutionStatusClass(task.status), visual_progress: pipelineExecutionParallelProgress(task.status, index) })),
+      gate_steps: gateSteps,
+      shouldTick: false,
+    };
+  }
+
+  if (flowStatus === "completed") {
+    const elapsed = Math.max(0, now - (state.completedAt || now));
+    const laneDelay = Math.max(70, Math.min(130, 980 / Math.max(1, tasks.length)));
+    const laneFill = 620;
+    const visualTasks = tasks.map((task, index) => {
+      const actualStatus = pipelineExecutionStatusClass(task.status);
+      if (!state.sawLive) return { ...task, visual_status: actualStatus, visual_progress: pipelineExecutionParallelProgress(actualStatus, index) };
+      const localElapsed = elapsed - (index * laneDelay);
+      if (localElapsed >= laneFill) return { ...task, visual_status: "completed", visual_progress: 100 };
+      const progress = localElapsed <= 0 ? 86 : 86 + Math.round(14 * pipelineExecutionEase(localElapsed / laneFill));
+      return { ...task, visual_status: "running", visual_progress: progress };
+    });
+    const gateStart = (tasks.length * laneDelay) + 420;
+    const gateDelay = 320;
+    const visualGates = gateSteps.map((step, index) => {
+      const localElapsed = elapsed - gateStart - (index * gateDelay);
+      if (!state.sawLive) return step;
+      if (localElapsed >= gateDelay) return { ...step, visual_status: "completed" };
+      if (localElapsed >= 0) return { ...step, visual_status: "running" };
+      return { ...step, visual_status: "queued" };
+    });
+    const doneAt = gateStart + (Math.max(1, gateSteps.length) * gateDelay) + 360;
+    return {
+      tasks: visualTasks,
+      gate_steps: visualGates,
+      shouldTick: state.sawLive && elapsed < doneAt,
+    };
+  }
+
+  const liveElapsed = now - state.createdAt;
+  return {
+    tasks: tasks.map((task, index) => {
+      const actualStatus = pipelineExecutionStatusClass(task.status);
+      if (["completed", "failed", "blocked"].includes(actualStatus)) {
+        return { ...task, visual_status: actualStatus, visual_progress: pipelineExecutionParallelProgress(actualStatus, index) };
+      }
+      const localElapsed = liveElapsed - (index * 95);
+      if (localElapsed <= 0) return { ...task, visual_status: "queued", visual_progress: 12 };
+      const progress = Math.min(86, 22 + Math.round(localElapsed / 42));
+      return { ...task, visual_status: "running", visual_progress: progress };
+    }),
+    gate_steps: gateSteps.map((step) => ({ ...step, visual_status: pipelineExecutionStatusClass(step.status) })),
+    shouldTick: pipelineExecutionIsLive(flow),
+  };
+}
+
+function pipelineExecutionParallelPhase(parallel) {
+  const tasks = parallel?.tasks || [];
+  const counts = pipelineExecutionParallelCounts(tasks);
+  const gateStatuses = (parallel?.gate_steps || []).map((step) => pipelineExecutionStatusClass(step.status));
+  if (counts.failed || gateStatuses.includes("failed")) return "Blocked";
+  if (counts.blocked || gateStatuses.includes("blocked")) return "Needs review";
+  if (tasks.length && counts.completed >= tasks.length && gateStatuses.every((status) => status === "completed" || status === "muted")) return "Complete";
+  if (gateStatuses.includes("running")) return "Serializing";
+  if (counts.running || counts.queued) return "Fan-out";
+  return "Waiting";
+}
+
+function pipelineExecutionParallelGateSteps(stepRows = []) {
+  const gateIds = new Set(["collect-worker-artifacts", "integrate-sequentially", "integrate-sequential", "run-parallel-validation", "apply-worktree", "collect-parallel-evidence", "collect-receipts"]);
+  return stepRows.filter((step) => gateIds.has(String(step.id || ""))).map((step) => ({
+    id: String(step.id || ""),
+    title: String(step.title || step.id || ""),
+    status: pipelineExecutionStatusClass(step.status),
+    duration: String(step.duration || ""),
+    file: String(step.file || ""),
+  }));
+}
+
+function pipelineExecutionParallelModel(flow = pipelineExecutionData()) {
+  const explicit = flow?.parallel && typeof flow.parallel === "object" ? flow.parallel : {};
+  const stepRows = pipelineExecutionStepRows(flow);
+  const workerSteps = stepRows.filter((step) => {
+    const id = String(step?.id || "");
+    const title = String(step?.title || "");
+    return id.startsWith("parallel-worker-") || /^Worker:/i.test(title);
+  });
+  const explicitTasks = Array.isArray(explicit.tasks) ? explicit.tasks : [];
+  const tasks = explicitTasks.length ? explicitTasks.map((task, index) => ({
+    id: String(task.id || `parallel-worker-${index + 1}`),
+    title: pipelineExecutionWorkerTitle(task.title || task.id, `Worker lane ${index + 1}`),
+    worker_id: String(task.worker_id || task.id || `worker-${index + 1}`),
+    status: pipelineExecutionStatusClass(task.status),
+    write_paths: Array.isArray(task.write_paths) ? task.write_paths.map((path) => String(path || "")).filter(Boolean) : [],
+    depends_on: Array.isArray(task.depends_on) ? task.depends_on.map((item) => String(item || "")).filter(Boolean) : [],
+    patch_bundle: String(task.patch_bundle || ""),
+    integration_receipt: String(task.integration_receipt || ""),
+    validation_receipt: String(task.validation_receipt || ""),
+  })) : workerSteps.map((step, index) => ({
+    id: String(step.id || `parallel-worker-${index + 1}`),
+    title: pipelineExecutionWorkerTitle(step.title, `Worker lane ${index + 1}`),
+    worker_id: String(step.worker_id || step.id || `worker-${index + 1}`),
+    status: pipelineExecutionStatusClass(step.status),
+    write_paths: pipelineTextToLines(step.file || ""),
+    depends_on: Array.isArray(step.dependencies) ? step.dependencies.map((item) => String(item || "")).filter(Boolean) : [],
+    patch_bundle: String(step.patch_bundle || ""),
+    integration_receipt: String(step.integration_receipt || ""),
+    validation_receipt: String(step.validation_receipt || ""),
+    duration: String(step.duration || ""),
+  }));
+  const gateSteps = pipelineExecutionParallelGateSteps(stepRows);
+  const enabled = explicit.enabled === true
+    || tasks.length > 1
+    || stepRows.some((step) => String(step?.id || "").includes("parallel") || String(step?.title || "").toLowerCase().includes("parallel"));
+  if (!enabled) return { enabled: false, tasks: [], gate_steps: [] };
+  const maxParallel = Number(explicit.max_parallel || flow?.workset_max_parallel || tasks.length || 1);
+  const modelPolicy = explicit.integration_model_policy || {};
+  return {
+    ...explicit,
+    enabled: true,
+    tasks,
+    gate_steps: gateSteps,
+    max_parallel: Number.isFinite(maxParallel) && maxParallel > 0 ? maxParallel : Math.max(1, tasks.length),
+    task_count: Number(explicit.task_count || tasks.length || 0),
+    integration: explicit.integration || "sequential",
+    apply: explicit.apply || "sequential",
+    no_shared_files: explicit.no_shared_files !== false,
+    integration_model_policy: {
+      model_ceiling: modelPolicy.model_ceiling || "gpt-4.1-mini",
+      mode: modelPolicy.mode || "deterministic-first",
+      fallback: modelPolicy.fallback || "only-if-needed",
+      profile: modelPolicy.profile || "api-mini-integrator",
+    },
+    summary: explicit.summary || `${tasks.length} worker lane${tasks.length === 1 ? "" : "s"}, max ${Math.max(1, Number(explicit.max_parallel || tasks.length || 1))} concurrent, one serialized integration gate`,
+  };
+}
+
+function renderPipelineExecutionParallelPanel(flow, parallel = pipelineExecutionParallelModel(flow)) {
+  if (!pipelineExecutionParallelPanel) return null;
+  if (!parallel.enabled) {
+    pipelineExecutionParallelPanel.classList.add("hidden");
+    pipelineExecutionParallelPanel.innerHTML = "";
+    return null;
+  }
+  pipelineExecutionParallelPanel.classList.remove("hidden");
+  const fallbackGateSteps = [
+    { id: "collect-worker-artifacts", title: "Collect worker artifacts", status: "queued", duration: "" },
+    { id: "integrate-sequentially", title: "Integrate", status: "queued", duration: "" },
+    { id: "run-parallel-validation", title: "Validate", status: "queued", duration: "" },
+    { id: "collect-parallel-evidence", title: "Handoff", status: "queued", duration: "" },
+  ];
+  const baseParallel = {
+    ...parallel,
+    gate_steps: parallel.gate_steps?.length ? parallel.gate_steps : fallbackGateSteps,
+  };
+  const visual = pipelineExecutionParallelVisualModel(flow, baseParallel);
+  const tasks = Array.isArray(visual.tasks) ? visual.tasks : [];
+  const modelPolicy = parallel.integration_model_policy || {};
+  const modelCeiling = modelPolicy.model_ceiling || "gpt-4.1-mini";
+  const visualTasksForCounts = tasks.map((task) => ({ ...task, status: task.visual_status || task.status }));
+  const visualGatesForPhase = (visual.gate_steps || []).map((step) => ({ ...step, status: step.visual_status || step.status }));
+  const statusCounts = pipelineExecutionParallelCounts(visualTasksForCounts);
+  const phase = pipelineExecutionParallelPhase({ ...parallel, tasks: visualTasksForCounts, gate_steps: visualGatesForPhase });
+  const gateSteps = visual.gate_steps?.length ? visual.gate_steps : fallbackGateSteps;
+  const totalTasks = Number(parallel.task_count || tasks.length || 0);
+  pipelineExecutionParallelPanel.innerHTML = `
+    <header>
+      <div class="pipelineExecutionParallelIntro">
+        <small>Parallel Execution</small>
+        <strong>${escapeHtml(phase)} · ${totalTasks} lane${totalTasks === 1 ? "" : "s"}</strong>
+        <span>${Number(parallel.max_parallel || 1)} max parallel · ${escapeHtml(parallel.integration || "sequential")} integration · ${parallel.no_shared_files === false ? "write paths need review" : "exclusive write paths"}</span>
+      </div>
+      <div class="pipelineExecutionParallelMeter" style="--parallel-overall:${totalTasks ? Math.round((Number(statusCounts.completed || 0) / totalTasks) * 100) : 0}%">
+        <strong>${Number(statusCounts.completed || 0)} / ${totalTasks}</strong>
+        <span>workers complete</span>
+        <i aria-hidden="true"></i>
+      </div>
+    </header>
+    <div class="pipelineExecutionParallelBody">
+      <div class="pipelineExecutionParallelLanes" aria-label="Parallel worker lanes">
+        ${tasks.map((task, index) => {
+          const status = pipelineExecutionStatusClass(task.visual_status || task.status);
+          const writePaths = Array.isArray(task.write_paths) ? task.write_paths : [];
+          const pathLabel = writePaths.map(pipelineExecutionShortPath).join(", ") || "write path pending";
+          const progress = Number(task.visual_progress || pipelineExecutionParallelProgress(status, index));
+          return `
+            <article class="${status}" style="--parallel-progress:${progress}%; --lane-index:${index}">
+              <b>${index + 1}</b>
+              <div>
+                <strong>${escapeHtml(task.title || task.id || `worker ${index + 1}`)}</strong>
+                <span>${escapeHtml(pathLabel)}</span>
+              </div>
+              <em>${pipelineExecutionStatusText(status)}</em>
+              <i aria-hidden="true"></i>
+            </article>
+          `;
+        }).join("")}
+      </div>
+      <aside class="pipelineExecutionIntegrator" aria-label="Serialized integration lane">
+        <header>
+          <span>Serialized Gate</span>
+          <strong>Integrate · Validate · Handoff</strong>
+        </header>
+        <p>Worker patches fan in once. Model review stays only-if-needed and capped at ${escapeHtml(modelCeiling)}.</p>
+        <ol>
+          ${gateSteps.map((step, index) => `
+            <li class="${pipelineExecutionStatusClass(step.visual_status || step.status)}">
+              <b>${index + 1}</b>
+              <span>${escapeHtml(step.title || step.id || "")}</span>
+              <em>${pipelineExecutionStatusText(step.visual_status || step.status)}</em>
+            </li>
+          `).join("")}
+        </ol>
+        <div class="pipelineExecutionParallelBadges">
+          <small>${Number(statusCounts.running || 0)} running</small>
+          <small>${Number(statusCounts.queued || 0)} queued</small>
+          <small>${pipelineExecutionFact(flow, "AI cost") || "$0.000000"}</small>
+        </div>
+      </aside>
+    </div>
+  `;
+  return visual;
+}
+
+function selectPipelineExecutionStage(stageId) {
+  const flow = pipelineExecutionData();
+  const stages = pipelineExecutionDisplayStages(flow?.stages || []);
+  currentPipelineExecutionStageId = pipelineExecutionNormalizeStageSelection(stageId, stages, flow);
+  renderPipelineExecutionFlow();
+}
+
+function setPipelineExecutionLogFilter(filter) {
+  currentPipelineExecutionLogFilter = filter || "all";
+  renderPipelineExecutionLogs();
+}
+
+function clearPipelineExecutionAnimation() {
+  pipelineExecutionAnimationTimers.forEach((timer) => clearTimeout(timer));
+  pipelineExecutionAnimationTimers = [];
+  pipelineExecutionAnimationSignature = "";
+  pipelineExecutionPage?.classList.remove("animating", "animationComplete");
+  if (pipelineExecutionPage) {
+    pipelineExecutionPage.dataset.animationState = "idle";
+    pipelineExecutionPage.style.setProperty("--execution-animation-step-count", "0");
+  }
+}
+
+function clearPipelineExecutionVisualTimer() {
+  if (pipelineExecutionVisualTimer) clearTimeout(pipelineExecutionVisualTimer);
+  pipelineExecutionVisualTimer = null;
+}
+
+function schedulePipelineExecutionVisualTick(visual) {
+  clearPipelineExecutionVisualTimer();
+  if (!visual?.shouldTick || currentPipelineTab !== "execution-flow") return;
+  pipelineExecutionVisualTimer = setTimeout(() => {
+    pipelineExecutionVisualTimer = null;
+    renderPipelineExecutionFlow();
+  }, 120);
+}
+
+function pipelineExecutionAnimationKey(flow, stages) {
+  const stageKey = (stages || []).map((stage) => {
+    const stepKey = (stage.steps || []).map((step) => `${step.id || step.title}:${pipelineExecutionStatusClass(step.status)}:${step.duration_seconds || ""}`).join(",");
+    return `${stage.id}:${pipelineExecutionStatusClass(stage.status)}:${stage.duration_seconds || ""}:${stepKey}`;
+  }).join("|");
+  const parallel = pipelineExecutionParallelModel(flow);
+  const parallelKey = parallel.enabled
+    ? (parallel.tasks || []).map((task) => `${task.id}:${pipelineExecutionStatusClass(task.status)}:${(task.write_paths || []).join(",")}`).join("|")
+    : "";
+  return [flow?.run_id || "", pipelineExecutionStatusClass(flow?.status), flow?.event_count || "", stageKey, parallelKey].join("::");
+}
+
+function schedulePipelineExecutionAnimation(flow, stages, isLive) {
+  if (!pipelineExecutionPage) return;
+  const rows = Array.from(pipelineExecutionPage.querySelectorAll("[data-execution-stage-card], [data-execution-animation-row]"));
+  if (!rows.length) return;
+  const signature = pipelineExecutionAnimationKey(flow, stages);
+  pipelineExecutionAnimationTimers.forEach((timer) => clearTimeout(timer));
+  pipelineExecutionAnimationTimers = [];
+  if (signature === pipelineExecutionAnimationSignature) {
+    pipelineExecutionPage.classList.remove("animating");
+    pipelineExecutionPage.classList.add("animationComplete");
+    rows.forEach((row) => row.classList.add("animationRevealed"));
+    return;
+  }
+  pipelineExecutionAnimationSignature = signature;
+  pipelineExecutionPage.classList.remove("animationComplete");
+  pipelineExecutionPage.classList.add("animating");
+  pipelineExecutionPage.dataset.animationState = isLive ? "live" : "replay";
+  pipelineExecutionPage.style.setProperty("--execution-animation-step-count", String(rows.length));
+  rows.forEach((row) => row.classList.remove("animationRevealed", "animationActive"));
+  const stepMs = isLive ? 105 : 48;
+  rows.forEach((row, index) => {
+    const timer = setTimeout(() => {
+      rows.forEach((item) => item.classList.remove("animationActive"));
+      row.classList.add("animationRevealed", "animationActive");
+    }, index * stepMs);
+    pipelineExecutionAnimationTimers.push(timer);
+  });
+  const doneTimer = setTimeout(() => {
+    pipelineExecutionPage.classList.remove("animating");
+    pipelineExecutionPage.classList.add("animationComplete");
+    pipelineExecutionPage.dataset.animationState = isLive ? "live" : "idle";
+    rows.forEach((row) => row.classList.remove("animationActive"));
+  }, rows.length * stepMs + 240);
+  pipelineExecutionAnimationTimers.push(doneTimer);
+}
+
+function stopPipelineExecutionPolling() {
+  if (pipelineExecutionPollTimer) clearTimeout(pipelineExecutionPollTimer);
+  pipelineExecutionPollTimer = null;
+  pipelineExecutionPollingActive = false;
+}
+
+function ensurePipelineExecutionPolling(flow = pipelineExecutionData()) {
+  if (currentPipelineTab !== "execution-flow" || !pipelineExecutionIsLive(flow) || flow?.is_active_run === false || pipelineExecutionPollingActive) return;
+  pipelineExecutionPollingActive = true;
+  pipelineExecutionPollTimer = setTimeout(pollPipelineExecutionDelivery, 650);
+}
+
+async function loadPipelineExecutionRun(runId) {
+  const cleanRunId = String(runId || "").trim();
+  stopPipelineExecutionPolling();
+  clearPipelineExecutionAnimation();
+  clearPipelineExecutionVisualTimer();
+  currentPipelineExecutionRunId = cleanRunId;
+  const payload = await loadPipelineStudioStateForRun(cleanRunId);
+  const flow = payload?.pipeline?.execution_flow;
+  currentPipelineExecutionStageId = flow?.selected_stage_id || flow?.stages?.[0]?.id || "factory";
+  renderPipelineExecutionFlow();
+}
+
+async function pollPipelineExecutionDelivery() {
+  if (!pipelineExecutionPollingActive) return;
+  try {
+    await loadPipelineStudioStateForRun("");
+    const flow = pipelineExecutionData();
+    if (flow?.stages?.length) {
+      const activeStage = flow.stages.find((stage) => pipelineExecutionStatusClass(stage.status) === "running")
+        || flow.stages.find((stage) => pipelineExecutionStatusClass(stage.status) === "queued")
+        || flow.stages[flow.stages.length - 1];
+      currentPipelineExecutionStageId = activeStage?.id || currentPipelineExecutionStageId;
+      renderPipelineExecutionFlow();
+    }
+    if (pipelineExecutionIsLive(flow)) {
+      pipelineExecutionPollTimer = setTimeout(pollPipelineExecutionDelivery, 650);
+      return;
+    }
+    stopPipelineExecutionPolling();
+    if (!pipelineExecutionParallelModel(flow).enabled) {
+      clearPipelineExecutionAnimation();
+    }
+    if (pipelineExecutionRunButton) {
+      pipelineExecutionRunButton.disabled = false;
+      pipelineExecutionRunButton.textContent = "↻ Re-run";
+    }
+    setPipelineSaveStatus(`Delivery ${pipelineExecutionStatusText(flow?.status || "completed")} at ${new Date().toLocaleTimeString()}`);
+  } catch (error) {
+    stopPipelineExecutionPolling();
+    clearPipelineExecutionAnimation();
+    if (pipelineExecutionRunButton) {
+      pipelineExecutionRunButton.disabled = false;
+      pipelineExecutionRunButton.textContent = "↻ Re-run";
+    }
+    setPipelineSaveStatus(`Execution polling failed: ${error.message}`, true);
+  }
+}
+
+async function runPipelineExecutionDelivery() {
+  if (!pipelineExecutionRunButton) return;
+  stopPipelineExecutionPolling();
+  currentPipelineExecutionRunId = "";
+  pipelineExecutionRunButton.disabled = true;
+  pipelineExecutionRunButton.textContent = "Starting...";
+  clearPipelineExecutionAnimation();
+  clearPipelineExecutionVisualTimer();
+  try {
+    const payload = await savePipelineDraft("run_delivery", { includeManifest: false });
+    if (!payload) throw new Error("Delivery did not return pipeline state");
+    const flow = payload.pipeline?.execution_flow;
+    currentPipelineExecutionStageId = flow?.stages?.find((stage) => pipelineExecutionStatusClass(stage.status) === "running")?.id
+      || flow?.stages?.[0]?.id
+      || "input";
+    renderPipelineExecutionFlow();
+    if (pipelineExecutionRunButton) pipelineExecutionRunButton.textContent = pipelineExecutionIsLive(flow) ? "Running..." : "↻ Re-run";
+    if (pipelineExecutionIsLive(flow) && !pipelineExecutionPollingActive) {
+      pipelineExecutionPollingActive = true;
+      pipelineExecutionPollTimer = setTimeout(pollPipelineExecutionDelivery, 250);
+    } else {
+      pipelineExecutionRunButton.disabled = false;
+    }
+  } catch (error) {
+    stopPipelineExecutionPolling();
+    pipelineExecutionRunButton.disabled = false;
+    pipelineExecutionRunButton.textContent = "↻ Re-run";
+    setPipelineSaveStatus(`Delivery failed: ${error.message}`, true);
+  }
+}
+
+async function openDefaultPipelineRouteFromIssue(result) {
+  const route = result?.pipeline_route || {};
+  const routeRunId = String(route.run_id || "");
+  const routeUrl = String(route.url || "/dev-pipeline-studio#pipeline-flow");
+  currentPipelineExecutionRunId = routeRunId;
+  stopPipelineExecutionPolling();
+  clearPipelineExecutionAnimation();
+  clearPipelineExecutionVisualTimer();
+  if (pipelineProjectSelect) pipelineProjectSelect.value = route.project_id || "hard-proreq-project";
+  if (pipelineTemplateSelect) pipelineTemplateSelect.value = route.template_id || "hard-proreq-task";
+  history.pushState(null, "", routeUrl.includes("#") ? routeUrl : `${routeUrl}#pipeline-flow`);
+  showDevPipelineStudio();
+  setPipelineTab("execution-flow", { updateHash: true });
+  const payload = await loadPipelineStudioStateForRun(routeRunId);
+  const flow = payload?.pipeline?.execution_flow;
+  currentPipelineExecutionStageId = flow?.stages?.find((stage) => pipelineExecutionStatusClass(stage.status) === "running")?.id
+    || flow?.stages?.[0]?.id
+    || "factory";
+  renderPipelineExecutionFlow();
+  if (pipelineExecutionIsLive(flow) && !pipelineExecutionPollingActive) {
+    pipelineExecutionPollingActive = true;
+    pipelineExecutionPollTimer = setTimeout(pollPipelineExecutionDelivery, 250);
+  }
+  const issue = result?.issue || {};
+  const prefix = issue.id ? `Prompt #${issue.id}` : "Run Pipeline";
+  setPipelineSaveStatus(`${prefix} routed to pipeline run ${flow?.run_id || route.run_id || ""}`.trim());
+}
+
+function renderPipelineExecutionFlow() {
+  const flow = pipelineExecutionData();
+  if (!flow) return;
+  const stages = pipelineExecutionDisplayStages(flow.stages || []);
+  const selectedRunId = currentPipelineExecutionRunId || flow.run_id || "";
+  const isLive = pipelineExecutionIsLive(flow);
+  const parallel = pipelineExecutionParallelModel(flow);
+  if (pipelineExecutionPage) pipelineExecutionPage.dataset.executionSource = flow.source || "unknown";
+  if (pipelineExecutionPage) pipelineExecutionPage.dataset.executionRunId = selectedRunId;
+  if (pipelineExecutionPage) pipelineExecutionPage.dataset.executionModel = parallel.enabled ? "parallel" : "standard";
+  if (pipelineExecutionPage) {
+    pipelineExecutionPage.dataset.animationState = isLive ? "live" : "idle";
+  }
+  if (isLive) {
+    ensurePipelineExecutionPolling(flow);
+  }
+  renderPipelineExecutionLivePanel(flow, stages);
+  const parallelVisual = renderPipelineExecutionParallelPanel(flow, parallel);
+  if (pipelineExecutionRunButton && !pipelineExecutionPollingActive) {
+    pipelineExecutionRunButton.disabled = isLive;
+    pipelineExecutionRunButton.textContent = isLive ? "Running..." : "↻ Re-run";
+  }
+  if (pipelineExecutionRunsCount) {
+    const count = (flow.history || []).length;
+    pipelineExecutionRunsCount.textContent = `${count} run${count === 1 ? "" : "s"}`;
+  }
+  if (pipelineExecutionRunsList) {
+    pipelineExecutionRunsList.innerHTML = (flow.history || []).map((run) => {
+      const isSelected = String(run.run_id || "") === selectedRunId;
+      const isActive = String(run.run_id || "") === String(flow.active_run_id || "");
+      const artifactCount = Number(run.artifact_count || 0);
+      const durationLabel = [run.duration || "", artifactCount ? `${artifactCount} artifacts` : ""].filter(Boolean).join(" · ");
+      return `
+        <button type="button" class="${isSelected ? "selected" : ""} ${pipelineExecutionStatusClass(run.status)}" data-execution-run-id="${escapeHtml(run.run_id || "")}">
+          <strong>${escapeHtml(run.run_id || "")}</strong>
+          <span>${escapeHtml(run.started || "")}</span>
+          <em>${pipelineExecutionStatusText(run.status)}${isActive ? " · Active" : ""}</em>
+          <small>${escapeHtml(durationLabel)}</small>
+        </button>
+      `;
+    }).join("");
+  }
+  if (!currentPipelineExecutionStageId || !stages.some((stage) => stage.id === currentPipelineExecutionStageId)) {
+    currentPipelineExecutionStageId = pipelineExecutionNormalizeStageSelection(currentPipelineExecutionStageId, stages, flow);
+  }
+  document.querySelectorAll("[data-execution-field]").forEach((field) => {
+    const key = field.dataset.executionField;
+    const values = {
+      runId: flow.run_id,
+      status: pipelineExecutionStatusText(flow.status),
+      started: flow.started,
+      finished: flow.finished,
+      duration: flow.duration,
+      triggeredBy: flow.triggered_by,
+      runMode: flow.run_mode,
+      evidencePolicy: flow.evidence_policy,
+      overallStatus: pipelineExecutionStatusText(flow.status),
+    };
+    field.textContent = values[key] || "";
+    if (key === "status" || key === "overallStatus") field.className = pipelineExecutionStatusClass(flow.status);
+  });
+  if (pipelineExecutionStageStrip) {
+    pipelineExecutionStageStrip.innerHTML = stages.map((stage, index) => `
+      <button type="button" class="${stage.id === currentPipelineExecutionStageId ? "selected" : ""} ${pipelineExecutionStatusClass(stage.status)}" data-execution-stage="${escapeHtml(stage.id)}" data-execution-stage-card="${index}">
+        <span><b>${stage.index}</b> ${escapeHtml(stage.title)}</span>
+        <strong>${escapeHtml(stage.count || "")}</strong>
+        <small>${escapeHtml(stage.duration || "")}</small>
+        <em>${pipelineExecutionStatusText(stage.status)}</em>
+      </button>
+    `).join("");
+  }
+  if (pipelineExecutionTimelineWindow) {
+    const first = flow.started || stages[0]?.started || "";
+    const last = flow.finished || stages[stages.length - 1]?.finished || "";
+    pipelineExecutionTimelineWindow.textContent = first && last ? `${first} - ${last}` : "";
+  }
+  if (pipelineExecutionTimelineBody) {
+    pipelineExecutionTimelineBody.innerHTML = `
+      <div class="pipelineExecutionTimelineHeader"><span>Stage</span><span>Start</span><span>Progress</span><span>Elapsed</span></div>
+      ${stages.map((stage) => `
+        <button type="button" class="${stage.id === currentPipelineExecutionStageId ? "selected" : ""} ${pipelineExecutionStatusClass(stage.status)}" data-execution-stage="${escapeHtml(stage.id)}" data-execution-animation-row="stage">
+          <span><i></i>${escapeHtml(stage.short_title || stage.title)}</span>
+          <b>${escapeHtml(stage.started || "")}</b>
+          <em style="--execution-width:${Math.max(8, Math.min(100, Number(stage.duration_seconds || 0) / 1.4))}%"></em>
+          <strong>${escapeHtml(stage.duration || "")}</strong>
+        </button>
+        ${(stage.steps || []).map((step) => `
+          <button type="button" class="nested ${pipelineExecutionStatusClass(step.status)} ${stage.id === currentPipelineExecutionStageId ? "activeParent" : ""}" data-execution-stage="${escapeHtml(stage.id)}" data-execution-animation-row="step">
+            <span>› ${escapeHtml(step.title || step.id)}</span>
+            <b>${escapeHtml(step.started || "")}</b>
+            <em style="--execution-width:${Math.max(6, Math.min(84, Number(step.duration_seconds || 0) * 3))}%"></em>
+            <strong>${escapeHtml(step.duration || "")}</strong>
+          </button>
+        `).join("")}
+      `).join("")}
+    `;
+  }
+  if (parallel.enabled) {
+    pipelineExecutionPage?.classList.remove("animating", "animationComplete");
+    schedulePipelineExecutionVisualTick(parallelVisual);
+  } else {
+    clearPipelineExecutionVisualTimer();
+    schedulePipelineExecutionAnimation(flow, stages, isLive);
+  }
+  const selectedStage = stages.find((stage) => stage.id === currentPipelineExecutionStageId) || stages[0] || {};
+  if (pipelineExecutionSelectedTitle) pipelineExecutionSelectedTitle.textContent = selectedStage.short_title || selectedStage.title || "";
+  if (pipelineExecutionSelectedStatus) {
+    pipelineExecutionSelectedStatus.textContent = pipelineExecutionStatusText(selectedStage.status);
+    pipelineExecutionSelectedStatus.className = pipelineExecutionStatusClass(selectedStage.status);
+  }
+  const rows = selectedStage.steps?.length ? selectedStage.steps : stages.map((stage) => ({
+    title: stage.short_title,
+    status: stage.status,
+    duration: stage.duration,
+    started: stage.started,
+    finished: stage.finished,
+    artifacts: stage.artifacts || [],
+  }));
+  const selectedStageArtifacts = pipelineExecutionArtifactsForRows(rows, flow);
+  if (pipelineExecutionSelectedMeta) {
+    pipelineExecutionSelectedMeta.innerHTML = [
+      ["Status", pipelineExecutionStatusText(selectedStage.status)],
+      ["Duration", selectedStage.duration],
+      ["Started", selectedStage.started],
+      ["Finished", selectedStage.finished],
+      ["Items", selectedStage.count],
+      ["Artifacts", selectedStageArtifacts.length ? `${selectedStageArtifacts.length} linked` : "none"],
+    ].map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || "-")}</strong></div>`).join("");
+  }
+  if (pipelineExecutionStepTable) {
+    pipelineExecutionStepTable.innerHTML = `
+      <div><span>Step</span><span>Status</span><span>Duration</span><span>Started</span><span>Finished</span><span>Artifacts</span></div>
+      ${rows.map((row) => {
+        const rowArtifacts = pipelineExecutionArtifactsForRow(row, flow);
+        return `
+        <div>
+          <strong>${escapeHtml(row.title || row.id || "")}</strong>
+          <em class="${pipelineExecutionStatusClass(row.status)}">${pipelineExecutionStatusText(row.status)}</em>
+          <span>${escapeHtml(row.duration || "")}</span>
+          <span>${escapeHtml(row.started || "")}</span>
+          <span>${escapeHtml(row.finished || "")}</span>
+          <span class="pipelineExecutionStepArtifacts">${renderPipelineExecutionArtifactLinks(rowArtifacts)}</span>
+        </div>
+      `;
+      }).join("")}
+    `;
+  }
+  initializePipelineExecutionEvidenceLayout(flow);
+  const artifactStats = pipelineExecutionArtifactStats(flow);
+  if (pipelineExecutionArtifactCount) pipelineExecutionArtifactCount.textContent = String(artifactStats.total);
+  if (pipelineExecutionArtifactFacts) {
+    pipelineExecutionArtifactFacts.innerHTML = renderPipelineExecutionEvidenceSummary(flow);
+  }
+  if (pipelineExecutionArtifactList) {
+    pipelineExecutionArtifactList.innerHTML = (flow.artifacts || []).map((artifact) => {
+      const url = artifact.exists && artifact.path ? pipelineArtifactUrl(artifact.path) : "";
+      return `
+        <article class="${pipelineExecutionArtifactClass(artifact)}">
+          <span>${escapeHtml(pipelineExecutionArtifactKind(artifact))}</span>
+          ${url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(artifact.name || "")}</a>` : `<strong>${escapeHtml(artifact.name || "")}</strong>`}
+          <small>${escapeHtml(artifact.size || "")}</small>
+          <em>${artifact.exists ? "Ready" : "Missing"}</em>
+        </article>
+      `;
+    }).join("");
+  }
+  if (pipelineExecutionValidationResults) {
+    const result = flow.validation_results || {};
+    const readinessErrors = pipelineExecutionReadinessErrors(flow);
+    pipelineExecutionValidationResults.innerHTML = `
+      <p>${readinessErrors.length ? `${readinessErrors.length} readiness blocker${readinessErrors.length === 1 ? "" : "s"}` : `${Number(result.passed || 0)} / ${Number(result.total || 0)} validators passed`}</p>
+      ${readinessErrors.map((message) => `
+        <article class="blocked">
+          <span>!</span>
+          <strong>${escapeHtml(message)}</strong>
+          <em>Blocked</em>
+          <small>readiness</small>
+        </article>
+      `).join("")}
+      ${(result.items || []).map((item) => `
+        <article class="${pipelineExecutionStatusClass(item.status)}">
+          <span>✓</span>
+          <strong>${escapeHtml(item.title || "")}</strong>
+          <em>${pipelineExecutionStatusText(item.status)}</em>
+          <small>${escapeHtml(item.duration || "")}</small>
+        </article>
+      `).join("")}
+    `;
+  }
+  renderPipelineExecutionLogs();
+}
+
+function renderPipelineExecutionLogs() {
+  const flow = pipelineExecutionData();
+  if (!flow) return;
+  const logs = flow.logs || [];
+  const filters = ["all", "input", "repo", "blueprint", "execution", "validation", "handoff", "pipeline"];
+  if (pipelineExecutionLogFilters) {
+    pipelineExecutionLogFilters.innerHTML = filters.map((filter) => `
+      <button type="button" class="${filter === currentPipelineExecutionLogFilter ? "active" : ""}" data-execution-log-filter="${escapeHtml(filter)}">${escapeHtml(filter === "repo" ? "Discovery" : titleCasePipelineStatus(filter))}</button>
+    `).join("");
+  }
+  const search = String(pipelineExecutionLogSearch?.value || "").trim().toLowerCase();
+  const visible = logs.filter((log) => {
+    const filterMatch = currentPipelineExecutionLogFilter === "all" || log.stage === currentPipelineExecutionLogFilter;
+    const text = `${log.time} ${log.stage} ${log.source} ${log.message}`.toLowerCase();
+    return filterMatch && (!search || text.includes(search));
+  });
+  if (pipelineExecutionLogRows) {
+    pipelineExecutionLogRows.textContent = visible.map((log) => `${log.time}  [${String(log.source || log.stage).padEnd(24).slice(0, 24)}]  ${log.message}`).join("\n");
+  }
 }
 
 function selectedPipelinePayloadProject() {
@@ -1287,6 +2776,517 @@ function pipelineInputTypeIcon(type) {
   return PIPELINE_INPUT_TYPES[type]?.icon || PIPELINE_INPUT_TYPES.text.icon;
 }
 
+function pipelineInputSource(item = {}) {
+  const raw = String(item.source || item.automation_source || "").trim().toLowerCase();
+  if (["auto", "generated", "automation", "automated"].includes(raw)) return "auto";
+  if (["user", "manual", "operator"].includes(raw)) return "user";
+  return pipelineInputId(item) === "operator-thoughts" ? "user" : "auto";
+}
+
+function pipelineInputAutomation(item = {}) {
+  return String(item.automation || item.automation_source || "").trim();
+}
+
+function pipelineTemplateInputs(template = {}) {
+  if (Array.isArray(template.required_inputs)) return template.required_inputs;
+  if (Array.isArray(template.requiredInputs)) return template.requiredInputs;
+  return [];
+}
+
+function pipelineTemplateListForRun() {
+  const templates = [];
+  const addTemplate = (template = {}) => {
+    const id = String(template.id || "").trim();
+    if (!id) return;
+    const existingIndex = templates.findIndex((item) => item.id === id);
+    const normalized = {
+      ...template,
+      id,
+      label: template.label || template.name || id,
+      detail: template.detail || template.description || template.tagline || "",
+      requiredInputs: pipelineTemplateInputs(template),
+    };
+    if (existingIndex >= 0) {
+      templates[existingIndex] = {
+        ...templates[existingIndex],
+        ...normalized,
+        requiredInputs: normalized.requiredInputs.length ? normalized.requiredInputs : templates[existingIndex].requiredInputs,
+      };
+      return;
+    }
+    templates.push(normalized);
+  };
+  (Array.isArray(pipelineStudioState?.templates) ? pipelineStudioState.templates : []).forEach(addTemplate);
+  Object.values(pipelineStudioTemplates || {}).forEach(addTemplate);
+  return templates;
+}
+
+function runPipelineSelectedTemplateId() {
+  const selected = String(runPipelineTemplateSelect?.value || currentRunPipelineTemplateId || pipelineTemplateSelect?.value || pipelineStudioState?.selected?.template_id || "").trim();
+  const templates = pipelineTemplateListForRun();
+  return selected || templates[0]?.id || "hard-proreq-task";
+}
+
+function selectedRunPipelineTemplate(templateId = runPipelineSelectedTemplateId()) {
+  return pipelineTemplateListForRun().find((template) => template.id === templateId)
+    || pipelineStudioTemplates?.[templateId]
+    || selectedPipelineStudioTemplate()
+    || {};
+}
+
+function pipelineProjectListForRun() {
+  const projects = [];
+  const addProject = (project = {}) => {
+    const id = String(project.id || project.key || "").trim();
+    if (!id || projects.some((item) => item.id === id)) return;
+    projects.push({
+      ...project,
+      id,
+      label: project.label || project.name || id,
+      surface_value: project.surface_value || project.surfaceValue || project.surface || "",
+    });
+  };
+  (Array.isArray(pipelineStudioState?.projects) ? pipelineStudioState.projects : []).forEach(addProject);
+  Object.values(pipelineStudioProjects || {}).forEach(addProject);
+  return projects;
+}
+
+function runPipelineProjectForTemplate(templateId = runPipelineSelectedTemplateId()) {
+  const currentProjectId = pipelineStudioState?.selected?.project_id || pipelineProjectSelect?.value || "";
+  const projects = pipelineProjectListForRun();
+  const surfaceMatch = projects.find((project) => String(project.surface_value || project.surfaceValue || "") === templateId);
+  return surfaceMatch?.id || currentProjectId || projects[0]?.id || "hard-proreq-project";
+}
+
+function refreshRunPipelineTemplateSelect() {
+  if (!runPipelineTemplateSelect) return;
+  const templates = pipelineTemplateListForRun();
+  const requestedId = currentRunPipelineTemplateId || pipelineTemplateSelect?.value || pipelineStudioState?.selected?.template_id || templates[0]?.id || "hard-proreq-task";
+  runPipelineTemplateSelect.innerHTML = templates.map((template) => {
+    const inputCount = pipelineTemplateInputs(template).length || template.requiredInputs?.length || 0;
+    const suffix = inputCount ? ` (${inputCount} inputs)` : "";
+    return `<option value="${escapeHtml(template.id)}">${escapeHtml(template.label || template.id)}${escapeHtml(suffix)}</option>`;
+  }).join("");
+  if (templates.some((template) => template.id === requestedId)) {
+    runPipelineTemplateSelect.value = requestedId;
+  } else if (templates[0]) {
+    runPipelineTemplateSelect.value = templates[0].id;
+  }
+  currentRunPipelineTemplateId = runPipelineTemplateSelect.value || requestedId;
+}
+
+function currentRunPipelineInputs() {
+  const templateId = runPipelineSelectedTemplateId();
+  const template = selectedRunPipelineTemplate(templateId);
+  const stateSelectedTemplateId = pipelineStudioState?.selected?.template_id || "";
+  const inputs = templateId === stateSelectedTemplateId && Array.isArray(pipelineStudioState?.pipeline?.input_cards)
+    ? pipelineStudioState.pipeline.input_cards
+    : pipelineTemplateInputs(template);
+  return Array.isArray(inputs) ? inputs : [];
+}
+
+function runPipelineInputPlaceholder(kind, item = {}) {
+  if (kind === "path") return "templates/agent-work-app/app.js\nworkspace/runs/parallel-pipeline/execution-ui.json";
+  if (kind === "image") return "workspace/runs/ui/reference.png";
+  if (kind === "evidence") return "workspace/runs/pipeline/evidence.json\nworkspace/runs/pipeline/validation.log";
+  if (kind === "details") return "max_parallel: 3\nruntime: api-openai\nvalidation: focused";
+  if (kind === "questionnaire") return item.format || "Goal, acceptance criteria, constraints, and done definition";
+  return item.format || "Manual input";
+}
+
+function runPipelineInputInitialValue(item = {}, index = 0, kind = pipelineInputType(item)) {
+  const direct = String(item.answer || item.provided_answer || item.value || item.answer_notes || "").trim();
+  if (direct) return direct;
+  if (kind === "path") return pipelineLinesToText(item.paths || item.target_paths || item.routes);
+  if (kind === "image") return pipelineLinesToText(item.image_refs || item.images || item.references);
+  if (kind === "evidence") return pipelineLinesToText(item.artifacts || item.evidence_artifacts);
+  const prompt = issueDescriptionInput?.value?.trim() || "";
+  const firstManualIndex = currentRunPipelineInputs().findIndex((input) => pipelineInputSource(input) === "user");
+  const inputId = pipelineInputId(item, index);
+  if (prompt && (inputId === "operator-thoughts" || index === firstManualIndex) && ["questionnaire", "details", "text"].includes(kind)) {
+    return prompt;
+  }
+  return "";
+}
+
+const PARALLEL_CONFIG_DEFAULTS = {
+  max_parallel: "10",
+  runtime: "fixture",
+  integrator: "sequential",
+  validation: "smoke",
+  apply_mode: "dry-run",
+  budget_usd: "0.00",
+  max_budget_usd: "0.00",
+};
+
+const MULTIPIPELINE_CONFIG_DEFAULTS = {
+  passes: "4",
+  child_pipeline: "hard-proreq-task",
+  execution_mode: "request-artifacts",
+  ui_screenshot: "request-artifact",
+  pro_call: "request-artifact",
+  handoff_policy: "previous-guidance-required",
+};
+
+function runPipelineIsParallelTemplate(templateId = runPipelineSelectedTemplateId()) {
+  return templateId === "parallel-pipeline";
+}
+
+function runPipelineParseKeyValueConfig(text = "") {
+  const config = {};
+  String(text || "").split(/\r?\n/).forEach((line) => {
+    const index = line.indexOf(":");
+    if (index < 0) return;
+    const key = line.slice(0, index).trim().toLowerCase().replace(/[^a-z0-9_]+/g, "_").replace(/^_+|_+$/g, "");
+    const value = line.slice(index + 1).trim();
+    if (key && value) config[key] = value;
+  });
+  return config;
+}
+
+function runPipelineParallelConfigInitial(item = {}, index = 0) {
+  const config = { ...PARALLEL_CONFIG_DEFAULTS };
+  const parsed = runPipelineParseKeyValueConfig(runPipelineInputInitialValue(item, index, "details"));
+  Object.entries(parsed).forEach(([key, value]) => {
+    if (key in config) config[key] = String(value);
+  });
+  if (config.runtime !== "api-openai") {
+    config.budget_usd = "0.00";
+    config.max_budget_usd = "0.00";
+  }
+  return config;
+}
+
+function runPipelineMultipipelineConfigInitial(item = {}, index = 0) {
+  const config = { ...MULTIPIPELINE_CONFIG_DEFAULTS };
+  const parsed = runPipelineParseKeyValueConfig(runPipelineInputInitialValue(item, index, "details"));
+  Object.entries(parsed).forEach(([key, value]) => {
+    if (key in config) config[key] = String(value);
+  });
+  config.passes = "4";
+  config.child_pipeline = "hard-proreq-task";
+  return config;
+}
+
+function runPipelineSelectOptions(options, selected) {
+  return options.map((option) => {
+    const value = typeof option === "string" ? option : option.value;
+    const label = typeof option === "string" ? option : option.label;
+    return `<option value="${escapeHtml(value)}"${String(value) === String(selected) ? " selected" : ""}>${escapeHtml(label)}</option>`;
+  }).join("");
+}
+
+function renderParallelConfigControl(item = {}, index = 0) {
+  const config = runPipelineParallelConfigInitial(item, index);
+  return `
+    <div class="runPipelineStructuredConfig" data-config-profile="parallel" data-run-pipeline-input-index="${index}" data-run-pipeline-input-id="parallel-ui-config" data-runtime="${escapeHtml(config.runtime)}">
+      <label><span>Max parallel</span><select data-run-pipeline-config="max_parallel">${runPipelineSelectOptions(["3", "5", "10", "12"], config.max_parallel)}</select></label>
+      <label><span>Runtime</span><select data-run-pipeline-config="runtime">${runPipelineSelectOptions([
+        { value: "fixture", label: "Fixture dry run" },
+        { value: "api-openai", label: "API workers" }
+      ], config.runtime)}</select></label>
+      <label><span>Integrator</span><select data-run-pipeline-config="integrator">${runPipelineSelectOptions([
+        { value: "sequential", label: "Sequential deterministic" },
+        { value: "sequential-review", label: "Sequential + fallback review" }
+      ], config.integrator)}</select></label>
+      <label><span>Validation</span><select data-run-pipeline-config="validation">${runPipelineSelectOptions([
+        { value: "smoke", label: "Smoke" },
+        { value: "focused", label: "Focused" }
+      ], config.validation)}</select></label>
+      <label><span>Apply mode</span><select data-run-pipeline-config="apply_mode">${runPipelineSelectOptions([
+        { value: "dry-run", label: "Dry-run / no apply" },
+        { value: "apply", label: "Apply accepted patches" }
+      ], config.apply_mode)}</select></label>
+      <label class="runPipelineBudgetField"><span>Budget target</span><input data-run-pipeline-config="budget_usd" type="number" min="0" step="0.01" value="${escapeHtml(config.budget_usd)}"></label>
+      <label class="runPipelineBudgetField"><span>Hard cap</span><input data-run-pipeline-config="max_budget_usd" type="number" min="0" step="0.01" value="${escapeHtml(config.max_budget_usd)}"></label>
+    </div>
+  `;
+}
+
+function renderMultipipelineConfigControl(item = {}, index = 0) {
+  const config = runPipelineMultipipelineConfigInitial(item, index);
+  return `
+    <div class="runPipelineStructuredConfig" data-config-profile="multipipeline" data-run-pipeline-input-index="${index}" data-run-pipeline-input-id="multipipeline-schedule-config">
+      <label><span>Passes</span><select data-run-pipeline-config="passes">${runPipelineSelectOptions(["4"], config.passes)}</select></label>
+      <label><span>Child pipeline</span><select data-run-pipeline-config="child_pipeline">${runPipelineSelectOptions([{ value: "hard-proreq-task", label: "Hard ProReq" }], config.child_pipeline)}</select></label>
+      <label><span>Execution</span><select data-run-pipeline-config="execution_mode">${runPipelineSelectOptions([
+        { value: "request-artifacts", label: "Request artifacts" },
+        { value: "live-child-runs", label: "Live child runs" }
+      ], config.execution_mode)}</select></label>
+      <label><span>UI screenshot</span><select data-run-pipeline-config="ui_screenshot">${runPipelineSelectOptions([
+        { value: "request-artifact", label: "Request artifact" },
+        { value: "live-image", label: "Live image opt-in" }
+      ], config.ui_screenshot)}</select></label>
+      <label><span>Pro call</span><select data-run-pipeline-config="pro_call">${runPipelineSelectOptions([
+        { value: "request-artifact", label: "Request artifact" },
+        { value: "live-pro", label: "Live Pro opt-in" }
+      ], config.pro_call)}</select></label>
+      <label><span>Handoff</span><select data-run-pipeline-config="handoff_policy">${runPipelineSelectOptions([
+        { value: "previous-guidance-required", label: "Previous guidance required" },
+        { value: "advisory", label: "Advisory" }
+      ], config.handoff_policy)}</select></label>
+    </div>
+  `;
+}
+
+function runPipelineQuestionId(question = {}, index = 0) {
+  const raw = String(question.id || question.key || question.name || question.prompt || question.question || "").trim();
+  const slug = raw.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return slug || `question-${index + 1}`;
+}
+
+function renderRunPipelineQuestionControl(question = {}, inputIndex = 0, questionIndex = 0, required = false, optionsOverride = {}) {
+  const questionId = runPipelineQuestionId(question, questionIndex);
+  const label = question.prompt || question.question || question.label || questionId;
+  const answerType = String(question.answer_type || question.type || "text").toLowerCase();
+  const options = Array.isArray(question.options) ? question.options.map((option) => String(option || "").trim()).filter(Boolean) : [];
+  const requiredAttr = required && question.required !== false ? " required" : "";
+  if (options.length) {
+    return `
+      <label class="runPipelineQuestion">
+        <span>${escapeHtml(label)}</span>
+        <select data-run-pipeline-input-index="${inputIndex}" data-run-pipeline-question-id="${escapeHtml(questionId)}"${requiredAttr}>
+          <option value="">Select...</option>
+          ${options.map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`).join("")}
+        </select>
+      </label>
+    `;
+  }
+  const rows = optionsOverride.forceTextarea ? Number(optionsOverride.rows || 4) : (answerType === "long" || answerType === "textarea" || String(label).length > 80 ? 3 : 1);
+  const tag = rows > 1 ? "textarea" : "input";
+  if (tag === "textarea") {
+    return `
+      <label class="runPipelineQuestion">
+        <span>${escapeHtml(label)}</span>
+        <textarea data-run-pipeline-input-index="${inputIndex}" data-run-pipeline-question-id="${escapeHtml(questionId)}" rows="${rows}"${requiredAttr}></textarea>
+      </label>
+    `;
+  }
+  return `
+    <label class="runPipelineQuestion">
+      <span>${escapeHtml(label)}</span>
+      <input type="text" data-run-pipeline-input-index="${inputIndex}" data-run-pipeline-question-id="${escapeHtml(questionId)}"${requiredAttr} />
+    </label>
+  `;
+}
+
+function renderRunPipelineInputControl(item = {}, index = 0, kind = pipelineInputType(item), source = pipelineInputSource(item)) {
+  const inputId = pipelineInputId(item, index);
+  const required = item.required !== false;
+  const requiredAttr = required ? " required" : "";
+  if (source === "auto") {
+    const automation = pipelineInputAutomation(item);
+    return `
+      <details class="runPipelineAutoInput" aria-readonly="true">
+        <summary><strong>Automated</strong><span>${escapeHtml(automation ? `Generated by ${automation}` : "Resolved during pipeline execution")}</span></summary>
+        <p>${escapeHtml(item.evidence_policy || item.path_policy || item.detail || "Resolved during pipeline execution.")}</p>
+      </details>
+    `;
+  }
+  const initialValue = runPipelineInputInitialValue(item, index, kind);
+  const placeholder = runPipelineInputPlaceholder(kind, item);
+  if (inputId === "parallel-ui-config") {
+    return renderParallelConfigControl(item, index);
+  }
+  if (inputId === "multipipeline-schedule-config") {
+    return renderMultipipelineConfigControl(item, index);
+  }
+  if (inputId === "parallel-workstreams") {
+    return `
+      <details class="runPipelineAdvancedInput">
+        <summary><strong>Auto-generated by default</strong><span>Open only to override worker paths or provide JSON workstreams.</span></summary>
+        <textarea data-run-pipeline-input-index="${index}" data-run-pipeline-input-id="${escapeHtml(inputId)}" rows="5" placeholder="${escapeHtml(placeholder)}">${escapeHtml(initialValue)}</textarea>
+      </details>
+    `;
+  }
+  if (kind === "questionnaire" && Array.isArray(item.questions) && item.questions.length) {
+    const isParallelObjective = inputId === "parallel-objective";
+    const isMultipipelineObjective = inputId === "multipipeline-objective";
+    return `
+      <div class="runPipelineQuestionGrid${isParallelObjective || isMultipipelineObjective ? " objective" : ""}">
+        ${item.questions.map((question, questionIndex) => renderRunPipelineQuestionControl(question, index, questionIndex, required, isParallelObjective || isMultipipelineObjective ? { forceTextarea: true, rows: questionIndex === 2 ? 3 : 4 } : {})).join("")}
+      </div>
+    `;
+  }
+  if (kind === "path" || kind === "evidence" || kind === "details" || kind === "questionnaire" || kind === "text") {
+    const rows = kind === "path" || kind === "evidence" ? 3 : 4;
+    return `
+      <textarea data-run-pipeline-input-index="${index}" data-run-pipeline-input-id="${escapeHtml(inputId)}" rows="${rows}" placeholder="${escapeHtml(placeholder)}"${requiredAttr}>${escapeHtml(initialValue)}</textarea>
+    `;
+  }
+  if (kind === "image") {
+    return `
+      <input type="text" data-run-pipeline-input-index="${index}" data-run-pipeline-input-id="${escapeHtml(inputId)}" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(initialValue)}"${requiredAttr} />
+    `;
+  }
+  return `
+    <input type="text" data-run-pipeline-input-index="${index}" data-run-pipeline-input-id="${escapeHtml(inputId)}" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(initialValue)}"${requiredAttr} />
+  `;
+}
+
+function renderRunPipelineInputCards() {
+  if (!runPipelineInputCards) return;
+  refreshRunPipelineTemplateSelect();
+  const template = selectedRunPipelineTemplate();
+  const inputs = currentRunPipelineInputs();
+  const manualCount = inputs.filter((item) => pipelineInputSource(item) === "user" && item.required !== false).length;
+  const advancedCount = inputs.filter((item) => pipelineInputSource(item) === "user" && item.required === false).length;
+  const autoCount = inputs.filter((item) => pipelineInputSource(item) === "auto").length;
+  const project = pipelineProjectListForRun().find((item) => item.id === runPipelineProjectForTemplate(template.id || runPipelineSelectedTemplateId()));
+  if (runPipelineRouteTitle) {
+    runPipelineRouteTitle.textContent = template.label || template.id || "Selected route";
+  }
+  if (runPipelineRouteDescription) {
+    runPipelineRouteDescription.textContent = `${manualCount} required manual input${manualCount === 1 ? "" : "s"}, ${advancedCount} advanced override${advancedCount === 1 ? "" : "s"}, ${autoCount} automated input${autoCount === 1 ? "" : "s"} resolved by the pipeline${project?.label ? ` · ${project.label}` : ""}.`;
+  }
+  if (!inputs.length) {
+    runPipelineInputCards.innerHTML = `
+      <article class="runPipelineInputCard automated configured empty" data-run-input-id="no-manual-inputs">
+        <b>0</b>
+        <div class="runPipelineInputCardBody">
+          <div class="runPipelineInputCopy">
+            <strong>No manual inputs</strong>
+            <span>This pipeline can run from its configured template contract.</span>
+            <small>Automated route</small>
+          </div>
+          <div class="runPipelineInputControl">
+            <div class="runPipelineAutoInput" aria-readonly="true"><strong>Ready</strong><span>No operator form fields required</span></div>
+          </div>
+        </div>
+      </article>
+    `;
+    return;
+  }
+  runPipelineInputCards.innerHTML = inputs.map((item, index) => {
+    const kind = pipelineInputType(item);
+    const source = pipelineInputSource(item);
+    const automation = pipelineInputAutomation(item);
+    const status = String(item.status || (source === "auto" ? "configured" : "missing")).toLowerCase();
+    const inputId = pipelineInputId(item, index);
+    const requirement = item.required === false ? "Optional" : "Required";
+    const variantClass = [
+      inputId === "parallel-objective" ? "objective" : "",
+      inputId === "parallel-workstreams" ? "advanced" : "",
+      source === "auto" ? "collapsedAuto" : "",
+    ].filter(Boolean).join(" ");
+    return `
+      <article class="runPipelineInputCard ${source === "auto" ? "automated" : "manual"} ${escapeHtml(status)} ${escapeHtml(variantClass)}" data-run-input-id="${escapeHtml(inputId)}">
+        <b>${index + 1}</b>
+        <div class="runPipelineInputCardBody">
+          <div class="runPipelineInputCopy">
+            <strong>${escapeHtml(item.title || inputId)}</strong>
+            <span>${escapeHtml(item.detail || item.evidence_policy || item.path_policy || "")}</span>
+            <small>${escapeHtml(pipelineInputTypeLabel(kind))} · ${escapeHtml(source === "auto" ? `Auto${automation ? `: ${automation}` : ""}` : `${requirement} user input`)}</small>
+          </div>
+          <div class="runPipelineInputControl">
+            ${renderRunPipelineInputControl(item, index, kind, source)}
+          </div>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function runPipelineInputValue(index) {
+  const structured = runPipelineInputCards?.querySelector(`.runPipelineStructuredConfig[data-run-pipeline-input-index="${index}"]`);
+  if (structured) {
+    const values = {};
+    structured.querySelectorAll("[data-run-pipeline-config]").forEach((control) => {
+      const key = control.getAttribute("data-run-pipeline-config") || "";
+      if (key) values[key] = String(control.value || "").trim();
+    });
+    if (values.runtime !== "api-openai") {
+      values.budget_usd = "0.00";
+      values.max_budget_usd = "0.00";
+    }
+    if (structured.dataset.configProfile === "multipipeline") {
+      return [
+        `passes: ${values.passes || MULTIPIPELINE_CONFIG_DEFAULTS.passes}`,
+        `child_pipeline: ${values.child_pipeline || MULTIPIPELINE_CONFIG_DEFAULTS.child_pipeline}`,
+        `execution_mode: ${values.execution_mode || MULTIPIPELINE_CONFIG_DEFAULTS.execution_mode}`,
+        `ui_screenshot: ${values.ui_screenshot || MULTIPIPELINE_CONFIG_DEFAULTS.ui_screenshot}`,
+        `pro_call: ${values.pro_call || MULTIPIPELINE_CONFIG_DEFAULTS.pro_call}`,
+        `handoff_policy: ${values.handoff_policy || MULTIPIPELINE_CONFIG_DEFAULTS.handoff_policy}`,
+      ].join("\n");
+    }
+    return [
+      `max_parallel: ${values.max_parallel || PARALLEL_CONFIG_DEFAULTS.max_parallel}`,
+      `runtime: ${values.runtime || PARALLEL_CONFIG_DEFAULTS.runtime}`,
+      `integrator: ${values.integrator || PARALLEL_CONFIG_DEFAULTS.integrator}`,
+      `validation: ${values.validation || PARALLEL_CONFIG_DEFAULTS.validation}`,
+      `apply_mode: ${values.apply_mode || PARALLEL_CONFIG_DEFAULTS.apply_mode}`,
+      `budget_usd: ${values.budget_usd || PARALLEL_CONFIG_DEFAULTS.budget_usd}`,
+      `max_budget_usd: ${values.max_budget_usd || PARALLEL_CONFIG_DEFAULTS.max_budget_usd}`,
+    ].join("\n");
+  }
+  const control = runPipelineInputCards?.querySelector(`[data-run-pipeline-input-index="${index}"][data-run-pipeline-input-id]`);
+  return String(control?.value || "").trim();
+}
+
+function runPipelineQuestionAnswers(index) {
+  const answers = {};
+  runPipelineInputCards?.querySelectorAll(`[data-run-pipeline-input-index="${index}"][data-run-pipeline-question-id]`).forEach((control) => {
+    const questionId = control.getAttribute("data-run-pipeline-question-id") || "";
+    const value = String(control.value || "").trim();
+    if (questionId && value) answers[questionId] = value;
+  });
+  return answers;
+}
+
+function runPipelineInputPayload(item, index) {
+  const inputId = pipelineInputId(item, index);
+  const kind = pipelineInputType(item);
+  const source = pipelineInputSource(item);
+  const base = { id: inputId, kind, source };
+  const screenshotPath = runPipelineScreenshotInput?.value?.trim() || "";
+  if (source === "auto") {
+    if (kind === "image" && inputId === "ui-screenshot-request" && screenshotPath) {
+      return { ...base, image_refs: [screenshotPath], image_notes: "Operator-provided optional screenshot context." };
+    }
+    return base;
+  }
+  const manualValue = runPipelineInputValue(index);
+  const prompt = issueDescriptionInput.value.trim();
+  const value = manualValue || (inputId === "operator-thoughts" ? prompt : "");
+  if (kind === "questionnaire") {
+    const answers = runPipelineQuestionAnswers(index);
+    const answer = value || Object.entries(answers).map(([key, answerValue]) => `${key}: ${answerValue}`).join("\n");
+    return { ...base, answer, answers };
+  }
+  if (kind === "details" || kind === "text") return { ...base, answer: value };
+  if (kind === "path") return { ...base, paths: pipelineTextToLines(value) };
+  if (kind === "image") {
+    const imageRefs = pipelineTextToLines(value || screenshotPath);
+    return { ...base, image_refs: imageRefs, image_notes: value };
+  }
+  if (kind === "evidence") return { ...base, artifacts: pipelineTextToLines(value), evidence_policy: value };
+  return base;
+}
+
+function syncRunPipelineStructuredConfig(control) {
+  const container = control?.closest?.(".runPipelineStructuredConfig");
+  if (!container) return;
+  const runtime = container.querySelector('[data-run-pipeline-config="runtime"]')?.value || PARALLEL_CONFIG_DEFAULTS.runtime;
+  container.dataset.runtime = runtime;
+  if (runtime !== "api-openai") {
+    const budget = container.querySelector('[data-run-pipeline-config="budget_usd"]');
+    const cap = container.querySelector('[data-run-pipeline-config="max_budget_usd"]');
+    if (budget) budget.value = "0.00";
+    if (cap) cap.value = "0.00";
+  }
+}
+
+function runPipelinePayload() {
+  const inputs = currentRunPipelineInputs();
+  const templateId = runPipelineSelectedTemplateId();
+  return {
+    schema_version: "cento.pipeline_run_request.v1",
+    project_id: runPipelineProjectForTemplate(templateId),
+    template_id: templateId,
+    inputs: inputs.map(runPipelineInputPayload),
+  };
+}
+
 function pipelineElementIcon(name) {
   const paths = {
     pencil: '<path d="M4 13.5V16h2.5L14 8.5 11.5 6 4 13.5Z"></path><path d="m10.8 6.7 1.5-1.5a1.4 1.4 0 0 1 2 0l.5.5a1.4 1.4 0 0 1 0 2l-1.5 1.5"></path>',
@@ -1334,7 +3334,9 @@ function renderPipelineInputCards(items) {
   if (!inputStage) return;
   inputStage.querySelectorAll(".pipelineCard").forEach((card) => card.remove());
   const button = pipelineStageFooterButton(inputStage);
-  (items || []).forEach((item, index) => {
+  const inputItems = items || [];
+  inputStage.classList.toggle("inputSequenceList", inputItems.length > 1);
+  inputItems.forEach((item, index) => {
     const card = document.createElement("div");
     const status = String(item.status || "Missing").toLowerCase();
     const inputId = pipelineInputId(item, index);
@@ -1342,20 +3344,29 @@ function renderPipelineInputCards(items) {
     const hasAnswer = pipelineInputAnswerPresent(item);
     card.className = `pipelineCard operatorInput ${status} inputType-${inputType} ${pipelineSelectedInputId === inputId ? "selected" : ""}`;
     card.dataset.inputId = inputId;
+    card.dataset.sequenceIndex = String(index + 1);
+    card.dataset.sequenceLast = String(index === inputItems.length - 1);
     card.setAttribute("role", "button");
     card.setAttribute("tabindex", "0");
     card.setAttribute("aria-pressed", String(pipelineSelectedInputId === inputId));
     card.innerHTML = `
-      <i>${escapeHtml(pipelineInputTypeIcon(inputType))}</i>
-      <strong>${escapeHtml(item.title || "")}</strong>
-      <span>${escapeHtml(item.detail || item.file || item.manifest || "")}</span>
-      <small>${escapeHtml(pipelineInputTypeLabel(inputType))}</small>
-      <small class="pipelineCardAnswer ${hasAnswer ? "answered" : ""}">${hasAnswer ? "Answer saved" : "Needs answer"}</small>
+      <b class="pipelineInputSequenceNode">${index + 1}</b>
+      <div class="pipelineInputCardContent">
+        <div class="pipelineInputCardTitle">
+          <i class="pipelineInputTypeMark">${escapeHtml(pipelineInputTypeIcon(inputType))}</i>
+          <strong>${escapeHtml(item.title || "")}</strong>
+        </div>
+        <span>${escapeHtml(item.detail || item.file || item.manifest || "")}</span>
+        <div class="pipelineInputCardMeta">
+          <small>${escapeHtml(pipelineInputTypeLabel(inputType))}</small>
+          <small class="pipelineCardAnswer ${hasAnswer ? "answered" : ""}">${hasAnswer ? "Answer saved" : "Needs answer"}</small>
+        </div>
+      </div>
       ${pipelineCardActionButtons("input", inputId, item.title || "input")}
     `;
     inputStage.insertBefore(card, button || null);
   });
-  if (button) button.textContent = `View all (${(items || []).length})`;
+  if (button) button.textContent = `View all (${inputItems.length})`;
 }
 
 function pipelineValidatorId(item, index = 0) {
@@ -1892,12 +3903,15 @@ function showPipelineInputInspector(inputId, message = "") {
   if (pipelineInspectorState) pipelineInspectorState.textContent = titleCasePipelineStatus(status);
   if (pipelineInputTitleInput) pipelineInputTitleInput.value = input.title || "";
   if (pipelineInputTypeSelect) pipelineInputTypeSelect.value = pipelineInputType(input);
+  if (pipelineInputSourceSelect) pipelineInputSourceSelect.value = pipelineInputSource(input);
   if (pipelineInputDetailInput) pipelineInputDetailInput.value = input.detail || input.file || "";
   if (pipelineInputStatusSelect) {
     pipelineInputStatusSelect.value = status;
     pipelineInputStatusSelect.dataset.initialStatus = status;
   }
+  if (pipelineInputAutomationInput) pipelineInputAutomationInput.value = pipelineInputAutomation(input);
   if (pipelineInputRequiredCheckbox) pipelineInputRequiredCheckbox.checked = input.required !== false;
+  if (pipelineInputMutedCheckbox) pipelineInputMutedCheckbox.checked = Boolean(input.muted || status === "muted" || input.blocking === false);
   if (pipelineInputFormatInput) pipelineInputFormatInput.value = input.format || PIPELINE_INPUT_TYPES[pipelineInputType(input)]?.format || "";
   if (pipelineInputImageRefsInput) pipelineInputImageRefsInput.value = pipelineLinesToText(input.image_refs || input.images || input.references);
   if (pipelineInputImageNotesInput) pipelineInputImageNotesInput.value = input.image_notes || input.reference_notes || "";
@@ -1916,6 +3930,11 @@ function showPipelineInputInspector(inputId, message = "") {
   }
   if (pipelineInputManifestPath) pipelineInputManifestPath.textContent = input.manifest ? `Input manifest: ${input.manifest}` : "Input manifest output pending";
   updatePipelineInputTypeEditors(pipelineInputType(input));
+  renderPipelineImagePreviews(pipelineInputImagePreview, [
+    ...pipelineValueList(input.image_refs || input.images || input.references),
+    ...pipelineValueList(input.artifacts || input.evidence_artifacts),
+    ...pipelineValueList(input.answer_values || input.provided_values || input.provided_paths),
+  ]);
   if (pipelineInputInspectorStatus) pipelineInputInspectorStatus.textContent = message || "Edit the input contract or provide run configuration, then save.";
   renderPipelineInputCards(pipelineStudioState?.pipeline?.input_cards || selectedPipelinePayloadTemplate()?.required_inputs || selectedPipelineStudioTemplate()?.requiredInputs || []);
   renderPipelineIntegrationCards(pipelineStudioState?.pipeline?.integration || []);
@@ -1943,6 +3962,11 @@ function collectPipelineInputConfig() {
     detail: pipelineInputDetailInput?.value?.trim() || "",
     kind,
     input_type: kind,
+    source: pipelineInputSourceSelect?.value || selected.source || "user",
+    automation: pipelineInputAutomationInput?.value?.trim() || selected.automation || selected.automation_source || "",
+    automation_source: pipelineInputAutomationInput?.value?.trim() || selected.automation_source || selected.automation || "",
+    muted: Boolean(pipelineInputMutedCheckbox?.checked),
+    blocking: !Boolean(pipelineInputMutedCheckbox?.checked),
     status,
     required: Boolean(pipelineInputRequiredCheckbox?.checked),
     format: pipelineInputFormatInput?.value?.trim() || PIPELINE_INPUT_TYPES[kind]?.format || "",
@@ -2240,6 +4264,10 @@ function showPipelineEvidenceInspector(evidenceId, message = "") {
   if (pipelineEvidenceNotesInput) pipelineEvidenceNotesInput.value = evidence.review_notes || "";
   if (pipelineEvidenceConfigPath) pipelineEvidenceConfigPath.textContent = evidence.config ? `Config: ${evidence.config}` : "Config output pending";
   if (pipelineEvidenceArtifactPath) pipelineEvidenceArtifactPath.textContent = evidence.path ? `Artifact: ${evidence.path}` : "Artifact output pending";
+  renderPipelineImagePreviews(pipelineEvidenceArtifactPreview, [
+    evidence.path || "",
+    ...pipelineValueList(evidence.required_sources),
+  ]);
   if (pipelineEvidenceInspectorStatus) pipelineEvidenceInspectorStatus.textContent = message || "Choose and configure this evidence artifact, then save outputs.";
   renderPipelineInputCards(pipelineStudioState?.pipeline?.input_cards || selectedPipelinePayloadTemplate()?.required_inputs || selectedPipelineStudioTemplate()?.requiredInputs || []);
   renderPipelineIntegrationCards(pipelineStudioState?.pipeline?.integration || []);
@@ -2331,7 +4359,11 @@ function pipelineEditorPayload(action = "save", options = {}) {
   const selectedTemplateId = pipelineStudioState?.selected?.template_id || pipelineTemplateSelect?.value || "";
   const workerStageLabel = selectedTemplateId === "generic-task"
     ? "2. Repo Discovery"
-    : (pipelineExecutionModelSelect?.value || template?.execution_model) === "ordered"
+    : selectedTemplateId === "hard-proreq-task"
+      ? "2. Cento Context"
+      : selectedTemplateId === "multipipeline-proreq-chain"
+      ? "2. Multipipeline Context"
+      : (pipelineExecutionModelSelect?.value || template?.execution_model) === "ordered"
       ? "2. Task Execution"
       : "2. Workers (Parallel)";
   const payload = {
@@ -2376,7 +4408,7 @@ function pipelineEditorPayload(action = "save", options = {}) {
 async function savePipelineDraft(action = "save", options = {}) {
   if (!pipelineProjectSelect || !pipelineTemplateSelect) return null;
   try {
-    setPipelineSaveStatus(action === "select_worker" ? "Selecting worker..." : action === "save_input" ? "Saving input contract..." : action === "save_integration" ? "Saving integration outputs..." : action === "save_validation" ? "Saving validation outputs..." : action === "run_validation" ? "Running validation..." : action === "save_evidence" ? "Saving evidence outputs..." : action === "add_element" ? "Adding pipeline element..." : action === "delete_element" ? "Removing pipeline element..." : "Saving pipeline draft...");
+    setPipelineSaveStatus(action === "select_worker" ? "Selecting worker..." : action === "save_input" ? "Saving input contract..." : action === "save_integration" ? "Saving integration outputs..." : action === "save_validation" ? "Saving validation outputs..." : action === "run_validation" ? "Running validation..." : action === "run_delivery" || action === "run_execution_e2e" ? "Starting pipeline run..." : action === "save_evidence" ? "Saving evidence outputs..." : action === "add_element" ? "Adding pipeline element..." : action === "delete_element" ? "Removing pipeline element..." : "Saving pipeline draft...");
     const response = await fetch(`${API_BASE}/dev-pipeline-studio`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -2386,7 +4418,7 @@ async function savePipelineDraft(action = "save", options = {}) {
     if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
     normalizePipelineState(payload);
     applyPipelineStudioContext();
-    const verb = action === "duplicate" ? "Duplicated" : action === "new" ? "Created" : action === "select_worker" ? "Selected" : action === "save_input" ? "Saved input" : action === "save_integration" ? "Saved integration" : action === "save_validation" ? "Saved validation" : action === "run_validation" ? "Ran validation" : action === "save_evidence" ? "Saved evidence" : action === "add_element" ? "Added element" : action === "delete_element" ? "Removed element" : "Saved";
+    const verb = action === "duplicate" ? "Duplicated" : action === "new" ? "Created" : action === "select_worker" ? "Selected" : action === "save_input" ? "Saved input" : action === "save_integration" ? "Saved integration" : action === "save_validation" ? "Saved validation" : action === "run_validation" ? "Ran validation" : action === "run_delivery" || action === "run_execution_e2e" ? "Started pipeline run" : action === "save_evidence" ? "Saved evidence" : action === "add_element" ? "Added element" : action === "delete_element" ? "Removed element" : "Saved";
     setPipelineSaveStatus(`${verb} ${payload.selected?.template_id || "pipeline"} at ${new Date().toLocaleTimeString()}`);
     return payload;
   } catch (error) {
@@ -2514,6 +4546,7 @@ function applyPipelineStudioContext() {
     renderPipelineCards("data-pipeline-integrate", pipeline.integration || [], [["title", "title"]]);
     renderPipelineCards("data-pipeline-validator", pipeline.validators || [], [["title", "title"], ["file", "file"], ["status", "status"]]);
     renderPipelineCards("data-pipeline-evidence", pipeline.evidence || [], [["title", "title"], ["file", "file"], ["status", "status"]]);
+    renderPipelineExecutionFlow();
     if (pipelineManifestCode) {
       pipelineManifestCode.textContent = JSON.stringify(inspector.manifest || {}, null, 2);
     }
@@ -2622,20 +4655,38 @@ function applyPipelineStudioContext() {
 }
 
 async function loadPipelineStudioState() {
+  return loadPipelineStudioStateForRun(currentPipelineExecutionRunId);
+}
+
+async function loadPipelineStudioStateForRun(runId = "") {
   if (!pipelineProjectSelect || !pipelineTemplateSelect) {
     applyPipelineStudioContext();
     return;
   }
-  const project = pipelineProjectSelect.value || "generic-easy-medium-task";
-  const template = pipelineTemplateSelect.value || "generic-task";
+  const params = new URLSearchParams(location.search);
+  const routeProject = params.get("project") || "";
+  const routeTemplate = params.get("template") || "";
+  const routeRunId = params.get("run_id") || "";
+  const project = routeProject || pipelineProjectSelect.value || "hard-proreq-project";
+  const template = routeTemplate || pipelineTemplateSelect.value || "hard-proreq-task";
+  if (routeProject && Array.from(pipelineProjectSelect.options).some((option) => option.value === routeProject)) {
+    pipelineProjectSelect.value = routeProject;
+  }
+  if (routeTemplate && Array.from(pipelineTemplateSelect.options).some((option) => option.value === routeTemplate)) {
+    pipelineTemplateSelect.value = routeTemplate;
+  }
   try {
-    const payload = await apiGetJson(`${API_BASE}/dev-pipeline-studio?project=${encodeURIComponent(project)}&template=${encodeURIComponent(template)}`);
+    const selectedRunId = runId || routeRunId;
+    const runQuery = selectedRunId ? `&run_id=${encodeURIComponent(selectedRunId)}` : "";
+    const payload = await apiGetJson(`${API_BASE}/dev-pipeline-studio?project=${encodeURIComponent(project)}&template=${encodeURIComponent(template)}${runQuery}`);
     normalizePipelineState(payload);
     applyPipelineStudioContext();
+    return payload;
   } catch (error) {
     console.warn("Dev Pipeline Studio backend unavailable; using local fallback.", error);
     pipelineStudioState = null;
     applyPipelineStudioContext();
+    return null;
   }
 }
 
@@ -2784,7 +4835,7 @@ function buildPipelineManifestExplorerData() {
   const root = pipelineStudioState?.root || "workspace/runs/dev-pipeline-studio/docs-pages/latest";
   const generatedAt = pipelineStudioState?.generated_at || new Date().toISOString();
   const pipeline = pipelineStudioState?.pipeline || {};
-  const templateId = template.id || pipelineStudioState?.selected?.template_id || "generic-task";
+  const templateId = template.id || pipelineStudioState?.selected?.template_id || "hard-proreq-task";
   const inputCards = pipeline.input_cards || template.required_inputs || [];
   const workers = pipeline.workers || template.workers || [];
   const integrations = pipeline.integration || [];
@@ -3326,6 +5377,10 @@ function setPipelineTab(tab, options = {}) {
     a.classList.toggle("active", a.dataset.pipelineTab === tab);
   });
   const isExplorer = tab === "manifest-explorer";
+  const isExecution = tab === "execution-flow";
+  const studioRoot = document.querySelector("#dev-pipeline-studio");
+  studioRoot?.classList.toggle("pipelineFlowMode", isExecution);
+  studioRoot?.classList.toggle("pipelineExplorerMode", isExplorer);
   document.querySelectorAll('.sdHubRailLinks a[href="/dev-pipeline-studio#manifest-explorer"]').forEach((link) => {
     link.classList.toggle("active", isExplorer);
     if (isExplorer) {
@@ -3336,8 +5391,15 @@ function setPipelineTab(tab, options = {}) {
   });
   document.querySelector("#dev-pipeline-studio > .pipelineHero")?.classList.toggle("hidden", isExplorer);
   document.querySelector("#dev-pipeline-studio > .pipelineContextPanel")?.classList.toggle("hidden", isExplorer);
-  document.querySelector("#dev-pipeline-studio .pipelineWorkbench")?.classList.toggle("hidden", isExplorer);
+  document.querySelector("#dev-pipeline-studio .pipelineWorkbench")?.classList.toggle("hidden", isExplorer || isExecution);
+  pipelineExecutionPage?.classList.toggle("hidden", !isExecution);
   manifestExplorerEl?.classList.toggle("hidden", !isExplorer);
+  if (isExecution) {
+    const runsDisclosure = document.querySelector(".pipelineExecutionRuns");
+    const logsDisclosure = document.querySelector(".pipelineExecutionLogs");
+    if (runsDisclosure) runsDisclosure.open = false;
+    if (logsDisclosure) logsDisclosure.open = false;
+  }
   if (options.updateHash) {
     const hash = PIPELINE_TAB_HASHES[tab] || PIPELINE_TAB_HASHES.contracts;
     history.replaceState(null, "", `/dev-pipeline-studio#${hash}`);
@@ -3347,6 +5409,9 @@ function setPipelineTab(tab, options = {}) {
     initManifestExplorer();
   } else if (isExplorer) {
     refreshManifestExplorer({ preserveSelection: true });
+  } else if (isExecution) {
+    clearPipelineExecutionAnimation();
+    renderPipelineExecutionFlow();
   }
 }
 
@@ -3368,7 +5433,7 @@ function initPipelineStudioControls() {
     pipelineTemplateLibrary.addEventListener("click", (event) => {
       const card = event.target.closest("[data-template-card]");
       if (!card || !pipelineTemplateSelect) return;
-      pipelineTemplateSelect.value = card.dataset.templateCard || "generic-task";
+      pipelineTemplateSelect.value = card.dataset.templateCard || "hard-proreq-task";
       pipelineSelectedInputId = "";
       pipelineSelectedIntegrationId = "";
       pipelineSelectedValidationId = "";
@@ -3398,6 +5463,30 @@ function initPipelineStudioControls() {
       event.preventDefault();
       setPipelineTab(link.dataset.pipelineTab || "contracts", { updateHash: true });
     });
+  }
+  if (pipelineExecutionPage) {
+    pipelineExecutionPage.addEventListener("click", (event) => {
+      const stageButton = event.target.closest("[data-execution-stage]");
+      if (stageButton) {
+        selectPipelineExecutionStage(stageButton.dataset.executionStage || "");
+        return;
+      }
+      const runButton = event.target.closest("[data-execution-run-id]");
+      if (runButton) {
+        void loadPipelineExecutionRun(runButton.dataset.executionRunId || "");
+        return;
+      }
+      const logButton = event.target.closest("[data-execution-log-filter]");
+      if (logButton) setPipelineExecutionLogFilter(logButton.dataset.executionLogFilter || "all");
+    });
+  }
+  if (pipelineExecutionRunButton) {
+    pipelineExecutionRunButton.addEventListener("click", () => {
+      void runPipelineExecutionDelivery();
+    });
+  }
+  if (pipelineExecutionLogSearch) {
+    pipelineExecutionLogSearch.addEventListener("input", renderPipelineExecutionLogs);
   }
   if (pipelineInspectorNav) {
     pipelineInspectorNav.addEventListener("click", (event) => {
@@ -3640,6 +5729,7 @@ function hideSoftwareDeliveryViews() {
   setOptionalHidden(homeView, true);
   setOptionalHidden(softwareDeliveryHubView, true);
   setOptionalHidden(devPipelineStudioView, true);
+  setOptionalHidden(patchSwarmView, true);
 }
 
 function hideResearchViews() {
@@ -3650,6 +5740,7 @@ function hideResearchViews() {
 function routeFromLocation() {
   if (location.pathname === "/") return "home";
   if (location.pathname === "/software-delivery-hub") return "software-delivery";
+  if (location.pathname === "/patch-swarm" || location.pathname.startsWith("/patch-swarm/runs/")) return "patch-swarm";
   if (location.pathname === "/dev-pipeline-studio") return "dev-pipeline-studio";
   if (location.pathname === "/codebase-intelligence") return "codebase-intelligence";
   if (location.pathname === "/review") return "review";
@@ -3667,7 +5758,7 @@ function hasMainRoute(route) {
 }
 
 function setSdHubRailActive(route) {
-  const activeRoute = route === "dev-pipeline-studio" || route === "factory" || route === "software-delivery"
+  const activeRoute = route === "dev-pipeline-studio" || route === "factory" || route === "software-delivery" || route === "patch-swarm"
     ? route
     : route === "issues" || route === "review"
       ? "issues"
@@ -3701,7 +5792,7 @@ function setNavActive(route) {
   let activeMain = "taskstream";
   if (activeRoute === "home") {
     activeMain = homeView ? "home" : "taskstream";
-  } else if (activeRoute === "software-delivery" || activeRoute === "factory" || activeRoute === "issues" || activeRoute === "dev-pipeline-studio") {
+  } else if (activeRoute === "software-delivery" || activeRoute === "factory" || activeRoute === "issues" || activeRoute === "dev-pipeline-studio" || activeRoute === "patch-swarm") {
     activeMain = softwareDeliveryHubView ? "software-delivery" : activeRoute === "factory" ? "factory" : "taskstream";
   } else if (activeRoute === "review") {
     activeMain = hasMainRoute("review") ? "review" : "taskstream";
@@ -3930,10 +6021,22 @@ function currentIssuePayloadFromDetail() {
 
 async function submitIssueForm(event) {
   event.preventDefault();
-  const payload = issueFormPayload();
   const issueId = issueIdInput.value ? Number.parseInt(issueIdInput.value, 10) : null;
+  if (!issueId) {
+    const response = await fetch(`${API_BASE}/pipeline-runs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(runPipelinePayload()),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+    closeIssueModal();
+    await openDefaultPipelineRouteFromIssue(result);
+    return;
+  }
+  const payload = issueFormPayload();
   const response = await fetch(issueId ? `${API_BASE}/issues/${issueId}` : `${API_BASE}/issues`, {
-    method: issueId ? "PATCH" : "POST",
+    method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
@@ -3947,6 +6050,10 @@ async function submitIssueForm(event) {
   if (issue?.id) {
     await showDetail(issue.id).catch(console.error);
   }
+}
+
+function shouldAutoOpenPipelineRoute(payload) {
+  return Boolean(payload?.pipeline_route?.default && location.pathname !== "/dev-pipeline-studio");
 }
 
 async function submitStatusTransition(event) {
@@ -4514,6 +6621,10 @@ async function showDetail(issueId) {
   history.replaceState(null, "", `/issues/${issueId}`);
   try {
     const payload = await apiGetJson(`${API_BASE}/issues/${issueId}`);
+    if (shouldAutoOpenPipelineRoute(payload)) {
+      await openDefaultPipelineRouteFromIssue(payload);
+      return;
+    }
     renderDetail(payload);
   } catch (error) {
     showDetailError(error.message);
@@ -4548,6 +6659,7 @@ function showHome() {
   setOptionalHidden(homeView, false);
   setOptionalHidden(softwareDeliveryHubView, true);
   setOptionalHidden(devPipelineStudioView, true);
+  setOptionalHidden(patchSwarmView, true);
   reviewView.classList.add("hidden");
   detailView.classList.add("hidden");
   listView.classList.add("hidden");
@@ -4578,6 +6690,7 @@ function showSoftwareDeliveryHub() {
   setOptionalHidden(homeView, true);
   setOptionalHidden(softwareDeliveryHubView, false);
   setOptionalHidden(devPipelineStudioView, true);
+  setOptionalHidden(patchSwarmView, true);
   reviewView.classList.add("hidden");
   detailView.classList.add("hidden");
   listView.classList.add("hidden");
@@ -4603,6 +6716,7 @@ function showDevPipelineStudio() {
   setOptionalHidden(homeView, true);
   setOptionalHidden(softwareDeliveryHubView, false);
   setOptionalHidden(devPipelineStudioView, false);
+  setOptionalHidden(patchSwarmView, true);
   reviewView.classList.add("hidden");
   detailView.classList.add("hidden");
   listView.classList.add("hidden");
@@ -4617,13 +6731,18 @@ function showDevPipelineStudio() {
   const hash = location.hash;
   setPipelineTab(pipelineTabFromHash(hash));
   history.replaceState(null, "", `/dev-pipeline-studio${hash}`);
-  if (hash && pipelineTabFromHash(hash) !== "manifest-explorer") {
+  const cleanHash = String(hash || "").replace(/^#/, "");
+  const isPipelineTabHash = Object.values(PIPELINE_TAB_HASHES).includes(cleanHash);
+  if (hash && !isPipelineTabHash) {
     window.requestAnimationFrame(() => {
       const target = document.querySelector(hash);
       if (target) target.scrollIntoView({ block: "start" });
     });
   } else {
-    window.scrollTo({ top: 0, left: 0 });
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0 });
+      setTimeout(() => window.scrollTo({ top: 0, left: 0 }), 0);
+    });
   }
 }
 
@@ -5030,6 +7149,432 @@ async function loadFactory() {
   }
 }
 
+function patchSwarmRunPathId() {
+  const match = location.pathname.match(/^\/patch-swarm\/runs\/([^/]+)/);
+  return match ? decodeURIComponent(match[1]) : "";
+}
+
+function patchSwarmStatusText(value, fallback = "-") {
+  const clean = String(value || fallback || "").trim();
+  return clean ? clean.replaceAll("_", " ") : fallback;
+}
+
+function patchSwarmRepoCanStart(repo) {
+  return Boolean(repo?.can_start) && Number(repo?.protected_dirty_count || 0) === 0;
+}
+
+function patchSwarmRepoDirtyLabel(repo) {
+  if (!repo) return "";
+  if (!repo.dirty) return "clean";
+  const count = Number(repo.dirty_count || 0);
+  return `${count} dirty path${count === 1 ? "" : "s"}`;
+}
+
+function patchSwarmRepoOptionLabel(repo) {
+  const state = patchSwarmRepoCanStart(repo)
+    ? `startable · ${patchSwarmRepoDirtyLabel(repo)}`
+    : `blocked${Number(repo.protected_dirty_count || 0) ? " · protected dirty" : ""}`;
+  return `${repo.name || repo.path} · ${state} · ${repo.path}`;
+}
+
+function patchSwarmSortedRepos(repos) {
+  return [...(repos || [])].sort((left, right) => {
+    const leftStart = patchSwarmRepoCanStart(left) ? 0 : 1;
+    const rightStart = patchSwarmRepoCanStart(right) ? 0 : 1;
+    if (leftStart !== rightStart) return leftStart - rightStart;
+    return `${left.name || ""}\u0000${left.path || ""}`.localeCompare(`${right.name || ""}\u0000${right.path || ""}`);
+  });
+}
+
+function patchSwarmSelectedRepo() {
+  const selected = patchSwarmRepoSelect?.value || "";
+  return patchSwarmRepos.find((repo) => repo.path === selected) || patchSwarmRepos[0] || null;
+}
+
+function patchSwarmTaskReady() {
+  return Boolean(patchSwarmTask?.value.trim());
+}
+
+function patchSwarmCanSubmitStart() {
+  return patchSwarmRepoCanStart(patchSwarmSelectedRepo()) && patchSwarmTaskReady();
+}
+
+function patchSwarmSetStartStatus(state, message = "") {
+  if (!patchSwarmStartStatus) return;
+  const labels = {
+    ready: "Ready",
+    blocked: "Blocked",
+    task_required: "Task required",
+    starting: "Starting",
+    run_created: "Run created",
+    failed: "Failed",
+  };
+  patchSwarmStartStatus.dataset.state = state;
+  patchSwarmStartStatus.innerHTML = `<strong>${escapeHtml(labels[state] || state)}</strong><span> ${escapeHtml(message)}</span>`;
+}
+
+function updatePatchSwarmStartControls({ preserveStatus = false } = {}) {
+  const repo = patchSwarmSelectedRepo();
+  const mode = patchSwarmMode?.value || "fixture";
+  const fixtureMessage = mode === "fixture"
+    ? "Fixture mode generates local candidate receipts with no API spend."
+    : "Live gated mode requires backend budget gates before real provider use.";
+  if (patchSwarmStartHint) {
+    patchSwarmStartHint.textContent = `${fixtureMessage} Generation does not mutate the selected repo.`;
+  }
+  if (!repo) {
+    if (patchSwarmStartButton) {
+      patchSwarmStartButton.disabled = true;
+      patchSwarmStartButton.title = "No local Git repos discovered.";
+    }
+    if (!preserveStatus) patchSwarmSetStartStatus("blocked", "No local Git repos were discovered.");
+    return false;
+  }
+  if (!patchSwarmRepoCanStart(repo)) {
+    const protectedPaths = Array.isArray(repo.protected_dirty) ? repo.protected_dirty.join(", ") : "";
+    if (patchSwarmStartButton) {
+      patchSwarmStartButton.disabled = true;
+      patchSwarmStartButton.title = protectedPaths ? `Clear protected dirty paths first: ${protectedPaths}` : "Selected repo is blocked.";
+    }
+    if (!preserveStatus) {
+      patchSwarmSetStartStatus(
+        "blocked",
+        protectedPaths ? `Clear protected dirty paths first: ${protectedPaths}` : "The selected repo cannot start a run.",
+      );
+    }
+    return false;
+  }
+  if (!patchSwarmTaskReady()) {
+    if (patchSwarmStartButton) {
+      patchSwarmStartButton.disabled = true;
+      patchSwarmStartButton.title = "Enter a task brief before starting.";
+    }
+    if (!preserveStatus) patchSwarmSetStartStatus("task_required", "Enter a task brief to start a fixture run.");
+    return false;
+  }
+  if (patchSwarmStartButton) {
+    patchSwarmStartButton.disabled = false;
+    patchSwarmStartButton.title = "";
+  }
+  if (!preserveStatus) patchSwarmSetStartStatus("ready", "Start a safe fixture run for the selected repo.");
+  return true;
+}
+
+function renderPatchSwarmRepoState() {
+  if (!patchSwarmRepoState) return;
+  const repo = patchSwarmSelectedRepo();
+  if (!repo) {
+    patchSwarmRepoState.textContent = "No local Git repos discovered.";
+    patchSwarmRepoState.classList.add("blocked");
+    patchSwarmRepoState.classList.remove("ready");
+    updatePatchSwarmStartControls();
+    return;
+  }
+  const canStart = patchSwarmRepoCanStart(repo);
+  const protectedPaths = Array.isArray(repo.protected_dirty) ? repo.protected_dirty : [];
+  const protectedText = protectedPaths.length ? `Protected dirty: ${protectedPaths.join(", ")}` : "No protected dirty paths.";
+  patchSwarmRepoState.innerHTML = `
+    <strong>${escapeHtml(repo.name || repo.path)}</strong>
+    <span>${escapeHtml(repo.branch || "unknown")} · ${escapeHtml(patchSwarmRepoDirtyLabel(repo))} · ${escapeHtml(canStart ? "startable" : "blocked")}</span>
+    <small>${escapeHtml(protectedText)}</small>
+  `;
+  patchSwarmRepoState.classList.toggle("blocked", !canStart);
+  patchSwarmRepoState.classList.toggle("ready", canStart);
+  updatePatchSwarmStartControls();
+}
+
+function renderPatchSwarmRepos(payload) {
+  const currentSelection = patchSwarmRepoSelect?.value || "";
+  patchSwarmRepos = patchSwarmSortedRepos(Array.isArray(payload?.repos) ? payload.repos : []);
+  if (!patchSwarmRepoSelect) return;
+  patchSwarmRepoSelect.innerHTML = patchSwarmRepos.length
+    ? patchSwarmRepos.map((repo) => `<option value="${escapeHtml(repo.path)}">${escapeHtml(patchSwarmRepoOptionLabel(repo))}</option>`).join("")
+    : `<option value="">No Git repos found</option>`;
+  const previous = patchSwarmRepos.find((repo) => repo.path === currentSelection);
+  const preferred = previous && patchSwarmRepoCanStart(previous)
+    ? previous
+    : patchSwarmRepos.find(patchSwarmRepoCanStart) || patchSwarmRepos[0];
+  if (preferred) patchSwarmRepoSelect.value = preferred.path;
+  renderPatchSwarmRepoState();
+}
+
+async function loadPatchSwarmRepos() {
+  if (!patchSwarmRepoSelect) return;
+  patchSwarmRepoState.textContent = "Loading repositories...";
+  try {
+    renderPatchSwarmRepos(await apiGetJson(`${API_BASE}/patch-swarm/repos`));
+  } catch (error) {
+    patchSwarmRepoState.textContent = error.message;
+    patchSwarmRepoState.classList.add("blocked");
+    patchSwarmSetStartStatus("failed", error.message);
+    if (patchSwarmStartButton) patchSwarmStartButton.disabled = true;
+  }
+}
+
+function renderPatchSwarmRunList(payload) {
+  patchSwarmRuns = Array.isArray(payload?.runs) ? payload.runs : [];
+  if (!patchSwarmRunList) return;
+  if (!patchSwarmRuns.length) {
+    patchSwarmRunList.innerHTML = `<div class="factoryEmpty">No Patch Swarm runs yet.</div>`;
+    return;
+  }
+  patchSwarmRunList.innerHTML = patchSwarmRuns.slice(0, 12).map((run) => {
+    const active = patchSwarmDetail?.run?.run_id === run.run_id ? " active" : "";
+    const repo = run.selected_repo || {};
+    const isProductRun = Boolean(repo.path || repo.name);
+    const kind = isProductRun ? "product" : "legacy";
+    const repoLabel = repo.name || repo.path || "legacy engine-only run";
+    const status = patchSwarmStatusText(run.status, "unknown");
+    const approval = patchSwarmStatusText(run.approval_status, "not approved");
+    const apply = patchSwarmStatusText(run.apply_status, "not applied");
+    return `
+      <button class="patchSwarmRunItem ${kind}${active}" type="button" data-patch-swarm-run="${escapeHtml(run.run_id)}">
+        <span class="patchSwarmRunTop">
+          <strong>${escapeHtml(run.run_id)}</strong>
+          <b>${escapeHtml(isProductRun ? "Product" : "Engine")}</b>
+        </span>
+        <span class="patchSwarmRunRepo">${escapeHtml(repoLabel)}</span>
+        <span class="patchSwarmRunFacts">
+          <em>Status ${escapeHtml(status)}</em>
+          <em>${escapeHtml(String(run.candidate_count || 0))} candidates</em>
+          <em>Approval ${escapeHtml(approval)}</em>
+          <em>Apply ${escapeHtml(apply)}</em>
+        </span>
+      </button>
+    `;
+  }).join("");
+}
+
+async function loadPatchSwarmRuns() {
+  if (!patchSwarmRunList) return;
+  try {
+    const payload = await apiGetJson(`${API_BASE}/patch-swarm/runs`);
+    renderPatchSwarmRunList(payload);
+  } catch (error) {
+    patchSwarmRunList.innerHTML = `<div class="factoryEmpty">${escapeHtml(error.message)}</div>`;
+  }
+}
+
+function patchSwarmSelectedCandidate() {
+  const candidates = Array.isArray(patchSwarmDetail?.candidates) ? patchSwarmDetail.candidates : [];
+  return candidates.find((candidate) => candidate.id === patchSwarmSelectedCandidateId) || null;
+}
+
+function patchSwarmSelectedValidatedCandidates() {
+  const candidates = Array.isArray(patchSwarmDetail?.candidates) ? patchSwarmDetail.candidates : [];
+  const selectedIds = new Set((patchSwarmDetail?.integration?.selected_candidates || []).map(String));
+  const selected = candidates.filter((candidate) => selectedIds.has(String(candidate.id)));
+  return selected.filter((candidate) => String(candidate.status || "") === "validated");
+}
+
+function patchSwarmCanApproveRun() {
+  const selectedIds = new Set((patchSwarmDetail?.integration?.selected_candidates || []).map(String));
+  return selectedIds.size > 0 && patchSwarmSelectedValidatedCandidates().length === selectedIds.size;
+}
+
+function updatePatchSwarmReviewActions() {
+  const canApprove = patchSwarmCanApproveRun();
+  const approved = String(patchSwarmDetail?.run?.approval_status || patchSwarmDetail?.approval?.status || "") === "approved";
+  const candidate = patchSwarmSelectedCandidate();
+  if (patchSwarmApproveButton) {
+    patchSwarmApproveButton.disabled = !canApprove;
+    patchSwarmApproveButton.title = canApprove ? "" : "Approval requires selected candidates that passed validation.";
+  }
+  if (patchSwarmApplyButton) {
+    patchSwarmApplyButton.disabled = !approved;
+    patchSwarmApplyButton.title = approved ? "" : "Apply is available after supervised approval.";
+  }
+  if (patchSwarmRejectButton) {
+    patchSwarmRejectButton.disabled = !candidate;
+    patchSwarmRejectButton.title = candidate ? "" : "Select a candidate before rejecting.";
+  }
+}
+
+function setPatchSwarmDetailPanelsVisible(visible) {
+  patchSwarmDetailEmpty?.classList.toggle("hidden", visible);
+  patchSwarmStatsPanel?.classList.toggle("hidden", !visible);
+  patchSwarmReviewGrid?.classList.toggle("hidden", !visible);
+  patchSwarmEvidence?.classList.toggle("hidden", !visible);
+}
+
+function renderPatchSwarmEmptyDetail() {
+  patchSwarmDetail = null;
+  patchSwarmSelectedCandidateId = "";
+  const title = document.querySelector("#patch-swarm-detail-title");
+  if (title) title.textContent = "No run selected";
+  if (patchSwarmRunSubtitle) {
+    patchSwarmRunSubtitle.textContent = "Start a fixture run with a startable repo, or select a recent product run.";
+  }
+  if (patchSwarmCandidateList) patchSwarmCandidateList.innerHTML = `<div class="factoryEmpty">No candidates loaded.</div>`;
+  renderPatchSwarmDiff(null);
+  setPatchSwarmDetailPanelsVisible(false);
+  updatePatchSwarmReviewActions();
+  renderPatchSwarmRunList({ runs: patchSwarmRuns });
+}
+
+function renderPatchSwarmDiff(candidate) {
+  if (!patchSwarmDiffPreview) return;
+  if (!candidate) {
+    patchSwarmSelectedCandidateId = "";
+    patchSwarmDiffTitle.textContent = "Diff Preview";
+    patchSwarmDiffMeta.textContent = "Select a candidate.";
+    patchSwarmDiffPreview.textContent = "No diff selected.";
+    updatePatchSwarmReviewActions();
+    return;
+  }
+  patchSwarmSelectedCandidateId = candidate.id || "";
+  patchSwarmDiffTitle.textContent = candidate.id || "Candidate";
+  patchSwarmDiffMeta.textContent = `${candidate.provider || "provider"} · score ${candidate.score ?? "-"} · ${candidate.status || "unknown"}`;
+  patchSwarmDiffPreview.textContent = candidate.diff_preview || "Diff preview unavailable.";
+  document.querySelectorAll("[data-patch-swarm-candidate]").forEach((row) => {
+    row.classList.toggle("active", row.dataset.patchSwarmCandidate === patchSwarmSelectedCandidateId);
+  });
+  updatePatchSwarmReviewActions();
+}
+
+function renderPatchSwarmCandidates(candidates) {
+  if (!patchSwarmCandidateList) return;
+  if (!candidates.length) {
+    patchSwarmCandidateList.innerHTML = `<div class="factoryEmpty">No candidates loaded.</div>`;
+    renderPatchSwarmDiff(null);
+    return;
+  }
+  const selectedIds = new Set((patchSwarmDetail?.integration?.selected_candidates || []).map(String));
+  patchSwarmCandidateList.innerHTML = candidates.slice(0, 80).map((candidate) => {
+    const selected = selectedIds.has(String(candidate.id));
+    const rejected = candidate.decision === "rejected";
+    return `
+      <button class="patchSwarmCandidate ${selected ? "winner" : ""} ${rejected ? "rejected" : ""}" type="button" data-patch-swarm-candidate="${escapeHtml(candidate.id)}">
+        <span><strong>${escapeHtml(candidate.id)}</strong><small>${escapeHtml(candidate.execution_id || "")}</small></span>
+        <span>${escapeHtml(candidate.provider || "")}</span>
+        <span>${escapeHtml(candidate.status || "")}</span>
+        <span>${escapeHtml(String(candidate.score ?? ""))}</span>
+      </button>
+    `;
+  }).join("");
+  if (!patchSwarmSelectedCandidateId || !candidates.some((candidate) => candidate.id === patchSwarmSelectedCandidateId)) {
+    patchSwarmSelectedCandidateId = candidates[0]?.id || "";
+  }
+  renderPatchSwarmDiff(patchSwarmSelectedCandidate());
+}
+
+function renderPatchSwarmDetail(payload) {
+  patchSwarmDetail = payload;
+  const run = payload?.run || {};
+  const candidates = Array.isArray(payload?.candidates) ? payload.candidates : [];
+  document.querySelector("#patch-swarm-detail-title").textContent = run.run_id || "No run selected";
+  patchSwarmRunSubtitle.textContent = run.task_brief || "Start or select a run to inspect ranked candidates.";
+  patchSwarmCandidateCount.textContent = String(run.candidate_count || 0);
+  patchSwarmSelectedCount.textContent = String(run.selected_count || 0);
+  patchSwarmValidationStatus.textContent = run.validation || "unknown";
+  patchSwarmCost.textContent = `$${Number(run.estimated_cost_usd || 0).toFixed(6)}`;
+  patchSwarmApprovalStatus.textContent = run.approval_status || "not_approved";
+  patchSwarmSelectedCandidateId = patchSwarmSelectedCandidateId || candidates[0]?.id || "";
+  setPatchSwarmDetailPanelsVisible(true);
+  renderPatchSwarmCandidates(candidates);
+  const artifacts = run.artifacts || {};
+  const repo = run.selected_repo || {};
+  patchSwarmEvidence.innerHTML = `
+    <a href="${escapeHtml(`/api/artifacts?path=${encodeURIComponent(artifacts.decision_report || "")}`)}" target="_blank" rel="noreferrer">Decision report</a>
+    <a href="${escapeHtml(`/api/artifacts?path=${encodeURIComponent(artifacts.candidate_index || "")}`)}" target="_blank" rel="noreferrer">Candidate index</a>
+    <code>${escapeHtml(repo.path || run.run_dir || "")}</code>
+  `;
+  updatePatchSwarmReviewActions();
+  renderPatchSwarmRunList({ runs: patchSwarmRuns });
+}
+
+async function loadPatchSwarmDetail(runId) {
+  if (!runId) return;
+  patchSwarmSelectedCandidateId = "";
+  const payload = await apiGetJson(`${API_BASE}/patch-swarm/runs/${encodeURIComponent(runId)}`);
+  renderPatchSwarmDetail(payload);
+  history.replaceState(null, "", `/patch-swarm/runs/${encodeURIComponent(runId)}`);
+}
+
+async function submitPatchSwarmRun(event) {
+  event.preventDefault();
+  const repo = patchSwarmSelectedRepo();
+  if (!repo || !patchSwarmCanSubmitStart()) {
+    updatePatchSwarmStartControls();
+    return;
+  }
+  patchSwarmSetStartStatus("starting", "Creating the fixture run and candidate receipts...");
+  if (patchSwarmStartButton) patchSwarmStartButton.disabled = true;
+  const response = await fetch(`${API_BASE}/patch-swarm/runs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      repo_path: repo.path,
+      task_brief: patchSwarmTask.value.trim(),
+      candidate_target: Number.parseInt(patchSwarmCandidateTarget.value, 10) || 30,
+      max_parallel_agents: Number.parseInt(patchSwarmMaxAgents.value, 10) || 3,
+      mode: patchSwarmMode.value || "fixture",
+      providers: patchSwarmProviders.value || "codex-exec,claude-code,api-openai",
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    patchSwarmSetStartStatus("failed", payload.error || `HTTP ${response.status}`);
+    updatePatchSwarmStartControls({ preserveStatus: true });
+    return;
+  }
+  patchSwarmSetStartStatus("run_created", `Run ${payload.run?.run_id || ""} is ready for review.`);
+  updatePatchSwarmStartControls({ preserveStatus: true });
+  await loadPatchSwarmRuns();
+  renderPatchSwarmDetail(payload);
+  history.replaceState(null, "", `/patch-swarm/runs/${encodeURIComponent(payload.run?.run_id || "")}`);
+}
+
+async function patchSwarmPostAction(action, body = {}) {
+  const runId = patchSwarmDetail?.run?.run_id;
+  if (!runId) return;
+  const response = await fetch(`${API_BASE}/patch-swarm/runs/${encodeURIComponent(runId)}/${action}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    patchSwarmSetStartStatus("failed", payload.error || `HTTP ${response.status}`);
+    return;
+  }
+  renderPatchSwarmDetail(payload);
+  await loadPatchSwarmRuns();
+}
+
+async function showPatchSwarm(runId = patchSwarmRunPathId()) {
+  if (!patchSwarmView) {
+    showSoftwareDeliveryHub();
+    return;
+  }
+  setNavActive("patch-swarm");
+  document.body.classList.remove("reviewMode");
+  document.body.classList.remove("studioMode");
+  setOptionalHidden(homeView, true);
+  setOptionalHidden(softwareDeliveryHubView, true);
+  setOptionalHidden(devPipelineStudioView, true);
+  setOptionalHidden(patchSwarmView, false);
+  reviewView.classList.add("hidden");
+  detailView.classList.add("hidden");
+  listView.classList.add("hidden");
+  clusterView.classList.add("hidden");
+  consultingView.classList.add("hidden");
+  factoryView.classList.add("hidden");
+  docsView.classList.add("hidden");
+  hideResearchViews();
+  await loadPatchSwarmRepos();
+  await loadPatchSwarmRuns();
+  if (runId) {
+    await loadPatchSwarmDetail(runId).catch((error) => {
+      patchSwarmSetStartStatus("failed", error.message);
+      renderPatchSwarmEmptyDetail();
+    });
+  } else {
+    renderPatchSwarmEmptyDetail();
+    history.replaceState(null, "", "/patch-swarm");
+  }
+}
+
 async function loadQueriesIntoSelect() {
   if (!savedQuerySelect) {
     savedQueries = [];
@@ -5098,10 +7643,60 @@ document.querySelectorAll("[data-modal-close]").forEach((button) => {
   button.addEventListener("click", closeIssueModal);
 });
 
-newIssueButton.addEventListener("click", () => openIssueModal());
-headerNewIssueButton.addEventListener("click", () => openIssueModal());
+newIssueButton.addEventListener("click", () => void openRunPipelineModal());
+headerNewIssueButton.addEventListener("click", () => void openRunPipelineModal());
+quickRunPipelineButton?.addEventListener("click", () => void openRunPipelineModal());
+patchSwarmForm?.addEventListener("submit", (event) => void submitPatchSwarmRun(event).catch((error) => {
+  patchSwarmSetStartStatus("failed", error.message);
+  updatePatchSwarmStartControls({ preserveStatus: true });
+}));
+patchSwarmRefreshRepos?.addEventListener("click", () => void loadPatchSwarmRepos());
+patchSwarmRepoSelect?.addEventListener("change", renderPatchSwarmRepoState);
+patchSwarmTask?.addEventListener("input", () => updatePatchSwarmStartControls());
+patchSwarmMode?.addEventListener("change", () => updatePatchSwarmStartControls());
+patchSwarmRunList?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-patch-swarm-run]");
+  if (!button) return;
+  void loadPatchSwarmDetail(button.dataset.patchSwarmRun || "").catch((error) => {
+    patchSwarmSetStartStatus("failed", error.message);
+  });
+});
+patchSwarmCandidateList?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-patch-swarm-candidate]");
+  if (!button) return;
+  const candidate = (patchSwarmDetail?.candidates || []).find((item) => item.id === button.dataset.patchSwarmCandidate);
+  renderPatchSwarmDiff(candidate);
+});
+patchSwarmApproveButton?.addEventListener("click", () => void patchSwarmPostAction("approve", {}).catch((error) => {
+  patchSwarmSetStartStatus("failed", error.message);
+}));
+patchSwarmApplyButton?.addEventListener("click", () => void patchSwarmPostAction("apply", { limit: 1, validate_each: true, use_factory: true }).catch((error) => {
+  patchSwarmSetStartStatus("failed", error.message);
+}));
+patchSwarmRejectButton?.addEventListener("click", () => {
+  const candidate = patchSwarmSelectedCandidate();
+  if (!candidate) return;
+  void patchSwarmPostAction("reject", { candidate_ids: [candidate.id], reason: "Rejected in Patch Swarm review." }).catch((error) => {
+    patchSwarmSetStartStatus("failed", error.message);
+  });
+});
 detailEditButton.addEventListener("click", () => {
   if (detailPayload?.issue) openIssueModal(currentIssuePayloadFromDetail());
+});
+runPipelineTemplateSelect?.addEventListener("change", () => {
+  currentRunPipelineTemplateId = runPipelineTemplateSelect.value || currentRunPipelineTemplateId;
+  if (pipelineTemplateSelect && Array.from(pipelineTemplateSelect.options).some((option) => option.value === currentRunPipelineTemplateId)) {
+    pipelineTemplateSelect.value = currentRunPipelineTemplateId;
+  }
+  const projectId = runPipelineProjectForTemplate(currentRunPipelineTemplateId);
+  if (pipelineProjectSelect && Array.from(pipelineProjectSelect.options).some((option) => option.value === projectId)) {
+    pipelineProjectSelect.value = projectId;
+  }
+  renderRunPipelineInputCards();
+});
+runPipelineInputCards?.addEventListener("change", (event) => {
+  const control = event.target.closest("[data-run-pipeline-config]");
+  if (control) syncRunPipelineStructuredConfig(control);
 });
 
 issueForm.addEventListener("submit", (event) => void submitIssueForm(event).catch((error) => showDetailError(error.message)));
@@ -5254,6 +7849,8 @@ window.addEventListener("popstate", () => {
     showHome();
   } else if (location.pathname === "/software-delivery-hub") {
     showSoftwareDeliveryHub();
+  } else if (location.pathname === "/patch-swarm" || location.pathname.startsWith("/patch-swarm/runs/")) {
+    void showPatchSwarm();
   } else if (location.pathname === "/dev-pipeline-studio") {
     showDevPipelineStudio();
   } else if (location.pathname === "/review") {
@@ -5291,6 +7888,8 @@ async function boot() {
   syncStateFromLocation();
   setNavActive();
   await loadQueriesIntoSelect();
+  capturePrefilledIssuePromptFromUrl();
+  window.setTimeout(openPrefilledIssueModalFromUrl, 0);
   if (agentSummary && agentCards) {
     await loadAgents();
     window.setInterval(loadAgents, 30000);
@@ -5305,6 +7904,10 @@ async function boot() {
   }
   if (location.pathname === "/software-delivery-hub") {
     showSoftwareDeliveryHub();
+    return;
+  }
+  if (location.pathname === "/patch-swarm" || location.pathname.startsWith("/patch-swarm/runs/")) {
+    await showPatchSwarm();
     return;
   }
   if (location.pathname === "/dev-pipeline-studio") {
@@ -5343,7 +7946,7 @@ async function boot() {
     });
     return;
   }
-  if (location.pathname === "/issues") {
+  if (location.pathname === "/issues" || location.pathname === "/issues/new") {
     showList();
     return;
   }

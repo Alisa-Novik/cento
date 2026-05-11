@@ -113,6 +113,8 @@ The bias is toward low-dependency tooling that works well from a terminal and ca
   Run small exclusive-path local worksets with parallel worker patch collection, structured API artifact workers, simple dependency gates, budget caps, and sequential integration/apply.
 - `storage.py`
   Catalog Cento run artifacts into SQLite, classify evidence/logs/screenshots/patches/manifests, plan no-delete lifecycle actions, verify hashes, and render storage reports before high-fanout Factory runs create artifact pressure.
+- `object_storage.py`
+  Write a run-scoped dummy file and mirror Cento run images to private Oracle Object Storage with the OCI CLI, including explicit region support, content-addressed receipts, verification, and dry-run paths.
 
 ## Common commands
 

@@ -7,10 +7,11 @@
       "provider": "openai",
       "model": "gpt-5.3-codex-spark",
       "agent": "codex",
-      "weight": 0,
+      "weight": 85,
+      "preferred": true,
       "command_env": "CENTO_CODEX_BIN",
       "default_binary": "codex",
-      "budget_note": "Temporarily disabled for agent dispatch while Codex weekly limit is reserved for interactive coordination."
+      "budget_note": "Compute policy `codex-first` assigns Codex share 85."
     },
     {
       "id": "claude-code",
@@ -18,12 +19,19 @@
       "provider": "anthropic",
       "model": "claude-sonnet-4-6",
       "agent": "claude-code",
-      "weight": 100,
-      "preferred": true,
+      "weight": 15,
       "plan": "personal-pro",
       "command_env": "CENTO_CLAUDE_BIN",
       "default_binary": "claude",
-      "budget_note": "Temporary Claude-only mode for factory and agent dispatch testing."
+      "budget_note": "Compute policy `codex-first` assigns Claude share 15.",
+      "preferred": false
     }
-  ]
+  ],
+  "compute_policy": {
+    "schema_version": "cento.compute_policy.v1",
+    "profile": "codex-first",
+    "policy_path": "/home/alice/projects/cento/.cento/compute-policy.json",
+    "applied_at": "2026-05-05T06:08:59Z",
+    "openai_api_share": 0
+  }
 }

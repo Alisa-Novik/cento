@@ -6,6 +6,7 @@ import glob
 import json
 import mimetypes
 import os
+import re
 import signal
 import socket
 import sqlite3
@@ -17,7 +18,7 @@ import webbrowser
 import shlex
 import shutil
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -79,11 +80,76 @@ LOG_FILE = STATE_DIR / "agent-work-app.log"
 SYNC_LOG_FILE = STATE_DIR / "agent-work-app-sync.log"
 SYNC_LOCK_FILE = STATE_DIR / "agent-work-app-sync.lock"
 DEV_PIPELINE_STUDIO_ROOT = ROOT_DIR / "workspace" / "runs" / "dev-pipeline-studio" / "docs-pages" / "latest"
+DEV_PIPELINE_EXECUTION_LOCK = threading.Lock()
+DEV_PIPELINE_EXECUTION_MIN_STEP_SECONDS = float(os.environ.get("CENTO_PIPELINE_EXECUTION_MIN_STEP_SECONDS", "3.0"))
+HARD_PROREQ_PROJECT_ID = "hard-proreq-project"
+HARD_PROREQ_TEMPLATE_ID = "hard-proreq-task"
+PROREQ_LIGHT_PROJECT_ID = "proreq-light-project"
+PROREQ_LIGHT_TEMPLATE_ID = "proreq-light-task"
+MULTIPIPELINE_PROJECT_ID = "multipipeline-proreq-project"
+MULTIPIPELINE_TEMPLATE_ID = "multipipeline-proreq-chain"
+PARALLEL_PIPELINE_PROJECT_ID = "parallel-pipeline-project"
+PARALLEL_PIPELINE_TEMPLATE_ID = "parallel-pipeline"
+PATCH_SWARM_PROJECT_ID = "patch-swarm-project"
+PATCH_SWARM_TEMPLATE_ID = "patch-swarm"
+PARALLEL_PIPELINE_FIXTURE_TARGET_PATHS = [
+    "docs/agent-run-ledger.md",
+    "docs/agent-work-coordinator-lane.md",
+    "docs/agent-work-deliverables-hub.md",
+    "docs/agent-work-docs-evidence-lane.md",
+    "docs/agent-work-runtimes.md",
+    "docs/agent-work-screenshot-runner.md",
+    "docs/agent-work-story-manifest.md",
+    "docs/agent-work-validator-lane.md",
+    "docs/cento-build.md",
+    "docs/cento-workset.md",
+    "standards/README.md",
+    "standards/mcp.md",
+]
+DEFAULT_DEV_PIPELINE_PROJECT_ID = HARD_PROREQ_PROJECT_ID
+DEFAULT_DEV_PIPELINE_TEMPLATE_ID = HARD_PROREQ_TEMPLATE_ID
 HEALTH_PATH = "/health"
 SYNC_CRON_BEGIN = "# >>> cento agent-work-app sync >>>"
 SYNC_CRON_END = "# <<< cento agent-work-app sync <<<"
 SYNC_SOURCE_ENV = "CENTO_AGENT_WORK_APP_SYNC_SOURCE"
 SYNC_TIMEOUT_ENV = "CENTO_AGENT_WORK_APP_SYNC_TIMEOUT_SECONDS"
+
+
+def load_local_cento_secrets() -> None:
+    config_root = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    secrets_path = Path(os.environ.get("CENTO_SECRETS_ENV", config_root / "cento" / "secrets.env"))
+    try:
+        lines = secrets_path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return
+    allowed = {
+        "OPENAI_API_KEY",
+        "CENTO_OPENAI_PLANNER_MODEL",
+        "CENTO_OPENAI_WORKER_MODEL",
+        "CENTO_OPENAI_REVIEWER_MODEL",
+        "CENTO_OPENAI_PRO_MODEL",
+        "CENTO_OPENAI_IMAGE_MODEL",
+    }
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped.startswith("export "):
+            stripped = stripped[7:].lstrip()
+        if "=" not in stripped:
+            continue
+        key, raw_value = stripped.split("=", 1)
+        key = key.strip()
+        if key not in allowed or os.environ.get(key):
+            continue
+        try:
+            parsed = shlex.split(raw_value, posix=True)
+        except ValueError:
+            parsed = [raw_value.strip().strip("\"'")]
+        os.environ[key] = parsed[0] if parsed else ""
+
+
+load_local_cento_secrets()
 
 
 class AgentWorkAppError(RuntimeError):
@@ -1113,6 +1179,91 @@ def event_count(path: Path) -> int:
         return 0
 
 
+def read_event_rows(path: Path, limit: int = 120) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return rows
+    for line in lines[-limit:]:
+        if not line.strip():
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(payload, dict):
+            rows.append(payload)
+    return rows
+
+
+def parse_iso_datetime(value: Any) -> datetime | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+    if raw.endswith("Z"):
+        raw = f"{raw[:-1]}+00:00"
+    try:
+        parsed = datetime.fromisoformat(raw)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed
+
+
+def format_run_time(value: datetime | None, include_date: bool = True) -> str:
+    if value is None:
+        return ""
+    local = value.astimezone()
+    if include_date:
+        text = local.strftime("%b %d, %Y %I:%M:%S %p")
+    else:
+        text = local.strftime("%I:%M:%S %p")
+    return text.replace(" 0", " ")
+
+
+def duration_seconds_from_label(value: Any, fallback: int) -> int:
+    text = str(value or "").strip().lower()
+    if not text:
+        return fallback
+    total = 0
+    saw_number = False
+    for token in text.replace(",", " ").split():
+        number = "".join(char for char in token if char.isdigit())
+        if not number:
+            continue
+        saw_number = True
+        amount = int(number)
+        if "h" in token:
+            total += amount * 3600
+        elif "m" in token:
+            total += amount * 60
+        else:
+            total += amount
+    return total if saw_number else fallback
+
+
+def duration_label(seconds: int) -> str:
+    seconds = max(0, int(seconds or 0))
+    minutes, remainder = divmod(seconds, 60)
+    if minutes:
+        return f"{minutes}m {remainder:02d}s"
+    return f"{remainder}s"
+
+
+def file_size_label(path: Path) -> str:
+    try:
+        size = path.stat().st_size
+    except OSError:
+        return "missing"
+    if size >= 1024 * 1024:
+        return f"{size / (1024 * 1024):.1f} MB"
+    if size >= 1024:
+        return f"{size / 1024:.1f} KB"
+    return f"{size} B"
+
+
 def dev_pipeline_relative(path: Path) -> str:
     try:
         return str(path.resolve().relative_to(ROOT_DIR.resolve()))
@@ -1180,6 +1331,21 @@ def dev_pipeline_text_list(value: Any, current: list[str]) -> list[str]:
 
 
 DEV_PIPELINE_INPUT_TYPES = {"text", "details", "image", "questionnaire", "path", "evidence"}
+PIPELINE_RUN_INPUT_TYPES = {"text", "questionnaire", "path", "image", "details", "evidence"}
+PIPELINE_RUN_SCHEMA_VERSION = "cento.pipeline_run_request.v1"
+
+
+def dev_pipeline_input_source(value: Any, fallback: str = "user") -> str:
+    source = dev_pipeline_text(value, fallback).lower().replace("_", "-").replace(" ", "-")
+    aliases = {
+        "operator": "user",
+        "manual": "user",
+        "generated": "auto",
+        "automation": "auto",
+        "automated": "auto",
+    }
+    source = aliases.get(source, source)
+    return source if source in {"user", "auto"} else fallback
 
 
 def dev_pipeline_input_type(value: Any, fallback: str = "text") -> str:
@@ -1259,19 +1425,27 @@ def dev_pipeline_required_inputs(value: Any, current: list[dict[str, Any]] | Non
         if not title:
             continue
         status = dev_pipeline_text(item.get("status"), "Missing").lower().replace("_", "-")
-        if status not in {"provided", "configured", "missing", "optional"}:
+        if status not in {"provided", "configured", "missing", "optional", "muted", "skipped", "blocking-config"}:
             status = "missing"
         item_id = dev_pipeline_slug(dev_pipeline_text(item.get("id"), title), f"input-{index}")
         kind = dev_pipeline_input_type(item.get("kind", item.get("input_type", item.get("type"))), dev_pipeline_inferred_input_type(item_id, title))
+        source = dev_pipeline_input_source(item.get("source", item.get("automation_source")), "user")
+        automation = dev_pipeline_text(item.get("automation", item.get("automation_source")), "")
         normalized = {
             "id": item_id,
             "title": title,
             "detail": dev_pipeline_text(item.get("detail"), ""),
             "kind": kind,
             "input_type": kind,
+            "source": source,
+            "automation": automation,
+            "automation_source": automation,
+            "muted": bool(item.get("muted", status == "muted")),
+            "blocking": bool(item.get("blocking", not bool(item.get("muted", status == "muted")))),
             "format": dev_pipeline_text(item.get("format"), ""),
             "status": status,
             "required": bool(item.get("required", status != "optional")),
+            "advanced": bool(item.get("advanced", False)),
             "image_refs": dev_pipeline_text_list(item.get("image_refs", item.get("images", item.get("references"))), []),
             "image_notes": dev_pipeline_text(item.get("image_notes", item.get("reference_notes")), ""),
             "questions": dev_pipeline_question_items(item.get("questions", item.get("questionnaire"))),
@@ -2207,16 +2381,909 @@ def dev_pipeline_generic_blueprint_defaults() -> dict[str, Any]:
     }
 
 
+def dev_pipeline_parallel_project_defaults() -> dict[str, Any]:
+    return {
+        "id": PARALLEL_PIPELINE_PROJECT_ID,
+        "label": "Parallel Pipeline Project",
+        "surface": "Cento workset parallel execution",
+        "surface_value": PARALLEL_PIPELINE_TEMPLATE_ID,
+        "owned_root": "workspace/runs/parallel-pipeline/outputs",
+        "read_paths": [
+            "AGENTS.md",
+            "README.md",
+            "scripts/**",
+            "templates/agent-work-app/**",
+            "docs/**",
+            "tests/**",
+            "data/tools.json",
+            ".cento/api_workers.yaml",
+        ],
+    }
+
+
+def dev_pipeline_parallel_blueprint_defaults() -> dict[str, Any]:
+    return {
+        "id": PARALLEL_PIPELINE_TEMPLATE_ID,
+        "label": "Parallel workset pipeline",
+        "detail": "Contract-first parallel workers with one serialized integration lane",
+        "description": "Collects a parallel workset objective, exclusive write paths, runtime configuration, validation gates, and evidence policy, then runs independent workers concurrently and returns every patch through one sequential integration lane.",
+        "tagline": "Parallel owned-path delivery",
+        "slug": PARALLEL_PIPELINE_TEMPLATE_ID,
+        "worker_type": "parallel_workset_worker",
+        "execution_model": "parallel",
+        "worker_stage_label": "2. Parallel Work Config",
+        "factory_stage_label": "4. Parallel Workset Execution",
+        "validation_tier": "workset-contract",
+        "risk": "high",
+        "budget_spent_usd": 0.0,
+        "budget_cap_usd": 20.0,
+        "blueprint_version": "parallel-workset.v1",
+        "tasks_completed": 0,
+        "tasks_total": 7,
+        "selected_worker": "workset-config",
+        "max_parallel": 10,
+        "input_manifest": "inputs/parallel-pipeline_input_manifest.json",
+        "pipeline_config": "inputs/parallel-pipeline_pipeline_config.json",
+        "execution_manifest": "execution/parallel_execution_manifest.json",
+        "workers": [
+            {
+                "id": "workset-config",
+                "title": "Workset Config Contract",
+                "file": "parallel_workset_config.json",
+                "description": "Normalize the objective, runtime limits, read context, and exclusive write-path contract before dispatch.",
+                "stage": "repo",
+                "manifest": "workers/parallel-pipeline_workset-config.json",
+                "integration_config": "integration/configs/parallel-workset-config.json",
+                "integration_receipt": "integration_receipts/parallel-pipeline_workset-config.json",
+            },
+            {
+                "id": "parallel-split",
+                "title": "Parallel Worker Split",
+                "file": "parallel_worker_split.json",
+                "description": "Split independent owned-path workstreams into runnable workset tasks with explicit dependencies.",
+                "stage": "blueprint",
+                "dependencies": ["workset-config"],
+                "manifest": "workers/parallel-pipeline_parallel-split.json",
+                "integration_config": "integration/configs/parallel-split.json",
+                "integration_receipt": "integration_receipts/parallel-pipeline_parallel-split.json",
+            },
+            {
+                "id": "serialized-integrator",
+                "title": "Serialized Integrator",
+                "file": "parallel_integrator.json",
+                "description": "Accept worker receipts one at a time, apply only non-overlapping patches, and preserve rollback evidence.",
+                "stage": "blueprint",
+                "dependencies": ["parallel-split"],
+                "manifest": "workers/parallel-pipeline_serialized-integrator.json",
+                "integration_config": "integration/configs/serialized-integrator.json",
+                "integration_receipt": "integration_receipts/parallel-pipeline_serialized-integrator.json",
+            },
+        ],
+        "factory_steps": [
+            {"id": "resolve-parallel-inputs", "title": "resolve_parallel_inputs", "file": "execution_run.json", "status": "accepted", "mode": "deterministic"},
+            {"id": "write-parallel-workset", "title": "write_parallel_workset", "file": "workset.json", "status": "accepted", "mode": "deterministic", "dependencies": ["resolve-parallel-inputs"]},
+            {"id": "dispatch-parallel-workers", "title": "dispatch_parallel_workers", "file": "workset_receipt.json", "status": "accepted", "mode": "api-openai-parallel", "dependencies": ["write-parallel-workset"]},
+            {"id": "collect-worker-artifacts", "title": "collect_worker_artifacts", "file": "patch_bundles", "status": "accepted", "mode": "deterministic", "dependencies": ["dispatch-parallel-workers"]},
+            {"id": "integrate-sequentially", "title": "integrate_sequentially", "file": "integration_receipts", "status": "accepted", "mode": "sequential", "dependencies": ["collect-worker-artifacts"]},
+            {"id": "run-parallel-validation", "title": "run_parallel_validation", "file": "validation_receipts", "status": "accepted", "mode": "smoke", "dependencies": ["integrate-sequentially"]},
+            {"id": "collect-parallel-evidence", "title": "collect_parallel_evidence", "file": "parallel_evidence.json", "status": "accepted", "mode": "deterministic", "dependencies": ["run-parallel-validation"]},
+        ],
+        "validators": [
+            {"id": "exclusive-paths", "title": "Exclusive Path Validator", "file": "exclusive_paths_receipt.json", "receipt": "validation/exclusive_paths_receipt.json", "config": "validation/validator_configs/exclusive-paths.json", "mode": "schema", "blocking": True, "status": "passed"},
+            {"id": "workset-receipt", "title": "Workset Receipt Validator", "file": "workset_receipt_validator.json", "receipt": "validation/workset_receipt_validator.json", "config": "validation/validator_configs/workset-receipt.json", "mode": "evidence", "blocking": True, "status": "passed"},
+            {"id": "serialized-integration", "title": "Serialized Integration Validator", "file": "serialized_integration_receipt.json", "receipt": "validation/serialized_integration_receipt.json", "config": "validation/validator_configs/serialized-integration.json", "mode": "commands", "blocking": True, "status": "passed"},
+        ],
+        "evidence_artifacts": [
+            {"id": "parallel-workset-manifest", "title": "Parallel Workset Manifest", "file": "workset.json", "status": "Configured", "kind": "artifact", "path": "execution/worksets/latest.json", "required_sources": ["parallel_worker_split.json"], "publish_policy": "Attach the runnable workset to every parallel pipeline handoff.", "retention_policy": "Keep with run artifacts."},
+            {"id": "parallel-workset-receipt", "title": "Parallel Workset Receipt", "file": "workset_receipt.json", "status": "Configured", "kind": "receipt", "path": ".cento/worksets/*/workset_receipt.json", "required_sources": ["execution/worksets/*.json"], "publish_policy": "Use as proof that parallel workers converged through the serialized integration lane.", "retention_policy": "Keep with the workset run directory and pipeline evidence."},
+            {"id": "parallel-handoff", "title": "Parallel Evidence Handoff", "file": "parallel_evidence.json", "status": "Configured", "kind": "bundle", "path": "evidence/parallel_evidence.json", "required_sources": ["workset_receipt.json", "validation_receipt.json"], "publish_policy": "Summarize changed paths, costs, worker outcomes, validators, and residual risks before review.", "retention_policy": "Keep with pipeline evidence."},
+        ],
+    }
+
+
+def dev_pipeline_patch_swarm_project_defaults() -> dict[str, Any]:
+    return {
+        "id": PATCH_SWARM_PROJECT_ID,
+        "label": "Patch Swarm Project",
+        "surface": "Cento patch swarm candidate market",
+        "surface_value": PATCH_SWARM_TEMPLATE_ID,
+        "owned_root": "workspace/runs/parallel-delivery/patch-swarm",
+        "read_paths": [
+            "AGENTS.md",
+            "README.md",
+            "scripts/**",
+            "templates/agent-work-app/**",
+            "docs/**",
+            "tests/**",
+            "data/tools.json",
+            ".cento/runtimes.yaml",
+            ".cento/api_workers.yaml",
+        ],
+    }
+
+
+def dev_pipeline_patch_swarm_blueprint_defaults() -> dict[str, Any]:
+    proreq_steps = [
+        ("request-decomposer", "request_decomposer", "request_decomposer.json"),
+        ("codex-exec-adapter", "codex_exec_adapter", "codex_exec_adapter.json"),
+        ("claude-code-adapter", "claude_code_adapter", "claude_code_adapter.json"),
+        ("openai-patch-proposal-adapter", "openai_patch_proposal_adapter", "openai_patch_proposal_adapter.json"),
+        ("candidate-normalizer", "candidate_normalizer", "candidate_normalizer.json"),
+        ("dedupe-clustering", "dedupe_clustering", "dedupe_clustering.json"),
+        ("deterministic-validator-fanout", "deterministic_validator_fanout", "deterministic_validator_fanout.json"),
+        ("cost-latency-ledger", "cost_latency_ledger", "cost_latency_ledger.json"),
+        ("dev-pipeline-studio-ui", "dev_pipeline_studio_ui", "dev_pipeline_studio_ui.json"),
+        ("autopilot-coordinator-hooks", "autopilot_coordinator_hooks", "autopilot_coordinator_hooks.json"),
+    ]
+    return {
+        "id": PATCH_SWARM_TEMPLATE_ID,
+        "label": "Patch Swarm",
+        "detail": "100+ candidate patches, 5+ agents, one serialized integrator",
+        "description": "Runs ten ProReq execution lanes that can target Codex Exec, Claude Code, or OpenAI structured patch proposal workers, then feeds every candidate into one deterministic ranking and Safe Integrator handoff lane.",
+        "tagline": "Massively parallel patch candidate market",
+        "slug": PATCH_SWARM_TEMPLATE_ID,
+        "worker_type": "patch_swarm_candidate_worker",
+        "execution_model": "parallel",
+        "worker_stage_label": "2. ProReq Patch Lanes",
+        "factory_stage_label": "4. Candidate Swarm Execution",
+        "validation_tier": "patch-swarm-contract",
+        "risk": "high",
+        "budget_spent_usd": 0.0,
+        "budget_cap_usd": 20.0,
+        "blueprint_version": "patch-swarm.v1",
+        "tasks_completed": 0,
+        "tasks_total": 11,
+        "selected_worker": "request-decomposer",
+        "max_parallel": 5,
+        "input_manifest": "inputs/patch-swarm_input_manifest.json",
+        "pipeline_config": "inputs/patch-swarm_pipeline_config.json",
+        "execution_manifest": "execution/patch_swarm_execution_manifest.json",
+        "workers": [
+            {
+                "id": step_id,
+                "title": title.replace("_", " ").title(),
+                "file": filename,
+                "description": "One of ten ProReq pipeline executions that produces provider-compatible candidate patch receipts.",
+                "stage": "blueprint",
+                "manifest": f"workers/patch-swarm_{step_id}.json",
+                "integration_config": f"integration/configs/patch-swarm-{step_id}.json",
+                "integration_receipt": f"integration_receipts/patch-swarm_{step_id}.json",
+            }
+            for step_id, title, filename in proreq_steps
+        ],
+        "factory_steps": [
+            {"id": step_id, "title": title, "file": filename, "status": "queued", "mode": "proreq-patch-lane"}
+            for step_id, title, filename in proreq_steps
+        ]
+        + [
+            {
+                "id": "dedicated-integrator",
+                "title": "dedicated_integrator",
+                "file": "integration_execution.json",
+                "status": "queued",
+                "mode": "serialized-safe-integrator-handoff",
+                "dependencies": [step_id for step_id, _title, _filename in proreq_steps],
+            }
+        ],
+        "validators": [
+            {"id": "candidate-count", "title": "100+ Candidate Validator", "file": "candidate_count_receipt.json", "receipt": "validation/patch_swarm_candidate_count.json", "config": "validation/validator_configs/patch-swarm-candidate-count.json", "mode": "schema", "blocking": True, "status": "passed"},
+            {"id": "provider-mix", "title": "Provider Mix Validator", "file": "provider_mix_receipt.json", "receipt": "validation/patch_swarm_provider_mix.json", "config": "validation/validator_configs/patch-swarm-provider-mix.json", "mode": "schema", "blocking": True, "status": "passed"},
+            {"id": "dedicated-integrator", "title": "Dedicated Integrator Validator", "file": "dedicated_integrator_receipt.json", "receipt": "validation/patch_swarm_integrator.json", "config": "validation/validator_configs/patch-swarm-integrator.json", "mode": "evidence", "blocking": True, "status": "passed"},
+        ],
+        "evidence_artifacts": [
+            {"id": "patch-swarm-manifest", "title": "Patch Swarm Manifest", "file": "patch_swarm_manifest.json", "status": "Configured", "kind": "artifact", "path": "execution/patch-swarm/latest/patch_swarm_manifest.json", "required_sources": ["inputs/patch-swarm_input_manifest.json"], "publish_policy": "Attach the run manifest before candidate dispatch.", "retention_policy": "Keep with patch swarm run artifacts."},
+            {"id": "candidate-index", "title": "Candidate Index", "file": "candidate_index.json", "status": "Configured", "kind": "artifact", "path": "execution/patch-swarm/latest/candidate_index.json", "required_sources": ["patch_swarm_manifest.json"], "publish_policy": "Use as the source of truth for candidate receipts, providers, costs, and validation state.", "retention_policy": "Keep with patch swarm run artifacts."},
+            {"id": "safe-integrator-handoff", "title": "Safe Integrator Handoff", "file": "safe_integrator_handoff.json", "status": "Configured", "kind": "bundle", "path": "execution/patch-swarm/latest/safe_integrator_handoff.json", "required_sources": ["candidate_index.json", "ranking.json", "integration_execution.json"], "publish_policy": "Publish only after the dedicated integrator selects winners.", "retention_policy": "Keep with patch swarm run artifacts."},
+        ],
+    }
+
+
+def dev_pipeline_hard_proreq_project_defaults() -> dict[str, Any]:
+    return {
+        "id": HARD_PROREQ_PROJECT_ID,
+        "label": "Hard Proreq Project",
+        "surface": "Cento pro requirements route",
+        "surface_value": HARD_PROREQ_TEMPLATE_ID,
+        "owned_root": "workspace/runs/hard-proreq/outputs",
+        "read_paths": [
+            "AGENTS.md",
+            "README.md",
+            "scripts/**",
+            "templates/agent-work-app/**",
+            "docs/**",
+            "tests/**",
+            "data/tools.json",
+            ".cento/api_workers.yaml",
+        ],
+    }
+
+
+def dev_pipeline_hard_proreq_schema() -> dict[str, Any]:
+    text = {"type": "string"}
+    text_array = {"type": "array", "items": {"type": "string"}}
+    workstream = {
+        "type": "object",
+        "properties": {
+            "id": text,
+            "title": text,
+            "intent": text,
+            "owned_paths": text_array,
+            "read_paths": text_array,
+            "depends_on": text_array,
+            "validation_commands": text_array,
+            "handoff_artifacts": text_array,
+        },
+        "required": ["id", "title", "intent", "owned_paths", "read_paths", "depends_on", "validation_commands", "handoff_artifacts"],
+        "additionalProperties": False,
+    }
+    return {
+        "type": "object",
+        "properties": {
+            "schema_version": {"type": "string", "enum": ["cento.hard_proreq_backend_plan.v1"]},
+            "summary": text,
+            "backend_workstreams": {"type": "array", "items": workstream},
+            "integration_plan": text_array,
+            "validation_plan": text_array,
+            "parallelization_notes": text_array,
+            "codex_exec_prompts": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": text,
+                        "prompt": text,
+                        "output_schema": text,
+                    },
+                    "required": ["id", "prompt", "output_schema"],
+                    "additionalProperties": False,
+                },
+            },
+            "risks": text_array,
+        },
+        "required": [
+            "schema_version",
+            "summary",
+            "backend_workstreams",
+            "integration_plan",
+            "validation_plan",
+            "parallelization_notes",
+            "codex_exec_prompts",
+            "risks",
+        ],
+        "additionalProperties": False,
+    }
+
+
+def dev_pipeline_hard_proreq_blueprint_defaults() -> dict[str, Any]:
+    return {
+        "id": HARD_PROREQ_TEMPLATE_ID,
+        "label": "Hard proreq task",
+        "detail": "Manifest-backed requirement planning with optional screenshot context",
+        "description": "Transforms operator thoughts, optional screenshot context, and questionnaire answers into Cento context, ten story manifests, parallel patch workset handoff, manifest-driven integration, validation, and evidence.",
+        "tagline": "Default hard prompt route",
+        "slug": HARD_PROREQ_TEMPLATE_ID,
+        "worker_type": "hard_proreq_worker",
+        "execution_model": "ordered",
+        "worker_stage_label": "2. Cento Context",
+        "factory_stage_label": "4. Proreq Planning",
+        "validation_tier": "proreq-contract",
+        "risk": "high",
+        "budget_spent_usd": 0.0,
+        "budget_cap_usd": 20.0,
+        "blueprint_version": "hard-proreq.v1",
+        "tasks_completed": 0,
+        "tasks_total": 10,
+        "selected_worker": "mini-cento-context",
+        "input_manifest": "inputs/hard-proreq-task_input_manifest.json",
+        "pipeline_config": "inputs/hard-proreq-task_pipeline_config.json",
+        "execution_manifest": "execution/execution_manifest.json",
+        "workers": [
+            {
+                "id": "mini-cento-context",
+                "title": "Mini Cento Context",
+                "file": "mini_cento_context.json",
+                "description": "Use Cento-native context gathering and repo search to summarize the task surface before pro planning.",
+                "stage": "repo",
+                "manifest": "workers/hard-proreq-task_mini-cento-context.json",
+                "integration_config": "integration/configs/mini-cento-context.json",
+                "integration_receipt": "integration_receipts/hard-proreq-task_mini-cento-context.json",
+            },
+            {
+                "id": "proreq-splitter",
+                "title": "Prompt Splitter",
+                "file": "proreq_prompt_split.json",
+                "description": "Split operator input into optional muted UI screenshot context, ten story manifests, and a schema-backed backend planning request.",
+                "stage": "blueprint",
+                "dependencies": ["mini-cento-context"],
+                "manifest": "workers/hard-proreq-task_proreq-splitter.json",
+                "integration_config": "integration/configs/proreq-splitter.json",
+                "integration_receipt": "integration_receipts/hard-proreq-task_proreq-splitter.json",
+            },
+            {
+                "id": "backend-work-materializer",
+                "title": "Backend Work Materializer",
+                "file": "backend_work_manifest.json",
+                "description": "Turn GPT pro backend plan output into Cento-native backend work prompts and validation gates.",
+                "stage": "blueprint",
+                "dependencies": ["proreq-splitter"],
+                "manifest": "workers/hard-proreq-task_backend-work-materializer.json",
+                "integration_config": "integration/configs/backend-work-materializer.json",
+                "integration_receipt": "integration_receipts/hard-proreq-task_backend-work-materializer.json",
+            },
+        ],
+        "factory_steps": [
+            {"id": "collect-operator-intake", "title": "collect_operator_intake", "file": "operator_intake.json", "status": "accepted", "mode": "deterministic"},
+            {"id": "build-cento-context", "title": "build_mini_cento_context", "file": "mini_cento_context.json", "status": "accepted", "mode": "deterministic", "dependencies": ["collect-operator-intake"]},
+            {"id": "write-ui-screenshot-request", "title": "ui_screenshot_request_muted", "file": "ui_screenshot_request.json", "status": "muted", "mode": "frontend-separate", "muted": True, "lane": "frontend", "dependencies": ["build-cento-context"]},
+            {"id": "prepare-pro-backend-request", "title": "prepare_gpt_pro_backend_request", "file": "pro_backend_request.json", "status": "accepted", "mode": "structured-output", "dependencies": ["build-cento-context"]},
+            {"id": "dispatch-pro-backend-plan", "title": "gpt_pro_backend_plan", "file": "pro_backend_plan.json", "status": "accepted", "mode": "api-openai-pro", "dependencies": ["prepare-pro-backend-request"]},
+            {"id": "materialize-backend-work", "title": "materialize_10_story_backend_work", "file": "backend_work_manifest.json", "status": "accepted", "mode": "cento-native", "dependencies": ["dispatch-pro-backend-plan"]},
+            {"id": "write-integration-plan", "title": "write_integration_plan", "file": "integration_plan.json", "status": "accepted", "mode": "deterministic", "dependencies": ["materialize-backend-work"]},
+            {"id": "write-validation-plan", "title": "write_validation_plan", "file": "validation_plan.json", "status": "accepted", "mode": "deterministic", "dependencies": ["write-integration-plan"]},
+            {"id": "collect-proreq-evidence", "title": "collect_proreq_evidence", "file": "hard_proreq_evidence.json", "status": "accepted", "mode": "deterministic", "dependencies": ["write-validation-plan"]},
+        ],
+        "validators": [
+            {"id": "schema", "title": "Schema Validator", "file": "schema_receipt.json", "receipt": "validation/schema_receipt.json", "config": "validation/validator_configs/schema.json", "mode": "schema", "blocking": True, "status": "passed"},
+            {"id": "proreq-contract", "title": "Proreq Contract Validator", "file": "proreq_contract_receipt.json", "receipt": "validation/proreq_contract_receipt.json", "config": "validation/validator_configs/proreq-contract.json", "mode": "schema", "blocking": True, "status": "passed"},
+            {"id": "frontend-muted", "title": "Muted Frontend Flow Validator", "file": "frontend_muted_receipt.json", "receipt": "validation/frontend_muted_receipt.json", "config": "validation/validator_configs/frontend-muted.json", "mode": "evidence", "blocking": False, "status": "muted"},
+        ],
+        "evidence_artifacts": [
+            {"id": "pro-backend-request", "title": "GPT Pro Backend Request", "file": "pro_backend_request.json", "status": "Configured", "kind": "artifact", "path": "execution/hard-proreq/latest/pro_backend_request.json", "required_sources": ["operator_intake.json", "mini_cento_context.json", "pro_output_schema.json"], "publish_policy": "Attach the schema-backed request to every hard proreq handoff.", "retention_policy": "Keep with run artifacts."},
+            {"id": "backend-work-manifest", "title": "Cento Backend Work Manifest", "file": "backend_work_manifest.json", "status": "Configured", "kind": "artifact", "path": "execution/hard-proreq/latest/backend_work_manifest.json", "required_sources": ["pro_backend_plan.json"], "publish_policy": "Use as the Codex/Cento backend work launcher input for ten story manifests and the parallel patch workset.", "retention_policy": "Keep with run artifacts."},
+        ],
+    }
+
+
+def dev_pipeline_proreq_light_project_defaults() -> dict[str, Any]:
+    project = deepcopy(dev_pipeline_hard_proreq_project_defaults())
+    project.update(
+        {
+            "id": PROREQ_LIGHT_PROJECT_ID,
+            "label": "ProReq Light Project",
+            "surface": "Cento Codex Exec requirements route",
+            "surface_value": PROREQ_LIGHT_TEMPLATE_ID,
+            "owned_root": "workspace/runs/proreq-light/outputs",
+        }
+    )
+    return project
+
+
+def dev_pipeline_proreq_light_blueprint_defaults() -> dict[str, Any]:
+    template = deepcopy(dev_pipeline_hard_proreq_blueprint_defaults())
+    template.update(
+        {
+            "id": PROREQ_LIGHT_TEMPLATE_ID,
+            "label": "ProReq light task",
+            "detail": "Codex Exec requirement planning with optional screenshot context",
+            "description": "Transforms operator thoughts, optional screenshot context, and Cento context into the same ten-story ProReq artifacts, but replaces the live ChatGPT Pro API call with a Codex Exec prompt that simulates the Pro planning lane.",
+            "tagline": "Codex Exec ProReq route",
+            "slug": PROREQ_LIGHT_TEMPLATE_ID,
+            "worker_type": "proreq_light_codex_worker",
+            "factory_stage_label": "4. ProReq Light Planning",
+            "validation_tier": "proreq-light-contract",
+            "risk": "medium",
+            "budget_spent_usd": 0.0,
+            "budget_cap_usd": 0.0,
+            "blueprint_version": "proreq-light.v1",
+            "selected_worker": "mini-cento-context",
+        }
+    )
+    for worker in template.get("workers", []):
+        if not isinstance(worker, dict):
+            continue
+        if worker.get("id") == "proreq-splitter":
+            worker["title"] = "Codex Pro Prompt Splitter"
+            worker["description"] = "Prepare the strict schema and Codex Exec prompt that starts with \"You're chatGPT Pro model\" instead of dispatching a live Pro API call."
+        elif worker.get("id") == "backend-work-materializer":
+            worker["description"] = "Turn the Codex Exec ProReq-light plan into Cento-native story manifests and validation gates."
+    for step in template.get("factory_steps", []):
+        if not isinstance(step, dict):
+            continue
+        if step.get("id") == "prepare-pro-backend-request":
+            step["title"] = "prepare_codex_pro_backend_request"
+            step["mode"] = "codex-exec-request"
+        elif step.get("id") == "dispatch-pro-backend-plan":
+            step["id"] = "dispatch-codex-pro-backend-plan"
+            step["title"] = "codex_exec_pro_backend_plan"
+            step["mode"] = "codex-exec-proreq-light"
+    for artifact in template.get("evidence_artifacts", []):
+        if not isinstance(artifact, dict):
+            continue
+        if artifact.get("id") == "pro-backend-request":
+            artifact["title"] = "Codex Exec ProReq Prompt"
+            artifact["file"] = "proreq_light_codex_prompt.md"
+            artifact["path"] = "execution/hard-proreq/latest/proreq_light_codex_prompt.md"
+            artifact["required_sources"] = ["operator_intake.json", "mini_cento_context.json", "pro_output_schema.json", "pro_backend_request.json"]
+            artifact["publish_policy"] = "Attach the Codex Exec prompt and command receipt to every ProReq-light handoff."
+        elif artifact.get("id") == "backend-work-manifest":
+            artifact["required_sources"] = ["pro_backend_plan.json", "proreq_light_codex_response.json"]
+    template.setdefault("evidence_artifacts", []).append(
+        {
+            "id": "codex-proreq-light-response",
+            "title": "Codex Exec ProReq Response",
+            "file": "proreq_light_codex_response.json",
+            "status": "Configured",
+            "kind": "artifact",
+            "path": "execution/hard-proreq/latest/proreq_light_codex_response.json",
+            "required_sources": ["proreq_light_codex_prompt.md", "proreq_light_output_schema.json", "proreq_light_codex_command.json"],
+            "publish_policy": "Preserve Codex Exec stdout/stderr and fallback status for every light run.",
+            "retention_policy": "Keep with run artifacts.",
+        }
+    )
+    return template
+
+
+def dev_pipeline_multipipeline_project_defaults() -> dict[str, Any]:
+    return {
+        "id": MULTIPIPELINE_PROJECT_ID,
+        "label": "Multipipeline ProReq Project",
+        "surface": "Sequential ProReq meta-pipeline",
+        "surface_value": MULTIPIPELINE_TEMPLATE_ID,
+        "owned_root": "workspace/runs/multipipeline-proreq/outputs",
+        "read_paths": [
+            "AGENTS.md",
+            "README.md",
+            "scripts/**",
+            "templates/agent-work-app/**",
+            "docs/**",
+            "tests/**",
+            "data/tools.json",
+            ".cento/api_workers.yaml",
+        ],
+    }
+
+
+def dev_pipeline_multipipeline_blueprint_defaults() -> dict[str, Any]:
+    return {
+        "id": MULTIPIPELINE_TEMPLATE_ID,
+        "label": "Multipipeline ProReq chain",
+        "detail": "Four sequential ProReq passes where each pass feeds guidance to the next",
+        "description": "Schedules four ordered ProReq request passes for an operator-defined multipipeline objective. Each pass consumes the previous pass guidance, writes the next ProReq request, preserves UI screenshot guidance, prepares a ChatGPT Pro request, and emits validation-ready evidence.",
+        "tagline": "Sequential ProReq coordinator",
+        "slug": MULTIPIPELINE_TEMPLATE_ID,
+        "worker_type": "multipipeline_proreq_coordinator",
+        "execution_model": "ordered",
+        "worker_stage_label": "2. Multipipeline Context",
+        "factory_stage_label": "4. Sequential ProReq Passes",
+        "validation_tier": "multipipeline-contract",
+        "risk": "medium",
+        "budget_spent_usd": 0.0,
+        "budget_cap_usd": 0.0,
+        "blueprint_version": "multipipeline-proreq-chain.v1",
+        "tasks_completed": 0,
+        "tasks_total": 9,
+        "selected_worker": "chain-scheduler",
+        "input_manifest": "inputs/multipipeline-proreq-chain_input_manifest.json",
+        "pipeline_config": "inputs/multipipeline-proreq-chain_pipeline_config.json",
+        "execution_manifest": "execution/multipipeline_execution_manifest.json",
+        "workers": [
+            {
+                "id": "chain-intake",
+                "title": "Meta-pipeline Intake",
+                "file": "operator_intake.json",
+                "description": "Normalize the operator objective, improvement boundaries, and compute policy before scheduling child ProReq passes.",
+                "stage": "repo",
+                "manifest": "workers/multipipeline-proreq-chain_chain-intake.json",
+                "integration_config": "integration/configs/multipipeline-chain-intake.json",
+                "integration_receipt": "integration_receipts/multipipeline-proreq-chain_chain-intake.json",
+            },
+            {
+                "id": "chain-scheduler",
+                "title": "Sequential ProReq Scheduler",
+                "file": "multipipeline_schedule.json",
+                "description": "Create four ordered ProReq pass requests, each dependent on the previous pass guidance artifact.",
+                "stage": "blueprint",
+                "dependencies": ["chain-intake"],
+                "manifest": "workers/multipipeline-proreq-chain_chain-scheduler.json",
+                "integration_config": "integration/configs/multipipeline-chain-scheduler.json",
+                "integration_receipt": "integration_receipts/multipipeline-proreq-chain_chain-scheduler.json",
+            },
+            {
+                "id": "chain-handoff",
+                "title": "Guidance And Evidence Handoff",
+                "file": "multipipeline_evidence.json",
+                "description": "Collect pass receipts, UI screenshot prompt, ChatGPT Pro request, roadmap, and validation handoff evidence.",
+                "stage": "blueprint",
+                "dependencies": ["chain-scheduler"],
+                "manifest": "workers/multipipeline-proreq-chain_chain-handoff.json",
+                "integration_config": "integration/configs/multipipeline-chain-handoff.json",
+                "integration_receipt": "integration_receipts/multipipeline-proreq-chain_chain-handoff.json",
+            },
+        ],
+        "factory_steps": [
+            {"id": "collect-multipipeline-intake", "title": "collect_multipipeline_intake", "file": "operator_intake.json", "status": "accepted", "mode": "deterministic"},
+            {"id": "write-multipipeline-schedule", "title": "write_multipipeline_schedule", "file": "multipipeline_schedule.json", "status": "accepted", "mode": "deterministic", "dependencies": ["collect-multipipeline-intake"]},
+            {"id": "run-proreq-pass-1", "title": "proreq_pass_1_scope", "file": "pass_01_proreq_request.json", "status": "accepted", "mode": "request-artifact", "dependencies": ["write-multipipeline-schedule"]},
+            {"id": "run-proreq-pass-2", "title": "proreq_pass_2_architecture", "file": "pass_02_proreq_request.json", "status": "accepted", "mode": "request-artifact", "dependencies": ["run-proreq-pass-1"]},
+            {"id": "run-proreq-pass-3", "title": "proreq_pass_3_integration", "file": "pass_03_proreq_request.json", "status": "accepted", "mode": "request-artifact", "dependencies": ["run-proreq-pass-2"]},
+            {"id": "run-proreq-pass-4", "title": "proreq_pass_4_validation", "file": "pass_04_proreq_request.json", "status": "accepted", "mode": "request-artifact", "dependencies": ["run-proreq-pass-3"]},
+            {"id": "write-multipipeline-ui-screenshot-request", "title": "write_ui_screenshot_request", "file": "ui_screenshot_request.json", "status": "muted", "mode": "frontend-separate", "muted": True, "lane": "frontend", "dependencies": ["run-proreq-pass-4"]},
+            {"id": "write-multipipeline-pro-request", "title": "write_chatgpt_pro_request", "file": "chatgpt_pro_request.json", "status": "accepted", "mode": "structured-output", "dependencies": ["write-multipipeline-ui-screenshot-request"]},
+            {"id": "collect-multipipeline-evidence", "title": "collect_multipipeline_evidence", "file": "multipipeline_evidence.json", "status": "accepted", "mode": "deterministic", "dependencies": ["write-multipipeline-pro-request"]},
+        ],
+        "validators": [
+            {"id": "sequential-schedule", "title": "Sequential Schedule Validator", "file": "sequential_schedule_receipt.json", "receipt": "validation/sequential_schedule_receipt.json", "config": "validation/validator_configs/sequential-schedule.json", "mode": "schema", "blocking": True, "status": "passed"},
+            {"id": "proreq-pass-handoff", "title": "ProReq Pass Handoff Validator", "file": "proreq_pass_handoff_receipt.json", "receipt": "validation/proreq_pass_handoff_receipt.json", "config": "validation/validator_configs/proreq-pass-handoff.json", "mode": "evidence", "blocking": True, "status": "passed"},
+            {"id": "ui-pro-request", "title": "UI And Pro Request Validator", "file": "ui_pro_request_receipt.json", "receipt": "validation/ui_pro_request_receipt.json", "config": "validation/validator_configs/ui-pro-request.json", "mode": "evidence", "blocking": False, "status": "passed"},
+        ],
+        "evidence_artifacts": [
+            {"id": "multipipeline-schedule", "title": "Multipipeline Schedule", "file": "multipipeline_schedule.json", "status": "Configured", "kind": "artifact", "path": "execution/multipipeline/latest/multipipeline_schedule.json", "required_sources": ["operator_intake.json"], "publish_policy": "Attach to every meta-pipeline handoff before sequential ProReq pass execution.", "retention_policy": "Keep with run artifacts."},
+            {"id": "multipipeline-pass-guidance", "title": "Sequential Pass Guidance", "file": "pass_04_guidance.json", "status": "Configured", "kind": "artifact", "path": "execution/multipipeline/latest/pass_04_guidance.json", "required_sources": ["pass_01_guidance.json", "pass_02_guidance.json", "pass_03_guidance.json"], "publish_policy": "Use the final pass guidance as the next operator prompt or implementation request.", "retention_policy": "Keep with run artifacts."},
+            {"id": "multipipeline-evidence", "title": "Meta-pipeline Evidence", "file": "multipipeline_evidence.json", "status": "Configured", "kind": "bundle", "path": "execution/multipipeline/latest/multipipeline_evidence.json", "required_sources": ["multipipeline_schedule.json", "ui_screenshot_request.json", "chatgpt_pro_request.json"], "publish_policy": "Publish after all four pass request artifacts and validation handoff are present.", "retention_policy": "Keep with run artifacts."},
+        ],
+    }
+
+
+def dev_pipeline_merge_default_fields(current: dict[str, Any], default: dict[str, Any]) -> dict[str, Any]:
+    merged = deepcopy(current)
+    for key, value in default.items():
+        if key not in merged or merged.get(key) is None:
+            merged[key] = deepcopy(value)
+    return merged
+
+
+def dev_pipeline_migrate_run_pipeline_wording(item: dict[str, Any]) -> dict[str, Any]:
+    for key in ("title", "detail", "evidence_policy", "answer_notes"):
+        if isinstance(item.get(key), str):
+            item[key] = str(item[key]).replace("New Issue", "Run Pipeline").replace("New issue", "Run pipeline")
+    return item
+
+
+def dev_pipeline_merge_builtin_item(current: dict[str, Any], default: dict[str, Any], forced_keys: tuple[str, ...]) -> dict[str, Any]:
+    merged = dev_pipeline_merge_default_fields(current, default)
+    for key in forced_keys:
+        if key in default:
+            merged[key] = deepcopy(default[key])
+    return merged
+
+
+def dev_pipeline_ensure_builtin_pipelines(manifest: dict[str, Any]) -> bool:
+    changed = False
+    projects = manifest.get("projects")
+    if not isinstance(projects, list):
+        projects = []
+        manifest["projects"] = projects
+        changed = True
+    project_defaults = [
+        dev_pipeline_hard_proreq_project_defaults(),
+        dev_pipeline_proreq_light_project_defaults(),
+        dev_pipeline_multipipeline_project_defaults(),
+        dev_pipeline_parallel_project_defaults(),
+        dev_pipeline_patch_swarm_project_defaults(),
+    ]
+    for index, default_project in enumerate(project_defaults):
+        project_id = str(default_project.get("id") or "")
+        if not any(isinstance(item, dict) and str(item.get("id") or "") == project_id for item in projects):
+            projects.insert(min(index, len(projects)), default_project)
+            changed = True
+
+    templates = manifest.get("templates")
+    if not isinstance(templates, list):
+        templates = []
+        manifest["templates"] = templates
+        changed = True
+    template_defaults = [
+        dev_pipeline_hard_proreq_blueprint_defaults(),
+        dev_pipeline_proreq_light_blueprint_defaults(),
+        dev_pipeline_multipipeline_blueprint_defaults(),
+        dev_pipeline_parallel_blueprint_defaults(),
+        dev_pipeline_patch_swarm_blueprint_defaults(),
+    ]
+    for index, default_template in enumerate(template_defaults):
+        template_id = str(default_template.get("id") or "")
+        if not any(isinstance(item, dict) and str(item.get("id") or "") == template_id for item in templates):
+            templates.insert(min(index, len(templates)), default_template)
+            changed = True
+
+    defaults = manifest.get("defaults") if isinstance(manifest.get("defaults"), dict) else {}
+    project_ids = {str(item.get("id") or "") for item in projects if isinstance(item, dict)}
+    template_ids = {str(item.get("id") or "") for item in templates if isinstance(item, dict)}
+    if str(defaults.get("project_id") or "") not in project_ids:
+        defaults["project_id"] = DEFAULT_DEV_PIPELINE_PROJECT_ID
+        changed = True
+    if str(defaults.get("template_id") or "") not in template_ids:
+        defaults["template_id"] = DEFAULT_DEV_PIPELINE_TEMPLATE_ID
+        changed = True
+    if changed:
+        manifest["defaults"] = defaults
+    return changed
+
+
 def dev_pipeline_apply_generic_blueprint(template: dict[str, Any]) -> dict[str, Any]:
+    if str(template.get("id") or "") in {HARD_PROREQ_TEMPLATE_ID, PROREQ_LIGHT_TEMPLATE_ID}:
+        defaults = dev_pipeline_proreq_light_blueprint_defaults() if str(template.get("id") or "") == PROREQ_LIGHT_TEMPLATE_ID else dev_pipeline_hard_proreq_blueprint_defaults()
+        for key in ("label", "detail", "description", "tagline", "worker_type", "execution_model", "worker_stage_label", "factory_stage_label", "blueprint_version", "tasks_completed", "tasks_total", "validation_tier", "risk", "budget_cap_usd", "input_manifest", "pipeline_config", "execution_manifest"):
+            if key not in template or template.get(key) is None or (isinstance(template.get(key), str) and not str(template.get(key)).strip()):
+                template[key] = deepcopy(defaults[key])
+        for key in ("detail", "description", "factory_stage_label", "tasks_total", "budget_cap_usd", "blueprint_version"):
+            template[key] = deepcopy(defaults[key])
+        for list_key in ("workers", "factory_steps", "validators", "evidence_artifacts"):
+            default_items = {str(item.get("id") or ""): item for item in defaults.get(list_key, []) if isinstance(item, dict)}
+            raw_items = template.get(list_key)
+            forced_keys = {
+                "workers": ("title", "file", "description", "stage", "dependencies", "manifest", "integration_config", "integration_receipt"),
+                "factory_steps": ("title", "file", "mode", "muted", "lane", "dependencies"),
+                "validators": ("title", "file", "receipt", "config", "mode", "blocking"),
+                "evidence_artifacts": ("title", "file", "kind", "path", "required_sources", "publish_policy", "retention_policy"),
+            }.get(list_key, ())
+            if isinstance(raw_items, list):
+                seen: set[str] = set()
+                merged_items = []
+                for item in raw_items:
+                    if not isinstance(item, dict):
+                        continue
+                    item_id = str(item.get("id") or "")
+                    seen.add(item_id)
+                    merged_items.append(dev_pipeline_merge_builtin_item(item, default_items.get(item_id, {}), forced_keys))
+                for item_id, default_item in default_items.items():
+                    if item_id not in seen:
+                        merged_items.append(deepcopy(default_item))
+                template[list_key] = merged_items
+            else:
+                template[list_key] = deepcopy(defaults[list_key])
+        default_inputs = dev_pipeline_default_required_inputs(str(template.get("id") or HARD_PROREQ_TEMPLATE_ID))
+        default_input_map = {str(item.get("id") or ""): item for item in default_inputs if isinstance(item, dict)}
+        raw_inputs = template.get("required_inputs")
+        if isinstance(raw_inputs, list):
+            seen_inputs: set[str] = set()
+            merged_inputs = []
+            forced_input_keys = (
+                "title",
+                "detail",
+                "kind",
+                "source",
+                "automation",
+                "format",
+                "questions",
+                "paths",
+                "path_policy",
+                "artifacts",
+                "image_refs",
+                "image_notes",
+                "evidence_policy",
+                "required",
+                "muted",
+                "blocking",
+            )
+            for item in raw_inputs:
+                if not isinstance(item, dict):
+                    continue
+                item_id = str(item.get("id") or "")
+                seen_inputs.add(item_id)
+                merged_inputs.append(dev_pipeline_migrate_run_pipeline_wording(dev_pipeline_merge_builtin_item(item, default_input_map.get(item_id, {}), forced_input_keys)))
+            for item_id, default_item in default_input_map.items():
+                if item_id not in seen_inputs:
+                    merged_inputs.append(dev_pipeline_migrate_run_pipeline_wording(deepcopy(default_item)))
+            template["required_inputs"] = merged_inputs
+        else:
+            template["required_inputs"] = [dev_pipeline_migrate_run_pipeline_wording(item) for item in default_inputs]
+        screenshot_defaults = default_input_map.get("ui-screenshot-request", {})
+        for item in template.get("required_inputs", []):
+            if not isinstance(item, dict) or str(item.get("id") or "") != "ui-screenshot-request":
+                continue
+            item["image_refs"] = list(
+                dict.fromkeys(
+                    dev_pipeline_text_list(item.get("image_refs"), [])
+                    + dev_pipeline_text_list(screenshot_defaults.get("image_refs"), [])
+                )
+            )
+            item["artifacts"] = list(
+                dict.fromkeys(
+                    dev_pipeline_text_list(item.get("artifacts"), [])
+                    + dev_pipeline_text_list(screenshot_defaults.get("artifacts"), [])
+                )
+            )
+        workers = [worker for worker in template.get("workers", []) if isinstance(worker, dict)]
+        if not any(str(worker.get("id") or "") == str(template.get("selected_worker") or "") for worker in workers):
+            template["selected_worker"] = str(workers[0].get("id") or "") if workers else ""
+        return template
+
+    if str(template.get("id") or "") == MULTIPIPELINE_TEMPLATE_ID:
+        defaults = dev_pipeline_multipipeline_blueprint_defaults()
+        for key in ("label", "detail", "description", "tagline", "worker_type", "execution_model", "worker_stage_label", "factory_stage_label", "blueprint_version", "tasks_completed", "tasks_total", "validation_tier", "risk", "budget_cap_usd", "input_manifest", "pipeline_config", "execution_manifest"):
+            if key not in template or template.get(key) is None or (isinstance(template.get(key), str) and not str(template.get(key)).strip()):
+                template[key] = deepcopy(defaults[key])
+        for key in ("detail", "description", "factory_stage_label", "tasks_total", "budget_cap_usd", "blueprint_version"):
+            template[key] = deepcopy(defaults[key])
+        for list_key in ("workers", "factory_steps", "validators", "evidence_artifacts"):
+            default_items = {str(item.get("id") or ""): item for item in defaults.get(list_key, []) if isinstance(item, dict)}
+            raw_items = template.get(list_key)
+            forced_keys = {
+                "workers": ("title", "file", "description", "stage", "dependencies", "manifest", "integration_config", "integration_receipt"),
+                "factory_steps": ("title", "file", "mode", "muted", "lane", "dependencies"),
+                "validators": ("title", "file", "receipt", "config", "mode", "blocking"),
+                "evidence_artifacts": ("title", "file", "kind", "path", "required_sources", "publish_policy", "retention_policy"),
+            }.get(list_key, ())
+            if isinstance(raw_items, list):
+                seen: set[str] = set()
+                merged_items = []
+                for item in raw_items:
+                    if not isinstance(item, dict):
+                        continue
+                    item_id = str(item.get("id") or "")
+                    seen.add(item_id)
+                    merged_items.append(dev_pipeline_merge_builtin_item(item, default_items.get(item_id, {}), forced_keys))
+                for item_id, default_item in default_items.items():
+                    if item_id not in seen:
+                        merged_items.append(deepcopy(default_item))
+                template[list_key] = merged_items
+            else:
+                template[list_key] = deepcopy(defaults[list_key])
+        default_inputs = dev_pipeline_default_required_inputs(MULTIPIPELINE_TEMPLATE_ID)
+        default_input_map = {str(item.get("id") or ""): item for item in default_inputs if isinstance(item, dict)}
+        raw_inputs = template.get("required_inputs")
+        if isinstance(raw_inputs, list):
+            seen_inputs: set[str] = set()
+            merged_inputs = []
+            forced_input_keys = (
+                "title",
+                "detail",
+                "kind",
+                "source",
+                "automation",
+                "format",
+                "questions",
+                "paths",
+                "path_policy",
+                "artifacts",
+                "image_refs",
+                "image_notes",
+                "evidence_policy",
+                "required",
+                "muted",
+                "blocking",
+                "answer",
+            )
+            for item in raw_inputs:
+                if not isinstance(item, dict):
+                    continue
+                item_id = str(item.get("id") or "")
+                seen_inputs.add(item_id)
+                merged_inputs.append(dev_pipeline_migrate_run_pipeline_wording(dev_pipeline_merge_builtin_item(item, default_input_map.get(item_id, {}), forced_input_keys)))
+            for item_id, default_item in default_input_map.items():
+                if item_id not in seen_inputs:
+                    merged_inputs.append(dev_pipeline_migrate_run_pipeline_wording(deepcopy(default_item)))
+            template["required_inputs"] = merged_inputs
+        else:
+            template["required_inputs"] = [dev_pipeline_migrate_run_pipeline_wording(item) for item in default_inputs]
+        workers = [worker for worker in template.get("workers", []) if isinstance(worker, dict)]
+        if not any(str(worker.get("id") or "") == str(template.get("selected_worker") or "") for worker in workers):
+            template["selected_worker"] = str(workers[0].get("id") or "") if workers else ""
+        return template
+
+    if str(template.get("id") or "") == PARALLEL_PIPELINE_TEMPLATE_ID:
+        defaults = dev_pipeline_parallel_blueprint_defaults()
+        for key in ("label", "detail", "description", "tagline", "worker_type", "execution_model", "worker_stage_label", "factory_stage_label", "blueprint_version", "tasks_completed", "tasks_total", "validation_tier", "risk", "budget_cap_usd", "input_manifest", "pipeline_config", "execution_manifest", "max_parallel"):
+            if key not in template or template.get(key) is None or (isinstance(template.get(key), str) and not str(template.get(key)).strip()):
+                template[key] = deepcopy(defaults[key])
+        for key in ("detail", "description", "tasks_total", "budget_cap_usd", "max_parallel", "blueprint_version"):
+            template[key] = deepcopy(defaults[key])
+        for list_key in ("workers", "factory_steps", "validators", "evidence_artifacts"):
+            default_items = {str(item.get("id") or ""): item for item in defaults.get(list_key, []) if isinstance(item, dict)}
+            raw_items = template.get(list_key)
+            if isinstance(raw_items, list):
+                seen: set[str] = set()
+                merged_items = []
+                for item in raw_items:
+                    if not isinstance(item, dict):
+                        continue
+                    item_id = str(item.get("id") or "")
+                    seen.add(item_id)
+                    merged_items.append(dev_pipeline_merge_default_fields(item, default_items.get(item_id, {})))
+                for item_id, default_item in default_items.items():
+                    if item_id not in seen:
+                        merged_items.append(deepcopy(default_item))
+                template[list_key] = merged_items
+            else:
+                template[list_key] = deepcopy(defaults[list_key])
+        default_inputs = dev_pipeline_default_required_inputs(PARALLEL_PIPELINE_TEMPLATE_ID)
+        default_input_map = {str(item.get("id") or ""): item for item in default_inputs if isinstance(item, dict)}
+        raw_inputs = template.get("required_inputs")
+        if isinstance(raw_inputs, list):
+            seen_inputs: set[str] = set()
+            merged_inputs = []
+            forced_input_keys = (
+                "title",
+                "detail",
+                "kind",
+                "source",
+                "automation",
+                "format",
+                "questions",
+                "paths",
+                "path_policy",
+                "artifacts",
+                "evidence_policy",
+                "required",
+                "advanced",
+                "status",
+                "answer",
+            )
+            for item in raw_inputs:
+                if not isinstance(item, dict):
+                    continue
+                item_id = str(item.get("id") or "")
+                seen_inputs.add(item_id)
+                merged_inputs.append(dev_pipeline_merge_builtin_item(item, default_input_map.get(item_id, {}), forced_input_keys))
+            for item_id, default_item in default_input_map.items():
+                if item_id not in seen_inputs:
+                    merged_inputs.append(deepcopy(default_item))
+            template["required_inputs"] = merged_inputs
+        else:
+            template["required_inputs"] = default_inputs
+        workers = [worker for worker in template.get("workers", []) if isinstance(worker, dict)]
+        if not any(str(worker.get("id") or "") == str(template.get("selected_worker") or "") for worker in workers):
+            template["selected_worker"] = str(workers[0].get("id") or "") if workers else ""
+        return template
+
+    if str(template.get("id") or "") == PATCH_SWARM_TEMPLATE_ID:
+        defaults = dev_pipeline_patch_swarm_blueprint_defaults()
+        for key in ("label", "detail", "description", "tagline", "worker_type", "execution_model", "worker_stage_label", "factory_stage_label", "blueprint_version", "tasks_completed", "tasks_total", "validation_tier", "risk", "budget_cap_usd", "input_manifest", "pipeline_config", "execution_manifest", "max_parallel"):
+            if key not in template or template.get(key) is None or (isinstance(template.get(key), str) and not str(template.get(key)).strip()):
+                template[key] = deepcopy(defaults[key])
+        for key in ("detail", "description", "tasks_total", "budget_cap_usd", "max_parallel", "blueprint_version"):
+            template[key] = deepcopy(defaults[key])
+        for list_key in ("workers", "factory_steps", "validators", "evidence_artifacts"):
+            default_items = {str(item.get("id") or ""): item for item in defaults.get(list_key, []) if isinstance(item, dict)}
+            raw_items = template.get(list_key)
+            if isinstance(raw_items, list):
+                seen: set[str] = set()
+                merged_items = []
+                for item in raw_items:
+                    if not isinstance(item, dict):
+                        continue
+                    item_id = str(item.get("id") or "")
+                    seen.add(item_id)
+                    merged_items.append(dev_pipeline_merge_default_fields(item, default_items.get(item_id, {})))
+                for item_id, default_item in default_items.items():
+                    if item_id not in seen:
+                        merged_items.append(deepcopy(default_item))
+                template[list_key] = merged_items
+            else:
+                template[list_key] = deepcopy(defaults[list_key])
+        default_inputs = dev_pipeline_default_required_inputs(PATCH_SWARM_TEMPLATE_ID)
+        default_input_map = {str(item.get("id") or ""): item for item in default_inputs if isinstance(item, dict)}
+        raw_inputs = template.get("required_inputs")
+        if isinstance(raw_inputs, list):
+            seen_inputs: set[str] = set()
+            merged_inputs = []
+            forced_input_keys = (
+                "title",
+                "detail",
+                "kind",
+                "source",
+                "automation",
+                "format",
+                "questions",
+                "paths",
+                "path_policy",
+                "artifacts",
+                "evidence_policy",
+                "required",
+                "advanced",
+                "status",
+                "answer",
+            )
+            for item in raw_inputs:
+                if not isinstance(item, dict):
+                    continue
+                item_id = str(item.get("id") or "")
+                seen_inputs.add(item_id)
+                merged_inputs.append(dev_pipeline_merge_builtin_item(item, default_input_map.get(item_id, {}), forced_input_keys))
+            for item_id, default_item in default_input_map.items():
+                if item_id not in seen_inputs:
+                    merged_inputs.append(deepcopy(default_item))
+            template["required_inputs"] = merged_inputs
+        else:
+            template["required_inputs"] = default_inputs
+        workers = [worker for worker in template.get("workers", []) if isinstance(worker, dict)]
+        if not any(str(worker.get("id") or "") == str(template.get("selected_worker") or "") for worker in workers):
+            template["selected_worker"] = str(workers[0].get("id") or "") if workers else ""
+        return template
+
     if str(template.get("id") or "") != "generic-task":
         return template
     defaults = dev_pipeline_generic_blueprint_defaults()
-    def merge_default_fields(current: dict[str, Any], default: dict[str, Any]) -> dict[str, Any]:
-        merged = deepcopy(current)
-        for key, value in default.items():
-            if key not in merged or merged.get(key) is None:
-                merged[key] = deepcopy(value)
-        return merged
 
     for key in ("label", "detail", "description", "tagline", "worker_type", "execution_model", "worker_stage_label", "factory_stage_label", "blueprint_version", "tasks_completed", "tasks_total"):
         if key not in template or template.get(key) is None or (isinstance(template.get(key), str) and not str(template.get(key)).strip()):
@@ -2230,7 +3297,7 @@ def dev_pipeline_apply_generic_blueprint(template: dict[str, Any]) -> dict[str, 
     raw_workers = template.get("workers")
     if isinstance(raw_workers, list):
         template["workers"] = [
-            merge_default_fields(item, default_workers.get(str(item.get("id") or ""), {}))
+            dev_pipeline_merge_default_fields(item, default_workers.get(str(item.get("id") or ""), {}))
             for item in raw_workers
             if isinstance(item, dict)
         ]
@@ -2245,7 +3312,7 @@ def dev_pipeline_apply_generic_blueprint(template: dict[str, Any]) -> dict[str, 
     raw_steps = template.get("factory_steps")
     if isinstance(raw_steps, list):
         template["factory_steps"] = [
-            merge_default_fields(item, default_steps.get(str(item.get("id") or ""), {}))
+            dev_pipeline_merge_default_fields(item, default_steps.get(str(item.get("id") or ""), {}))
             for item in raw_steps
             if isinstance(item, dict)
         ]
@@ -2261,7 +3328,7 @@ def dev_pipeline_apply_generic_blueprint(template: dict[str, Any]) -> dict[str, 
     raw_inputs = template.get("required_inputs")
     if isinstance(raw_inputs, list):
         template["required_inputs"] = [
-            merge_default_fields(item, default_input_map.get(str(item.get("id") or ""), {}))
+            dev_pipeline_merge_default_fields(item, default_input_map.get(str(item.get("id") or ""), {}))
             for item in raw_inputs
             if isinstance(item, dict)
         ]
@@ -2277,6 +3344,357 @@ def dev_pipeline_apply_generic_blueprint(template: dict[str, Any]) -> dict[str, 
 def dev_pipeline_default_required_inputs(template_id: str) -> list[dict[str, Any]]:
     template_id = str(template_id or "")
     defaults: dict[str, list[dict[str, Any]]] = {
+        HARD_PROREQ_TEMPLATE_ID: [
+            {
+                "id": "operator-thoughts",
+                "title": "Operator thoughts and full plan",
+                "detail": "Raw request, goals, constraints, assumptions, and complete plan text from the Run Pipeline prompt or questionnaire.",
+                "kind": "questionnaire",
+                "source": "user",
+                "format": "structured answers",
+                "artifacts": ["execution/hard-proreq/latest/operator_intake.json"],
+                "evidence_policy": "Every hard proreq run must preserve the operator's source prompt and any questionnaire answers before model planning starts.",
+                "questions": [
+                    {"id": "intent", "prompt": "What are you trying to build or change?", "required": True, "answer_type": "text", "options": []},
+                    {"id": "constraints", "prompt": "Which constraints, risks, or non-negotiables matter?", "required": False, "answer_type": "text", "options": []},
+                    {"id": "done", "prompt": "What should be true when this project is done?", "required": True, "answer_type": "text", "options": []},
+                ],
+                "status": "missing",
+                "required": True,
+            },
+            {
+                "id": "generated-cento-context",
+                "title": "Generated mini Cento context",
+                "detail": "Cento-native gather-context, tool registry, repo search hits, and task-relevant files generated from the operator input.",
+                "kind": "path",
+                "source": "auto",
+                "automation": "cento-context",
+                "format": "JSON object",
+                "paths": ["AGENTS.md", "README.md", "scripts/**", "templates/agent-work-app/**", "docs/**", "tests/**", "data/tools.json"],
+                "path_policy": "Use Cento-native context before asking GPT pro to plan backend work.",
+                "artifacts": ["execution/hard-proreq/latest/mini_cento_context.json"],
+                "evidence_policy": "The Pro backend request must cite a lightweight Cento context artifact generated from the prompt.",
+                "status": "configured",
+                "required": True,
+            },
+            {
+                "id": "ui-screenshot-request",
+                "title": "Optional muted screenshot context",
+                "detail": "Optional local screenshot path or generated frontend screenshot request split from the same operator input; this lane stays separate and muted in Execution Flow.",
+                "kind": "image",
+                "source": "auto",
+                "automation": "openai-image",
+                "muted": True,
+                "blocking": False,
+                "format": "prompt artifact",
+                "image_refs": [
+                    "workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/latest/existing_ui_reference.png",
+                    "workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/latest/generated_integrator_screenshot.png",
+                ],
+                "image_notes": "Use an operator-provided local screenshot when present; otherwise generate or capture UI screenshots separately. Validate chunks against screenshot regions without giving backend planning frontend ownership.",
+                "artifacts": [
+                    "execution/hard-proreq/latest/ui_screenshot_request.json",
+                    "workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/latest/existing_ui_reference.png",
+                    "workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/latest/generated_integrator_screenshot.png",
+                ],
+                "evidence_policy": "Frontend visual work remains an optional muted lane and does not block backend story planning.",
+                "status": "muted",
+                "required": False,
+            },
+            {
+                "id": "pro-backend-schema",
+                "title": "GPT Pro backend schema manifest",
+                "detail": "Strict JSON Schema used in the Responses API request and by generated Codex exec commands.",
+                "kind": "details",
+                "source": "auto",
+                "automation": "schema-artifact",
+                "format": "JSON Schema",
+                "artifacts": ["execution/hard-proreq/latest/pro_output_schema.json", "execution/hard-proreq/latest/pro_backend_request.json"],
+                "evidence_policy": "GPT Pro must return the backend plan through the lightweight hard proreq schema.",
+                "status": "configured",
+                "required": True,
+            },
+            {
+                "id": "backend-work-handoff",
+                "title": "10-story backend handoff",
+                "detail": "Cento-native ten story manifests, parallel patch workset, manifest integration policy, validation plan, and Codex exec command scaffolding produced from the Pro output.",
+                "kind": "evidence",
+                "source": "auto",
+                "automation": "evidence-handoff",
+                "format": "artifact list",
+                "artifacts": [
+                    "execution/hard-proreq/latest/backend_work_manifest.json",
+                    "execution/hard-proreq/latest/story_index.json",
+                    "execution/hard-proreq/latest/parallel_patch_workset.json",
+                    "execution/hard-proreq/latest/integration_plan.json",
+                    "execution/hard-proreq/latest/validation_plan.json",
+                    "execution/hard-proreq/latest/hard_proreq_evidence.json",
+                ],
+                "evidence_policy": "Backend work must be split into ten story manifests, owned paths, dependency order, validation commands, and handoff artifacts before parallel patch dispatch.",
+                "status": "configured",
+                "required": True,
+            },
+        ],
+        MULTIPIPELINE_TEMPLATE_ID: [
+            {
+                "id": "multipipeline-objective",
+                "title": "Multipipeline objective",
+                "detail": "The operator goal, target areas, boundaries, and definition of success for the four sequential ProReq passes.",
+                "kind": "questionnaire",
+                "source": "user",
+                "format": "structured answers",
+                "artifacts": ["execution/multipipeline/latest/operator_intake.json"],
+                "evidence_policy": "Every meta-pipeline run must preserve the operator objective before scheduling child ProReq pass requests.",
+                "questions": [
+                    {"id": "objective", "prompt": "What should this four-pass ProReq chain achieve?", "required": True, "answer_type": "long", "options": []},
+                    {"id": "areas", "prompt": "Which areas, systems, or requirements should the four passes cover?", "required": True, "answer_type": "long", "options": []},
+                    {"id": "boundaries", "prompt": "Which work, spend, dispatch, or repository changes are forbidden unless explicitly approved?", "required": True, "answer_type": "long", "options": []},
+                    {"id": "handoff", "prompt": "What proves each pass produced usable guidance for the next pass?", "required": True, "answer_type": "long", "options": []},
+                ],
+                "status": "missing",
+                "required": True,
+            },
+            {
+                "id": "multipipeline-schedule-config",
+                "title": "Sequential schedule controls",
+                "detail": "Four-pass chain configuration: child pipeline, dispatch mode, UI screenshot request mode, Pro request mode, and guidance handoff policy.",
+                "kind": "details",
+                "source": "user",
+                "format": "structured controls",
+                "artifacts": ["inputs/multipipeline-proreq-chain_multipipeline-schedule-config.json", "execution/multipipeline/latest/multipipeline_schedule.json"],
+                "evidence_policy": "The run must schedule exactly four ordered ProReq passes by default and keep live Pro/image execution opt-in.",
+                "status": "provided",
+                "required": True,
+                "answer": "passes: 4\nchild_pipeline: hard-proreq-task\nexecution_mode: request-artifacts\nui_screenshot: request-artifact\npro_call: request-artifact\nhandoff_policy: previous-guidance-required",
+            },
+            {
+                "id": "multipipeline-context",
+                "title": "Generated Cento route context",
+                "detail": "Cento-native tool registry, Dev Pipeline contract, ProReq route, parallel pipeline route, and repo context used by all four passes.",
+                "kind": "path",
+                "source": "auto",
+                "automation": "cento-context",
+                "format": "path list",
+                "paths": ["AGENTS.md", "README.md", "scripts/**", "templates/agent-work-app/**", "docs/**", "tests/**", "data/tools.json", ".cento/api_workers.yaml"],
+                "path_policy": "Use existing Cento routes and lowest-compute request artifacts before any live model dispatch.",
+                "artifacts": ["execution/multipipeline/latest/multipipeline_schedule.json"],
+                "evidence_policy": "Each ProReq pass request must cite the same Cento route context and previous pass guidance.",
+                "status": "configured",
+                "required": True,
+            },
+            {
+                "id": "ui-screenshot-request",
+                "title": "UI screenshot guidance request",
+                "detail": "Auto-generated ChatGPT image prompt for the Dev Pipeline Studio UI showing the four sequential passes, Pro request, validation, and evidence handoff.",
+                "kind": "image",
+                "source": "auto",
+                "automation": "openai-image-request",
+                "muted": True,
+                "blocking": False,
+                "format": "prompt artifact",
+                "image_refs": [],
+                "image_notes": "Request-only by default; use an optional operator screenshot as style context when provided.",
+                "artifacts": ["execution/multipipeline/latest/ui_screenshot_request.json"],
+                "evidence_policy": "UI guidance remains a separate muted artifact and does not trigger live image generation unless the operator opts in.",
+                "status": "muted",
+                "required": False,
+            },
+            {
+                "id": "multipipeline-pro-request",
+                "title": "ChatGPT Pro chain request",
+                "detail": "Strict prompt/request artifact asking ChatGPT Pro for manifests, integration guidance, validation guidance, next steps, and cost-aware model usage guidance.",
+                "kind": "details",
+                "source": "auto",
+                "automation": "proreq-pro-request",
+                "format": "JSON request artifact",
+                "artifacts": ["execution/multipipeline/latest/chatgpt_pro_request.json"],
+                "evidence_policy": "Live Pro dispatch is skipped unless explicitly enabled; the request artifact is still ready for ChatGPT Pro.",
+                "status": "configured",
+                "required": True,
+            },
+            {
+                "id": "multipipeline-evidence",
+                "title": "Sequential chain evidence",
+                "detail": "Pass receipts, pass guidance artifacts, UI screenshot request, ChatGPT Pro request, roadmap, and validation summary.",
+                "kind": "evidence",
+                "source": "auto",
+                "automation": "multipipeline-evidence-handoff",
+                "format": "artifact bundle",
+                "artifacts": [
+                    "execution/multipipeline/latest/multipipeline_schedule.json",
+                    "execution/multipipeline/latest/pass_01_guidance.json",
+                    "execution/multipipeline/latest/pass_02_guidance.json",
+                    "execution/multipipeline/latest/pass_03_guidance.json",
+                    "execution/multipipeline/latest/pass_04_guidance.json",
+                    "execution/multipipeline/latest/chain_roadmap.md",
+                    "execution/multipipeline/latest/multipipeline_evidence.json",
+                ],
+                "evidence_policy": "A meta-pipeline run is complete only when all four pass requests and the final evidence handoff exist.",
+                "status": "configured",
+                "required": True,
+            },
+        ],
+        PARALLEL_PIPELINE_TEMPLATE_ID: [
+            {
+                "id": "parallel-objective",
+                "title": "Parallel pipeline objective",
+                "detail": "Operator goal, acceptance criteria, risk limits, and completion definition for this parallel workset run.",
+                "kind": "questionnaire",
+                "source": "user",
+                "format": "structured answers",
+                "artifacts": ["execution/parallel/latest/objective.json"],
+                "evidence_policy": "Every parallel run must preserve the objective before workset generation and worker dispatch.",
+                "questions": [
+                    {"id": "goal", "prompt": "What should the parallel pipeline change or produce?", "required": True, "answer_type": "text", "options": []},
+                    {"id": "acceptance", "prompt": "What proves each worker and the integrator succeeded?", "required": True, "answer_type": "text", "options": []},
+                    {"id": "risks", "prompt": "Which risks or forbidden changes should block dispatch?", "required": False, "answer_type": "text", "options": []},
+                ],
+                "status": "missing",
+                "required": True,
+            },
+            {
+                "id": "parallel-workstreams",
+                "title": "Advanced workstream override",
+                "detail": "Optional expert override. Leave collapsed so Cento can generate worker lanes and exclusive write paths from the objective.",
+                "kind": "path",
+                "source": "user",
+                "format": "optional path list or JSON workstreams",
+                "paths": [],
+                "path_policy": "When supplied, every path must be exclusive to one worker. Shared-file or overlapping path work belongs in the serialized integrator step, not parallel workers.",
+                "artifacts": ["execution/worksets/latest.json", "execution/worksets/<run-id>.json"],
+                "evidence_policy": "The generated workset makes write_paths explicit before any worker is allowed to run.",
+                "status": "configured",
+                "required": False,
+                "advanced": True,
+            },
+            {
+                "id": "parallel-read-context",
+                "title": "Generated parallel read context",
+                "detail": "Cento-native read paths, tool contracts, API worker config, and repo context used by all parallel workers.",
+                "kind": "path",
+                "source": "auto",
+                "automation": "cento-context",
+                "format": "path list",
+                "paths": ["AGENTS.md", "README.md", "scripts/**", "templates/agent-work-app/**", "docs/**", "tests/**", "data/tools.json", ".cento/api_workers.yaml"],
+                "path_policy": "Shared read context is allowed; writes remain exclusive per worker.",
+                "artifacts": ["inputs/parallel-pipeline_parallel-read-context.json"],
+                "evidence_policy": "Workers must receive a common read context and never infer extra write scope.",
+                "status": "configured",
+                "required": True,
+            },
+            {
+                "id": "parallel-ui-config",
+                "title": "Parallel UI and runtime config",
+                "detail": "Max parallelism, runtime profile, budget, validation mode, and Execution Flow display policy for the parallel run.",
+                "kind": "details",
+                "source": "user",
+                "format": "structured controls",
+                "artifacts": ["inputs/parallel-pipeline_parallel-ui-config.json", "execution/parallel_execution_manifest.json"],
+                "evidence_policy": "Execution UI must show worker fan-out, max parallelism, serialized integration, validation, and evidence convergence.",
+                "status": "provided",
+                "required": True,
+                "answer": "max_parallel: 10\nruntime: fixture\nintegrator: sequential\nvalidation: smoke\napply_mode: dry-run\nbudget_usd: 0.00\nmax_budget_usd: 0.00",
+            },
+            {
+                "id": "parallel-integrator-gate",
+                "title": "Serialized integration gate",
+                "detail": "Auto-generated evidence contract proving that worker patches converge through a single sequential integrator.",
+                "kind": "evidence",
+                "source": "auto",
+                "automation": "sequential-integrator",
+                "format": "receipt list",
+                "artifacts": [".cento/worksets/*/workset_receipt.json", ".cento/worksets/*/integration/**", "integration_receipts/*.json"],
+                "evidence_policy": "Parallel workers may run concurrently, but all accepted patches must be applied through one serialized integration lane.",
+                "status": "configured",
+                "required": True,
+            },
+            {
+                "id": "parallel-validation-evidence",
+                "title": "Parallel validation and handoff evidence",
+                "detail": "Validator receipts, worker receipts, costs, changed paths, logs, and residual risk notes for review.",
+                "kind": "evidence",
+                "source": "auto",
+                "automation": "parallel-evidence-handoff",
+                "format": "artifact bundle",
+                "artifacts": ["validation/validation_receipt.json", "evidence/evidence_bundle.json", "execution/delivery/<run-id>/workset.stdout.log", "execution/delivery/<run-id>/workset.stderr.log"],
+                "evidence_policy": "A run is reviewable only when worker outcomes, integration receipts, validation receipts, and cost facts are linked.",
+                "status": "configured",
+                "required": True,
+            },
+        ],
+        PATCH_SWARM_TEMPLATE_ID: [
+            {
+                "id": "patch-swarm-objective",
+                "title": "Patch Swarm objective",
+                "detail": "Operator goal, acceptance criteria, risk limits, and the target patch market outcome.",
+                "kind": "questionnaire",
+                "source": "user",
+                "format": "structured answers",
+                "artifacts": ["execution/patch-swarm/latest/patch_swarm_manifest.json"],
+                "evidence_policy": "Every Patch Swarm run must preserve the objective before ProReq lane dispatch.",
+                "questions": [
+                    {"id": "goal", "prompt": "What should the patch swarm improve or build?", "required": True, "answer_type": "text", "options": []},
+                    {"id": "acceptance", "prompt": "What proves a candidate patch is worth integrating?", "required": True, "answer_type": "text", "options": []},
+                    {"id": "risk", "prompt": "Which files, costs, or behaviors must block candidates?", "required": False, "answer_type": "text", "options": []},
+                ],
+                "status": "missing",
+                "required": True,
+            },
+            {
+                "id": "patch-swarm-provider-policy",
+                "title": "Provider and cost policy",
+                "detail": "Provider mix, candidate target, max active agents, live/fixture mode, and budget controls.",
+                "kind": "details",
+                "source": "user",
+                "format": "structured controls",
+                "artifacts": ["execution/patch-swarm/latest/cost_policy.json"],
+                "evidence_policy": "Provider and budget policy must be visible before any live model or local agent dispatch.",
+                "status": "provided",
+                "required": True,
+                "answer": "candidate_target: 100\nmax_parallel_agents: 5\nproviders: codex-exec,claude-code,api-openai\nmode: fixture\nbudget_usd: 0.00\nmax_budget_usd: 0.00",
+            },
+            {
+                "id": "patch-swarm-runtime-context",
+                "title": "Runtime adapter context",
+                "detail": "Cento runtime profiles, API worker schema, Workset materializer, and Safe Integrator context.",
+                "kind": "path",
+                "source": "auto",
+                "automation": "cento-context",
+                "format": "path list",
+                "paths": ["scripts/parallel_delivery.py", "scripts/cento_workset.py", "scripts/cento_openai_worker.py", ".cento/runtimes.yaml", ".cento/api_workers.yaml", "templates/agent-work-app/**"],
+                "path_policy": "Providers must converge on candidate_patch.v1 and never mutate the operator worktree directly.",
+                "artifacts": ["execution/patch-swarm/latest/proreq_execution_manifest.json"],
+                "evidence_policy": "Runtime adapters must be listed in the manifest before candidates are generated.",
+                "status": "configured",
+                "required": True,
+            },
+            {
+                "id": "patch-swarm-integrator-gate",
+                "title": "Dedicated integrator gate",
+                "detail": "One serialized integration execution consumes all ten ProReq lane outputs and selects winners.",
+                "kind": "evidence",
+                "source": "auto",
+                "automation": "safe-integrator-handoff",
+                "format": "artifact bundle",
+                "artifacts": ["execution/patch-swarm/latest/integration_execution.json", "execution/patch-swarm/latest/safe_integrator_handoff.json"],
+                "evidence_policy": "A run is reviewable only after the dedicated integrator writes a Safe Integrator handoff.",
+                "status": "configured",
+                "required": True,
+            },
+            {
+                "id": "patch-swarm-validation-evidence",
+                "title": "Candidate validation and ranking evidence",
+                "detail": "Candidate index, dedupe clusters, ranking, cost ledger, validation summary, and residual risks.",
+                "kind": "evidence",
+                "source": "auto",
+                "automation": "patch-swarm-validation",
+                "format": "artifact bundle",
+                "artifacts": ["execution/patch-swarm/latest/candidate_index.json", "execution/patch-swarm/latest/ranking.json", "execution/patch-swarm/latest/validation_summary.json"],
+                "evidence_policy": "Candidate count, provider mix, validation, ranking, and cost facts must be visible in the UI.",
+                "status": "configured",
+                "required": True,
+            },
+        ],
         "generic-task": [
             {
                 "id": "input-manifest",
@@ -2405,6 +3823,26 @@ def dev_pipeline_default_required_inputs(template_id: str) -> list[dict[str, Any
             },
         ],
     }
+    defaults[PROREQ_LIGHT_TEMPLATE_ID] = deepcopy(defaults[HARD_PROREQ_TEMPLATE_ID])
+    for item in defaults[PROREQ_LIGHT_TEMPLATE_ID]:
+        if not isinstance(item, dict):
+            continue
+        if item.get("id") == "generated-cento-context":
+            item["path_policy"] = "Use Cento-native context before asking Codex Exec to simulate the Pro planning lane."
+            item["evidence_policy"] = "The Codex Exec ProReq-light prompt must cite a lightweight Cento context artifact generated from the operator prompt."
+        elif item.get("id") == "pro-backend-schema":
+            item["title"] = "Codex Exec ProReq schema manifest"
+            item["detail"] = "Strict JSON Schema used by the Codex Exec prompt that replaces the live Pro request."
+            item["automation"] = "codex-exec-schema-artifact"
+            item["artifacts"] = [
+                "execution/hard-proreq/latest/pro_output_schema.json",
+                "execution/hard-proreq/latest/proreq_light_output_schema.json",
+                "execution/hard-proreq/latest/pro_backend_request.json",
+                "execution/hard-proreq/latest/proreq_light_codex_prompt.md",
+            ]
+            item["evidence_policy"] = "Codex Exec should return the backend plan through the same lightweight hard proreq schema as the Pro route."
+        elif item.get("id") == "backend-work-handoff":
+            item["detail"] = "Cento-native ten story manifests, parallel patch workset, manifest integration policy, validation plan, and Codex exec command scaffolding produced from the ProReq-light Codex Exec output."
     return dev_pipeline_required_inputs(defaults.get(template_id, []))
 
 
@@ -2436,6 +3874,11 @@ def dev_pipeline_write_input_manifests(root: Path, manifest: dict[str, Any], pro
             "template_id": template_id,
             "title": str(item.get("title") or ""),
             "kind": str(item.get("kind") or item.get("input_type") or "text"),
+            "source": str(item.get("source") or "user"),
+            "automation": str(item.get("automation") or item.get("automation_source") or ""),
+            "automation_source": str(item.get("automation_source") or item.get("automation") or ""),
+            "muted": bool(item.get("muted", False)),
+            "blocking": bool(item.get("blocking", True)),
             "format": str(item.get("format") or ""),
             "status": str(item.get("status") or "missing"),
             "required": bool(item.get("required", True)),
@@ -2478,6 +3921,10 @@ def dev_pipeline_write_input_manifests(root: Path, manifest: dict[str, Any], pro
                 "id": str(item.get("id") or ""),
                 "title": str(item.get("title") or ""),
                 "kind": str(item.get("kind") or ""),
+                "source": str(item.get("source") or "user"),
+                "automation": str(item.get("automation") or item.get("automation_source") or ""),
+                "muted": bool(item.get("muted", False)),
+                "blocking": bool(item.get("blocking", True)),
                 "status": str(item.get("status") or ""),
                 "required": bool(item.get("required", True)),
                 "answer_present": bool(item.get("answer_present", False)),
@@ -2505,6 +3952,10 @@ def dev_pipeline_write_input_manifests(root: Path, manifest: dict[str, Any], pro
                 "id": str(item.get("id") or ""),
                 "title": str(item.get("title") or ""),
                 "kind": str(item.get("kind") or ""),
+                "source": str(item.get("source") or "user"),
+                "automation": str(item.get("automation") or item.get("automation_source") or ""),
+                "muted": bool(item.get("muted", False)),
+                "blocking": bool(item.get("blocking", True)),
                 "status": str(item.get("status") or ""),
                 "answer": str(item.get("answer") or ""),
                 "answer_values": [str(value) for value in item.get("answer_values", []) if isinstance(value, str)],
@@ -2724,6 +4175,3106 @@ def dev_pipeline_base_evidence_cards(
     ]
 
 
+def dev_pipeline_execution_stage_status(items: list[dict[str, Any]]) -> str:
+    statuses = {str(item.get("status") or "").lower().replace(" ", "-") for item in items if isinstance(item, dict)}
+    if not statuses:
+        return "configured"
+    if statuses & {"failed"}:
+        return "failed"
+    if statuses & {"blocked", "rejected", "budget-blocked", "budget-exceeded", "dependency-blocked"}:
+        return "blocked"
+    if statuses & {"running", "active", "in-progress"}:
+        return "running"
+    if statuses & {"queued", "configured", "pending"}:
+        return "queued"
+    if statuses <= {"accepted", "applied", "completed", "passed", "merged", "muted", "separate-flow", "deferred"}:
+        return "completed"
+    return "configured"
+
+
+def dev_pipeline_execution_status_label(value: Any) -> str:
+    raw = str(value or "configured").lower().replace("_", "-").replace(" ", "-")
+    if raw in {"accepted", "applied", "passed", "merged"}:
+        return "completed"
+    if raw in {"muted", "separate-flow", "deferred"}:
+        return "muted"
+    if raw in {"active", "in-progress"}:
+        return "running"
+    if raw in {"budget-blocked", "budget-exceeded", "dependency-blocked"}:
+        return "blocked"
+    if raw in {"completed", "running", "queued", "failed", "blocked", "rejected", "configured", "muted"}:
+        return raw
+    return "configured"
+
+
+def dev_pipeline_execution_command_for_step(step_id: str) -> list[str]:
+    commands = {
+        "checkout-branch": ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        "snapshot-repo-state": ["git", "status", "--short"],
+        "apply-change-units": ["python3", "-m", "json.tool", "workspace/runs/dev-pipeline-studio/docs-pages/latest/workset.json"],
+        "run-formatters": ["node", "--check", "templates/agent-work-app/app.js"],
+        "run-focused-tests": ["python3", "-m", "py_compile", "scripts/agent_work_app.py"],
+        "run-full-tests": ["python3", "-m", "py_compile", "workspace/runs/agent-work/dev-pipeline-studio-execution-flow/assert_execution_flow.py"],
+        "collect-diff": ["git", "diff", "--stat"],
+        "collect-logs": ["python3", "scripts/story_manifest.py", "validate", "workspace/runs/agent-work/drafts/dev-pipeline-studio-execution-flow/story.json"],
+        "new-execution-step": ["python3", "-m", "json.tool", "workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/execution_manifest.json"],
+        "collect-operator-intake": ["python3", "scripts/dev_pipeline_hard_proreq.py", "intake"],
+        "build-cento-context": ["python3", "scripts/dev_pipeline_hard_proreq.py", "context"],
+        "write-ui-screenshot-request": ["python3", "scripts/dev_pipeline_hard_proreq.py", "screenshot"],
+        "prepare-pro-backend-request": ["python3", "scripts/dev_pipeline_hard_proreq.py", "pro-request"],
+        "dispatch-pro-backend-plan": ["python3", "scripts/dev_pipeline_hard_proreq.py", "pro-plan"],
+        "dispatch-codex-pro-backend-plan": ["python3", "scripts/dev_pipeline_hard_proreq.py", "codex-pro-plan"],
+        "materialize-backend-work": ["python3", "scripts/dev_pipeline_hard_proreq.py", "backend-work"],
+        "write-integration-plan": ["python3", "scripts/dev_pipeline_hard_proreq.py", "integration-plan"],
+        "write-validation-plan": ["python3", "scripts/dev_pipeline_hard_proreq.py", "validation-plan"],
+        "collect-proreq-evidence": ["python3", "scripts/dev_pipeline_hard_proreq.py", "evidence"],
+        "collect-multipipeline-intake": ["python3", "scripts/dev_pipeline_multipipeline.py", "intake"],
+        "write-multipipeline-schedule": ["python3", "scripts/dev_pipeline_multipipeline.py", "schedule"],
+        "run-proreq-pass-1": ["python3", "scripts/dev_pipeline_multipipeline.py", "pass-1"],
+        "run-proreq-pass-2": ["python3", "scripts/dev_pipeline_multipipeline.py", "pass-2"],
+        "run-proreq-pass-3": ["python3", "scripts/dev_pipeline_multipipeline.py", "pass-3"],
+        "run-proreq-pass-4": ["python3", "scripts/dev_pipeline_multipipeline.py", "pass-4"],
+        "write-multipipeline-ui-screenshot-request": ["python3", "scripts/dev_pipeline_multipipeline.py", "ui-screenshot-request"],
+        "write-multipipeline-pro-request": ["python3", "scripts/dev_pipeline_multipipeline.py", "pro-request"],
+        "collect-multipipeline-evidence": ["python3", "scripts/dev_pipeline_multipipeline.py", "evidence"],
+    }
+    return commands.get(step_id, ["python3", "-m", "json.tool", "workspace/runs/dev-pipeline-studio/docs-pages/latest/pipeline_manifest.json"])
+
+
+def dev_pipeline_execution_steps(root: Path, template: dict[str, Any]) -> tuple[str, dict[str, Any], list[dict[str, Any]]]:
+    execution_manifest_rel = str(template.get("execution_manifest") or "execution/execution_manifest.json")
+    execution_manifest = dev_pipeline_artifact_json(root, execution_manifest_rel)
+    execution_steps = [item for item in execution_manifest.get("steps", []) if isinstance(item, dict)]
+    if not execution_steps:
+        execution_steps = [
+            {
+                "id": str(item.get("id") or ""),
+                "title": str(item.get("title") or item.get("id") or ""),
+                "file": str(item.get("file") or ""),
+                "status": str(item.get("status") or "queued"),
+                "dependencies": [str(value) for value in item.get("dependencies", []) if isinstance(value, str)],
+                "config": str(item.get("integration_config") or ""),
+                "receipt": str(item.get("integration_receipt") or ""),
+            }
+            for item in template.get("factory_steps", [])
+            if isinstance(item, dict)
+        ]
+    if not execution_steps:
+        raise AgentWorkAppError("No execution steps are configured for this pipeline template")
+    return execution_manifest_rel, execution_manifest, execution_steps
+
+
+def dev_pipeline_template_factory_steps(template: dict[str, Any]) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": str(item.get("id") or ""),
+            "title": str(item.get("title") or item.get("id") or ""),
+            "file": str(item.get("file") or ""),
+            "status": str(item.get("status") or "queued"),
+            "mode": str(item.get("mode") or ""),
+            "muted": bool(item.get("muted")),
+            "lane": str(item.get("lane") or ""),
+            "dependencies": [str(value) for value in item.get("dependencies", []) if isinstance(value, str)],
+            "config": str(item.get("integration_config") or item.get("config") or ""),
+            "receipt": str(item.get("integration_receipt") or item.get("receipt") or ""),
+        }
+        for item in template.get("factory_steps", [])
+        if isinstance(item, dict)
+    ]
+
+
+def dev_pipeline_write_execution_state(
+    root: Path,
+    execution_manifest_rel: str,
+    execution_manifest: dict[str, Any],
+    run_payload: dict[str, Any],
+) -> None:
+    run_id = str(run_payload.get("run_id") or "").strip()
+    updated_manifest = {
+        **execution_manifest,
+        "schema_version": "cento.execution_manifest.v1",
+        "source": str(run_payload.get("source") or "cento-workset-api-openai"),
+        "pipeline": str(run_payload.get("pipeline") or ""),
+        "run_id": run_id,
+        "run_started_at": str(run_payload.get("started_at") or ""),
+        "run_finished_at": str(run_payload.get("finished_at") or ""),
+        "status": str(run_payload.get("status") or "running"),
+        "steps": [item for item in run_payload.get("steps", []) if isinstance(item, dict)],
+        "written_at": datetime.now(timezone.utc).isoformat(),
+    }
+    write_json_path(dev_pipeline_root_path(root, execution_manifest_rel), updated_manifest)
+    write_json_path(dev_pipeline_root_path(root, "execution/execution_run.json"), run_payload)
+    if run_id and "/" not in run_id and "\\" not in run_id:
+        write_json_path(dev_pipeline_root_path(root, f"execution/runs/{run_id}.json"), run_payload)
+
+
+def dev_pipeline_execution_history(root: Path, active_run_id: str = "", pipeline: str = "") -> list[dict[str, Any]]:
+    runs_root = root / "execution" / "runs"
+    rows: list[dict[str, Any]] = []
+    if runs_root.exists():
+        for path in sorted(runs_root.glob("*.json"), key=lambda item: item.stat().st_mtime if item.exists() else 0, reverse=True):
+            payload = read_json_path(path)
+            if pipeline and str(payload.get("pipeline") or "") != pipeline:
+                continue
+            run_id = str(payload.get("run_id") or path.stem)
+            if not run_id:
+                continue
+            started_at = parse_iso_datetime(payload.get("started_at"))
+            finished_at = parse_iso_datetime(payload.get("finished_at"))
+            run_artifacts = [item for item in payload.get("artifacts", []) if isinstance(item, dict)]
+            rows.append(
+                {
+                    "run_id": run_id,
+                    "status": dev_pipeline_execution_status_label(payload.get("status")),
+                    "started": format_run_time(started_at) if started_at else "",
+                    "finished": format_run_time(finished_at) if finished_at else "In progress",
+                    "duration": duration_label(int(float(payload.get("duration_seconds") or 0))),
+                    "source": str(payload.get("source") or "real-e2e"),
+                    "pipeline": str(payload.get("pipeline") or ""),
+                    "active": run_id == active_run_id,
+                    "path": dev_pipeline_relative(path),
+                    "artifact_count": len(run_artifacts),
+                    "ready_artifact_count": len([item for item in run_artifacts if bool(item.get("exists", True))]),
+                }
+            )
+    return rows[:24]
+
+
+def dev_pipeline_seed_execution_e2e(
+    root: Path,
+    manifest: dict[str, Any],
+    project: dict[str, Any],
+    template: dict[str, Any],
+    trigger: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    execution_manifest_rel, execution_manifest, execution_steps = dev_pipeline_execution_steps(root, template)
+    trigger = trigger if isinstance(trigger, dict) else {}
+
+    run_started = datetime.now(timezone.utc)
+    run_id = f"{template.get('id') or 'pipeline'}-{project.get('id') or 'project'}-{run_started.strftime('%Y%m%dT%H%M%S%fZ')}"
+    queued_steps: list[dict[str, Any]] = []
+    for index, step in enumerate(execution_steps, start=1):
+        step_id = str(step.get("id") or f"step-{index}")
+        title = str(step.get("title") or step_id)
+        command = dev_pipeline_execution_command_for_step(step_id)
+        queued_steps.append(
+            {
+                **step,
+                "id": step_id,
+                "title": title,
+                "status": "queued",
+                "command": shlex.join(command),
+                "exit_code": None,
+                "duration": "0s",
+                "duration_seconds": 0,
+                "started_at": "",
+                "finished_at": "",
+                "stdout_tail": "",
+                "stderr_tail": "",
+            }
+        )
+    run_payload = {
+        "schema_version": "cento.execution_run.v1",
+        "source": "real-e2e",
+        "run_id": run_id,
+        "pipeline": f"{template.get('id') or 'pipeline'}-{project.get('id') or 'project'}",
+        "status": "running",
+        "started_at": run_started.isoformat(),
+        "finished_at": "",
+        "duration_seconds": 0,
+        "triggered_by": str(trigger.get("triggered_by") or "prompt-router"),
+        "issue_id": str(trigger.get("issue_id") or ""),
+        "issue_subject": str(trigger.get("issue_subject") or ""),
+        "prompt": str(trigger.get("prompt") or "")[:2000],
+        "stages": [
+            {"id": "input", "started_at": run_started.isoformat(), "finished_at": (run_started + timedelta(seconds=1)).isoformat(), "status": "completed"},
+            {"id": "repo", "started_at": (run_started + timedelta(seconds=1)).isoformat(), "finished_at": (run_started + timedelta(seconds=2)).isoformat(), "status": "completed"},
+            {"id": "blueprint", "started_at": (run_started + timedelta(seconds=2)).isoformat(), "finished_at": (run_started + timedelta(seconds=3)).isoformat(), "status": "completed"},
+            {"id": "factory", "started_at": run_started.isoformat(), "finished_at": "", "status": "running"},
+            {"id": "validation", "started_at": "", "finished_at": "", "status": "queued"},
+            {"id": "handoff", "started_at": "", "finished_at": "", "status": "queued"},
+        ],
+        "steps": queued_steps,
+        "logs": [
+            {
+                "timestamp": run_started.isoformat(),
+                "stage": "execution",
+                "source": "pipeline",
+                "message": str(trigger.get("message") or "Live E2E execution started"),
+            }
+        ],
+        "written_at": datetime.now(timezone.utc).isoformat(),
+    }
+    dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+    return run_payload
+
+
+def dev_pipeline_finish_execution_e2e(root: Path, project_id: str, template_id: str, run_id: str) -> None:
+    with DEV_PIPELINE_EXECUTION_LOCK:
+        manifest_path = root / "pipeline_manifest.json"
+        manifest = read_json_path(manifest_path)
+        if not manifest:
+            return
+        templates = [item for item in manifest.get("templates", []) if isinstance(item, dict)]
+        projects = [item for item in manifest.get("projects", []) if isinstance(item, dict)]
+        project = dev_pipeline_find(projects, project_id, project_id)
+        template = dev_pipeline_find(templates, template_id, template_id)
+        if not project or not template:
+            return
+        dev_pipeline_apply_generic_blueprint(template)
+        execution_manifest_rel, execution_manifest, execution_steps = dev_pipeline_execution_steps(root, template)
+        run_payload = dev_pipeline_artifact_json(root, "execution/execution_run.json")
+        if str(run_payload.get("run_id") or "") != run_id:
+            return
+        run_started = parse_iso_datetime(run_payload.get("started_at")) or datetime.now(timezone.utc)
+        run_events = [item for item in run_payload.get("logs", []) if isinstance(item, dict)]
+        updated_steps = [item for item in run_payload.get("steps", []) if isinstance(item, dict)]
+        if len(updated_steps) != len(execution_steps):
+            updated_steps = [
+                {
+                    **step,
+                    "id": str(step.get("id") or f"step-{index}"),
+                    "title": str(step.get("title") or step.get("id") or f"step-{index}"),
+                    "status": "queued",
+                    "command": shlex.join(dev_pipeline_execution_command_for_step(str(step.get("id") or f"step-{index}"))),
+                    "exit_code": None,
+                    "duration": "0s",
+                    "duration_seconds": 0,
+                    "started_at": "",
+                    "finished_at": "",
+                    "stdout_tail": "",
+                    "stderr_tail": "",
+                }
+                for index, step in enumerate(execution_steps, start=1)
+            ]
+
+        run_failed = False
+        for index, step in enumerate(updated_steps):
+            step_id = str(step.get("id") or f"step-{index + 1}")
+            title = str(step.get("title") or step_id)
+            command = dev_pipeline_execution_command_for_step(step_id)
+            started = datetime.now(timezone.utc)
+            updated_steps[index] = {
+                **step,
+                "id": step_id,
+                "title": title,
+                "status": "running",
+                "command": shlex.join(command),
+                "started_at": started.isoformat(),
+                "finished_at": "",
+                "stdout_tail": "",
+                "stderr_tail": "",
+            }
+            run_payload["status"] = "running"
+            run_payload["steps"] = updated_steps
+            run_payload["logs"] = [
+                *run_events,
+                {
+                    "timestamp": started.isoformat(),
+                    "stage": "execution",
+                    "source": step_id,
+                    "message": f"{title} started",
+                    "command": shlex.join(command),
+                },
+            ]
+            run_payload["written_at"] = datetime.now(timezone.utc).isoformat()
+            dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+
+            result = subprocess.run(command, cwd=ROOT_DIR, text=True, capture_output=True, timeout=30)
+            elapsed = (datetime.now(timezone.utc) - started).total_seconds()
+            if elapsed < DEV_PIPELINE_EXECUTION_MIN_STEP_SECONDS:
+                time.sleep(DEV_PIPELINE_EXECUTION_MIN_STEP_SECONDS - elapsed)
+            finished = datetime.now(timezone.utc)
+            duration_seconds = max(1, int(round((finished - started).total_seconds())))
+            status = "completed" if result.returncode == 0 else "failed"
+            if result.returncode != 0:
+                run_failed = True
+            updated_steps[index] = {
+                **step,
+                "id": step_id,
+                "title": title,
+                "status": status,
+                "command": shlex.join(command),
+                "exit_code": result.returncode,
+                "duration": duration_label(duration_seconds),
+                "duration_seconds": duration_seconds,
+                "started_at": started.isoformat(),
+                "finished_at": finished.isoformat(),
+                "stdout_tail": result.stdout[-1200:],
+                "stderr_tail": result.stderr[-1200:],
+            }
+            run_events.append(
+                {
+                    "timestamp": started.isoformat(),
+                    "stage": "execution",
+                    "source": step_id,
+                    "message": f"{title} executed: {status}",
+                    "command": shlex.join(command),
+                    "exit_code": result.returncode,
+                }
+            )
+            run_payload["status"] = "failed" if run_failed else "running"
+            run_payload["steps"] = updated_steps
+            run_payload["logs"] = run_events
+            run_payload["written_at"] = datetime.now(timezone.utc).isoformat()
+            dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+            if run_failed:
+                break
+
+        if run_failed:
+            for index in range(index + 1, len(updated_steps)):
+                step = updated_steps[index]
+                updated_steps[index] = {
+                    **step,
+                    "status": "blocked",
+                    "exit_code": None,
+                    "duration": "0s",
+                    "duration_seconds": 0,
+                    "started_at": "",
+                    "finished_at": "",
+                    "stdout_tail": "",
+                    "stderr_tail": "Skipped because an upstream execution step failed.",
+                }
+
+    finished_values = [parse_iso_datetime(step.get("finished_at")) for step in updated_steps]
+    run_finished = max((value for value in finished_values if value is not None), default=datetime.now(timezone.utc))
+    run_status = "failed" if run_failed else "completed"
+    factory_started = parse_iso_datetime(updated_steps[0].get("started_at")) or run_started
+    factory_finished = max((parse_iso_datetime(step.get("finished_at")) or factory_started for step in updated_steps), default=factory_started)
+    stages = [
+        {"id": "input", "started_at": run_started.isoformat(), "finished_at": (run_started + timedelta(seconds=1)).isoformat(), "status": "completed"},
+        {"id": "repo", "started_at": (run_started + timedelta(seconds=1)).isoformat(), "finished_at": (run_started + timedelta(seconds=2)).isoformat(), "status": "completed"},
+        {"id": "blueprint", "started_at": (run_started + timedelta(seconds=2)).isoformat(), "finished_at": (run_started + timedelta(seconds=3)).isoformat(), "status": "completed"},
+        {"id": "factory", "started_at": factory_started.isoformat(), "finished_at": factory_finished.isoformat(), "status": run_status},
+        {"id": "validation", "started_at": factory_finished.isoformat(), "finished_at": run_finished.isoformat(), "status": run_status},
+        {"id": "handoff", "started_at": run_finished.isoformat(), "finished_at": run_finished.isoformat(), "status": run_status},
+    ]
+    run_payload["status"] = run_status
+    run_payload["finished_at"] = run_finished.isoformat()
+    run_payload["duration_seconds"] = max(0, int(round((run_finished - run_started).total_seconds())))
+    run_payload["stages"] = stages
+    run_payload["steps"] = updated_steps
+    run_payload["logs"] = run_events
+    run_payload["written_at"] = datetime.now(timezone.utc).isoformat()
+    dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+
+    manifest["active_run_id"] = run_id
+    manifest["status"] = run_status
+    manifest["status_detail"] = "Execution Flow live E2E completed; execution manifest, run receipt, timestamps, logs, and animation source are in sync"
+    write_json_path(manifest_path, manifest)
+    dev_pipeline_append_event(
+        root,
+        manifest,
+        "pipeline_run_execution_e2e_finished",
+        str(project.get("id") or project_id),
+        str(template.get("id") or template_id),
+        {"execution_run_id": run_id, "status": run_status},
+    )
+
+
+def dev_pipeline_spawn_execution_e2e(root: Path, project_id: str, template_id: str, run_id: str) -> None:
+    thread = threading.Thread(
+        target=dev_pipeline_finish_execution_e2e,
+        args=(root, project_id, template_id, run_id),
+        name=f"dev-pipeline-execution-{run_id}",
+        daemon=True,
+    )
+    thread.start()
+
+
+DEV_PIPELINE_DELIVERY_BUDGET_USD = float(os.environ.get("CENTO_PIPELINE_DELIVERY_BUDGET_USD", "10.00"))
+DEV_PIPELINE_DELIVERY_MAX_BUDGET_USD = float(os.environ.get("CENTO_PIPELINE_DELIVERY_MAX_BUDGET_USD", "20.00"))
+DEV_PIPELINE_DELIVERY_API_PROFILE = os.environ.get("CENTO_PIPELINE_DELIVERY_API_PROFILE", "api-section-worker")
+DEV_PIPELINE_DELIVERY_OUTPUT_SCHEMA = "patch_proposal.v1"
+DEV_PIPELINE_DELIVERY_TIMEOUT_SECONDS = int(os.environ.get("CENTO_PIPELINE_DELIVERY_TIMEOUT_SECONDS", "90"))
+DEV_PIPELINE_DELIVERY_REDIRECT_GRACE_SECONDS = float(os.environ.get("CENTO_PIPELINE_DELIVERY_REDIRECT_GRACE_SECONDS", "2.5"))
+DEV_PIPELINE_INTEGRATION_MODEL_CEILING = os.environ.get("CENTO_PIPELINE_INTEGRATION_MODEL_CEILING", "gpt-4.1-mini")
+DEV_PIPELINE_PATH_TOKEN_RE = re.compile(
+    r"(?<![A-Za-z0-9_./-])(?:(?:[A-Za-z0-9_.@+-]+/)+[A-Za-z0-9_.@+-]+|"
+    r"[A-Za-z0-9][A-Za-z0-9_.@+-]*\.(?:py|js|jsx|ts|tsx|css|html|md|json|txt|ya?ml|toml|sh|sql|svg|csv|xml))(?![A-Za-z0-9_./-])"
+)
+DEV_PIPELINE_QUOTED_TOKEN_RE = re.compile(r"`([^`]+)`|\"([^\"]+)\"|'([^']+)'")
+DEV_PIPELINE_PROTECTED_WRITE_PREFIXES = (
+    ".git",
+    ".env",
+    "node_modules",
+    "experimental/redmine-career-consulting/data/postgres",
+)
+
+
+def dev_pipeline_workset_slug(value: str) -> str:
+    return re.sub(r"[^a-zA-Z0-9]+", "_", value.strip().lower()).strip("_")[:52] or "task"
+
+
+def dev_pipeline_env_reference(value: str) -> str:
+    match = re.fullmatch(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(?::-(.*))?\}", str(value or "").strip())
+    if not match:
+        return str(value or "").strip()
+    return os.environ.get(match.group(1), match.group(2) or "").strip()
+
+
+def dev_pipeline_api_worker_config() -> tuple[dict[str, Any], list[str]]:
+    path = ROOT_DIR / ".cento" / "api_workers.yaml"
+    errors: list[str] = []
+    if not path.exists():
+        return {}, [f"API worker config is missing: {dev_pipeline_relative(path)}"]
+    try:
+        import yaml  # type: ignore
+
+        payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    except Exception as exc:
+        return {}, [f"API worker config could not be loaded: {exc}"]
+    if not isinstance(payload, dict):
+        return {}, ["API worker config must be a mapping"]
+    openai_config = payload.get("openai") if isinstance(payload.get("openai"), dict) else {}
+    if openai_config.get("enabled") is False:
+        errors.append("OpenAI API workers are disabled in .cento/api_workers.yaml")
+    profiles = payload.get("profiles") if isinstance(payload.get("profiles"), dict) else {}
+    profile = profiles.get(DEV_PIPELINE_DELIVERY_API_PROFILE) if isinstance(profiles.get(DEV_PIPELINE_DELIVERY_API_PROFILE), dict) else {}
+    if not profile:
+        errors.append(f"API worker profile is missing: {DEV_PIPELINE_DELIVERY_API_PROFILE}")
+    model = dev_pipeline_env_reference(str(profile.get("model") or ""))
+    if not model:
+        errors.append(f"API worker model is not configured for profile {DEV_PIPELINE_DELIVERY_API_PROFILE}")
+    if not os.environ.get("OPENAI_API_KEY"):
+        errors.append("OPENAI_API_KEY is not set")
+    return payload, errors
+
+
+def dev_pipeline_clean_target_path(candidate: str) -> str:
+    value = str(candidate or "").strip().strip(".,;:()[]{}<>")
+    value = value.replace("\\", "/").lstrip("./")
+    if not value or "://" in value or "*" in value or value.startswith("#"):
+        return ""
+    if Path(value).is_absolute():
+        try:
+            value = Path(value).resolve().relative_to(ROOT_DIR.resolve()).as_posix()
+        except ValueError:
+            return ""
+    parts = [part for part in value.split("/") if part]
+    if not parts or any(part == ".." for part in parts):
+        return ""
+    normalized = "/".join(parts)
+    if any(normalized == prefix or normalized.startswith(f"{prefix}/") for prefix in DEV_PIPELINE_PROTECTED_WRITE_PREFIXES):
+        return ""
+    path = ROOT_DIR / normalized
+    if path.exists() and path.is_dir():
+        return ""
+    has_file_suffix = bool(Path(normalized).suffix)
+    if not has_file_suffix and not path.is_file():
+        return ""
+    return normalized
+
+
+def dev_pipeline_extract_target_paths_from_text(text: str) -> list[str]:
+    candidates: list[str] = []
+    for match in DEV_PIPELINE_QUOTED_TOKEN_RE.finditer(str(text or "")):
+        raw = next((group for group in match.groups() if group), "")
+        if raw:
+            candidates.append(raw)
+    candidates.extend(match.group(0) for match in DEV_PIPELINE_PATH_TOKEN_RE.finditer(str(text or "")))
+    paths: list[str] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        clean = dev_pipeline_clean_target_path(candidate)
+        if clean and clean not in seen:
+            seen.add(clean)
+            paths.append(clean)
+    return paths
+
+
+def dev_pipeline_delivery_prompt(project: dict[str, Any], template: dict[str, Any], trigger: dict[str, Any]) -> str:
+    prompt_parts = [
+        str(trigger.get("prompt") or "").strip(),
+        str(trigger.get("issue_subject") or "").strip(),
+        str(trigger.get("message") or "").strip(),
+    ]
+    previous = dev_pipeline_artifact_json(DEV_PIPELINE_STUDIO_ROOT, "execution/execution_run.json")
+    if not any(prompt_parts):
+        prompt_parts.extend([str(previous.get("prompt") or ""), str(previous.get("issue_subject") or "")])
+    for item in template.get("required_inputs", []):
+        if not isinstance(item, dict):
+            continue
+        prompt_parts.extend(
+            [
+                str(item.get("answer") or ""),
+                " ".join(str(value) for value in item.get("answer_values", []) if isinstance(value, str)),
+                " ".join(str(value) for value in item.get("paths", []) if isinstance(value, str)),
+            ]
+        )
+    prompt = "\n\n".join(part for part in prompt_parts if part)
+    if not prompt:
+        prompt = str(template.get("description") or project.get("surface") or "").strip()
+    return prompt[:8000]
+
+
+def dev_pipeline_delivery_target_paths(project: dict[str, Any], template: dict[str, Any], trigger: dict[str, Any]) -> list[str]:
+    prompt_parts = [str(trigger.get("prompt") or ""), str(trigger.get("issue_subject") or "")]
+    if not any(part.strip() for part in prompt_parts):
+        previous = dev_pipeline_artifact_json(DEV_PIPELINE_STUDIO_ROOT, "execution/execution_run.json")
+        prompt_parts.extend([str(previous.get("prompt") or ""), str(previous.get("issue_subject") or "")])
+    for item in template.get("required_inputs", []):
+        if not isinstance(item, dict):
+            continue
+        label = f"{item.get('id') or ''} {item.get('title') or ''} {item.get('detail') or ''}".lower()
+        if not any(token in label for token in ("target", "write", "owned", "change blueprint", "expected target", "allowed change")):
+            continue
+        prompt_parts.extend(
+            [
+                str(item.get("answer") or ""),
+                " ".join(str(value) for value in item.get("answer_values", []) if isinstance(value, str)),
+                " ".join(str(value) for value in item.get("paths", []) if isinstance(value, str)),
+            ]
+        )
+    paths = dev_pipeline_extract_target_paths_from_text("\n".join(part for part in prompt_parts if part))
+    paths = [
+        path
+        for path in paths
+        if not any(other != path and other.endswith(f"/{path}") for other in paths)
+    ]
+    return paths[:8]
+
+
+def dev_pipeline_template_is_parallel_workset(template: dict[str, Any]) -> bool:
+    return str(template.get("id") or "") == PARALLEL_PIPELINE_TEMPLATE_ID
+
+
+def dev_pipeline_template_is_patch_swarm(template: dict[str, Any]) -> bool:
+    return str(template.get("id") or "") == PATCH_SWARM_TEMPLATE_ID
+
+
+def dev_pipeline_int_value(value: Any, default: int, minimum: int = 1, maximum: int = 12) -> int:
+    try:
+        result = int(float(str(value).strip()))
+    except (TypeError, ValueError):
+        result = default
+    return max(minimum, min(maximum, result))
+
+
+def dev_pipeline_parallel_input_text(template: dict[str, Any], trigger: dict[str, Any]) -> str:
+    parts = [str(trigger.get("prompt") or ""), str(trigger.get("issue_subject") or "")]
+    for item in template.get("required_inputs", []):
+        if not isinstance(item, dict):
+            continue
+        item_id = str(item.get("id") or "")
+        if item_id not in {"parallel-objective", "parallel-workstreams", "parallel-ui-config"}:
+            continue
+        parts.extend(
+            [
+                str(item.get("answer") or ""),
+                str(item.get("answer_notes") or ""),
+                "\n".join(str(value) for value in item.get("answer_values", []) if isinstance(value, str)),
+                "\n".join(str(value) for value in item.get("paths", []) if isinstance(value, str)),
+            ]
+        )
+    return "\n".join(part for part in parts if part).strip()
+
+
+def dev_pipeline_parallel_max_parallel(template: dict[str, Any], trigger: dict[str, Any]) -> int:
+    text = dev_pipeline_parallel_input_text(template, trigger)
+    match = re.search(r"\bmax[_ -]?parallel(?:ism)?\b\s*[:=]?\s*(\d+)", text, flags=re.IGNORECASE)
+    if match:
+        return dev_pipeline_int_value(match.group(1), dev_pipeline_int_value(template.get("max_parallel"), 4))
+    match = re.search(r"\bparallel(?:ism)?\b\s*[:=]?\s*(\d+)", text, flags=re.IGNORECASE)
+    if match:
+        return dev_pipeline_int_value(match.group(1), dev_pipeline_int_value(template.get("max_parallel"), 4))
+    return dev_pipeline_int_value(template.get("max_parallel"), 4)
+
+
+def dev_pipeline_parallel_config_map(template: dict[str, Any], trigger: dict[str, Any]) -> dict[str, str]:
+    text = dev_pipeline_parallel_input_text(template, trigger)
+    config: dict[str, str] = {}
+    for line in text.splitlines():
+        if ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        key = re.sub(r"[^a-z0-9_]+", "_", key.strip().lower()).strip("_")
+        value = value.strip()
+        if key and value:
+            config[key] = value
+    return config
+
+
+def dev_pipeline_parallel_float_config(config: dict[str, str], key: str, default: float, minimum: float = 0.0, maximum: float = 100.0) -> float:
+    try:
+        value = float(str(config.get(key, "")).strip())
+    except (TypeError, ValueError):
+        value = default
+    return max(minimum, min(maximum, value))
+
+
+def dev_pipeline_parallel_runtime_config(template: dict[str, Any], trigger: dict[str, Any]) -> dict[str, Any]:
+    config = dev_pipeline_parallel_config_map(template, trigger)
+    runtime = str(config.get("runtime") or "fixture").strip().lower()
+    runtime_aliases = {
+        "fixture dry run": "fixture",
+        "fixture-dry-run": "fixture",
+        "dry-run": "fixture",
+        "api workers": "api-openai",
+        "api": "api-openai",
+        "openai": "api-openai",
+    }
+    runtime = runtime_aliases.get(runtime, runtime)
+    if runtime not in {"fixture", "api-openai", "local-command"}:
+        runtime = "fixture"
+    apply_mode = str(config.get("apply_mode") or config.get("apply") or "dry-run").strip().lower()
+    apply_enabled = apply_mode in {"apply", "sequential", "yes", "true", "1"}
+    max_parallel = dev_pipeline_parallel_max_parallel(template, trigger)
+    default_budget = 0.0 if runtime == "fixture" else DEV_PIPELINE_DELIVERY_BUDGET_USD
+    default_max_budget = 0.0 if runtime == "fixture" else DEV_PIPELINE_DELIVERY_MAX_BUDGET_USD
+    return {
+        "max_parallel": max_parallel,
+        "runtime": runtime,
+        "integrator": str(config.get("integrator") or "sequential").strip().lower() or "sequential",
+        "validation": str(config.get("validation") or "smoke").strip().lower() or "smoke",
+        "apply_mode": "apply" if apply_enabled else "dry-run",
+        "apply_enabled": apply_enabled,
+        "budget_usd": dev_pipeline_parallel_float_config(config, "budget_usd", default_budget),
+        "max_budget_usd": dev_pipeline_parallel_float_config(config, "max_budget_usd", default_max_budget),
+    }
+
+
+def dev_pipeline_parallel_auto_target_paths(project: dict[str, Any], run_id: str, runtime_config: dict[str, Any]) -> list[str]:
+    max_parallel = dev_pipeline_int_value(runtime_config.get("max_parallel"), 10)
+    if str(runtime_config.get("runtime") or "") == "fixture":
+        return PARALLEL_PIPELINE_FIXTURE_TARGET_PATHS[:max_parallel]
+    owned_root = str(project.get("owned_root") or "workspace/runs/parallel-pipeline/outputs").strip().strip("/")
+    return [f"{owned_root}/{run_id}/worker-{index:02d}.md" for index in range(1, max_parallel + 1)]
+
+
+def dev_pipeline_parallel_task_from_mapping(item: dict[str, Any], index: int, read_paths: list[str], prompt: str) -> dict[str, Any] | None:
+    write_paths = dev_pipeline_text_list(item.get("write_paths") or item.get("paths") or item.get("owned_paths"), [])
+    write_paths = [dev_pipeline_clean_target_path(path) for path in write_paths]
+    write_paths = [path for path in write_paths if path]
+    if not write_paths:
+        return None
+    task_id = dev_pipeline_workset_slug(str(item.get("id") or item.get("task_id") or f"parallel-{index}"))
+    task_title = str(item.get("task") or item.get("title") or f"Parallel workstream {index}").strip()
+    description = str(item.get("description") or "").strip()
+    if not description:
+        description = (
+            "Implement this independent parallel workstream using only its exclusive write paths. "
+            "Return complete UTF-8 contents for every changed owned path using patch_proposal.v1. "
+            "Do not edit files outside write_paths. "
+            f"\n\nOverall prompt:\n{prompt}"
+        )
+    return {
+        "id": task_id,
+        "worker_id": str(item.get("worker_id") or f"api-parallel-worker-{index}"),
+        "task": task_title[:240],
+        "description": description,
+        "write_paths": write_paths,
+        "read_paths": dev_pipeline_text_list(item.get("read_paths"), read_paths),
+        "routes": dev_pipeline_text_list(item.get("routes"), []),
+        "depends_on": dev_pipeline_text_list(item.get("depends_on") or item.get("dependencies"), []),
+        "api_profile": str(item.get("api_profile") or DEV_PIPELINE_DELIVERY_API_PROFILE),
+        "output_schema": str(item.get("output_schema") or DEV_PIPELINE_DELIVERY_OUTPUT_SCHEMA),
+        "cost_usd_estimate": float(item.get("cost_usd_estimate") or 0.20),
+    }
+
+
+def dev_pipeline_parallel_tasks_from_json(text: str, read_paths: list[str], prompt: str) -> list[dict[str, Any]]:
+    stripped = text.strip()
+    if not stripped or stripped[0] not in "[{":
+        return []
+    try:
+        payload = json.loads(stripped)
+    except json.JSONDecodeError:
+        return []
+    if isinstance(payload, dict):
+        raw_items = payload.get("tasks") or payload.get("workstreams") or payload.get("parallel_workstreams") or []
+    else:
+        raw_items = payload
+    if not isinstance(raw_items, list):
+        return []
+    tasks = []
+    for index, item in enumerate(raw_items, start=1):
+        if not isinstance(item, dict):
+            continue
+        task = dev_pipeline_parallel_task_from_mapping(item, index, read_paths, prompt)
+        if task:
+            tasks.append(task)
+    return tasks
+
+
+def dev_pipeline_parallel_task_specs(
+    project: dict[str, Any],
+    template: dict[str, Any],
+    trigger: dict[str, Any],
+    target_paths: list[str],
+    prompt: str,
+) -> list[dict[str, Any]]:
+    read_paths = [str(value) for value in project.get("read_paths", []) if isinstance(value, str) and value.strip()]
+    text = dev_pipeline_parallel_input_text(template, trigger)
+    tasks = dev_pipeline_parallel_tasks_from_json(text, read_paths, prompt)
+    if tasks:
+        return tasks
+    result = []
+    for index, path in enumerate(target_paths, start=1):
+        result.append(
+            {
+                "id": dev_pipeline_workset_slug(f"parallel-{index}-{Path(path).stem}") or f"parallel-{index}",
+                "worker_id": f"api-parallel-worker-{index}",
+                "task": f"Implement exclusive workstream for {path}"[:240],
+                "description": (
+                    "Implement this independent parallel workstream using only its exclusive write path. "
+                    "Return complete UTF-8 contents for every changed owned path using patch_proposal.v1. "
+                    "Do not edit files outside write_paths. "
+                    f"Exclusive write path: {path}\n\nOverall prompt:\n{prompt}"
+                ),
+                "write_paths": [path],
+                "read_paths": read_paths,
+                "routes": [],
+                "depends_on": [],
+                "api_profile": DEV_PIPELINE_DELIVERY_API_PROFILE,
+                "output_schema": DEV_PIPELINE_DELIVERY_OUTPUT_SCHEMA,
+                "cost_usd_estimate": 0.20,
+            }
+        )
+    return result
+
+
+def dev_pipeline_dirty_target_errors(paths: list[str]) -> list[str]:
+    if not paths:
+        return []
+    try:
+        proc = subprocess.run(
+            ["git", "status", "--porcelain", "--", *paths],
+            cwd=ROOT_DIR,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+    except FileNotFoundError:
+        return ["git is unavailable; dirty target-path checks cannot run"]
+    if proc.returncode != 0:
+        return [proc.stderr.strip() or "git status failed for target paths"]
+    dirty = [line.strip() for line in proc.stdout.splitlines() if line.strip()]
+    if not dirty:
+        return []
+    errors: list[str] = []
+    for line in dirty:
+        status = line[:2].strip() or "modified"
+        path = line[3:].strip() if len(line) > 3 else line
+        reason = "untracked" if "?" in status else "modified"
+        errors.append(
+            f"Target path is already {reason}: {path}. Use a fresh target path or commit/remove the existing file before rerunning."
+        )
+    return errors
+
+
+def dev_pipeline_delivery_workset(
+    root: Path,
+    project: dict[str, Any],
+    template: dict[str, Any],
+    trigger: dict[str, Any],
+    run_id: str,
+    target_paths: list[str],
+    budget_usd: float,
+    max_budget_usd: float,
+    runtime_config: dict[str, Any] | None = None,
+) -> tuple[str, dict[str, Any]]:
+    prompt = dev_pipeline_delivery_prompt(project, template, trigger)
+    issue_id = str(trigger.get("issue_id") or "").strip()
+    subject = str(trigger.get("issue_subject") or "").strip()
+    prompt_lines = prompt.splitlines()
+    task_text = subject or (prompt_lines[0] if prompt_lines else "Implement requested repo change")
+    read_paths = [str(value) for value in project.get("read_paths", []) if isinstance(value, str) and value.strip()]
+    workset_id = dev_pipeline_slug(f"delivery-{template.get('id')}-{project.get('id')}-{run_id}", "delivery")
+    is_parallel = dev_pipeline_template_is_parallel_workset(template)
+    runtime_config = runtime_config if isinstance(runtime_config, dict) else {}
+    max_parallel = dev_pipeline_int_value(runtime_config.get("max_parallel"), dev_pipeline_parallel_max_parallel(template, trigger)) if is_parallel else 1
+    if is_parallel:
+        tasks = dev_pipeline_parallel_task_specs(project, template, trigger, target_paths, prompt)
+        if str(runtime_config.get("runtime") or "") == "fixture":
+            for index, task in enumerate(tasks, start=1):
+                if isinstance(task, dict) and str(task.get("worker_id") or "").startswith("api-parallel-worker"):
+                    task["worker_id"] = f"fixture-parallel-worker-{index}"
+    else:
+        description = (
+            "Implement the requested bounded repo change using only the declared write paths. "
+            "Return complete UTF-8 contents for every changed owned path using patch_proposal.v1. "
+            "Do not edit files outside write_paths. Keep the change minimal and runnable. "
+            f"Budget target: ${budget_usd:.2f}; hard cap: ${max_budget_usd:.2f}. "
+            f"Issue: {issue_id or 'manual'}.\n\nPrompt:\n{prompt}"
+        )
+        tasks = [
+            {
+                "id": "delivery",
+                "worker_id": "api-delivery-worker",
+                "task": task_text[:240],
+                "description": description,
+                "write_paths": target_paths,
+                "read_paths": read_paths,
+                "routes": [],
+                "depends_on": [],
+                "api_profile": DEV_PIPELINE_DELIVERY_API_PROFILE,
+                "output_schema": DEV_PIPELINE_DELIVERY_OUTPUT_SCHEMA,
+                "cost_usd_estimate": 0.20,
+            }
+        ]
+    workset = {
+        "schema_version": "cento.workset.v1",
+        "id": workset_id,
+        "mode": "fast",
+        "max_parallel": max_parallel,
+        "read_paths": read_paths,
+        "execution_model": "parallel" if is_parallel else "single",
+        "integration": "sequential",
+        "runtime": str(runtime_config.get("runtime") or "api-openai"),
+        "apply_mode": str(runtime_config.get("apply_mode") or "apply"),
+        "validation": str(runtime_config.get("validation") or "smoke"),
+        "integration_model_policy": {
+            "mode": "deterministic-first",
+            "integrator": str(runtime_config.get("integrator") or "sequential"),
+            "fallback": "only-if-needed",
+            "model_ceiling": DEV_PIPELINE_INTEGRATION_MODEL_CEILING,
+            "profile": "api-mini-integrator",
+        },
+        "issue_id": issue_id,
+        "tasks": tasks,
+    }
+    rel_path = f"execution/worksets/{run_id}.json"
+    workset_path = dev_pipeline_root_path(root, rel_path)
+    write_json_path(workset_path, workset)
+    return dev_pipeline_relative(workset_path), workset
+
+
+def dev_pipeline_delivery_readiness(target_paths: list[str], workset_rel: str, runtime_config: dict[str, Any] | None = None) -> tuple[list[str], dict[str, Any]]:
+    runtime_config = runtime_config if isinstance(runtime_config, dict) else {}
+    runtime = str(runtime_config.get("runtime") or "api-openai")
+    apply_enabled = bool(runtime_config.get("apply_enabled", True))
+    config, config_errors = dev_pipeline_api_worker_config() if runtime == "api-openai" else ({}, [])
+    errors: list[str] = []
+    if not target_paths:
+        errors.append("No explicit repo-relative write path was found in the prompt or input contract")
+    if not workset_rel and target_paths:
+        errors.append("Workset manifest was not written")
+    errors.extend(config_errors)
+    if apply_enabled:
+        errors.extend(dev_pipeline_dirty_target_errors(target_paths))
+    openai_config = config.get("openai") if isinstance(config.get("openai"), dict) else {}
+    profiles = config.get("profiles") if isinstance(config.get("profiles"), dict) else {}
+    profile = profiles.get(DEV_PIPELINE_DELIVERY_API_PROFILE) if isinstance(profiles.get(DEV_PIPELINE_DELIVERY_API_PROFILE), dict) else {}
+    return errors, {
+        "runtime": runtime,
+        "api_profile": DEV_PIPELINE_DELIVERY_API_PROFILE,
+        "model": dev_pipeline_env_reference(str(profile.get("model") or "")),
+        "budget_usd": runtime_config.get("budget_usd", DEV_PIPELINE_DELIVERY_BUDGET_USD),
+        "max_budget_usd": runtime_config.get("max_budget_usd", DEV_PIPELINE_DELIVERY_MAX_BUDGET_USD),
+        "apply_mode": runtime_config.get("apply_mode", "apply"),
+        "configured_budget_max_usd": openai_config.get("budget_usd_max"),
+    }
+
+
+def dev_pipeline_delivery_seed_steps(workset_rel: str, status: str, input_ready: bool = True, workset: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    base_status = "completed" if input_ready else "blocked"
+    workset = workset if isinstance(workset, dict) else {}
+    tasks = [item for item in workset.get("tasks", []) if isinstance(item, dict)]
+    is_parallel = int(workset.get("max_parallel") or 1) > 1 or len(tasks) > 1
+    if is_parallel:
+        queued_or_blocked = "queued" if status == "running" else "blocked"
+        return [
+            {"id": "resolve-parallel-inputs", "title": "Resolve contract and exclusive write paths", "status": base_status, "duration": "0s", "duration_seconds": 0, "file": "execution/execution_run.json"},
+            {"id": "write-parallel-workset", "title": "Write parallel workset manifest", "status": "completed" if workset_rel else "blocked", "duration": "0s", "duration_seconds": 0, "file": workset_rel},
+            *[
+                {
+                    "id": f"parallel-worker-{str(task.get('id') or index)}",
+                    "title": f"Worker: {str(task.get('task') or task.get('id') or f'parallel {index}')}",
+                    "status": queued_or_blocked,
+                    "duration": "0s",
+                    "duration_seconds": 0,
+                    "file": ", ".join(str(path) for path in task.get("write_paths", []) if isinstance(path, str)),
+                    "stage": "execution",
+                }
+                for index, task in enumerate(tasks, start=1)
+            ],
+            {"id": "collect-worker-artifacts", "title": "Collect worker artifacts", "status": queued_or_blocked, "duration": "0s", "duration_seconds": 0, "file": ""},
+            {"id": "integrate-sequentially", "title": "Integrate patches sequentially", "status": queued_or_blocked, "duration": "0s", "duration_seconds": 0, "file": ""},
+            {"id": "run-parallel-validation", "title": "Run parallel validation gates", "status": queued_or_blocked, "duration": "0s", "duration_seconds": 0, "file": ""},
+            {"id": "collect-parallel-evidence", "title": "Collect receipts, cost, and evidence", "status": queued_or_blocked, "duration": "0s", "duration_seconds": 0, "file": ""},
+        ]
+    return [
+        {"id": "resolve-prompt", "title": "Resolve prompt and target paths", "status": base_status, "duration": "0s", "duration_seconds": 0, "file": "execution/execution_run.json"},
+        {"id": "write-workset", "title": "Write executable workset", "status": "completed" if workset_rel else "blocked", "duration": "0s", "duration_seconds": 0, "file": workset_rel},
+        {"id": "api-worker", "title": "OpenAI patch proposal worker", "status": "queued" if status == "running" else "blocked", "duration": "0s", "duration_seconds": 0, "file": ""},
+        {"id": "materialize-patch", "title": "Materialize patch bundle", "status": "queued" if status == "running" else "blocked", "duration": "0s", "duration_seconds": 0, "file": ""},
+        {"id": "integrate-sequential", "title": "Integrate patch sequentially", "status": "queued" if status == "running" else "blocked", "duration": "0s", "duration_seconds": 0, "file": ""},
+        {"id": "apply-worktree", "title": "Apply accepted change to worktree", "status": "queued" if status == "running" else "blocked", "duration": "0s", "duration_seconds": 0, "file": ""},
+        {"id": "collect-receipts", "title": "Collect receipts, cost, and evidence", "status": "queued" if status == "running" else "blocked", "duration": "0s", "duration_seconds": 0, "file": ""},
+    ]
+
+
+def dev_pipeline_delivery_stage_payloads(started: datetime, status: str, finished: datetime | None = None, input_ready: bool = True) -> list[dict[str, Any]]:
+    final = finished or started
+    is_blocked = status == "blocked"
+    intake_status = "completed" if input_ready else "blocked"
+    return [
+        {"id": "input", "started_at": started.isoformat(), "finished_at": final.isoformat(), "status": intake_status},
+        {"id": "repo", "started_at": started.isoformat(), "finished_at": final.isoformat(), "status": intake_status},
+        {"id": "blueprint", "started_at": started.isoformat(), "finished_at": final.isoformat(), "status": intake_status},
+        {"id": "factory", "started_at": started.isoformat(), "finished_at": final.isoformat() if finished else "", "status": status},
+        {"id": "validation", "started_at": final.isoformat() if finished else "", "finished_at": final.isoformat() if finished else "", "status": "completed" if status == "completed" else ("blocked" if is_blocked else "queued")},
+        {"id": "handoff", "started_at": final.isoformat() if finished else "", "finished_at": final.isoformat() if finished else "", "status": "completed" if status == "completed" else ("blocked" if is_blocked else "queued")},
+    ]
+
+
+def dev_pipeline_hard_proreq_artifacts(run_id: str) -> list[dict[str, Any]]:
+    rels = [
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/operator_intake.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/mini_cento_context.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/ui_screenshot_request.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/existing_ui_reference.png",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/existing_ui_reference_square.png",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/image_generation_request.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/image_generation_response.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/generated_integrator_screenshot.png",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/pro_output_schema.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/pro_backend_request.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/proreq_light_codex_prompt.md",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/proreq_light_output_schema.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/proreq_light_codex_command.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/proreq_light_codex_stdout.txt",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/proreq_light_codex_stderr.txt",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/proreq_light_codex_response.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/pro_backend_response.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/pro_backend_error.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/pro_backend_plan.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/story_index.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/parallel_patch_workset.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/manifest_integration_policy.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/backend_work_manifest.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/integration_plan.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/validation_plan.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/closed_loop_check_stdout.txt",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/closed_loop_check_stderr.txt",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/closed_loop_workset_stdout.txt",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/closed_loop_workset_stderr.txt",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/closed_loop_delivery.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/closed_loop_validation.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/closed_loop_evidence.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/closed_loop_evidence.md",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/closed_loop_incident.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/closed_loop_incident.md",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/delivery/{run_id}/closed-loop.stdout.log",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/delivery/{run_id}/closed-loop.stderr.log",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/hard_proreq_evidence.json",
+    ]
+    return [
+        {
+            "name": Path(rel).name,
+            "path": rel,
+            "exists": (ROOT_DIR / rel).exists(),
+            "size": file_size_label(ROOT_DIR / rel),
+        }
+        for rel in rels
+    ]
+
+
+def dev_pipeline_hard_proreq_stage_payloads(started: datetime, status: str, finished: datetime | None = None) -> list[dict[str, Any]]:
+    final = finished or started
+    return [
+        {"id": "input", "started_at": started.isoformat(), "finished_at": final.isoformat() if finished else "", "status": "completed" if finished else "running"},
+        {"id": "repo", "started_at": started.isoformat(), "finished_at": final.isoformat() if finished else "", "status": "completed" if finished else "queued"},
+        {"id": "blueprint", "started_at": started.isoformat(), "finished_at": final.isoformat() if finished else "", "status": "completed" if finished else "queued"},
+        {"id": "factory", "started_at": started.isoformat(), "finished_at": final.isoformat() if finished else "", "status": status},
+        {"id": "validation", "started_at": final.isoformat() if finished else "", "finished_at": final.isoformat() if finished else "", "status": "completed" if status == "completed" else ("blocked" if status == "blocked" else "queued")},
+        {"id": "handoff", "started_at": final.isoformat() if finished else "", "finished_at": final.isoformat() if finished else "", "status": "completed" if status == "completed" else ("blocked" if status == "blocked" else "queued")},
+    ]
+
+
+def dev_pipeline_multipipeline_artifacts(run_id: str) -> list[dict[str, Any]]:
+    rels = [
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/multipipeline/{run_id}/operator_intake.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/multipipeline/{run_id}/multipipeline_schedule.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/multipipeline/{run_id}/pass_01_proreq_request.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/multipipeline/{run_id}/pass_01_guidance.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/multipipeline/{run_id}/pass_02_proreq_request.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/multipipeline/{run_id}/pass_02_guidance.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/multipipeline/{run_id}/pass_03_proreq_request.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/multipipeline/{run_id}/pass_03_guidance.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/multipipeline/{run_id}/pass_04_proreq_request.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/multipipeline/{run_id}/pass_04_guidance.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/multipipeline/{run_id}/ui_screenshot_request.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/multipipeline/{run_id}/chatgpt_pro_request.json",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/multipipeline/{run_id}/chain_roadmap.md",
+        f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/multipipeline/{run_id}/multipipeline_evidence.json",
+    ]
+    return [
+        {
+            "name": Path(rel).name,
+            "path": rel,
+            "exists": (ROOT_DIR / rel).exists(),
+            "size": file_size_label(ROOT_DIR / rel),
+        }
+        for rel in rels
+    ]
+
+
+def dev_pipeline_multipipeline_stage_payloads(started: datetime, status: str, finished: datetime | None = None) -> list[dict[str, Any]]:
+    final = finished or started
+    return [
+        {"id": "input", "started_at": started.isoformat(), "finished_at": final.isoformat() if finished else "", "status": "completed" if finished else "running"},
+        {"id": "repo", "started_at": started.isoformat(), "finished_at": final.isoformat() if finished else "", "status": "completed" if finished else "queued"},
+        {"id": "blueprint", "started_at": started.isoformat(), "finished_at": final.isoformat() if finished else "", "status": "completed" if finished else "queued"},
+        {"id": "factory", "started_at": started.isoformat(), "finished_at": final.isoformat() if finished else "", "status": status},
+        {"id": "validation", "started_at": final.isoformat() if finished else "", "finished_at": final.isoformat() if finished else "", "status": "completed" if status == "completed" else ("blocked" if status == "blocked" else "queued")},
+        {"id": "handoff", "started_at": final.isoformat() if finished else "", "finished_at": final.isoformat() if finished else "", "status": "completed" if status == "completed" else ("blocked" if status == "blocked" else "queued")},
+    ]
+
+
+def dev_pipeline_patch_swarm_artifacts(run_id: str) -> list[dict[str, Any]]:
+    base = f"workspace/runs/parallel-delivery/patch-swarm/{run_id}"
+    rels = [
+        f"{base}/patch_swarm_manifest.json",
+        f"{base}/proreq_execution_manifest.json",
+        f"{base}/candidate_index.json",
+        f"{base}/dedupe_clusters.json",
+        f"{base}/ranking.json",
+        f"{base}/cost_ledger.json",
+        f"{base}/patch_swarm_receipt.json",
+        f"{base}/integration_execution/integration_execution.json",
+        f"{base}/safe_integrator_handoff.json",
+        f"{base}/validation_summary.json",
+        f"{base}/ui_state.json",
+        f"{base}/decision_report.md",
+        "workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/patch-swarm/latest_ui_state.json",
+    ]
+    return [
+        {
+            "name": Path(rel).name,
+            "path": rel,
+            "exists": (ROOT_DIR / rel).exists(),
+            "size": file_size_label(ROOT_DIR / rel),
+        }
+        for rel in rels
+    ]
+
+
+def dev_pipeline_patch_swarm_stage_payloads(started: datetime, status: str, finished: datetime | None = None) -> list[dict[str, Any]]:
+    final = finished or started
+    return [
+        {"id": "input", "started_at": started.isoformat(), "finished_at": final.isoformat() if finished else "", "status": "completed" if finished else "running"},
+        {"id": "repo", "started_at": started.isoformat(), "finished_at": final.isoformat() if finished else "", "status": "completed" if finished else "queued"},
+        {"id": "blueprint", "started_at": started.isoformat(), "finished_at": final.isoformat() if finished else "", "status": "completed" if finished else "queued"},
+        {"id": "factory", "started_at": started.isoformat(), "finished_at": final.isoformat() if finished else "", "status": status},
+        {"id": "validation", "started_at": final.isoformat() if finished else "", "finished_at": final.isoformat() if finished else "", "status": "completed" if status == "completed" else ("blocked" if status == "blocked" else "queued")},
+        {"id": "handoff", "started_at": final.isoformat() if finished else "", "finished_at": final.isoformat() if finished else "", "status": "completed" if status == "completed" else ("blocked" if status == "blocked" else "queued")},
+    ]
+
+
+def dev_pipeline_patch_swarm_config(template: dict[str, Any], trigger: dict[str, Any]) -> dict[str, Any]:
+    parts = [str(trigger.get("prompt") or ""), str(trigger.get("issue_subject") or "")]
+    for item in template.get("required_inputs", []):
+        if not isinstance(item, dict):
+            continue
+        if str(item.get("id") or "") not in {"patch-swarm-objective", "patch-swarm-provider-policy"}:
+            continue
+        parts.extend([str(item.get("answer") or ""), str(item.get("answer_notes") or "")])
+        parts.extend(str(value) for value in item.get("answer_values", []) if isinstance(value, str))
+    text = "\n".join(part for part in parts if part)
+    config: dict[str, str] = {}
+    for line in text.splitlines():
+        if ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        key = re.sub(r"[^a-z0-9_]+", "_", key.strip().lower()).strip("_")
+        value = value.strip()
+        if key and value:
+            config[key] = value
+    return {
+        "candidate_target": dev_pipeline_int_value(config.get("candidate_target"), 100, minimum=100, maximum=500),
+        "max_parallel_agents": dev_pipeline_int_value(config.get("max_parallel_agents"), 5, minimum=1, maximum=20),
+        "providers": config.get("providers") or "codex-exec,claude-code,api-openai",
+        "live": str(config.get("mode") or "fixture").lower() in {"live", "real"},
+    }
+
+
+def dev_pipeline_seed_patch_swarm_execution(
+    root: Path,
+    manifest: dict[str, Any],
+    project: dict[str, Any],
+    template: dict[str, Any],
+    trigger: dict[str, Any],
+) -> dict[str, Any]:
+    execution_manifest_rel = str(template.get("execution_manifest") or "execution/patch_swarm_execution_manifest.json")
+    execution_manifest = {}
+    execution_steps = dev_pipeline_template_factory_steps(template)
+    if not execution_steps:
+        raise AgentWorkAppError("No Patch Swarm execution steps are configured")
+    run_started = datetime.now(timezone.utc)
+    run_id = f"patch-swarm-ui-{run_started.strftime('%Y%m%dT%H%M%S%fZ')}"
+    prompt = dev_pipeline_delivery_prompt(project, template, trigger)
+    config = dev_pipeline_patch_swarm_config(template, trigger)
+    inputs = dev_pipeline_template_required_inputs(template)
+    for item in inputs:
+        if str(item.get("id") or "") == "patch-swarm-objective" and prompt:
+            item["status"] = "provided"
+            item["answer"] = prompt
+            item["answer_notes"] = "Captured from Run Pipeline prompt or structured Patch Swarm answers."
+            item["provided_at"] = run_started.isoformat()
+    template["required_inputs"] = dev_pipeline_write_input_manifests(root, manifest, project, template, inputs)
+    queued_steps = [
+        {
+            **step,
+            "id": str(step.get("id") or f"step-{index}"),
+            "title": str(step.get("title") or step.get("id") or f"step-{index}"),
+            "status": "queued",
+            "exit_code": None,
+            "duration": "0s",
+            "duration_seconds": 0,
+            "started_at": "",
+            "finished_at": "",
+            "stdout_tail": "",
+            "stderr_tail": "",
+        }
+        for index, step in enumerate(execution_steps, start=1)
+    ]
+    run_payload = {
+        "schema_version": "cento.execution_run.v1",
+        "source": "cento-patch-swarm",
+        "run_id": run_id,
+        "pipeline": f"{template.get('id') or 'pipeline'}-{project.get('id') or 'project'}",
+        "status": "running",
+        "started_at": run_started.isoformat(),
+        "finished_at": "",
+        "duration_seconds": 0,
+        "triggered_by": str(trigger.get("triggered_by") or "pipeline-run-api"),
+        "issue_id": str(trigger.get("issue_id") or ""),
+        "issue_subject": str(trigger.get("issue_subject") or ""),
+        "prompt": prompt,
+        "inputs": inputs,
+        "runtime": "cento parallel-delivery patch-swarm e2e fixture; provider adapters codex-exec, claude-code, api-openai",
+        "apply_mode": "safe-integrator-handoff-only",
+        "candidate_target": config["candidate_target"],
+        "max_parallel_agents": config["max_parallel_agents"],
+        "providers": config["providers"],
+        "budget_usd": 0.0,
+        "max_budget_usd": 20.0,
+        "stages": dev_pipeline_patch_swarm_stage_payloads(run_started, "running"),
+        "steps": queued_steps,
+        "logs": [
+            {
+                "timestamp": run_started.isoformat(),
+                "stage": "pipeline",
+                "source": "patch-swarm",
+                "message": f"Patch Swarm started: {config['candidate_target']} candidates across ten ProReq lanes and one dedicated integrator",
+            }
+        ],
+        "artifacts": dev_pipeline_patch_swarm_artifacts(run_id),
+        "facts": [
+            {"label": "Engine", "value": "cento parallel-delivery patch-swarm"},
+            {"label": "Providers", "value": config["providers"]},
+            {"label": "Candidates", "value": str(config["candidate_target"])},
+            {"label": "Max agents", "value": str(config["max_parallel_agents"])},
+            {"label": "Integrator", "value": "one dedicated serialized Safe Integrator handoff"},
+            {"label": "Budget", "value": "$0.00 fixture path / live API opt-in"},
+        ],
+        "written_at": datetime.now(timezone.utc).isoformat(),
+    }
+    dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+    return run_payload
+
+
+def dev_pipeline_seed_hard_proreq_execution(
+    root: Path,
+    manifest: dict[str, Any],
+    project: dict[str, Any],
+    template: dict[str, Any],
+    trigger: dict[str, Any],
+) -> dict[str, Any]:
+    execution_manifest_rel = str(template.get("execution_manifest") or "execution/execution_manifest.json")
+    execution_manifest = {}
+    execution_steps = dev_pipeline_template_factory_steps(template)
+    if not execution_steps:
+        raise AgentWorkAppError("No hard proreq execution steps are configured")
+    run_started = datetime.now(timezone.utc)
+    run_id = f"{template.get('id') or 'pipeline'}-{project.get('id') or 'project'}-{run_started.strftime('%Y%m%dT%H%M%S%fZ')}"
+    prompt = dev_pipeline_delivery_prompt(project, template, trigger)
+    is_light = str(template.get("id") or "") == PROREQ_LIGHT_TEMPLATE_ID
+    requested_delivery_mode = str(trigger.get("delivery_mode") or "").strip()
+    delivery_mode = requested_delivery_mode if requested_delivery_mode else ("closed-loop" if is_light else "plan-only")
+    inputs = dev_pipeline_template_required_inputs(template)
+    for item in inputs:
+        if str(item.get("id") or "") == "operator-thoughts" and prompt:
+            item["status"] = "provided"
+            item["answer"] = prompt
+            item["answer_notes"] = "Captured from Run Pipeline prompt or manual rerun context."
+            item["provided_at"] = run_started.isoformat()
+    template["required_inputs"] = dev_pipeline_write_input_manifests(root, manifest, project, template, inputs)
+    queued_steps: list[dict[str, Any]] = []
+    for index, step in enumerate(execution_steps, start=1):
+        step_id = str(step.get("id") or f"step-{index}")
+        command = dev_pipeline_execution_command_for_step(step_id)
+        queued_steps.append(
+            {
+                **step,
+                "id": step_id,
+                "title": str(step.get("title") or step_id),
+                "status": "queued",
+                "command": shlex.join(command),
+                "exit_code": None,
+                "duration": "0s",
+                "duration_seconds": 0,
+                "started_at": "",
+                "finished_at": "",
+                "stdout_tail": "",
+                "stderr_tail": "",
+            }
+        )
+    run_payload = {
+        "schema_version": "cento.execution_run.v1",
+        "source": "cento-proreq-light-codex" if is_light else "cento-hard-proreq-pro",
+        "run_id": run_id,
+        "pipeline": f"{template.get('id') or 'pipeline'}-{project.get('id') or 'project'}",
+        "status": "running",
+        "started_at": run_started.isoformat(),
+        "finished_at": "",
+        "duration_seconds": 0,
+        "triggered_by": str(trigger.get("triggered_by") or "prompt-router"),
+        "issue_id": str(trigger.get("issue_id") or ""),
+        "issue_subject": str(trigger.get("issue_subject") or ""),
+        "prompt": prompt,
+        "inputs": inputs,
+        "runtime": (
+            "cento-native + Codex Exec ProReq-light + 10-story split + closed-loop Codex patch delivery"
+            if is_light
+            else f"cento-native + 10-story split + integration model ceiling {DEV_PIPELINE_INTEGRATION_MODEL_CEILING}"
+        ),
+        "delivery_mode": delivery_mode,
+        "apply_mode": "closed-loop-clean-apply" if is_light and delivery_mode == "closed-loop" else "backend-plan-first",
+        "budget_usd": DEV_PIPELINE_DELIVERY_BUDGET_USD,
+        "max_budget_usd": DEV_PIPELINE_DELIVERY_MAX_BUDGET_USD,
+        "stages": dev_pipeline_hard_proreq_stage_payloads(run_started, "running"),
+        "steps": queued_steps,
+        "logs": [
+            {
+                "timestamp": run_started.isoformat(),
+                "stage": "pipeline",
+                "source": "proreq-light" if is_light else "hard-proreq",
+                "message": (
+                    f"ProReq-light run started; Codex Exec will simulate the ChatGPT Pro planning lane and delivery_mode={delivery_mode}"
+                    if is_light
+                    else "Hard proreq run started; GPT pro backend planning request will use strict JSON Schema and frontend screenshot flow stays muted"
+                ),
+            }
+        ],
+        "artifacts": dev_pipeline_hard_proreq_artifacts(run_id),
+        "facts": [
+            {"label": "Engine", "value": "cento proreq light" if is_light else "cento hard proreq"},
+            {"label": "Runtime", "value": "codex exec as ChatGPT Pro simulator + local Codex workers" if is_light else "cento-native + ten story manifests"},
+            {"label": "Delivery", "value": delivery_mode if is_light else "plan-only"},
+            {"label": "Model ceiling", "value": f"integration fallback at most {DEV_PIPELINE_INTEGRATION_MODEL_CEILING}"},
+            {"label": "Schema", "value": "codex exec --output-schema with hard proreq JSON schema" if is_light else "strict Responses JSON Schema + codex --output-schema"},
+            {"label": "Frontend lane", "value": "muted separate screenshot flow"},
+            {"label": "Budget", "value": "$0.00 metered OpenAI API / Codex Exec route" if is_light else f"${DEV_PIPELINE_DELIVERY_BUDGET_USD:.2f} target / ${DEV_PIPELINE_DELIVERY_MAX_BUDGET_USD:.2f} cap"},
+        ],
+        "written_at": datetime.now(timezone.utc).isoformat(),
+    }
+    dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+    return run_payload
+
+
+def dev_pipeline_seed_multipipeline_execution(
+    root: Path,
+    manifest: dict[str, Any],
+    project: dict[str, Any],
+    template: dict[str, Any],
+    trigger: dict[str, Any],
+) -> dict[str, Any]:
+    execution_manifest_rel = str(template.get("execution_manifest") or "execution/multipipeline_execution_manifest.json")
+    execution_manifest = {}
+    execution_steps = dev_pipeline_template_factory_steps(template)
+    if not execution_steps:
+        raise AgentWorkAppError("No multipipeline ProReq execution steps are configured")
+    run_started = datetime.now(timezone.utc)
+    run_id = f"{template.get('id') or 'pipeline'}-{project.get('id') or 'project'}-{run_started.strftime('%Y%m%dT%H%M%S%fZ')}"
+    prompt = dev_pipeline_delivery_prompt(project, template, trigger)
+    inputs = dev_pipeline_template_required_inputs(template)
+    for item in inputs:
+        if str(item.get("id") or "") == "multipipeline-objective" and prompt:
+            item["status"] = "provided"
+            item["answer"] = prompt
+            item["answer_notes"] = "Captured from Run Pipeline prompt or structured objective answers."
+            item["provided_at"] = run_started.isoformat()
+    template["required_inputs"] = dev_pipeline_write_input_manifests(root, manifest, project, template, inputs)
+    queued_steps: list[dict[str, Any]] = []
+    for index, step in enumerate(execution_steps, start=1):
+        step_id = str(step.get("id") or f"step-{index}")
+        command = dev_pipeline_execution_command_for_step(step_id)
+        queued_steps.append(
+            {
+                **step,
+                "id": step_id,
+                "title": str(step.get("title") or step_id),
+                "status": "queued",
+                "command": shlex.join(command),
+                "exit_code": None,
+                "duration": "0s",
+                "duration_seconds": 0,
+                "started_at": "",
+                "finished_at": "",
+                "stdout_tail": "",
+                "stderr_tail": "",
+            }
+        )
+    run_payload = {
+        "schema_version": "cento.execution_run.v1",
+        "source": "cento-multipipeline-proreq-chain",
+        "run_id": run_id,
+        "pipeline": f"{template.get('id') or 'pipeline'}-{project.get('id') or 'project'}",
+        "status": "running",
+        "started_at": run_started.isoformat(),
+        "finished_at": "",
+        "duration_seconds": 0,
+        "triggered_by": str(trigger.get("triggered_by") or "pipeline-run-api"),
+        "issue_id": str(trigger.get("issue_id") or ""),
+        "issue_subject": str(trigger.get("issue_subject") or ""),
+        "prompt": prompt,
+        "inputs": inputs,
+        "runtime": "cento-native + four sequential ProReq request passes + request-only Pro/image lanes",
+        "apply_mode": "request-artifacts-only",
+        "budget_usd": 0.0,
+        "max_budget_usd": 0.0,
+        "stages": dev_pipeline_multipipeline_stage_payloads(run_started, "running"),
+        "steps": queued_steps,
+        "logs": [
+            {
+                "timestamp": run_started.isoformat(),
+                "stage": "pipeline",
+                "source": "multipipeline-proreq",
+                "message": "Multipipeline ProReq chain started; four ordered ProReq request passes will feed guidance forward without live Pro/image dispatch by default",
+            }
+        ],
+        "artifacts": dev_pipeline_multipipeline_artifacts(run_id),
+        "facts": [
+            {"label": "Engine", "value": "cento multipipeline proreq"},
+            {"label": "Runtime", "value": "4 sequential hard-proreq request passes"},
+            {"label": "Model policy", "value": "request artifacts only unless live Pro/image is explicitly enabled"},
+            {"label": "Schema", "value": "cento.multipipeline_proreq_chain.v1 + pipeline_run_request.v1"},
+            {"label": "Frontend lane", "value": "muted UI screenshot request artifact"},
+            {"label": "Budget", "value": "$0.00 deterministic / live calls opt-in"},
+        ],
+        "written_at": datetime.now(timezone.utc).isoformat(),
+    }
+    dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+    return run_payload
+
+
+def dev_pipeline_seed_execution_e2e(
+    root: Path,
+    manifest: dict[str, Any],
+    project: dict[str, Any],
+    template: dict[str, Any],
+    trigger: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if str(template.get("id") or "") in {HARD_PROREQ_TEMPLATE_ID, PROREQ_LIGHT_TEMPLATE_ID}:
+        return dev_pipeline_seed_hard_proreq_execution(root, manifest, project, template, trigger if isinstance(trigger, dict) else {})
+    if str(template.get("id") or "") == MULTIPIPELINE_TEMPLATE_ID:
+        return dev_pipeline_seed_multipipeline_execution(root, manifest, project, template, trigger if isinstance(trigger, dict) else {})
+    if str(template.get("id") or "") == PATCH_SWARM_TEMPLATE_ID:
+        return dev_pipeline_seed_patch_swarm_execution(root, manifest, project, template, trigger if isinstance(trigger, dict) else {})
+    execution_manifest_rel, execution_manifest, _execution_steps = dev_pipeline_execution_steps(root, template)
+    trigger = trigger if isinstance(trigger, dict) else {}
+    run_started = datetime.now(timezone.utc)
+    run_id = f"{template.get('id') or 'pipeline'}-{project.get('id') or 'project'}-{run_started.strftime('%Y%m%dT%H%M%S%fZ')}"
+    is_parallel = dev_pipeline_template_is_parallel_workset(template)
+    runtime_config = dev_pipeline_parallel_runtime_config(template, trigger) if is_parallel else {
+        "runtime": "api-openai",
+        "validation": "smoke",
+        "apply_mode": "apply",
+        "apply_enabled": True,
+        "budget_usd": DEV_PIPELINE_DELIVERY_BUDGET_USD,
+        "max_budget_usd": DEV_PIPELINE_DELIVERY_MAX_BUDGET_USD,
+    }
+    target_paths = dev_pipeline_delivery_target_paths(project, template, trigger)
+    if is_parallel and not target_paths:
+        target_paths = dev_pipeline_parallel_auto_target_paths(project, run_id, runtime_config)
+    workset_rel = ""
+    if target_paths:
+        workset_rel, workset = dev_pipeline_delivery_workset(
+            root,
+            project,
+            template,
+            trigger,
+            run_id,
+            target_paths,
+            float(runtime_config.get("budget_usd") or DEV_PIPELINE_DELIVERY_BUDGET_USD),
+            float(runtime_config.get("max_budget_usd") or DEV_PIPELINE_DELIVERY_MAX_BUDGET_USD),
+            runtime_config,
+        )
+    else:
+        workset = {}
+    readiness_errors, readiness = dev_pipeline_delivery_readiness(target_paths, workset_rel, runtime_config)
+    run_status = "blocked" if readiness_errors else "running"
+    run_finished = run_started if readiness_errors else None
+    prompt = dev_pipeline_delivery_prompt(project, template, trigger)
+    task_count = len([item for item in workset.get("tasks", []) if isinstance(item, dict)])
+    max_parallel = int(workset.get("max_parallel") or 1) if isinstance(workset, dict) else 1
+    runtime = str(runtime_config.get("runtime") or "api-openai")
+    apply_mode = str(runtime_config.get("apply_mode") or "apply")
+    validation_mode = str(runtime_config.get("validation") or "smoke")
+    run_payload = {
+        "schema_version": "cento.execution_run.v1",
+        "source": f"cento-workset-{runtime}",
+        "run_id": run_id,
+        "pipeline": f"{template.get('id') or 'pipeline'}-{project.get('id') or 'project'}",
+        "status": run_status,
+        "started_at": run_started.isoformat(),
+        "finished_at": run_finished.isoformat() if run_finished else "",
+        "duration_seconds": 0,
+        "triggered_by": str(trigger.get("triggered_by") or "prompt-router"),
+        "issue_id": str(trigger.get("issue_id") or ""),
+        "issue_subject": str(trigger.get("issue_subject") or ""),
+        "prompt": prompt,
+        "target_paths": target_paths,
+        "workset_manifest": workset_rel,
+        "workset_id": str(workset.get("id") or ""),
+        "workset_max_parallel": max_parallel,
+        "workset_task_count": task_count,
+        "execution_model": "parallel" if is_parallel else "single",
+        "runtime": runtime,
+        "apply_mode": apply_mode,
+        "validation_mode": validation_mode,
+        "budget_usd": float(runtime_config.get("budget_usd") or 0.0),
+        "max_budget_usd": float(runtime_config.get("max_budget_usd") or 0.0),
+        "readiness": readiness,
+        "readiness_errors": readiness_errors,
+        "stages": dev_pipeline_delivery_stage_payloads(run_started, run_status, run_finished, bool(target_paths)),
+        "steps": dev_pipeline_delivery_seed_steps(workset_rel, run_status, bool(target_paths), workset),
+        "logs": [
+            {
+                "timestamp": run_started.isoformat(),
+                "stage": "pipeline",
+                "source": "delivery",
+                "message": "Workset delivery requested",
+            },
+            *[
+                {
+                    "timestamp": run_started.isoformat(),
+                    "stage": "pipeline",
+                    "source": "readiness",
+                    "message": error,
+                }
+                for error in readiness_errors
+            ],
+        ],
+        "artifacts": [
+            {"name": "workset.json", "path": workset_rel, "exists": bool(workset_rel), "size": file_size_label(ROOT_DIR / workset_rel) if workset_rel else "missing"},
+            {"name": "execution_run.json", "path": dev_pipeline_relative(root / "execution" / "execution_run.json"), "exists": True, "size": "pending"},
+        ],
+        "facts": [
+            {"label": "Engine", "value": "cento workset execute"},
+            {"label": "Runtime", "value": runtime},
+            {"label": "Apply", "value": "sequential integrator" if apply_mode == "apply" else "dry-run integrator"},
+            {"label": "Integration model ceiling", "value": f"{DEV_PIPELINE_INTEGRATION_MODEL_CEILING} only if deterministic integration needs review"},
+            {"label": "Parallel workers", "value": str(task_count) if is_parallel else "1"},
+            {"label": "Max parallel", "value": str(max_parallel)},
+            {"label": "Budget", "value": f"${float(runtime_config.get('budget_usd') or 0.0):.2f} target / ${float(runtime_config.get('max_budget_usd') or 0.0):.2f} cap"},
+            {"label": "Target paths", "value": ", ".join(target_paths) if target_paths else "missing"},
+        ],
+        "written_at": datetime.now(timezone.utc).isoformat(),
+    }
+    dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+    return run_payload
+
+
+def dev_pipeline_run_input_allowed_fields(kind: str, source: str) -> set[str]:
+    common = {"id", "kind", "source"}
+    if source == "auto":
+        if kind == "image":
+            return common | {"image_refs", "image_notes", "answer_notes"}
+        return common
+    fields = {
+        "text": {"answer", "answer_notes"},
+        "questionnaire": {"answer", "answers", "answer_notes"},
+        "path": {"paths", "answer_notes"},
+        "image": {"image_refs", "image_notes", "answer_notes"},
+        "details": {"answer", "answer_notes"},
+        "evidence": {"artifacts", "evidence_policy", "answer_notes"},
+    }
+    return common | fields.get(kind, set())
+
+
+def dev_pipeline_run_input_has_user_value(kind: str, item: dict[str, Any]) -> bool:
+    if kind in {"text", "questionnaire", "details"}:
+        if str(item.get("answer") or "").strip():
+            return True
+        answers = item.get("answers")
+        if isinstance(answers, dict):
+            return any(str(value).strip() for value in answers.values())
+        if isinstance(answers, list):
+            return any(str(value).strip() for value in answers)
+        return False
+    if kind == "path":
+        return bool(dev_pipeline_text_list(item.get("paths"), []))
+    if kind == "image":
+        return bool(dev_pipeline_text_list(item.get("image_refs"), []))
+    if kind == "evidence":
+        return bool(dev_pipeline_text_list(item.get("artifacts"), []))
+    return False
+
+
+def dev_pipeline_run_input_answer(kind: str, item: dict[str, Any]) -> tuple[str, list[str], str]:
+    notes = dev_pipeline_text(item.get("answer_notes"), "")
+    if kind == "questionnaire":
+        answer = dev_pipeline_text(item.get("answer"), "")
+        values: list[str] = []
+        answers = item.get("answers")
+        if isinstance(answers, dict):
+            values = [f"{key}: {value}" for key, value in answers.items() if str(value).strip()]
+        elif isinstance(answers, list):
+            values = [str(value) for value in answers if str(value).strip()]
+        if not answer and values:
+            answer = "\n".join(values)
+        return answer, values, notes
+    if kind in {"text", "details"}:
+        return dev_pipeline_text(item.get("answer"), ""), [], notes
+    if kind == "path":
+        values = dev_pipeline_text_list(item.get("paths"), [])
+        return "\n".join(values), values, notes
+    if kind == "image":
+        values = dev_pipeline_text_list(item.get("image_refs"), [])
+        image_notes = dev_pipeline_text(item.get("image_notes"), "")
+        return image_notes, values, notes
+    if kind == "evidence":
+        values = dev_pipeline_text_list(item.get("artifacts"), [])
+        evidence_policy = dev_pipeline_text(item.get("evidence_policy"), "")
+        return evidence_policy, values, notes
+    return "", [], notes
+
+
+def dev_pipeline_validate_pipeline_run_payload(payload: dict[str, Any]) -> None:
+    allowed = {"schema_version", "project_id", "template_id", "inputs", "delivery_mode"}
+    extras = sorted(set(payload) - allowed)
+    if extras:
+        raise AgentWorkAppError(f"Unexpected pipeline run field(s): {', '.join(extras)}")
+    if str(payload.get("schema_version") or "") != PIPELINE_RUN_SCHEMA_VERSION:
+        raise AgentWorkAppError(f"schema_version must be {PIPELINE_RUN_SCHEMA_VERSION}")
+    if not str(payload.get("project_id") or "").strip():
+        raise AgentWorkAppError("project_id is required")
+    if not str(payload.get("template_id") or "").strip():
+        raise AgentWorkAppError("template_id is required")
+    if not isinstance(payload.get("inputs"), list):
+        raise AgentWorkAppError("inputs must be an ordered array")
+    delivery_mode = str(payload.get("delivery_mode") or "").strip()
+    if delivery_mode and delivery_mode not in {"closed-loop", "plan-only"}:
+        raise AgentWorkAppError("delivery_mode must be closed-loop or plan-only")
+
+
+def dev_pipeline_validate_pipeline_run_inputs(template: dict[str, Any], submitted_inputs: list[Any]) -> list[dict[str, Any]]:
+    contract_inputs = dev_pipeline_template_required_inputs(template)
+    expected_ids = [str(item.get("id") or "") for item in contract_inputs]
+    actual_ids = [str(item.get("id") or "") if isinstance(item, dict) else "" for item in submitted_inputs]
+    if actual_ids != expected_ids:
+        missing = [item for item in expected_ids if item not in actual_ids]
+        extra = [item for item in actual_ids if item not in expected_ids]
+        details = []
+        if missing:
+            details.append(f"missing: {', '.join(missing)}")
+        if extra:
+            details.append(f"extra: {', '.join(extra)}")
+        if not details:
+            details.append("input order does not match the selected template")
+        raise AgentWorkAppError(f"inputs must match template input IDs exactly ({'; '.join(details)})")
+
+    normalized: list[dict[str, Any]] = []
+    for contract, submitted in zip(contract_inputs, submitted_inputs):
+        if not isinstance(submitted, dict):
+            raise AgentWorkAppError(f"input {contract.get('id')} must be an object")
+        input_id = str(contract.get("id") or "")
+        kind = dev_pipeline_input_type(submitted.get("kind"), str(contract.get("kind") or ""))
+        contract_kind = str(contract.get("kind") or "")
+        if kind not in PIPELINE_RUN_INPUT_TYPES:
+            raise AgentWorkAppError(f"input {input_id} has unsupported kind: {kind}")
+        if kind != contract_kind:
+            raise AgentWorkAppError(f"input {input_id} kind must be {contract_kind}")
+        source = dev_pipeline_input_source(submitted.get("source"), str(contract.get("source") or "user"))
+        contract_source = str(contract.get("source") or "user")
+        if source != contract_source:
+            raise AgentWorkAppError(f"input {input_id} source must be {contract_source}")
+        extras = sorted(set(submitted) - dev_pipeline_run_input_allowed_fields(kind, source))
+        if extras:
+            raise AgentWorkAppError(f"input {input_id} has invalid field(s) for {kind}/{source}: {', '.join(extras)}")
+        if source == "user" and bool(contract.get("required", True)) and not dev_pipeline_run_input_has_user_value(kind, submitted):
+            raise AgentWorkAppError(f"required user input is missing: {input_id}")
+        merged = deepcopy(contract)
+        merged["kind"] = kind
+        merged["input_type"] = kind
+        merged["source"] = source
+        if source == "user":
+            answer, answer_values, answer_notes = dev_pipeline_run_input_answer(kind, submitted)
+            merged["answer"] = answer
+            merged["answer_values"] = answer_values
+            merged["answer_notes"] = answer_notes
+            if kind == "path":
+                merged["paths"] = answer_values
+            elif kind == "image":
+                merged["image_refs"] = answer_values
+                merged["image_notes"] = answer
+            elif kind == "evidence":
+                merged["artifacts"] = answer_values
+                merged["evidence_policy"] = answer
+            merged["status"] = "provided" if dev_pipeline_run_input_has_user_value(kind, submitted) else str(contract.get("status") or "missing")
+            merged["provided_at"] = datetime.now(timezone.utc).isoformat() if dev_pipeline_run_input_has_user_value(kind, submitted) else ""
+        elif kind == "image":
+            image_refs = dev_pipeline_text_list(submitted.get("image_refs"), [])
+            image_notes = dev_pipeline_text(submitted.get("image_notes"), "")
+            answer_notes = dev_pipeline_text(submitted.get("answer_notes"), "")
+            if image_refs:
+                merged["image_refs"] = list(dict.fromkeys([*image_refs, *dev_pipeline_text_list(merged.get("image_refs"), [])]))
+                merged["image_notes"] = image_notes or str(merged.get("image_notes") or "")
+                merged["answer_notes"] = answer_notes
+                merged["status"] = "provided"
+                merged["provided_at"] = datetime.now(timezone.utc).isoformat()
+        normalized.append(merged)
+    return dev_pipeline_required_inputs(normalized)
+
+
+def dev_pipeline_prompt_from_run_inputs(inputs: list[dict[str, Any]]) -> str:
+    for item in inputs:
+        if str(item.get("source") or "") != "user":
+            continue
+        if str(item.get("id") or "") == "operator-thoughts" and str(item.get("answer") or "").strip():
+            return str(item.get("answer") or "").strip()
+    for item in inputs:
+        if str(item.get("source") or "") == "user" and str(item.get("answer") or "").strip():
+            return str(item.get("answer") or "").strip()
+    return "Manual Run Pipeline request."
+
+
+def dev_pipeline_start_pipeline_run(payload: dict[str, Any], *, spawn: bool = True) -> dict[str, Any]:
+    dev_pipeline_validate_pipeline_run_payload(payload)
+    root = DEV_PIPELINE_STUDIO_ROOT
+    manifest_path = root / "pipeline_manifest.json"
+    manifest = read_json_path(manifest_path)
+    if not manifest:
+        raise AgentWorkAppError(f"Dev Pipeline Studio manifest not found: {dev_pipeline_relative(manifest_path)}")
+    if dev_pipeline_ensure_builtin_pipelines(manifest):
+        write_json_path(manifest_path, manifest)
+
+    project_id = str(payload.get("project_id") or "")
+    template_id = str(payload.get("template_id") or "")
+    projects = [item for item in manifest.get("projects", []) if isinstance(item, dict)]
+    templates = [item for item in manifest.get("templates", []) if isinstance(item, dict)]
+    project = dev_pipeline_find(projects, project_id, project_id)
+    template = dev_pipeline_find(templates, template_id, template_id)
+    if not project or str(project.get("id") or "") != project_id:
+        raise AgentWorkAppError(f"Unknown pipeline project: {project_id}")
+    if not template or str(template.get("id") or "") != template_id:
+        raise AgentWorkAppError(f"Unknown pipeline template: {template_id}")
+
+    dev_pipeline_apply_generic_blueprint(template)
+    run_inputs = dev_pipeline_validate_pipeline_run_inputs(template, payload.get("inputs") if isinstance(payload.get("inputs"), list) else [])
+    prompt = dev_pipeline_prompt_from_run_inputs(run_inputs)
+    template["required_inputs"] = run_inputs
+    execution_run = dev_pipeline_seed_execution_e2e(
+        root,
+        manifest,
+        project,
+        template,
+        {
+            "triggered_by": "pipeline-run-api",
+            "issue_id": "",
+            "issue_subject": "Run Pipeline",
+            "prompt": prompt,
+            "message": "Run Pipeline request accepted through input contract",
+            "run_inputs": run_inputs,
+            "delivery_mode": str(payload.get("delivery_mode") or ""),
+        },
+    )
+
+    defaults = manifest.get("defaults") if isinstance(manifest.get("defaults"), dict) else {}
+    defaults["project_id"] = project_id
+    defaults["template_id"] = template_id
+    manifest["defaults"] = defaults
+    manifest["active_run_id"] = str(execution_run.get("run_id") or "")
+    manifest["status"] = str(execution_run.get("status") or "running")
+    if template_id == MULTIPIPELINE_TEMPLATE_ID:
+        manifest["status_detail"] = "Run Pipeline accepted the multipipeline ProReq chain and started four sequential request-artifact passes"
+    elif template_id == PROREQ_LIGHT_TEMPLATE_ID:
+        mode = str(execution_run.get("delivery_mode") or "closed-loop")
+        manifest["status_detail"] = f"Run Pipeline accepted ProReq-light in {mode} mode using Codex Exec instead of live Pro API dispatch"
+    elif template_id == PATCH_SWARM_TEMPLATE_ID:
+        manifest["status_detail"] = "Run Pipeline accepted Patch Swarm with ten ProReq patch lanes, 100+ fixture candidates, provider adapters, and one dedicated integrator"
+    else:
+        manifest["status_detail"] = "Run Pipeline request accepted through the selected template input contract"
+    write_json_path(manifest_path, manifest)
+    dev_pipeline_append_event(
+        root,
+        manifest,
+        "pipeline_run_requested",
+        project_id,
+        template_id,
+        {
+            "execution_run_id": str(execution_run.get("run_id") or ""),
+            "input_ids": [str(item.get("id") or "") for item in run_inputs],
+            "delivery_mode": str(execution_run.get("delivery_mode") or ""),
+        },
+    )
+    if spawn and execution_run.get("run_id") and str(execution_run.get("status") or "") == "running":
+        dev_pipeline_spawn_execution_e2e(root, project_id, template_id, str(execution_run.get("run_id") or ""))
+    route = {
+        "project_id": project_id,
+        "template_id": template_id,
+        "run_id": str(execution_run.get("run_id") or ""),
+        "status": str(execution_run.get("status") or "running"),
+        "default": template_id == DEFAULT_DEV_PIPELINE_TEMPLATE_ID,
+        "url": "/dev-pipeline-studio#pipeline-flow",
+    }
+    return {
+        "schema_version": "cento.pipeline_run_response.v1",
+        **route,
+        "pipeline_route": route,
+        "execution_run": execution_run,
+    }
+
+
+def dev_pipeline_latest_workset_dir(workset_id: str, since: datetime) -> Path | None:
+    slug = dev_pipeline_workset_slug(workset_id)
+    candidates = sorted((ROOT_DIR / ".cento" / "worksets").glob(f"{slug}_*"), key=lambda path: path.stat().st_mtime if path.exists() else 0, reverse=True)
+    for path in candidates:
+        try:
+            modified = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+        except OSError:
+            continue
+        if modified >= since - timedelta(seconds=2):
+            return path
+    return None
+
+
+def dev_pipeline_workset_event_logs(workset_events_rel: str) -> list[dict[str, Any]]:
+    if not workset_events_rel:
+        return []
+    rows = read_event_rows(ROOT_DIR / workset_events_rel, limit=80)
+    logs: list[dict[str, Any]] = []
+    for row in rows:
+        timestamp = parse_iso_datetime(row.get("ts") or row.get("timestamp")) or datetime.now(timezone.utc)
+        event = str(row.get("event") or "workset_event").replace("_", " ")
+        task_id = str(row.get("task_id") or row.get("workset_id") or "workset")
+        logs.append(
+            {
+                "timestamp": timestamp.isoformat(),
+                "stage": "execution",
+                "source": task_id,
+                "message": event,
+            }
+        )
+    return logs
+
+
+def dev_pipeline_delivery_steps_from_receipt(receipt: dict[str, Any], started: datetime, finished: datetime) -> list[dict[str, Any]]:
+    tasks = receipt.get("tasks") if isinstance(receipt.get("tasks"), dict) else {}
+    if len(tasks) > 1 or int(receipt.get("max_parallel") or 1) > 1:
+        elapsed = max(1, int(round((finished - started).total_seconds())))
+        task_rows: list[dict[str, Any]] = []
+        for index, (task_id, task) in enumerate(tasks.items(), start=1):
+            if not isinstance(task, dict):
+                continue
+            task_status = dev_pipeline_execution_status_label(task.get("status") or receipt.get("status"))
+            worker_title = task.get("worker_id") or task_id
+            task_rows.append(
+                {
+                    "id": f"parallel-worker-{task_id}",
+                    "title": f"Worker: {worker_title}",
+                    "status": task_status,
+                    "duration": duration_label(elapsed),
+                    "duration_seconds": elapsed,
+                    "started_at": started.isoformat(),
+                    "finished_at": finished.isoformat(),
+                    "file": ", ".join(str(path) for path in task.get("write_paths", []) if isinstance(path, str)) or str(task.get("api_worker_receipt") or ""),
+                }
+            )
+        patch_status = "completed" if receipt.get("patch_bundles") else ("blocked" if receipt.get("failed_tasks") else "queued")
+        integration_status = "completed" if receipt.get("integration_receipts") else ("blocked" if receipt.get("failed_tasks") else "queued")
+        validation_status = "completed" if receipt.get("validation_receipts") else ("blocked" if receipt.get("failed_tasks") else "queued")
+        apply_status = "completed" if receipt.get("status") == "completed" and (receipt.get("changed_paths") or str(receipt.get("apply") or "") == "none") else ("blocked" if receipt.get("failed_tasks") else "queued")
+        return [
+            {"id": "resolve-parallel-inputs", "title": "Resolve contract and exclusive write paths", "status": "completed", "duration": "0s", "duration_seconds": 0, "started_at": started.isoformat(), "finished_at": started.isoformat(), "file": "execution/execution_run.json"},
+            {"id": "write-parallel-workset", "title": "Write parallel workset manifest", "status": "completed", "duration": "0s", "duration_seconds": 0, "started_at": started.isoformat(), "finished_at": started.isoformat(), "file": str(receipt.get("source") or "")},
+            *task_rows,
+            {"id": "collect-worker-artifacts", "title": "Collect worker artifacts", "status": patch_status, "duration": "0s", "duration_seconds": 0, "started_at": finished.isoformat(), "finished_at": finished.isoformat(), "file": ", ".join(str(value) for value in receipt.get("patch_bundles", []) if isinstance(value, str))},
+            {"id": "integrate-sequentially", "title": "Integrate patches sequentially", "status": integration_status, "duration": "0s", "duration_seconds": 0, "started_at": finished.isoformat(), "finished_at": finished.isoformat(), "file": ", ".join(str(value) for value in receipt.get("integration_receipts", []) if isinstance(value, str))},
+            {"id": "run-parallel-validation", "title": "Run parallel validation gates", "status": validation_status, "duration": "0s", "duration_seconds": 0, "started_at": finished.isoformat(), "finished_at": finished.isoformat(), "file": ", ".join(str(value) for value in receipt.get("validation_receipts", []) if isinstance(value, str))},
+            {"id": "apply-worktree", "title": "Apply or confirm dry-run handoff", "status": apply_status, "duration": "0s", "duration_seconds": 0, "started_at": finished.isoformat(), "finished_at": finished.isoformat(), "file": ", ".join(str(value) for value in receipt.get("changed_paths", []) if isinstance(value, str)) or str(receipt.get("apply") or "")},
+            {"id": "collect-parallel-evidence", "title": "Collect receipts, cost, and evidence", "status": "completed" if receipt else "blocked", "duration": "0s", "duration_seconds": 0, "started_at": finished.isoformat(), "finished_at": finished.isoformat(), "file": str(receipt.get("events") or "")},
+        ]
+    task = next(iter(tasks.values()), {}) if tasks else {}
+    task_status = dev_pipeline_execution_status_label(task.get("status") or receipt.get("status"))
+    elapsed = max(0, int(round((finished - started).total_seconds())))
+    api_status = "completed" if task.get("api_worker_receipt") and task_status != "failed" else task_status
+    patch_status = "completed" if task.get("patch_bundle") else ("blocked" if task_status in {"blocked", "failed", "rejected"} else "queued")
+    integration_status = "completed" if task.get("integration_receipt") else ("blocked" if task_status in {"blocked", "failed", "rejected"} else "queued")
+    apply_status = "completed" if task_status == "completed" and (task.get("apply_receipt") or str(receipt.get("apply") or "") == "none") else ("blocked" if task_status in {"blocked", "failed", "rejected"} else "queued")
+    return [
+        {"id": "resolve-prompt", "title": "Resolve prompt and target paths", "status": "completed", "duration": "0s", "duration_seconds": 0, "started_at": started.isoformat(), "finished_at": started.isoformat(), "file": "execution/execution_run.json"},
+        {"id": "write-workset", "title": "Write executable workset", "status": "completed", "duration": "0s", "duration_seconds": 0, "started_at": started.isoformat(), "finished_at": started.isoformat(), "file": str(receipt.get("source") or "")},
+        {"id": "api-worker", "title": "OpenAI patch proposal worker", "status": api_status, "duration": duration_label(max(1, elapsed)), "duration_seconds": max(1, elapsed), "started_at": started.isoformat(), "finished_at": finished.isoformat(), "file": str(task.get("api_worker_receipt") or "")},
+        {"id": "materialize-patch", "title": "Materialize patch bundle", "status": patch_status, "duration": "0s", "duration_seconds": 0, "started_at": finished.isoformat(), "finished_at": finished.isoformat(), "file": str(task.get("patch_bundle") or "")},
+        {"id": "integrate-sequential", "title": "Integrate patch sequentially", "status": integration_status, "duration": "0s", "duration_seconds": 0, "started_at": finished.isoformat(), "finished_at": finished.isoformat(), "file": str(task.get("integration_receipt") or "")},
+        {"id": "apply-worktree", "title": "Apply or confirm dry-run handoff", "status": apply_status, "duration": "0s", "duration_seconds": 0, "started_at": finished.isoformat(), "finished_at": finished.isoformat(), "file": str(task.get("apply_receipt") or receipt.get("apply") or "")},
+        {"id": "collect-receipts", "title": "Collect receipts, cost, and evidence", "status": "completed" if receipt else "blocked", "duration": "0s", "duration_seconds": 0, "started_at": finished.isoformat(), "finished_at": finished.isoformat(), "file": str(receipt.get("events") or "")},
+    ]
+
+
+def dev_pipeline_delivery_artifacts(run_payload: dict[str, Any], receipt: dict[str, Any]) -> list[dict[str, Any]]:
+    rels: list[str] = []
+    for key in ("workset_manifest", "workset_receipt", "workset_events", "stdout_log", "stderr_log"):
+        if run_payload.get(key):
+            rels.append(str(run_payload[key]))
+    for key in ("workers", "artifacts", "patch_bundles", "integration_receipts", "validation_receipts"):
+        values = receipt.get(key) if isinstance(receipt.get(key), list) else []
+        rels.extend(str(value) for value in values if value)
+    rels.extend(str(record.get(key) or "") for record in (receipt.get("tasks") or {}).values() for key in ("apply_receipt", "taskstream_evidence") if isinstance(record, dict) and record.get(key))
+    artifacts: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for rel in rels:
+        clean = rel.strip()
+        if not clean or clean in seen:
+            continue
+        seen.add(clean)
+        path = ROOT_DIR / clean
+        artifacts.append({"name": Path(clean).name, "path": clean, "size": file_size_label(path), "exists": path.exists()})
+    return artifacts
+
+
+def dev_pipeline_execution_parallel_summary(run_payload: dict[str, Any], receipt: dict[str, Any]) -> dict[str, Any]:
+    workset_rel = str(run_payload.get("workset_manifest") or receipt.get("source") or "")
+    workset = read_json_path(ROOT_DIR / workset_rel) if workset_rel else {}
+    raw_tasks = workset.get("tasks") if isinstance(workset.get("tasks"), list) else []
+    receipt_tasks = receipt.get("tasks") if isinstance(receipt.get("tasks"), dict) else {}
+    max_parallel = int(receipt.get("max_parallel") or run_payload.get("workset_max_parallel") or workset.get("max_parallel") or 1)
+    task_count = len(raw_tasks) or int(receipt.get("total_tasks") or run_payload.get("workset_task_count") or 0)
+    enabled = max_parallel > 1 or task_count > 1 or str(run_payload.get("execution_model") or workset.get("execution_model") or "") == "parallel"
+    if not enabled:
+        return {"enabled": False}
+    tasks: list[dict[str, Any]] = []
+    if raw_tasks:
+        for index, task in enumerate(raw_tasks, start=1):
+            if not isinstance(task, dict):
+                continue
+            task_id = str(task.get("id") or f"task-{index}")
+            receipt_task = receipt_tasks.get(task_id) if isinstance(receipt_tasks.get(task_id), dict) else {}
+            tasks.append(
+                {
+                    "id": task_id,
+                    "title": str(task.get("task") or task_id),
+                    "worker_id": str(task.get("worker_id") or receipt_task.get("worker_id") or task_id),
+                    "status": dev_pipeline_execution_status_label(receipt_task.get("status") or ("queued" if run_payload.get("status") == "running" else run_payload.get("status") or "queued")),
+                    "write_paths": [str(value) for value in task.get("write_paths", []) if isinstance(value, str)],
+                    "depends_on": [str(value) for value in task.get("depends_on", []) if isinstance(value, str)],
+                    "patch_bundle": str(receipt_task.get("patch_bundle") or ""),
+                    "integration_receipt": str(receipt_task.get("integration_receipt") or ""),
+                    "validation_receipt": str(receipt_task.get("validation_receipt") or ""),
+                }
+            )
+    elif receipt_tasks:
+        for task_id, receipt_task in receipt_tasks.items():
+            if not isinstance(receipt_task, dict):
+                continue
+            tasks.append(
+                {
+                    "id": str(task_id),
+                    "title": str(receipt_task.get("worker_id") or task_id),
+                    "worker_id": str(receipt_task.get("worker_id") or task_id),
+                    "status": dev_pipeline_execution_status_label(receipt_task.get("status") or receipt.get("status") or "queued"),
+                    "write_paths": [str(value) for value in receipt_task.get("write_paths", []) if isinstance(value, str)],
+                    "depends_on": [str(value) for value in receipt_task.get("depends_on", []) if isinstance(value, str)],
+                    "patch_bundle": str(receipt_task.get("patch_bundle") or ""),
+                    "integration_receipt": str(receipt_task.get("integration_receipt") or ""),
+                    "validation_receipt": str(receipt_task.get("validation_receipt") or ""),
+                }
+            )
+    return {
+        "enabled": True,
+        "workset_manifest": workset_rel,
+        "workset_receipt": str(run_payload.get("workset_receipt") or ""),
+        "max_parallel": max_parallel,
+        "task_count": task_count or len(tasks),
+        "integration": str(receipt.get("integration") or workset.get("integration") or "sequential"),
+        "integration_model_policy": workset.get("integration_model_policy") if isinstance(workset.get("integration_model_policy"), dict) else {
+            "mode": "deterministic-first",
+            "fallback": "only-if-needed",
+            "model_ceiling": DEV_PIPELINE_INTEGRATION_MODEL_CEILING,
+            "profile": "api-mini-integrator",
+        },
+        "apply": str(receipt.get("apply") or run_payload.get("apply_mode") or "sequential"),
+        "no_shared_files": bool(receipt.get("no_shared_files", True)),
+        "summary": f"{task_count or len(tasks)} worker lanes, max {max_parallel} concurrent, one serialized integration lane",
+        "tasks": tasks,
+    }
+
+
+def dev_pipeline_proreq_light_delivery_command() -> tuple[list[str], int]:
+    runtime_profile = os.environ.get("CENTO_PROREQ_LIGHT_RUNTIME_PROFILE", "codex-fast")
+    max_parallel = os.environ.get("CENTO_PROREQ_LIGHT_MAX_PARALLEL", "3")
+    worker_timeout = os.environ.get("CENTO_PROREQ_LIGHT_WORKER_TIMEOUT", "180")
+    delivery_timeout = int(os.environ.get("CENTO_PROREQ_LIGHT_DELIVERY_TIMEOUT", "1800"))
+    command = [
+        sys.executable,
+        str(ROOT_DIR / "scripts" / "proreq_light.py"),
+        "deliver",
+        "--max-parallel",
+        max_parallel,
+        "--runtime-profile",
+        runtime_profile,
+        "--worker-timeout",
+        worker_timeout,
+        "--delivery-timeout",
+        str(delivery_timeout),
+        "--validation",
+        "smoke",
+        "--json",
+    ]
+    if os.environ.get("CENTO_PROREQ_LIGHT_NO_FULL_CHECK", "").lower() in {"1", "true", "yes", "on"}:
+        command.append("--no-full-check")
+    return command, delivery_timeout
+
+
+def dev_pipeline_run_proreq_light_closed_loop_delivery(
+    root: Path,
+    execution_manifest_rel: str,
+    execution_manifest: dict[str, Any],
+    run_payload: dict[str, Any],
+    steps: list[dict[str, Any]],
+    logs: list[dict[str, Any]],
+    started: datetime,
+    run_id: str,
+) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], bool]:
+    command, delivery_timeout = dev_pipeline_proreq_light_delivery_command()
+    delivery_dir = dev_pipeline_root_path(root, f"execution/delivery/{run_id}")
+    delivery_dir.mkdir(parents=True, exist_ok=True)
+    stdout_path = delivery_dir / "closed-loop.stdout.log"
+    stderr_path = delivery_dir / "closed-loop.stderr.log"
+    stdout_rel = dev_pipeline_relative(stdout_path)
+    stderr_rel = dev_pipeline_relative(stderr_path)
+    delivery_started = datetime.now(timezone.utc)
+    delivery_step = {
+        "id": "closed-loop-delivery",
+        "title": "Launch Codex workers, integrate patches, validate evidence",
+        "status": "running",
+        "command": shlex.join(command),
+        "exit_code": None,
+        "duration": "0s",
+        "duration_seconds": 0,
+        "started_at": delivery_started.isoformat(),
+        "finished_at": "",
+        "stdout_tail": "",
+        "stderr_tail": "",
+    }
+    steps = [*steps, delivery_step]
+    logs = [
+        *logs,
+        {
+            "timestamp": delivery_started.isoformat(),
+            "stage": "execution",
+            "source": "closed-loop-delivery",
+            "message": f"Dispatching {shlex.join(command)}",
+        },
+    ][-120:]
+    run_payload["steps"] = steps
+    run_payload["logs"] = logs
+    run_payload["stdout_log"] = stdout_rel
+    run_payload["stderr_log"] = stderr_rel
+    dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+
+    stdout = ""
+    stderr = ""
+    returncode: int | None = None
+    timed_out = False
+    try:
+        proc = subprocess.run(
+            command,
+            cwd=ROOT_DIR,
+            text=True,
+            capture_output=True,
+            timeout=delivery_timeout + 30,
+            check=False,
+        )
+        stdout = proc.stdout or ""
+        stderr = proc.stderr or ""
+        returncode = proc.returncode
+    except subprocess.TimeoutExpired as exc:
+        timed_out = True
+        stdout = exc.stdout if isinstance(exc.stdout, str) else ""
+        stderr = exc.stderr if isinstance(exc.stderr, str) else ""
+        stderr = (stderr + f"\nTimed out after {delivery_timeout + 30}s.\n").strip()
+
+    stdout_path.write_text(stdout, encoding="utf-8")
+    stderr_path.write_text(stderr, encoding="utf-8")
+    delivery_finished = datetime.now(timezone.utc)
+    duration_seconds = max(1, int(round((delivery_finished - delivery_started).total_seconds())))
+    try:
+        delivery_payload = json.loads(stdout or "{}")
+    except json.JSONDecodeError:
+        delivery_payload = {}
+    if not isinstance(delivery_payload, dict) or not delivery_payload:
+        delivery_payload = read_json_path(
+            ROOT_DIR / f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/closed_loop_delivery.json"
+        )
+    delivery_status = str(delivery_payload.get("status") or ("timeout" if timed_out else "blocked"))
+    step_status = "completed" if delivery_status == "completed" and returncode == 0 else "blocked"
+    receipt_rel = str(delivery_payload.get("workset_receipt") or "")
+    receipt = read_json_path(ROOT_DIR / receipt_rel) if receipt_rel else {}
+    workset_result = delivery_payload.get("workset_result") if isinstance(delivery_payload.get("workset_result"), dict) else {}
+    if receipt:
+        run_payload["workset_receipt"] = receipt_rel
+        run_payload["workset_dir"] = str(workset_result.get("workset_dir") or receipt.get("workset_dir") or "")
+        run_payload["workset_events"] = str(receipt.get("events") or "")
+        run_payload["total_ai_cost_usd"] = float(receipt.get("total_cost_usd") or 0.0)
+        run_payload["changed_paths"] = [str(value) for value in receipt.get("changed_paths", []) if isinstance(value, str)]
+    else:
+        run_payload["total_ai_cost_usd"] = 0.0
+        run_payload["changed_paths"] = []
+    run_payload["closed_loop_delivery"] = str(
+        delivery_payload.get("delivery")
+        or f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/closed_loop_delivery.json"
+    )
+    run_payload["closed_loop_evidence"] = f"workspace/runs/dev-pipeline-studio/docs-pages/latest/execution/hard-proreq/{run_id}/closed_loop_evidence.json"
+    run_payload["closed_loop_incident"] = str(delivery_payload.get("incident") or "")
+    run_payload["artifacts"] = dev_pipeline_hard_proreq_artifacts(run_id)
+    run_payload["facts"] = [
+        {"label": "Engine", "value": "cento proreq-light deliver"},
+        {"label": "Runtime", "value": f"local-command / {delivery_payload.get('runtime_profile') or os.environ.get('CENTO_PROREQ_LIGHT_RUNTIME_PROFILE', 'codex-fast')}"},
+        {"label": "Apply", "value": str(delivery_payload.get("apply") or "clean-owned-paths")},
+        {"label": "Parallel workers", "value": str(receipt.get("total_tasks") or len((receipt.get("tasks") or {}) if isinstance(receipt.get("tasks"), dict) else {}))},
+        {"label": "Max parallel", "value": str(delivery_payload.get("max_parallel") or os.environ.get("CENTO_PROREQ_LIGHT_MAX_PARALLEL", "3"))},
+        {"label": "AI cost", "value": f"${float(run_payload.get('total_ai_cost_usd') or 0.0):.6f} local ledger; dashboard remains source of truth"},
+        {"label": "Changed paths", "value": ", ".join(run_payload["changed_paths"]) if run_payload["changed_paths"] else "none"},
+    ]
+    steps[-1] = {
+        **delivery_step,
+        "status": step_status,
+        "exit_code": returncode,
+        "duration": duration_label(duration_seconds),
+        "duration_seconds": duration_seconds,
+        "finished_at": delivery_finished.isoformat(),
+        "stdout_tail": stdout[-1200:],
+        "stderr_tail": stderr[-1200:],
+    }
+    logs = [
+        *logs,
+        *dev_pipeline_workset_event_logs(str(run_payload.get("workset_events") or "")),
+        {
+            "timestamp": delivery_finished.isoformat(),
+            "stage": "handoff",
+            "source": "closed-loop-delivery",
+            "message": f"ProReq-light closed-loop delivery finished with status {delivery_status}",
+            "exit_code": returncode,
+        },
+    ][-120:]
+    run_payload["steps"] = steps
+    run_payload["logs"] = logs
+    dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+    return run_payload, steps, logs, step_status != "completed"
+
+
+def dev_pipeline_finish_hard_proreq_execution(root: Path, project_id: str, template_id: str, run_id: str) -> None:
+    manifest_path = root / "pipeline_manifest.json"
+    manifest = read_json_path(manifest_path)
+    if not manifest:
+        return
+    templates = [item for item in manifest.get("templates", []) if isinstance(item, dict)]
+    projects = [item for item in manifest.get("projects", []) if isinstance(item, dict)]
+    project = dev_pipeline_find(projects, project_id, project_id)
+    template = dev_pipeline_find(templates, template_id, template_id)
+    if not project or not template:
+        return
+    dev_pipeline_apply_generic_blueprint(template)
+    execution_manifest_rel = str(template.get("execution_manifest") or "execution/execution_manifest.json")
+    execution_manifest = {}
+    run_payload = dev_pipeline_artifact_json(root, f"execution/runs/{run_id}.json") or dev_pipeline_artifact_json(root, "execution/execution_run.json")
+    if str(run_payload.get("run_id") or "") != run_id or str(run_payload.get("status") or "") != "running":
+        return
+    is_light = str(template_id or template.get("id") or "") == PROREQ_LIGHT_TEMPLATE_ID or str(run_payload.get("source") or "").startswith("cento-proreq-light")
+    started = parse_iso_datetime(run_payload.get("started_at")) or datetime.now(timezone.utc)
+    steps = [dict(step) for step in run_payload.get("steps", []) if isinstance(step, dict)]
+    logs = [item for item in run_payload.get("logs", []) if isinstance(item, dict)]
+    run_failed = False
+    run_blocked = False
+    for index, step in enumerate(steps):
+        step_id = str(step.get("id") or f"step-{index + 1}")
+        command = dev_pipeline_execution_command_for_step(step_id)
+        if is_light and step_id == "write-ui-screenshot-request":
+            command = ["python3", "scripts/dev_pipeline_hard_proreq.py", "light-screenshot"]
+        step_started = datetime.now(timezone.utc)
+        steps[index] = {
+            **step,
+            "status": "running",
+            "started_at": step_started.isoformat(),
+            "finished_at": "",
+            "command": shlex.join(command),
+        }
+        run_payload["steps"] = steps
+        run_payload["stages"] = dev_pipeline_hard_proreq_stage_payloads(started, "running")
+        logs.append({"timestamp": step_started.isoformat(), "stage": "execution", "source": step_id, "message": f"{step.get('title') or step_id} started", "command": shlex.join(command)})
+        run_payload["logs"] = logs[-100:]
+        dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+
+        step_timeout = int(os.environ.get("CENTO_HARD_PROREQ_STEP_TIMEOUT", "90"))
+        if step_id == "write-ui-screenshot-request":
+            step_timeout = int(os.environ.get("CENTO_HARD_PROREQ_STEP_TIMEOUT", "90")) if is_light else int(os.environ.get("CENTO_HARD_PROREQ_IMAGE_TIMEOUT", "240")) + 30
+        if step_id == "dispatch-codex-pro-backend-plan":
+            step_timeout = int(os.environ.get("CENTO_PROREQ_LIGHT_CODEX_TIMEOUT", "900")) + 30
+        result = subprocess.run(command, cwd=ROOT_DIR, text=True, capture_output=True, timeout=step_timeout)
+        elapsed = (datetime.now(timezone.utc) - step_started).total_seconds()
+        if elapsed < DEV_PIPELINE_EXECUTION_MIN_STEP_SECONDS:
+            time.sleep(DEV_PIPELINE_EXECUTION_MIN_STEP_SECONDS - elapsed)
+        step_finished = datetime.now(timezone.utc)
+        duration_seconds = max(1, int(round((step_finished - step_started).total_seconds())))
+        muted_step = bool(step.get("muted")) or str(step.get("lane") or "") == "frontend"
+        status = "muted" if muted_step and result.returncode == 0 else ("completed" if result.returncode == 0 else "failed")
+        if result.returncode != 0:
+            run_failed = True
+        steps[index] = {
+            **step,
+            "id": step_id,
+            "title": str(step.get("title") or step_id),
+            "status": status,
+            "command": shlex.join(command),
+            "exit_code": result.returncode,
+            "duration": duration_label(duration_seconds),
+            "duration_seconds": duration_seconds,
+            "started_at": step_started.isoformat(),
+            "finished_at": step_finished.isoformat(),
+            "stdout_tail": result.stdout[-1200:],
+            "stderr_tail": result.stderr[-1200:],
+        }
+        logs.append({"timestamp": step_finished.isoformat(), "stage": "execution", "source": step_id, "message": f"{step.get('title') or step_id} finished with status {status}", "exit_code": result.returncode})
+        run_payload["steps"] = steps
+        run_payload["logs"] = logs[-120:]
+        run_payload["artifacts"] = dev_pipeline_hard_proreq_artifacts(run_id)
+        dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+        if run_failed:
+            break
+
+    if is_light and not run_failed and str(run_payload.get("delivery_mode") or "closed-loop") == "closed-loop":
+        run_payload, steps, logs, delivery_blocked = dev_pipeline_run_proreq_light_closed_loop_delivery(
+            root,
+            execution_manifest_rel,
+            execution_manifest,
+            run_payload,
+            steps,
+            logs,
+            started,
+            run_id,
+        )
+        run_blocked = bool(delivery_blocked)
+
+    finished = datetime.now(timezone.utc)
+    run_status = "failed" if run_failed else ("blocked" if run_blocked else "completed")
+    if run_failed:
+        for index in range(index + 1, len(steps)):
+            steps[index] = {**steps[index], "status": "blocked", "stderr_tail": "Skipped because an upstream hard proreq step failed."}
+    run_payload["status"] = run_status
+    run_payload["finished_at"] = finished.isoformat()
+    run_payload["duration_seconds"] = max(0, int(round((finished - started).total_seconds())))
+    run_payload["stages"] = dev_pipeline_hard_proreq_stage_payloads(started, run_status, finished)
+    run_payload["steps"] = steps
+    run_payload["logs"] = [
+        *logs,
+        {
+            "timestamp": finished.isoformat(),
+            "stage": "handoff",
+            "source": "proreq-light" if is_light else "hard-proreq",
+            "message": ("ProReq-light closed-loop run finished" if is_light and str(run_payload.get("delivery_mode") or "") == "closed-loop" else ("ProReq-light Codex Exec planning finished" if is_light else "Hard proreq planning finished")) + f" with status {run_status}",
+        },
+    ][-120:]
+    run_payload["artifacts"] = dev_pipeline_hard_proreq_artifacts(run_id)
+    run_payload["written_at"] = datetime.now(timezone.utc).isoformat()
+    dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+
+    manifest["active_run_id"] = run_id
+    manifest["status"] = run_status
+    manifest["status_detail"] = (
+        (
+            "ProReq-light closed-loop pipeline completed; Codex Exec simulated the Pro planning lane, launched local Codex workers, integrated accepted patches, and wrote validation evidence"
+            if run_status == "completed"
+            else "ProReq-light closed-loop pipeline blocked; incident and closed-loop evidence artifacts were written for follow-up"
+        )
+        if is_light
+        else "Hard proreq pipeline completed; GPT pro backend request, schema, Cento context, muted frontend request, backend work, integration, and validation artifacts are ready"
+    )
+    write_json_path(manifest_path, manifest)
+    dev_pipeline_append_event(
+        root,
+        manifest,
+        "pipeline_proreq_light_finished" if is_light else "pipeline_hard_proreq_finished",
+        str(project.get("id") or project_id),
+        str(template.get("id") or template_id),
+        {"execution_run_id": run_id, "status": run_status, "artifacts": [item["path"] for item in dev_pipeline_hard_proreq_artifacts(run_id)]},
+    )
+
+
+def dev_pipeline_finish_multipipeline_execution(root: Path, project_id: str, template_id: str, run_id: str) -> None:
+    manifest_path = root / "pipeline_manifest.json"
+    manifest = read_json_path(manifest_path)
+    if not manifest:
+        return
+    templates = [item for item in manifest.get("templates", []) if isinstance(item, dict)]
+    projects = [item for item in manifest.get("projects", []) if isinstance(item, dict)]
+    project = dev_pipeline_find(projects, project_id, project_id)
+    template = dev_pipeline_find(templates, template_id, template_id)
+    if not project or not template:
+        return
+    dev_pipeline_apply_generic_blueprint(template)
+    execution_manifest_rel = str(template.get("execution_manifest") or "execution/multipipeline_execution_manifest.json")
+    execution_manifest = {}
+    run_payload = dev_pipeline_artifact_json(root, f"execution/runs/{run_id}.json") or dev_pipeline_artifact_json(root, "execution/execution_run.json")
+    if str(run_payload.get("run_id") or "") != run_id or str(run_payload.get("status") or "") != "running":
+        return
+    started = parse_iso_datetime(run_payload.get("started_at")) or datetime.now(timezone.utc)
+    steps = [dict(step) for step in run_payload.get("steps", []) if isinstance(step, dict)]
+    logs = [item for item in run_payload.get("logs", []) if isinstance(item, dict)]
+    run_failed = False
+    env = os.environ.copy()
+    env["CENTO_DEV_PIPELINE_STUDIO_ROOT"] = str(root)
+    for index, step in enumerate(steps):
+        step_id = str(step.get("id") or f"step-{index + 1}")
+        command = dev_pipeline_execution_command_for_step(step_id)
+        step_started = datetime.now(timezone.utc)
+        steps[index] = {
+            **step,
+            "status": "running",
+            "started_at": step_started.isoformat(),
+            "finished_at": "",
+            "command": shlex.join(command),
+        }
+        run_payload["steps"] = steps
+        run_payload["stages"] = dev_pipeline_multipipeline_stage_payloads(started, "running")
+        logs.append({"timestamp": step_started.isoformat(), "stage": "execution", "source": step_id, "message": f"{step.get('title') or step_id} started", "command": shlex.join(command)})
+        run_payload["logs"] = logs[-100:]
+        dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+
+        step_timeout = int(os.environ.get("CENTO_MULTIPIPELINE_STEP_TIMEOUT", "60"))
+        result = subprocess.run(command, cwd=ROOT_DIR, text=True, capture_output=True, timeout=step_timeout, env=env)
+        elapsed = (datetime.now(timezone.utc) - step_started).total_seconds()
+        if elapsed < DEV_PIPELINE_EXECUTION_MIN_STEP_SECONDS:
+            time.sleep(DEV_PIPELINE_EXECUTION_MIN_STEP_SECONDS - elapsed)
+        step_finished = datetime.now(timezone.utc)
+        duration_seconds = max(1, int(round((step_finished - step_started).total_seconds())))
+        muted_step = bool(step.get("muted")) or str(step.get("lane") or "") == "frontend"
+        status = "muted" if muted_step and result.returncode == 0 else ("completed" if result.returncode == 0 else "failed")
+        if result.returncode != 0:
+            run_failed = True
+        steps[index] = {
+            **step,
+            "id": step_id,
+            "title": str(step.get("title") or step_id),
+            "status": status,
+            "command": shlex.join(command),
+            "exit_code": result.returncode,
+            "duration": duration_label(duration_seconds),
+            "duration_seconds": duration_seconds,
+            "started_at": step_started.isoformat(),
+            "finished_at": step_finished.isoformat(),
+            "stdout_tail": result.stdout[-1200:],
+            "stderr_tail": result.stderr[-1200:],
+        }
+        logs.append({"timestamp": step_finished.isoformat(), "stage": "execution", "source": step_id, "message": f"{step.get('title') or step_id} finished with status {status}", "exit_code": result.returncode})
+        run_payload["steps"] = steps
+        run_payload["logs"] = logs[-120:]
+        run_payload["artifacts"] = dev_pipeline_multipipeline_artifacts(run_id)
+        dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+        if run_failed:
+            break
+
+    finished = datetime.now(timezone.utc)
+    run_status = "failed" if run_failed else "completed"
+    if run_failed:
+        for blocked_index in range(index + 1, len(steps)):
+            steps[blocked_index] = {**steps[blocked_index], "status": "blocked", "stderr_tail": "Skipped because an upstream multipipeline ProReq step failed."}
+    run_payload["status"] = run_status
+    run_payload["finished_at"] = finished.isoformat()
+    run_payload["duration_seconds"] = max(0, int(round((finished - started).total_seconds())))
+    run_payload["stages"] = dev_pipeline_multipipeline_stage_payloads(started, run_status, finished)
+    run_payload["steps"] = steps
+    run_payload["logs"] = [
+        *logs,
+        {"timestamp": finished.isoformat(), "stage": "handoff", "source": "multipipeline-proreq", "message": f"Multipipeline ProReq chain finished with status {run_status}"},
+    ][-120:]
+    run_payload["artifacts"] = dev_pipeline_multipipeline_artifacts(run_id)
+    run_payload["written_at"] = datetime.now(timezone.utc).isoformat()
+    dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+
+    manifest["active_run_id"] = run_id
+    manifest["status"] = run_status
+    manifest["status_detail"] = "Multipipeline ProReq chain completed; four sequential pass requests, UI screenshot request, ChatGPT Pro request, roadmap, and evidence artifacts are ready"
+    write_json_path(manifest_path, manifest)
+    dev_pipeline_append_event(
+        root,
+        manifest,
+        "pipeline_multipipeline_proreq_finished",
+        str(project.get("id") or project_id),
+        str(template.get("id") or template_id),
+        {"execution_run_id": run_id, "status": run_status, "artifacts": [item["path"] for item in dev_pipeline_multipipeline_artifacts(run_id)]},
+    )
+
+
+def dev_pipeline_finish_patch_swarm_execution(root: Path, project_id: str, template_id: str, run_id: str) -> None:
+    manifest_path = root / "pipeline_manifest.json"
+    manifest = read_json_path(manifest_path)
+    if not manifest:
+        return
+    templates = [item for item in manifest.get("templates", []) if isinstance(item, dict)]
+    projects = [item for item in manifest.get("projects", []) if isinstance(item, dict)]
+    project = dev_pipeline_find(projects, project_id, project_id)
+    template = dev_pipeline_find(templates, template_id, template_id)
+    if not project or not template:
+        return
+    dev_pipeline_apply_generic_blueprint(template)
+    execution_manifest_rel = str(template.get("execution_manifest") or "execution/patch_swarm_execution_manifest.json")
+    execution_manifest = {}
+    run_payload = dev_pipeline_artifact_json(root, f"execution/runs/{run_id}.json") or dev_pipeline_artifact_json(root, "execution/execution_run.json")
+    if str(run_payload.get("run_id") or "") != run_id or str(run_payload.get("status") or "") != "running":
+        return
+    started = parse_iso_datetime(run_payload.get("started_at")) or datetime.now(timezone.utc)
+    steps = [dict(step) for step in run_payload.get("steps", []) if isinstance(step, dict)]
+    logs = [item for item in run_payload.get("logs", []) if isinstance(item, dict)]
+    command = [
+        sys.executable,
+        str(ROOT_DIR / "scripts" / "parallel_delivery.py"),
+        "patch-swarm",
+        "e2e",
+        "--run-id",
+        run_id,
+        "--objective",
+        str(run_payload.get("prompt") or "Patch Swarm UI request."),
+        "--candidate-target",
+        str(int(run_payload.get("candidate_target") or 100)),
+        "--max-parallel-agents",
+        str(int(run_payload.get("max_parallel_agents") or 5)),
+        "--providers",
+        str(run_payload.get("providers") or "codex-exec,claude-code,api-openai"),
+        "--fixture",
+        "--json",
+    ]
+    run_payload["logs"] = [
+        *logs,
+        {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "stage": "execution",
+            "source": "patch-swarm",
+            "message": f"Dispatching {shlex.join(command)}",
+        },
+    ][-120:]
+    for index, step in enumerate(steps):
+        steps[index] = {**step, "status": "running", "started_at": datetime.now(timezone.utc).isoformat(), "command": shlex.join(command)}
+    run_payload["steps"] = steps
+    dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+
+    proc = subprocess.run(command, cwd=ROOT_DIR, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=int(os.environ.get("CENTO_PATCH_SWARM_UI_TIMEOUT", "300")), check=False)
+    finished = datetime.now(timezone.utc)
+    duration_seconds = max(1, int(round((finished - started).total_seconds())))
+    try:
+        result = json.loads(proc.stdout or "{}")
+    except json.JSONDecodeError:
+        result = {}
+    run_status = "completed" if proc.returncode == 0 and result.get("status") == "completed" else "blocked"
+    for index, step in enumerate(steps):
+        step_id = str(step.get("id") or "")
+        is_integrator = step_id == "dedicated-integrator"
+        steps[index] = {
+            **step,
+            "status": run_status if is_integrator else ("completed" if run_status == "completed" else "blocked"),
+            "exit_code": proc.returncode,
+            "duration": duration_label(duration_seconds),
+            "duration_seconds": duration_seconds,
+            "finished_at": finished.isoformat(),
+            "stdout_tail": (proc.stdout or "")[-1200:],
+            "stderr_tail": (proc.stderr or "")[-1200:],
+        }
+    run_payload["status"] = run_status
+    run_payload["finished_at"] = finished.isoformat()
+    run_payload["duration_seconds"] = duration_seconds
+    run_payload["stages"] = dev_pipeline_patch_swarm_stage_payloads(started, run_status, finished)
+    run_payload["steps"] = steps
+    run_payload["logs"] = [
+        *run_payload.get("logs", []),
+        {
+            "timestamp": finished.isoformat(),
+            "stage": "handoff",
+            "source": "patch-swarm",
+            "message": f"Patch Swarm finished with status {run_status}",
+            "exit_code": proc.returncode,
+        },
+    ][-120:]
+    run_payload["patch_swarm_run_dir"] = str(result.get("run_dir") or f"workspace/runs/parallel-delivery/patch-swarm/{run_id}")
+    run_payload["candidate_count"] = int(result.get("candidate_count") or 0)
+    run_payload["selected_count"] = int(result.get("selected_count") or 0)
+    run_payload["safe_integrator_handoff"] = str(result.get("safe_integrator_handoff") or "")
+    run_payload["total_ai_cost_usd"] = float(result.get("estimated_cost_usd") or 0.0)
+    run_payload["artifacts"] = dev_pipeline_patch_swarm_artifacts(run_id)
+    run_payload["facts"] = [
+        {"label": "Engine", "value": "cento parallel-delivery patch-swarm e2e"},
+        {"label": "Providers", "value": str(run_payload.get("providers") or "codex-exec,claude-code,api-openai")},
+        {"label": "Candidates", "value": str(run_payload.get("candidate_count") or result.get("candidate_count") or 0)},
+        {"label": "Selected", "value": str(run_payload.get("selected_count") or result.get("selected_count") or 0)},
+        {"label": "AI cost", "value": f"${float(run_payload.get('total_ai_cost_usd') or 0.0):.6f} fixture ledger"},
+        {"label": "Handoff", "value": str(run_payload.get("safe_integrator_handoff") or "pending")},
+    ]
+    run_payload["written_at"] = datetime.now(timezone.utc).isoformat()
+    dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+
+    manifest["active_run_id"] = run_id
+    manifest["status"] = run_status
+    manifest["status_detail"] = f"Patch Swarm {run_status}; candidates={run_payload.get('candidate_count', 0)} selected={run_payload.get('selected_count', 0)} cost=${float(run_payload.get('total_ai_cost_usd') or 0.0):.6f}"
+    budget = manifest.get("budget") if isinstance(manifest.get("budget"), dict) else {}
+    budget["spent_usd"] = float(run_payload.get("total_ai_cost_usd") or 0.0)
+    budget["cap_usd"] = 20.0
+    manifest["budget"] = budget
+    template["budget_spent_usd"] = budget["spent_usd"]
+    template["budget_cap_usd"] = budget["cap_usd"]
+    write_json_path(manifest_path, manifest)
+    dev_pipeline_append_event(
+        root,
+        manifest,
+        "pipeline_patch_swarm_finished",
+        str(project.get("id") or project_id),
+        str(template.get("id") or template_id),
+        {"execution_run_id": run_id, "status": run_status, "candidate_count": run_payload.get("candidate_count", 0), "selected_count": run_payload.get("selected_count", 0)},
+    )
+
+
+def dev_pipeline_finish_execution_e2e(root: Path, project_id: str, template_id: str, run_id: str) -> None:
+    with DEV_PIPELINE_EXECUTION_LOCK:
+        if str(template_id or "") in {HARD_PROREQ_TEMPLATE_ID, PROREQ_LIGHT_TEMPLATE_ID}:
+            dev_pipeline_finish_hard_proreq_execution(root, project_id, template_id, run_id)
+            return
+        if str(template_id or "") == MULTIPIPELINE_TEMPLATE_ID:
+            dev_pipeline_finish_multipipeline_execution(root, project_id, template_id, run_id)
+            return
+        if str(template_id or "") == PATCH_SWARM_TEMPLATE_ID:
+            dev_pipeline_finish_patch_swarm_execution(root, project_id, template_id, run_id)
+            return
+        manifest_path = root / "pipeline_manifest.json"
+        manifest = read_json_path(manifest_path)
+        if not manifest:
+            return
+        templates = [item for item in manifest.get("templates", []) if isinstance(item, dict)]
+        projects = [item for item in manifest.get("projects", []) if isinstance(item, dict)]
+        project = dev_pipeline_find(projects, project_id, project_id)
+        template = dev_pipeline_find(templates, template_id, template_id)
+        if not project or not template:
+            return
+        execution_manifest_rel, execution_manifest, _execution_steps = dev_pipeline_execution_steps(root, template)
+        run_payload = dev_pipeline_artifact_json(root, f"execution/runs/{run_id}.json") or dev_pipeline_artifact_json(root, "execution/execution_run.json")
+        if str(run_payload.get("run_id") or "") != run_id or str(run_payload.get("status") or "") != "running":
+            return
+        started = parse_iso_datetime(run_payload.get("started_at")) or datetime.now(timezone.utc)
+        delivery_dir_rel = f"execution/delivery/{run_id}"
+        delivery_dir = dev_pipeline_root_path(root, delivery_dir_rel)
+        delivery_dir.mkdir(parents=True, exist_ok=True)
+        stdout_path = delivery_dir / "workset.stdout.log"
+        stderr_path = delivery_dir / "workset.stderr.log"
+        stdout_rel = dev_pipeline_relative(stdout_path)
+        stderr_rel = dev_pipeline_relative(stderr_path)
+        workset_rel = str(run_payload.get("workset_manifest") or "")
+        if DEV_PIPELINE_DELIVERY_REDIRECT_GRACE_SECONDS > 0:
+            run_payload["logs"] = [
+                *[item for item in run_payload.get("logs", []) if isinstance(item, dict)],
+                {
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "stage": "pipeline",
+                    "source": "redirect",
+                    "message": f"Waiting {DEV_PIPELINE_DELIVERY_REDIRECT_GRACE_SECONDS:.1f}s before worker dispatch so the browser can land on Execution Flow",
+                },
+            ][-80:]
+            run_payload["stdout_log"] = stdout_rel
+            run_payload["stderr_log"] = stderr_rel
+            dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+            time.sleep(DEV_PIPELINE_DELIVERY_REDIRECT_GRACE_SECONDS)
+        runtime = str(run_payload.get("runtime") or "api-openai")
+        apply_mode = str(run_payload.get("apply_mode") or "apply")
+        validation_mode = str(run_payload.get("validation_mode") or "smoke")
+        command = [
+            sys.executable,
+            str(ROOT_DIR / "scripts" / "cento_workset.py"),
+            "execute",
+            workset_rel,
+            "--runtime",
+            runtime,
+            "--integrate",
+            "sequential",
+            "--validation",
+            validation_mode,
+            "--worker-timeout",
+            str(DEV_PIPELINE_DELIVERY_TIMEOUT_SECONDS),
+        ]
+        if runtime == "api-openai":
+            command.extend(
+                [
+                    "--api-profile",
+                    DEV_PIPELINE_DELIVERY_API_PROFILE,
+                    "--budget-usd",
+                    f"{float(run_payload.get('budget_usd') or DEV_PIPELINE_DELIVERY_BUDGET_USD):.2f}",
+                    "--max-budget-usd",
+                    f"{float(run_payload.get('max_budget_usd') or DEV_PIPELINE_DELIVERY_MAX_BUDGET_USD):.2f}",
+                ]
+            )
+        elif runtime == "fixture":
+            command.extend(["--fixture-case", "valid"])
+        if apply_mode == "apply":
+            command.append("--apply")
+        else:
+            command.append("--allow-dirty-owned")
+        command.extend(
+            [
+            "--json",
+            ]
+        )
+        running_steps = [dict(step) for step in run_payload.get("steps", []) if isinstance(step, dict)]
+        for index, step in enumerate(running_steps):
+            step_id = str(step.get("id") or "")
+            if step_id == "api-worker" or step_id.startswith("parallel-worker-") or step_id == "dispatch-parallel-workers":
+                running_steps[index] = {**step, "status": "running", "started_at": datetime.now(timezone.utc).isoformat(), "command": shlex.join(command)}
+        run_payload["steps"] = running_steps
+        run_payload["logs"] = [
+            *[item for item in run_payload.get("logs", []) if isinstance(item, dict)],
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "stage": "execution",
+                "source": "workset",
+                "message": f"Dispatching {shlex.join(command)}",
+            },
+        ]
+        run_payload["stdout_log"] = stdout_rel
+        run_payload["stderr_log"] = stderr_rel
+        dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+
+        proc = subprocess.Popen(command, cwd=ROOT_DIR, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        workset_dir: Path | None = None
+        while proc.poll() is None:
+            if workset_dir is None:
+                workset_dir = dev_pipeline_latest_workset_dir(str(run_payload.get("workset_id") or ""), started)
+                if workset_dir is not None:
+                    run_payload["workset_dir"] = dev_pipeline_relative(workset_dir)
+                    run_payload["workset_events"] = dev_pipeline_relative(workset_dir / "events.ndjson")
+                    run_payload["logs"] = [
+                        *[item for item in run_payload.get("logs", []) if isinstance(item, dict)],
+                        *dev_pipeline_workset_event_logs(str(run_payload.get("workset_events") or "")),
+                    ][-80:]
+                    dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+            time.sleep(0.8)
+        stdout, stderr = proc.communicate()
+        stdout_path.write_text(stdout or "", encoding="utf-8")
+        stderr_path.write_text(stderr or "", encoding="utf-8")
+
+        result: dict[str, Any] = {}
+        try:
+            result = json.loads(stdout or "{}")
+        except json.JSONDecodeError:
+            result = {}
+        receipt_rel = str(result.get("workset_receipt") or "")
+        receipt = read_json_path(ROOT_DIR / receipt_rel) if receipt_rel else {}
+        finished = datetime.now(timezone.utc)
+        if receipt:
+            status = dev_pipeline_execution_status_label(receipt.get("status"))
+            run_payload["workset_receipt"] = receipt_rel
+            run_payload["workset_dir"] = str(result.get("workset_dir") or run_payload.get("workset_dir") or "")
+            run_payload["workset_events"] = str(receipt.get("events") or run_payload.get("workset_events") or "")
+            run_payload["total_ai_cost_usd"] = float(receipt.get("total_cost_usd") or 0.0)
+            run_payload["changed_paths"] = [str(value) for value in receipt.get("changed_paths", []) if isinstance(value, str)]
+            run_payload["steps"] = dev_pipeline_delivery_steps_from_receipt(receipt, started, finished)
+            run_payload["artifacts"] = dev_pipeline_delivery_artifacts(run_payload, receipt)
+            apply_label = "dry-run integrator" if str(receipt.get("apply") or "") == "none" else ("sequential integrator" if int(receipt.get("total_tasks") or len(receipt.get("tasks") or {}) or 1) > 1 else "direct worktree")
+            run_payload["facts"] = [
+                {"label": "Engine", "value": "cento workset execute"},
+                {"label": "Runtime", "value": str(receipt.get("runtime") or "api-openai")},
+                {"label": "Apply", "value": apply_label},
+                {"label": "Integration model ceiling", "value": f"{DEV_PIPELINE_INTEGRATION_MODEL_CEILING} only if needed"},
+                {"label": "Parallel workers", "value": str(receipt.get("total_tasks") or len(receipt.get("tasks") or {}))},
+                {"label": "Max parallel", "value": str(receipt.get("max_parallel") or run_payload.get("workset_max_parallel") or 1)},
+                {"label": "AI cost", "value": f"${float(receipt.get('total_cost_usd') or 0.0):.6f}"},
+                {"label": "Budget", "value": f"${float(receipt.get('target_budget_usd') or 0.0):.2f} target / ${float(receipt.get('max_budget_usd') or 0.0):.2f} cap"},
+                {"label": "Changed paths", "value": ", ".join(run_payload["changed_paths"]) if run_payload["changed_paths"] else "none"},
+            ]
+        else:
+            status = "failed"
+            run_payload["steps"] = [
+                {**step, "status": "failed" if str(step.get("id") or "") == "api-worker" else dev_pipeline_execution_status_label(step.get("status"))}
+                for step in run_payload.get("steps", [])
+                if isinstance(step, dict)
+            ]
+            run_payload["artifacts"] = dev_pipeline_delivery_artifacts(run_payload, {})
+        run_status = "completed" if status == "completed" and proc.returncode == 0 else ("blocked" if status in {"blocked", "rejected"} else status)
+        run_payload["status"] = run_status
+        run_payload["finished_at"] = finished.isoformat()
+        run_payload["duration_seconds"] = max(0, int(round((finished - started).total_seconds())))
+        run_payload["stages"] = dev_pipeline_delivery_stage_payloads(started, run_status, finished, bool(run_payload.get("target_paths")))
+        run_payload["logs"] = [
+            *[item for item in run_payload.get("logs", []) if isinstance(item, dict)],
+            *dev_pipeline_workset_event_logs(str(run_payload.get("workset_events") or "")),
+            {
+                "timestamp": finished.isoformat(),
+                "stage": "handoff",
+                "source": "workset",
+                "message": f"Workset delivery finished with status {run_status}",
+            },
+        ][-120:]
+        run_payload["written_at"] = datetime.now(timezone.utc).isoformat()
+        dev_pipeline_write_execution_state(root, execution_manifest_rel, execution_manifest, run_payload)
+
+        manifest["active_run_id"] = run_id
+        manifest["status"] = run_status
+        manifest["status_detail"] = f"Workset delivery {run_status}; AI cost ${float(run_payload.get('total_ai_cost_usd') or 0.0):.6f}; changed paths: {', '.join(run_payload.get('changed_paths') or []) or 'none'}"
+        budget = manifest.get("budget") if isinstance(manifest.get("budget"), dict) else {}
+        budget["spent_usd"] = float(run_payload.get("total_ai_cost_usd") or 0.0)
+        budget["cap_usd"] = float(run_payload.get("max_budget_usd") or DEV_PIPELINE_DELIVERY_MAX_BUDGET_USD)
+        manifest["budget"] = budget
+        template["budget_spent_usd"] = budget["spent_usd"]
+        template["budget_cap_usd"] = budget["cap_usd"]
+        write_json_path(manifest_path, manifest)
+        dev_pipeline_append_event(
+            root,
+            manifest,
+            "pipeline_workset_delivery_finished",
+            str(project.get("id") or project_id),
+            str(template.get("id") or template_id),
+            {
+                "execution_run_id": run_id,
+                "status": run_status,
+                "workset_receipt": str(run_payload.get("workset_receipt") or ""),
+                "total_ai_cost_usd": float(run_payload.get("total_ai_cost_usd") or 0.0),
+                "changed_paths": run_payload.get("changed_paths") or [],
+            },
+        )
+
+
+def dev_pipeline_spawn_execution_e2e(root: Path, project_id: str, template_id: str, run_id: str) -> None:
+    run_payload = dev_pipeline_artifact_json(root, f"execution/runs/{run_id}.json") or dev_pipeline_artifact_json(root, "execution/execution_run.json")
+    if str(run_payload.get("status") or "") != "running":
+        return
+    thread = threading.Thread(
+        target=dev_pipeline_finish_execution_e2e,
+        args=(root, project_id, template_id, run_id),
+        name=f"dev-pipeline-delivery-{run_id}",
+        daemon=True,
+    )
+    thread.start()
+
+
+def dev_pipeline_start_default_issue_run(issue: dict[str, Any]) -> dict[str, Any]:
+    root = DEV_PIPELINE_STUDIO_ROOT
+    manifest_path = root / "pipeline_manifest.json"
+    manifest = read_json_path(manifest_path)
+    if not manifest:
+        raise AgentWorkAppError(f"Dev Pipeline Studio manifest not found: {dev_pipeline_relative(manifest_path)}")
+    if dev_pipeline_ensure_builtin_pipelines(manifest):
+        write_json_path(manifest_path, manifest)
+    projects = [item for item in manifest.get("projects", []) if isinstance(item, dict)]
+    templates = [item for item in manifest.get("templates", []) if isinstance(item, dict)]
+    project = dev_pipeline_find(projects, DEFAULT_DEV_PIPELINE_PROJECT_ID, DEFAULT_DEV_PIPELINE_PROJECT_ID)
+    template = dev_pipeline_find(templates, DEFAULT_DEV_PIPELINE_TEMPLATE_ID, DEFAULT_DEV_PIPELINE_TEMPLATE_ID)
+    if not project or not template:
+        raise AgentWorkAppError("Default Dev Pipeline Studio route is unavailable")
+    dev_pipeline_apply_generic_blueprint(template)
+    issue_id = str(issue.get("id") or "")
+    subject = str(issue.get("subject") or "")
+    prompt = str(issue.get("description") or "")
+    execution_run = dev_pipeline_seed_execution_e2e(
+        root,
+        manifest,
+        project,
+        template,
+        {
+            "triggered_by": f"issue-{issue_id}" if issue_id else "prompt-router",
+            "issue_id": issue_id,
+            "issue_subject": subject,
+            "prompt": prompt,
+            "message": f"Prompt issue #{issue_id} routed to Hard Proreq Project",
+        },
+    )
+
+    defaults = manifest.get("defaults") if isinstance(manifest.get("defaults"), dict) else {}
+    defaults["project_id"] = DEFAULT_DEV_PIPELINE_PROJECT_ID
+    defaults["template_id"] = DEFAULT_DEV_PIPELINE_TEMPLATE_ID
+    manifest["defaults"] = defaults
+    manifest["active_run_id"] = str(execution_run.get("run_id") or "")
+    manifest["status"] = str(execution_run.get("status") or "running")
+    manifest["status_detail"] = f"Prompt issue #{issue_id} is routed to Hard Proreq Project"
+    write_json_path(manifest_path, manifest)
+    dev_pipeline_append_event(
+        root,
+        manifest,
+        "pipeline_issue_prompt_routed",
+        DEFAULT_DEV_PIPELINE_PROJECT_ID,
+        DEFAULT_DEV_PIPELINE_TEMPLATE_ID,
+        {
+            "issue_id": issue_id,
+            "issue_subject": subject,
+            "execution_run_id": str(execution_run.get("run_id") or ""),
+            "default_route": True,
+        },
+    )
+    dev_pipeline_spawn_execution_e2e(root, DEFAULT_DEV_PIPELINE_PROJECT_ID, DEFAULT_DEV_PIPELINE_TEMPLATE_ID, str(execution_run.get("run_id") or ""))
+    return {
+        "project_id": DEFAULT_DEV_PIPELINE_PROJECT_ID,
+        "template_id": DEFAULT_DEV_PIPELINE_TEMPLATE_ID,
+        "run_id": str(execution_run.get("run_id") or ""),
+        "status": str(execution_run.get("status") or "running"),
+        "default": True,
+        "url": "/dev-pipeline-studio#pipeline-flow",
+    }
+
+
+def dev_pipeline_execution_flow(
+    root: Path,
+    manifest: dict[str, Any],
+    project: dict[str, Any],
+    template: dict[str, Any],
+    required_inputs: list[dict[str, Any]],
+    workers: list[dict[str, Any]],
+    integration_cards: list[dict[str, Any]],
+    validator_cards: list[dict[str, Any]],
+    evidence_cards: list[dict[str, Any]],
+    event_total: int,
+    budget_spent: float,
+    budget_cap: float,
+    selected_run_id: str = "",
+) -> dict[str, Any]:
+    artifacts = manifest.get("artifacts") if isinstance(manifest.get("artifacts"), dict) else {}
+    events_rel = str(artifacts.get("events") or "events.ndjson")
+    execution_manifest_rel = str(template.get("execution_manifest") or "execution/execution_manifest.json")
+    execution_manifest = dev_pipeline_artifact_json(root, execution_manifest_rel)
+    execution_run = dev_pipeline_artifact_json(root, "execution/execution_run.json")
+    expected_pipeline = f"{template.get('id') or 'pipeline'}-{project.get('id') or 'project'}"
+    if execution_manifest and execution_manifest.get("pipeline") and str(execution_manifest.get("pipeline") or "") != expected_pipeline:
+        execution_manifest = {}
+    if execution_run and str(execution_run.get("pipeline") or "") != expected_pipeline:
+        execution_run = {}
+        execution_manifest = {}
+    current_run_id = str(execution_run.get("run_id") or execution_manifest.get("run_id") or "")
+    selected_run_id = str(selected_run_id or "").strip()
+    if selected_run_id and selected_run_id != current_run_id and "/" not in selected_run_id and "\\" not in selected_run_id:
+        selected_run = dev_pipeline_artifact_json(root, f"execution/runs/{selected_run_id}.json")
+        if selected_run and str(selected_run.get("pipeline") or "") == expected_pipeline:
+            execution_run = selected_run
+            current_run_id = str(execution_run.get("run_id") or "")
+    elif not execution_run:
+        for run in dev_pipeline_execution_history(root, "", expected_pipeline):
+            selected_run = dev_pipeline_artifact_json(root, str(run.get("path") or ""))
+            if selected_run and str(selected_run.get("pipeline") or "") == expected_pipeline:
+                execution_run = selected_run
+                current_run_id = str(execution_run.get("run_id") or "")
+                break
+    workset_receipt_rel = str(execution_run.get("workset_receipt") or "")
+    workset_receipt = read_json_path(ROOT_DIR / workset_receipt_rel) if workset_receipt_rel else {}
+    execution_steps = [item for item in execution_manifest.get("steps", []) if isinstance(item, dict)]
+    if execution_run.get("steps"):
+        execution_steps = [item for item in execution_run.get("steps", []) if isinstance(item, dict)]
+    if not execution_steps:
+        execution_steps = [
+            {
+                "id": str(item.get("id") or ""),
+                "title": str(item.get("title") or item.get("id") or ""),
+                "file": str(item.get("file") or ""),
+                "status": str(item.get("status") or ""),
+                "dependencies": [str(value) for value in item.get("dependencies", []) if isinstance(value, str)],
+                "config": str(item.get("config") or ""),
+                "receipt": str(item.get("receipt") or ""),
+            }
+            for item in template.get("factory_steps", [])
+            if isinstance(item, dict)
+        ]
+
+    base_started = (
+        parse_iso_datetime(execution_run.get("started_at"))
+        or parse_iso_datetime(execution_manifest.get("run_started_at"))
+        or parse_iso_datetime(manifest.get("run_started_at"))
+        or parse_iso_datetime(execution_manifest.get("written_at"))
+        or datetime.now(timezone.utc)
+    )
+    base_started = base_started.replace(microsecond=0)
+    run_started = base_started if execution_run or execution_manifest.get("run_started_at") else base_started - timedelta(seconds=246)
+    default_stage_durations = {
+        "input": 31,
+        "repo": 18,
+        "blueprint": 24,
+        "factory": max(72, len(execution_steps) * 9),
+        "validation": 45,
+        "handoff": 36,
+    }
+    step_defaults = [5, 6, 14, 8, 15, 18, 3, 3]
+    factory_started = run_started + timedelta(seconds=90)
+    step_rows: list[dict[str, Any]] = []
+    cursor = factory_started
+    for index, step in enumerate(execution_steps):
+        status = dev_pipeline_execution_status_label(step.get("status"))
+        duration = duration_seconds_from_label(step.get("duration"), step_defaults[index] if index < len(step_defaults) else 6)
+        recorded_started_at = parse_iso_datetime(step.get("started_at"))
+        recorded_finished_at = parse_iso_datetime(step.get("finished_at"))
+        started_at = recorded_started_at or cursor
+        planned_finished_at = started_at + timedelta(seconds=duration)
+        finished_at = recorded_finished_at or planned_finished_at
+        cursor = finished_at
+        show_finished_at = recorded_finished_at
+        show_started_at = started_at if recorded_started_at or (not execution_run and status != "queued") else None
+        step_rows.append(
+            {
+                "id": str(step.get("id") or f"step-{index + 1}"),
+                "title": str(step.get("title") or step.get("id") or f"step_{index + 1}"),
+                "status": status,
+                "duration_seconds": duration,
+                "duration": duration_label(duration),
+                "started": format_run_time(show_started_at, include_date=False),
+                "finished": format_run_time(show_finished_at, include_date=False),
+                "started_at": show_started_at.isoformat() if show_started_at else "",
+                "finished_at": show_finished_at.isoformat() if show_finished_at else "",
+                "file": str(step.get("file") or ""),
+                "dependencies": [str(value) for value in step.get("dependencies", []) if isinstance(value, str)],
+                "config": str(step.get("config") or ""),
+                "receipt": str(step.get("receipt") or ""),
+                "command": str(step.get("command") or ""),
+                "exit_code": step.get("exit_code"),
+            }
+        )
+
+    run_stage_overrides = {
+        str(stage.get("id") or ""): stage
+        for stage in execution_run.get("stages", [])
+        if isinstance(stage, dict)
+    }
+    repo_workers = [{**item, "status": item.get("status") or "completed"} for item in workers if str(item.get("stage") or "repo") == "repo"]
+    blueprint_workers = [{**item, "status": item.get("status") or "completed"} for item in workers if str(item.get("stage") or "") == "blueprint"]
+    is_workset_delivery = str(execution_run.get("source") or execution_manifest.get("source") or "").startswith("cento-workset")
+    is_proreq_light = str(template.get("id") or "") == PROREQ_LIGHT_TEMPLATE_ID or str(execution_run.get("source") or "").startswith("cento-proreq-light")
+    is_hard_proreq = str(template.get("id") or "") == HARD_PROREQ_TEMPLATE_ID or is_proreq_light or str(execution_run.get("source") or "").startswith("cento-hard-proreq")
+    is_multipipeline = str(template.get("id") or "") == MULTIPIPELINE_TEMPLATE_ID or str(execution_run.get("source") or "").startswith("cento-multipipeline")
+    factory_title = "4. Sequential ProReq Chain" if is_multipipeline else ("4. ProReq Light Planning" if is_proreq_light else ("4. Proreq Planning" if is_hard_proreq else ("4. Workset Delivery" if is_workset_delivery else "4. Factory Execution")))
+    stage_sources = [
+        ("input", "1. Input Contract", required_inputs, "input", run_started),
+        ("repo", "2. Repo Discovery", repo_workers, "repo", run_started + timedelta(seconds=55)),
+        ("blueprint", "3. Change Blueprint", blueprint_workers, "blueprint", run_started + timedelta(seconds=73)),
+        ("factory", factory_title, step_rows or integration_cards, "execution", factory_started),
+        ("validation", "5. Deterministic Validation", validator_cards, "validation", cursor + timedelta(seconds=12)),
+        ("handoff", "6. Evidence / Handoff", evidence_cards, "handoff", cursor + timedelta(seconds=57)),
+    ]
+    stages: list[dict[str, Any]] = []
+    for index, (stage_id, title, items, log_key, started_at) in enumerate(stage_sources):
+        override = run_stage_overrides.get(stage_id, {})
+        started_at = parse_iso_datetime(override.get("started_at")) or started_at
+        recorded_finished_at = parse_iso_datetime(override.get("finished_at"))
+        finished_at = recorded_finished_at or started_at + timedelta(seconds=default_stage_durations[stage_id])
+        duration_seconds = max(0, int(round((finished_at - started_at).total_seconds())))
+        if not duration_seconds and stage_id not in {"handoff"} and not recorded_finished_at:
+            duration_seconds = default_stage_durations[stage_id]
+            finished_at = started_at + timedelta(seconds=duration_seconds)
+        status = dev_pipeline_execution_stage_status(items)
+        if override.get("status"):
+            status = dev_pipeline_execution_status_label(override.get("status"))
+        if not override.get("status") and stage_id in {"input", "factory", "validation", "handoff"} and items:
+            status = "completed" if status != "failed" else status
+        show_finished_at = recorded_finished_at if status not in {"running", "queued"} else None
+        count_label = {
+            "input": f"{len(items)} inputs ready",
+            "repo": f"{len(items)} contract{'s' if len(items) != 1 else ''}",
+            "blueprint": f"{len(items)} contract{'s' if len(items) != 1 else ''}",
+            "factory": f"{len(step_rows)} steps",
+            "validation": f"{len(items)} validators",
+            "handoff": f"{len(items)} artifacts",
+        }[stage_id]
+        stages.append(
+            {
+                "id": stage_id,
+                "index": index + 1,
+                "title": title,
+                "short_title": title.split(". ", 1)[-1],
+                "status": status,
+                "count": count_label,
+                "duration_seconds": duration_seconds,
+                "duration": duration_label(duration_seconds),
+                "started": format_run_time(started_at, include_date=False),
+                "finished": format_run_time(show_finished_at, include_date=False),
+                "started_at": started_at.isoformat(),
+                "finished_at": show_finished_at.isoformat() if show_finished_at else "",
+                "log_key": log_key,
+                "steps": step_rows if stage_id == "factory" else [],
+            }
+        )
+
+    validation_passed = sum(1 for item in validator_cards if str(item.get("status") or "").lower() in {"passed", "completed"})
+    all_items = [*required_inputs, *workers, *step_rows, *validator_cards, *evidence_cards]
+    overall_status = dev_pipeline_execution_status_label(execution_run.get("status") or execution_manifest.get("status"))
+    if overall_status == "configured":
+        overall_status = "completed" if all_items and dev_pipeline_execution_stage_status(all_items) != "failed" else "configured"
+    stage_finished = max((parse_iso_datetime(stage.get("finished_at")) or run_started for stage in stages), default=run_started)
+    recorded_finished = parse_iso_datetime(execution_run.get("finished_at")) or parse_iso_datetime(execution_manifest.get("run_finished_at")) or stage_finished
+    if overall_status in {"running", "queued"}:
+        run_finished = datetime.now(timezone.utc)
+    else:
+        run_finished = max(stage_finished, recorded_finished)
+    event_rows = read_event_rows(root / events_rel)
+    logs: list[dict[str, Any]] = []
+    for row in execution_run.get("logs", []):
+        if not isinstance(row, dict):
+            continue
+        timestamp = parse_iso_datetime(row.get("timestamp")) or run_finished
+        logs.append(
+            {
+                "time": format_run_time(timestamp, include_date=False),
+                "stage": str(row.get("stage") or "execution"),
+                "source": str(row.get("source") or "execution"),
+                "message": str(row.get("message") or ""),
+            }
+        )
+    for step in step_rows:
+        timestamp = parse_iso_datetime(step.get("started_at")) or factory_started
+        command_detail = f" via {step.get('command')}" if step.get("command") else ""
+        step_status = str(step.get("status") or "configured")
+        if step_status == "completed":
+            message = f"{step['title']} completed with status {step_status}{command_detail}"
+        elif step_status == "running":
+            message = f"{step['title']} is running{command_detail}"
+        else:
+            message = f"{step['title']} is {step_status}{command_detail}"
+        logs.append(
+            {
+                "time": format_run_time(timestamp, include_date=False),
+                "stage": "execution",
+                "source": step["id"],
+                "message": message,
+            }
+        )
+    workset_events_rel = str(execution_run.get("workset_events") or workset_receipt.get("events") or "")
+    if workset_events_rel:
+        for row in read_event_rows(ROOT_DIR / workset_events_rel, limit=60):
+            timestamp = parse_iso_datetime(row.get("ts") or row.get("timestamp")) or run_finished
+            event = str(row.get("event") or "workset_event").replace("_", " ")
+            logs.append(
+                {
+                    "time": format_run_time(timestamp, include_date=False),
+                    "stage": "execution",
+                    "source": str(row.get("task_id") or row.get("workset_id") or "workset"),
+                    "message": event,
+                }
+            )
+    for row in event_rows[-24:]:
+        timestamp = parse_iso_datetime(row.get("timestamp")) or run_finished
+        event = str(row.get("event") or "pipeline_event").replace("pipeline_", "").replace("_", " ")
+        details = row.get("details") if isinstance(row.get("details"), dict) else {}
+        selected = details.get("selected_integration") or details.get("selected_validator") or details.get("selected_input") or details.get("selected_worker") or ""
+        logs.append(
+            {
+                "time": format_run_time(timestamp, include_date=False),
+                "stage": "pipeline",
+                "source": str(selected or row.get("template_id") or "pipeline"),
+                "message": event,
+            }
+        )
+    logs.sort(key=lambda item: item.get("time", ""))
+
+    summary_artifacts: list[dict[str, Any]] = []
+    for artifact in execution_run.get("artifacts", []):
+        if not isinstance(artifact, dict):
+            continue
+        path = str(artifact.get("path") or "").strip()
+        if path and all(str(item.get("path") or "") != path for item in summary_artifacts):
+            summary_artifacts.append(
+                {
+                    "name": str(artifact.get("name") or Path(path).name),
+                    "path": path,
+                    "size": str(artifact.get("size") or file_size_label(ROOT_DIR / path)),
+                    "exists": bool(artifact.get("exists", (ROOT_DIR / path).exists())),
+                }
+            )
+    if is_hard_proreq or is_multipipeline:
+        fallback_artifacts = [
+            execution_manifest_rel,
+            f"execution/runs/{current_run_id}.json" if current_run_id else "execution/execution_run.json",
+        ]
+    else:
+        fallback_artifacts = [
+            str(artifacts.get("pipeline_receipt") or "evidence/pipeline_receipt.json"),
+            str(artifacts.get("evidence_bundle") or "evidence/evidence_bundle.json"),
+            execution_manifest_rel,
+            f"execution/runs/{current_run_id}.json" if current_run_id else "execution/execution_run.json",
+            str(artifacts.get("validation_receipt") or "validation/validation_receipt.json"),
+            "evidence/handoff_packet.json",
+        ]
+    for rel in fallback_artifacts:
+        clean = str(rel or "").strip()
+        if not clean or any(str(item.get("path") or "") == clean for item in summary_artifacts):
+            continue
+        path = root / clean
+        summary_artifacts.append(
+            {
+                "name": Path(clean).name,
+                "path": clean,
+                "size": file_size_label(path),
+                "exists": path.exists(),
+            }
+        )
+
+    manifest_active_run_id = str(manifest.get("active_run_id") or "")
+    if manifest_active_run_id and not manifest_active_run_id.startswith(f"{expected_pipeline}-"):
+        manifest_active_run_id = ""
+    run_id = str(execution_run.get("run_id") or execution_manifest.get("run_id") or manifest_active_run_id or f"{expected_pipeline}-{run_started.strftime('%Y%m%dT%H%M%SZ')}")
+    run_is_live = overall_status in {"running", "queued"}
+    history = dev_pipeline_execution_history(root, current_run_id or run_id, expected_pipeline)
+    if run_id and all(str(item.get("run_id") or "") != run_id for item in history):
+        history.insert(
+            0,
+            {
+                "run_id": run_id,
+                "status": overall_status,
+                "started": format_run_time(run_started),
+                "finished": "In progress" if run_is_live else format_run_time(run_finished),
+                "duration": duration_label(int((run_finished - run_started).total_seconds())),
+                "source": str(execution_run.get("source") or execution_manifest.get("source") or "manifest-derived"),
+                "pipeline": expected_pipeline,
+                "active": run_id == (current_run_id or run_id),
+                "path": dev_pipeline_relative(root / "execution" / "execution_run.json"),
+                "artifact_count": len(summary_artifacts),
+                "ready_artifact_count": len([item for item in summary_artifacts if bool(item.get("exists", True))]),
+            },
+        )
+    return {
+        "run_id": run_id,
+        "active_run_id": current_run_id or run_id,
+        "is_active_run": run_id == (current_run_id or run_id),
+        "pipeline": expected_pipeline,
+        "status": overall_status,
+        "source": str(execution_run.get("source") or execution_manifest.get("source") or "manifest-derived"),
+        "started": format_run_time(run_started),
+        "finished": "In progress" if run_is_live else format_run_time(run_finished),
+        "duration": duration_label(int((run_finished - run_started).total_seconds())),
+        "triggered_by": str(execution_run.get("triggered_by") or manifest.get("triggered_by") or "jenkins-bot"),
+        "run_mode": str(execution_run.get("apply_mode") or manifest.get("run_mode") or "Normal"),
+        "evidence_policy": "Required",
+        "manifest_version": str(manifest.get("version") or execution_manifest.get("schema_version") or "cento.execution_manifest.v1"),
+        "event_count": event_total,
+        "budget": f"${budget_spent:.2f} of ${budget_cap:.2f}",
+        "stages": stages,
+        "steps": step_rows,
+        "selected_stage_id": "factory" if step_rows else (stages[0]["id"] if stages else ""),
+        "logs": logs[-80:],
+        "artifacts": summary_artifacts,
+        "facts": [item for item in execution_run.get("facts", []) if isinstance(item, dict)],
+        "readiness_errors": [str(item) for item in execution_run.get("readiness_errors", []) if isinstance(item, str)],
+        "target_paths": [str(item) for item in execution_run.get("target_paths", []) if isinstance(item, str)],
+        "changed_paths": [str(item) for item in execution_run.get("changed_paths", []) if isinstance(item, str)],
+        "total_ai_cost_usd": execution_run.get("total_ai_cost_usd", workset_receipt.get("total_cost_usd") if workset_receipt else None),
+        "workset_receipt": workset_receipt_rel,
+        "parallel": dev_pipeline_execution_parallel_summary(execution_run, workset_receipt),
+        "history": history,
+        "validation_results": {
+            "passed": validation_passed,
+            "total": len(validator_cards),
+            "items": [
+                {
+                    "id": str(item.get("id") or ""),
+                    "title": str(item.get("title") or "Validator"),
+                    "status": dev_pipeline_execution_status_label(item.get("status")),
+                    "duration": duration_label(duration_seconds_from_label(item.get("duration"), 45 if index == 0 else 32 if index == 1 else 28)),
+                }
+                for index, item in enumerate(validator_cards)
+            ],
+        },
+    }
+
+
 def dev_pipeline_add_stage_element(root: Path, manifest: dict[str, Any], project: dict[str, Any], template: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
     element_type = dev_pipeline_stage_element_type(payload.get("element_type"))
     template_id = str(template.get("id") or "pipeline")
@@ -2892,9 +7443,11 @@ def dev_pipeline_update(payload: dict[str, Any]) -> dict[str, Any]:
     manifest = read_json_path(manifest_path)
     if not manifest:
         raise AgentWorkAppError(f"Dev Pipeline Studio manifest not found: {dev_pipeline_relative(manifest_path)}")
+    if dev_pipeline_ensure_builtin_pipelines(manifest):
+        write_json_path(manifest_path, manifest)
 
     action = str(payload.get("action") or "save").strip() or "save"
-    if action not in {"save", "select_worker", "duplicate", "new", "save_input", "save_validation", "run_validation", "save_integration", "save_evidence", "add_element", "delete_element"}:
+    if action not in {"save", "select_worker", "duplicate", "new", "save_input", "save_validation", "run_validation", "save_integration", "save_evidence", "add_element", "delete_element", "run_execution_e2e", "run_delivery"}:
         raise AgentWorkAppError(f"Unsupported Dev Pipeline Studio action: {action}")
 
     projects = [item for item in manifest.get("projects", []) if isinstance(item, dict)]
@@ -3059,6 +7612,10 @@ def dev_pipeline_update(payload: dict[str, Any]) -> dict[str, Any]:
     elif action == "delete_element":
         mutation = dev_pipeline_delete_stage_element(root, manifest, project, template, payload)
 
+    execution_run: dict[str, Any] = {}
+    if action in {"run_execution_e2e", "run_delivery"}:
+        execution_run = dev_pipeline_seed_execution_e2e(root, manifest, project, template)
+
     defaults = manifest.get("defaults") if isinstance(manifest.get("defaults"), dict) else {}
     defaults["project_id"] = str(project.get("id") or "")
     defaults["template_id"] = str(template.get("id") or "")
@@ -3068,6 +7625,17 @@ def dev_pipeline_update(payload: dict[str, Any]) -> dict[str, Any]:
     if action == "run_validation":
         manifest["status"] = str(config.get("status") or "configured") if "config" in locals() else "configured"
         manifest["status_detail"] = "Validation tab executed; validator receipts and run results are in sync"
+    elif action in {"run_execution_e2e", "run_delivery"}:
+        manifest["active_run_id"] = str(execution_run.get("run_id") or manifest.get("active_run_id") or "")
+        manifest["status"] = str(execution_run.get("status") or "running")
+        if str(template.get("id") or "") == HARD_PROREQ_TEMPLATE_ID:
+            manifest["status_detail"] = "Hard proreq pipeline is generating Cento context, a muted UI screenshot request, GPT pro backend schema request, backend work, integration, validation, and evidence"
+        elif str(template.get("id") or "") == MULTIPIPELINE_TEMPLATE_ID:
+            manifest["status_detail"] = "Multipipeline ProReq chain is scheduling four sequential ProReq request passes, UI screenshot guidance, Pro request, roadmap, and evidence"
+        elif manifest["status"] == "blocked":
+            manifest["status_detail"] = "Workset delivery is blocked by readiness checks; execution_run.json lists the exact blocker"
+        else:
+            manifest["status_detail"] = "Workset delivery is running through cento workset execute with api-openai and direct worktree apply"
     elif action == "save_input":
         manifest["status_detail"] = "Input contract saved; input manifests are in sync"
     elif action == "save_validation":
@@ -3099,20 +7667,25 @@ def dev_pipeline_update(payload: dict[str, Any]) -> dict[str, Any]:
             "selected_evidence": str((evidence_config_payload or {}).get("id") or "") if isinstance(evidence_config_payload, dict) else "",
             "selected_input": saved_input_id,
             "mutation": mutation,
+            "execution_run_id": str(execution_run.get("run_id") or ""),
         },
     )
+    if action in {"run_execution_e2e", "run_delivery"} and execution_run.get("run_id") and str(execution_run.get("status") or "") == "running":
+        dev_pipeline_spawn_execution_e2e(root, str(project.get("id") or ""), str(template.get("id") or ""), str(execution_run.get("run_id") or ""))
     state = dev_pipeline_studio_state(project_id=str(project.get("id") or ""), template_id=str(template.get("id") or ""))
     if mutation:
         state["mutation"] = mutation
     return state
 
 
-def dev_pipeline_studio_state(project_id: str = "", template_id: str = "") -> dict[str, Any]:
+def dev_pipeline_studio_state(project_id: str = "", template_id: str = "", run_id: str = "") -> dict[str, Any]:
     root = DEV_PIPELINE_STUDIO_ROOT
     manifest_path = root / "pipeline_manifest.json"
     manifest = read_json_path(manifest_path)
     if not manifest:
         raise AgentWorkAppError(f"Dev Pipeline Studio manifest not found: {dev_pipeline_relative(manifest_path)}")
+    if dev_pipeline_ensure_builtin_pipelines(manifest):
+        write_json_path(manifest_path, manifest)
 
     projects = [item for item in manifest.get("projects", []) if isinstance(item, dict)]
     templates = [item for item in manifest.get("templates", []) if isinstance(item, dict)]
@@ -3316,6 +7889,7 @@ def dev_pipeline_studio_state(project_id: str = "", template_id: str = "") -> di
                 "risk": str(item.get("risk") or ""),
                 "budget_spent_usd": float(item.get("budget_spent_usd", 0) or 0),
                 "budget_cap_usd": float(item.get("budget_cap_usd", 0) or 0),
+                "max_parallel": int(item.get("max_parallel", 1) or 1),
                 "selected_worker": str(item.get("selected_worker") or ""),
                 "execution_model": str(item.get("execution_model") or ("ordered" if str(item.get("id") or "") == "generic-task" else "parallel")),
                 "worker_stage_label": str(item.get("worker_stage_label") or ""),
@@ -3387,6 +7961,21 @@ def dev_pipeline_studio_state(project_id: str = "", template_id: str = "") -> di
             "integration": integration_cards,
             "validators": validator_cards,
             "evidence": evidence_cards,
+            "execution_flow": dev_pipeline_execution_flow(
+                root,
+                manifest,
+                project,
+                template,
+                required_inputs,
+                workers,
+                integration_cards,
+                validator_cards,
+                evidence_cards,
+                event_total,
+                budget_spent,
+                budget_cap,
+                run_id,
+            ),
             "validation": {
                 "status": title_status(validation_status, "Passed"),
                 "tier": str(template.get("validation_tier") or validation_receipt.get("tier") or ""),
@@ -3860,12 +8449,25 @@ def issue_detail(conn: sqlite3.Connection, issue_id: int) -> dict[str, Any]:
     )
     issue_payload = {**row_dict(row), **test_artifact}
     issue_payload["validation_state"] = issue_validation_state(issue_id)
+    custom_fields = issue_custom_fields_for_issue(conn, issue_id)
+    pipeline_run_id = str(custom_fields.get("Default Pipeline Run") or "").strip()
+    pipeline_route = None
+    if pipeline_run_id:
+        pipeline_route = {
+            "default": True,
+            "project_id": str(custom_fields.get("Pipeline Project") or DEFAULT_DEV_PIPELINE_PROJECT_ID),
+            "template_id": str(custom_fields.get("Pipeline Template") or DEFAULT_DEV_PIPELINE_TEMPLATE_ID),
+            "run_id": pipeline_run_id,
+            "status": "routed",
+            "url": "/dev-pipeline-studio#pipeline-flow",
+        }
     return {
         "issue": issue_payload,
         "journals": journals,
         "attachments": attachments,
-        "custom_fields": issue_custom_fields_for_issue(conn, issue_id),
+        "custom_fields": custom_fields,
         "validation_evidences": issue_validation_evidences(conn, issue_id),
+        **({"pipeline_route": pipeline_route} if pipeline_route else {}),
     }
 
 
@@ -3891,6 +8493,43 @@ def artifact_url(path: str) -> str:
     if path.startswith(("http://", "https://")):
         return path
     return f"/api/artifacts?path={quote(path)}"
+
+
+def latest_demo_video_path() -> str:
+    demo_root = ROOT_DIR / "workspace" / "runs" / "demo-evidence"
+    candidates: list[tuple[float, Path]] = []
+    for receipt_path in demo_root.glob("*/receipt.json"):
+        try:
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if str(receipt.get("status") or "").lower() not in {"passed", "ok"}:
+            continue
+        if str(receipt.get("recorder") or "").lower() == "synthetic":
+            continue
+        artifacts = receipt.get("artifacts")
+        video_ref = ""
+        if isinstance(artifacts, dict):
+            video_ref = str(artifacts.get("video") or "")
+        video_path = Path(video_ref) if video_ref else receipt_path.parent / "demo.mp4"
+        if not video_path.is_absolute():
+            video_path = ROOT_DIR / video_path
+        video_path = video_path.resolve()
+        if ROOT_DIR.resolve() not in video_path.parents and video_path != ROOT_DIR.resolve():
+            continue
+        if not video_path.exists() or not video_path.is_file() or video_path.suffix.lower() not in {".mp4", ".webm", ".mov"}:
+            fallback_video = receipt_path.parent / "demo.mp4"
+            if not fallback_video.exists() or not fallback_video.is_file():
+                continue
+            video_path = fallback_video.resolve()
+        try:
+            sort_time = max(receipt_path.stat().st_mtime, video_path.stat().st_mtime)
+        except OSError:
+            continue
+        candidates.append((sort_time, video_path))
+    if not candidates:
+        raise AgentWorkAppError("No recorded demo evidence video found.")
+    return str(max(candidates, key=lambda item: item[0])[1].relative_to(ROOT_DIR))
 
 
 TEST_ARTIFACT_PATTERNS = (
@@ -4305,7 +8944,8 @@ def create_local_issue(conn: sqlite3.Connection, payload: dict[str, Any]) -> dic
             "insert into journals(issue_id, author, created_on, notes, new_status, source) values (?, ?, ?, ?, ?, 'local')",
             (issue_id, assignee, now, "Created in Cento Taskstream.", status),
         )
-    return issue_detail(conn, issue_id)
+    detail = issue_detail(conn, issue_id)
+    return detail
 
 
 def update_local_issue(conn: sqlite3.Connection, issue_id: int, payload: dict[str, Any]) -> dict[str, Any]:
@@ -4413,6 +9053,519 @@ def add_local_attachment(conn: sqlite3.Connection, issue_id: int, payload: dict[
     return issue_detail(conn, issue_id)
 
 
+PATCH_SWARM_PRODUCT_WORKTREE_ROOT = ROOT_DIR / "workspace" / "runs" / "patch-swarm-product-worktrees"
+PATCH_SWARM_PROTECTED_PREFIXES = (".git/", ".ssh/", ".gnupg/", ".oci/")
+PATCH_SWARM_PROTECTED_NAMES = {".env", ".env.mcp", "secrets.env", "id_rsa", "id_ed25519"}
+PATCH_SWARM_PROTECTED_SUFFIXES = (".pem", ".key", ".p12", ".pfx")
+
+
+def patch_swarm_engine():
+    import parallel_delivery as patch_swarm  # local import avoids a module-import cycle
+
+    return patch_swarm
+
+
+def patch_swarm_git(repo: Path, *args: str, timeout: int = 20) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(["git", *args], cwd=repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout, check=False)
+
+
+def patch_swarm_repo_search_roots() -> list[Path]:
+    raw = os.environ.get("CENTO_PATCH_SWARM_REPO_ROOTS", "")
+    roots = [Path(item).expanduser() for item in raw.split(os.pathsep) if item.strip()] if raw else [ROOT_DIR, Path.home() / "projects"]
+    unique: list[Path] = []
+    seen: set[Path] = set()
+    for root in roots:
+        resolved = root.resolve() if root.exists() else root
+        if resolved not in seen:
+            seen.add(resolved)
+            unique.append(resolved)
+    return unique
+
+
+def patch_swarm_protected_path(path: str) -> bool:
+    normalized = str(path or "").strip().lstrip("/")
+    name = Path(normalized).name
+    lowered = normalized.lower()
+    return (
+        name in PATCH_SWARM_PROTECTED_NAMES
+        or lowered.startswith(PATCH_SWARM_PROTECTED_PREFIXES)
+        or lowered.endswith(PATCH_SWARM_PROTECTED_SUFFIXES)
+        or "/.env" in lowered
+        or "secret" in lowered
+    )
+
+
+def patch_swarm_status_path(line: str) -> str:
+    raw = line[3:] if len(line) > 3 else line
+    if " -> " in raw:
+        raw = raw.rsplit(" -> ", 1)[-1]
+    return raw.strip()
+
+
+def patch_swarm_repo_state(repo: Path) -> dict[str, Any]:
+    repo = repo.expanduser().resolve()
+    top = patch_swarm_git(repo, "rev-parse", "--show-toplevel")
+    if top.returncode != 0:
+        raise AgentWorkAppError(f"not a git repository: {repo}")
+    root = Path(top.stdout.strip()).resolve()
+    branch_result = patch_swarm_git(root, "rev-parse", "--abbrev-ref", "HEAD")
+    sha_result = patch_swarm_git(root, "rev-parse", "--short", "HEAD")
+    status_result = patch_swarm_git(root, "status", "--porcelain=v1")
+    status_lines = [line for line in status_result.stdout.splitlines() if line.strip()]
+    dirty_paths = [patch_swarm_status_path(line) for line in status_lines]
+    protected_dirty = [path for path in dirty_paths if patch_swarm_protected_path(path)]
+    return {
+        "path": str(root),
+        "name": root.name,
+        "branch": branch_result.stdout.strip() if branch_result.returncode == 0 else "unknown",
+        "head": sha_result.stdout.strip() if sha_result.returncode == 0 else "",
+        "dirty": bool(status_lines),
+        "dirty_count": len(status_lines),
+        "dirty_paths": dirty_paths[:50],
+        "protected_dirty": protected_dirty[:50],
+        "protected_dirty_count": len(protected_dirty),
+        "can_start": not protected_dirty,
+        "can_apply_without_override": not status_lines,
+    }
+
+
+def patch_swarm_discover_repos() -> dict[str, Any]:
+    repos: dict[str, dict[str, Any]] = {}
+    for root in patch_swarm_repo_search_roots():
+        if not root.exists() or not root.is_dir():
+            continue
+        candidates = [root]
+        try:
+            candidates.extend(path for path in root.iterdir() if path.is_dir() and not path.name.startswith("."))
+        except OSError:
+            continue
+        for candidate in candidates:
+            if not (candidate / ".git").exists():
+                continue
+            try:
+                state = patch_swarm_repo_state(candidate)
+            except (AgentWorkAppError, OSError, subprocess.SubprocessError):
+                continue
+            repos[state["path"]] = state
+    ordered = sorted(repos.values(), key=lambda item: (item["name"].lower(), item["path"]))
+    return {
+        "schema_version": "cento.patch_swarm.repo_index.v1",
+        "repos": ordered,
+        "search_roots": [str(path) for path in patch_swarm_repo_search_roots()],
+        "protected_policy": {
+            "names": sorted(PATCH_SWARM_PROTECTED_NAMES),
+            "suffixes": list(PATCH_SWARM_PROTECTED_SUFFIXES),
+            "prefixes": list(PATCH_SWARM_PROTECTED_PREFIXES),
+        },
+    }
+
+
+def patch_swarm_detect_test_commands(repo: Path) -> list[str]:
+    commands: list[str] = []
+    if (repo / "package.json").exists():
+        commands.append("npm test")
+    if (repo / "pyproject.toml").exists() or (repo / "pytest.ini").exists() or (repo / "tests").exists():
+        commands.append("python3 -m pytest")
+    if (repo / "go.mod").exists():
+        commands.append("go test ./...")
+    if (repo / "Cargo.toml").exists():
+        commands.append("cargo test")
+    if (repo / "Makefile").exists():
+        commands.append("make test")
+    return commands
+
+
+def patch_swarm_run_path(run_id: str) -> Path:
+    return patch_swarm_engine().resolve_patch_swarm_run_dir(run_id)
+
+
+def patch_swarm_append_product_event(run_dir: Path, event: str, payload: dict[str, Any]) -> None:
+    row = {"written_at": datetime.now(timezone.utc).isoformat(), "event": event, **payload}
+    path = run_dir / "product_events.ndjson"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(row, sort_keys=True) + "\n")
+
+
+def patch_swarm_product_history(run_dir: Path) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for path in (run_dir / "events.ndjson", run_dir / "product_events.ndjson"):
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        for line in lines[-80:]:
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(row, dict):
+                rows.append(row)
+    return sorted(rows, key=lambda item: str(item.get("written_at") or ""))[-120:]
+
+
+def patch_swarm_product_owned_path(run_id: str, execution_id: str) -> str:
+    clean_run = re.sub(r"[^A-Za-z0-9_.-]+", "-", run_id).strip("-") or "run"
+    clean_execution = re.sub(r"[^A-Za-z0-9_.-]+", "-", execution_id).strip("-") or "execution"
+    return f"patch-swarm-candidates/{clean_run}/{clean_execution}.md"
+
+
+def patch_swarm_retarget_run_to_repo(run_dir: Path, repo: Path, task_brief: str) -> None:
+    engine = patch_swarm_engine()
+    manifest = engine.read_json(run_dir / "patch_swarm_manifest.json")
+    proreq = engine.read_json(run_dir / "proreq_execution_manifest.json")
+    providers = engine.patch_swarm_provider_list(manifest.get("providers") if isinstance(manifest.get("providers"), list) else "")
+    executions = [item for item in proreq.get("executions", []) if isinstance(item, dict)]
+    for execution in executions:
+        execution_id = str(execution.get("id") or "execution")
+        owned_path = patch_swarm_product_owned_path(run_dir.name, execution_id)
+        execution["owned_paths"] = [owned_path]
+        execution_dir = run_dir / "proreq_executions" / execution_id
+        request_path = execution_dir / "proreq_request.json"
+        request = engine.read_json(request_path)
+        if request:
+            request["owned_paths"] = [owned_path]
+            request["selected_repo"] = str(repo)
+            request["task_brief"] = task_brief
+            engine.write_json(request_path, request)
+        (execution_dir / "prompt.md").write_text(
+            engine.patch_swarm_prompt_text(task_brief, execution, providers, int(execution.get("candidate_target") or 1)),
+            encoding="utf-8",
+        )
+    proreq["executions"] = executions
+    proreq["selected_repo"] = str(repo)
+    engine.write_json(run_dir / "proreq_execution_manifest.json", proreq)
+
+
+def patch_swarm_write_product_metadata(run_dir: Path, metadata: dict[str, Any]) -> dict[str, Any]:
+    engine = patch_swarm_engine()
+    metadata = {
+        "schema_version": "cento.patch_swarm.product_metadata.v1",
+        "run_id": run_dir.name,
+        "written_at": datetime.now(timezone.utc).isoformat(),
+        **metadata,
+    }
+    engine.write_json(run_dir / "product_metadata.json", metadata)
+    manifest = engine.read_json(run_dir / "patch_swarm_manifest.json")
+    manifest["product_metadata"] = engine.rel(run_dir / "product_metadata.json")
+    manifest["selected_repo"] = metadata.get("selected_repo", {})
+    manifest["task_brief"] = metadata.get("task_brief", "")
+    manifest["validation_profile"] = metadata.get("validation_profile", "deterministic")
+    manifest["provider_preset"] = metadata.get("provider_preset", "balanced")
+    engine.write_json(run_dir / "patch_swarm_manifest.json", manifest)
+    engine.patch_swarm_write_ui_state(run_dir)
+    return metadata
+
+
+def patch_swarm_product_candidates(run_dir: Path) -> list[dict[str, Any]]:
+    engine = patch_swarm_engine()
+    index = engine.read_json(run_dir / "candidate_index.json")
+    candidates = [dict(item) for item in index.get("candidates", []) if isinstance(item, dict)]
+    decisions = engine.read_json(run_dir / "candidate_decisions.json")
+    rejected = {str(item.get("candidate_id") or ""): item for item in decisions.get("rejected", []) if isinstance(item, dict)}
+    for candidate in candidates:
+        candidate_id = str(candidate.get("id") or "")
+        patch_file = str((candidate.get("patch") or {}).get("patch_file") or "")
+        diff_preview = ""
+        if patch_file:
+            patch_path = engine.resolve_cento_path(patch_file)
+            try:
+                diff_preview = patch_path.read_text(encoding="utf-8", errors="ignore")[:8000]
+            except OSError:
+                diff_preview = ""
+        candidate["diff_preview"] = diff_preview
+        candidate["decision"] = "rejected" if candidate_id in rejected else ""
+        candidate["confidence"] = max(0, min(100, int(round(float(candidate.get("score") or 0)))))
+    return candidates
+
+
+def patch_swarm_product_run_detail(run_id: str, *, include_candidates: bool = True) -> dict[str, Any]:
+    engine = patch_swarm_engine()
+    run_dir = patch_swarm_run_path(run_id)
+    manifest = engine.read_json(run_dir / "patch_swarm_manifest.json")
+    if not manifest:
+        raise AgentWorkAppError(f"Patch Swarm run not found: {run_id}")
+    ui_state = engine.read_json(run_dir / "ui_state.json")
+    receipt = engine.read_json(run_dir / "patch_swarm_receipt.json")
+    integration = engine.read_json(run_dir / "integration_execution" / "integration_execution.json")
+    validation = engine.read_json(run_dir / "validation_summary.json")
+    approval = engine.read_json(run_dir / "supervised_approval.json")
+    apply_receipt = engine.read_json(run_dir / "product_safe_integrator_apply.json")
+    factory_promotion = engine.read_json(run_dir / "factory_promotion.json")
+    metadata = engine.read_json(run_dir / "product_metadata.json")
+    selected_repo = metadata.get("selected_repo") if isinstance(metadata.get("selected_repo"), dict) else manifest.get("selected_repo", {})
+    candidates = patch_swarm_product_candidates(run_dir) if include_candidates else []
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for candidate in candidates:
+        groups.setdefault(str(candidate.get("execution_id") or "unknown"), []).append(candidate)
+    run = {
+        "run_id": run_dir.name,
+        "run_dir": engine.rel(run_dir),
+        "status": ui_state.get("status") or validation.get("status") or integration.get("status") or receipt.get("status") or manifest.get("status", "unknown"),
+        "task_brief": metadata.get("task_brief") or manifest.get("objective", ""),
+        "selected_repo": selected_repo,
+        "candidate_target": manifest.get("candidate_target", 0),
+        "candidate_count": receipt.get("candidate_count", 0),
+        "selected_count": integration.get("selected_count", 0),
+        "estimated_cost_usd": receipt.get("estimated_cost_usd", 0.0),
+        "providers": manifest.get("providers", []),
+        "validation": validation.get("status", "unknown"),
+        "safe_integrator_status": (engine.read_json(run_dir / "safe_integrator_handoff.json")).get("status", ""),
+        "approval_status": approval.get("status", "not_approved"),
+        "apply_status": apply_receipt.get("status") or factory_promotion.get("status") or "not_applied",
+        "created_at": manifest.get("created_at", ""),
+        "updated_at": manifest.get("updated_at", ""),
+        "artifacts": ui_state.get("artifacts", {}),
+    }
+    return {
+        "schema_version": "cento.patch_swarm.product_run_detail.v1",
+        "run": run,
+        "ui_state": ui_state,
+        "metadata": metadata,
+        "receipt": receipt,
+        "integration": integration,
+        "validation_summary": validation,
+        "approval": approval,
+        "apply_receipt": apply_receipt,
+        "factory_promotion": factory_promotion,
+        "candidates": candidates,
+        "candidate_groups": [{"execution_id": key, "candidates": value} for key, value in groups.items()],
+        "history": patch_swarm_product_history(run_dir),
+    }
+
+
+def patch_swarm_product_run_list() -> dict[str, Any]:
+    engine = patch_swarm_engine()
+    root = engine.PATCH_SWARM_RUNS_ROOT
+    runs: list[dict[str, Any]] = []
+    if root.exists():
+        for run_dir in sorted(root.iterdir(), key=lambda path: path.stat().st_mtime, reverse=True):
+            if not run_dir.is_dir() or not (run_dir / "patch_swarm_manifest.json").exists():
+                continue
+            runs.append(patch_swarm_product_run_detail(run_dir.name, include_candidates=False)["run"])
+    return {
+        "schema_version": "cento.patch_swarm.run_index.v1",
+        "runs": runs[:50],
+        "summary": {
+            "total": len(runs),
+            "approved": sum(1 for item in runs if item.get("approval_status") == "approved"),
+            "applied": sum(1 for item in runs if item.get("apply_status") == "applied"),
+        },
+    }
+
+
+def patch_swarm_product_create_run(payload: dict[str, Any]) -> dict[str, Any]:
+    engine = patch_swarm_engine()
+    repo_path = str(payload.get("repo_path") or payload.get("repo") or "").strip()
+    if not repo_path:
+        raise AgentWorkAppError("repo_path is required")
+    repo_state = patch_swarm_repo_state(Path(repo_path))
+    if repo_state.get("protected_dirty"):
+        raise AgentWorkAppError("selected repo has protected dirty paths: " + ", ".join(repo_state["protected_dirty"][:5]))
+    task_brief = str(payload.get("task_brief") or payload.get("objective") or "").strip()
+    if not task_brief:
+        raise AgentWorkAppError("task_brief is required")
+    run_id = str(payload.get("run_id") or f"patch-swarm-product-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}")
+    run_dir = engine.resolve_patch_swarm_run_dir(run_id, create=True)
+    candidate_target = max(10, int(payload.get("candidate_target") or 30))
+    max_parallel_agents = max(1, int(payload.get("max_parallel_agents") or 3))
+    providers = engine.patch_swarm_provider_list(payload.get("providers") or "codex-exec,claude-code,api-openai")
+    mode = str(payload.get("mode") or "fixture").lower()
+    live = mode in {"live", "real"}
+    engine.build_patch_swarm_plan(run_dir, objective=task_brief, candidate_target=candidate_target, max_parallel_agents=max_parallel_agents, providers=providers, live=live)
+    repo = Path(repo_state["path"])
+    patch_swarm_retarget_run_to_repo(run_dir, repo, task_brief)
+    patch_swarm_write_product_metadata(
+        run_dir,
+        {
+            "selected_repo": repo_state,
+            "task_brief": task_brief,
+            "validation_profile": str(payload.get("validation_profile") or "deterministic"),
+            "provider_preset": str(payload.get("provider_preset") or "balanced"),
+            "test_commands": patch_swarm_detect_test_commands(repo),
+            "ui_state": {"active_candidate_id": "", "compare_candidate_ids": [], "filters": {}},
+            "apply_policy": "supervised-safe-integrator-worktree",
+        },
+    )
+    receipt = engine.execute_patch_swarm(
+        run_dir,
+        fixture=not live,
+        budget_cap_usd=payload.get("budget_cap_usd"),
+        max_budget_usd=payload.get("max_budget_usd"),
+        api_sandbox_candidates=int(payload.get("api_sandbox_candidates") or 1),
+    )
+    if receipt.get("status") == "candidates_generated":
+        engine.integrate_patch_swarm(run_dir)
+        engine.validate_patch_swarm_run(run_dir)
+    engine.patch_swarm_write_ui_state(run_dir)
+    patch_swarm_append_product_event(run_dir, "product_run_created", {"repo": repo_state["path"], "candidate_target": candidate_target, "mode": mode})
+    return patch_swarm_product_run_detail(run_dir.name)
+
+
+def patch_swarm_product_selected_candidates(run_dir: Path, candidate_ids: list[str] | None = None) -> list[dict[str, Any]]:
+    candidates = patch_swarm_product_candidates(run_dir)
+    by_id = {str(item.get("id") or ""): item for item in candidates}
+    selected_ids = [str(item) for item in candidate_ids or [] if str(item)]
+    if not selected_ids:
+        integration = patch_swarm_engine().read_json(run_dir / "integration_execution" / "integration_execution.json")
+        selected_ids = [str(item) for item in integration.get("selected_candidates", []) if str(item)]
+    selected = [by_id[item] for item in selected_ids if item in by_id]
+    if not selected:
+        raise AgentWorkAppError("no selected candidates are available for approval")
+    invalid = [str(item.get("id") or "") for item in selected if str(item.get("status") or "") != "validated"]
+    if invalid:
+        raise AgentWorkAppError("approval requires validated candidates: " + ", ".join(invalid))
+    return selected
+
+
+def patch_swarm_product_approve(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    engine = patch_swarm_engine()
+    run_dir = patch_swarm_run_path(run_id)
+    selected = patch_swarm_product_selected_candidates(run_dir, payload.get("candidate_ids") if isinstance(payload.get("candidate_ids"), list) else None)
+    approval = {
+        "schema_version": "cento.patch_swarm.supervised_approval.v1",
+        "run_id": run_dir.name,
+        "status": "approved",
+        "approved_at": datetime.now(timezone.utc).isoformat(),
+        "approved_by": str(payload.get("approved_by") or "local-operator"),
+        "notes": str(payload.get("notes") or ""),
+        "selected_candidate_ids": [str(item.get("id") or "") for item in selected],
+        "selected_count": len(selected),
+        "apply_policy": "Factory/Safe Integrator worktree only; no direct selected-repo mutation",
+    }
+    engine.write_json(run_dir / "supervised_approval.json", approval)
+    engine.patch_swarm_write_ui_state(run_dir)
+    patch_swarm_append_product_event(run_dir, "product_run_approved", {"selected_count": len(selected)})
+    return patch_swarm_product_run_detail(run_dir.name)
+
+
+def patch_swarm_product_reject(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    engine = patch_swarm_engine()
+    run_dir = patch_swarm_run_path(run_id)
+    candidate_ids = [str(item) for item in payload.get("candidate_ids", []) if str(item)] if isinstance(payload.get("candidate_ids"), list) else []
+    if not candidate_ids:
+        raise AgentWorkAppError("candidate_ids is required")
+    decisions = engine.read_json(run_dir / "candidate_decisions.json")
+    existing = [item for item in decisions.get("rejected", []) if isinstance(item, dict) and str(item.get("candidate_id") or "") not in set(candidate_ids)]
+    for candidate_id in candidate_ids:
+        existing.append(
+            {
+                "candidate_id": candidate_id,
+                "decision": "rejected",
+                "reason": str(payload.get("reason") or "Rejected in Patch Swarm review."),
+                "decided_at": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+    engine.write_json(
+        run_dir / "candidate_decisions.json",
+        {
+            "schema_version": "cento.patch_swarm.candidate_decisions.v1",
+            "run_id": run_dir.name,
+            "rejected": existing,
+            "written_at": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+    engine.patch_swarm_write_ui_state(run_dir)
+    patch_swarm_append_product_event(run_dir, "product_candidates_rejected", {"candidate_ids": candidate_ids})
+    return patch_swarm_product_run_detail(run_dir.name)
+
+
+def patch_swarm_remove_product_worktree(path: Path, repo: Path) -> None:
+    if not path.exists():
+        return
+    root = PATCH_SWARM_PRODUCT_WORKTREE_ROOT.resolve()
+    resolved = path.resolve()
+    if root not in resolved.parents and resolved != root:
+        raise AgentWorkAppError(f"refusing to remove non-product worktree: {path}")
+    patch_swarm_git(repo, "worktree", "remove", "--force", str(resolved), timeout=60)
+
+
+def patch_swarm_product_external_apply(run_dir: Path, selected: list[dict[str, Any]], payload: dict[str, Any]) -> dict[str, Any]:
+    engine = patch_swarm_engine()
+    metadata = engine.read_json(run_dir / "product_metadata.json")
+    repo_info = metadata.get("selected_repo") if isinstance(metadata.get("selected_repo"), dict) else {}
+    repo = Path(str(repo_info.get("path") or "")).expanduser().resolve()
+    if not repo.exists():
+        raise AgentWorkAppError("selected repo is unavailable")
+    branch = str(payload.get("branch") or f"patch-swarm/{run_dir.name}")
+    worktree = Path(str(payload.get("worktree") or PATCH_SWARM_PRODUCT_WORKTREE_ROOT / run_dir.name)).expanduser()
+    if not worktree.is_absolute():
+        worktree = ROOT_DIR / worktree
+    product_root = PATCH_SWARM_PRODUCT_WORKTREE_ROOT.resolve()
+    resolved_worktree = worktree.resolve()
+    if product_root not in resolved_worktree.parents and resolved_worktree != product_root:
+        raise AgentWorkAppError(f"refusing non-product Patch Swarm worktree: {worktree}")
+    patch_swarm_remove_product_worktree(worktree, repo)
+    worktree.parent.mkdir(parents=True, exist_ok=True)
+    add_result = patch_swarm_git(repo, "worktree", "add", "-f", "-B", branch, str(worktree), "HEAD", timeout=120)
+    applied: list[dict[str, Any]] = []
+    rejected: list[dict[str, Any]] = []
+    if add_result.returncode == 0:
+        limit = int(payload.get("limit") or 0)
+        candidates = selected[:limit] if limit > 0 else selected
+        for candidate in candidates:
+            patch_file = str((candidate.get("patch") or {}).get("patch_file") or "")
+            patch_path = engine.resolve_cento_path(patch_file)
+            check = patch_swarm_git(worktree, "apply", "--check", str(patch_path), timeout=60)
+            if check.returncode != 0:
+                rejected.append({"candidate_id": candidate.get("id"), "reason": "git apply check failed", "stderr_tail": check.stderr[-1000:]})
+                continue
+            apply_result = patch_swarm_git(worktree, "apply", str(patch_path), timeout=60)
+            if apply_result.returncode == 0:
+                applied.append({"candidate_id": candidate.get("id"), "patch_file": patch_file, "touched_paths": candidate.get("touched_paths", [])})
+            else:
+                rejected.append({"candidate_id": candidate.get("id"), "reason": "git apply failed", "stderr_tail": apply_result.stderr[-1000:]})
+    receipt = {
+        "schema_version": "cento.patch_swarm.external_safe_integrator_apply.v1",
+        "run_id": run_dir.name,
+        "status": "applied" if add_result.returncode == 0 and applied and not rejected else "apply_blocked",
+        "selected_repo": str(repo),
+        "branch": branch,
+        "worktree": str(worktree),
+        "worktree_add": {
+            "exit_code": add_result.returncode,
+            "stdout_tail": add_result.stdout[-1000:],
+            "stderr_tail": add_result.stderr[-1000:],
+        },
+        "applied": applied,
+        "rejected": rejected,
+        "applied_count": len(applied),
+        "rejected_count": len(rejected),
+        "written_at": datetime.now(timezone.utc).isoformat(),
+    }
+    engine.write_json(run_dir / "product_safe_integrator_apply.json", receipt)
+    engine.patch_swarm_write_ui_state(run_dir)
+    patch_swarm_append_product_event(run_dir, "product_safe_integrator_apply", {"status": receipt["status"], "applied_count": len(applied), "rejected_count": len(rejected)})
+    return receipt
+
+
+def patch_swarm_product_apply(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    engine = patch_swarm_engine()
+    run_dir = patch_swarm_run_path(run_id)
+    approval = engine.read_json(run_dir / "supervised_approval.json")
+    if approval.get("status") != "approved":
+        raise AgentWorkAppError("apply requires supervised approval")
+    selected_ids = [str(item) for item in approval.get("selected_candidate_ids", []) if str(item)]
+    selected = patch_swarm_product_selected_candidates(run_dir, selected_ids)
+    repo_root = engine.patch_swarm_selected_repo_root(run_dir).resolve()
+    if repo_root == ROOT_DIR.resolve() and bool(payload.get("use_factory", True)):
+        promotion = engine.promote_patch_swarm_to_factory(
+            run_dir,
+            selected,
+            factory_run=str(payload.get("factory_run") or ""),
+            apply=True,
+            validate_each=bool(payload.get("validate_each", False)),
+            branch=str(payload.get("branch") or ""),
+            worktree=str(payload.get("worktree") or ""),
+            limit=int(payload.get("limit") or 0),
+        )
+        engine.patch_swarm_write_ui_state(run_dir)
+        patch_swarm_append_product_event(run_dir, "product_factory_apply", {"status": promotion.get("status"), "selected_count": len(selected)})
+    else:
+        patch_swarm_product_external_apply(run_dir, selected, payload)
+    return patch_swarm_product_run_detail(run_dir.name)
+
+
 def safe_static_path(raw_path: str) -> Path:
     route = raw_path.split("?", 1)[0].split("#", 1)[0]
     app_routes = {
@@ -4421,14 +9574,16 @@ def safe_static_path(raw_path: str) -> Path:
         "/cluster",
         "/consulting",
         "/factory",
+        "/patch-swarm",
         "/docs",
         "/research-center",
         "/software-delivery-hub",
         "/dev-pipeline-studio",
         "/codebase-intelligence",
         "/issues",
+        "/issues/new",
     }
-    if route in ("",) or route in app_routes or route.startswith("/issues/"):
+    if route in ("",) or route in app_routes or route.startswith("/issues/") or route.startswith("/patch-swarm/runs/"):
         route = "/index.html"
     path = (TEMPLATE_DIR / route.lstrip("/")).resolve()
     template_root = TEMPLATE_DIR.resolve()
@@ -4568,11 +9723,34 @@ def make_handler(db_path: Path) -> type[BaseHTTPRequestHandler]:
                 if parsed.path == "/api/factory":
                     self.send_json(200, factory_run_list())
                     return
+                if parsed.path == "/api/patch-swarm/repos":
+                    self.send_json(200, patch_swarm_discover_repos())
+                    return
+                if parsed.path == "/api/patch-swarm/runs":
+                    self.send_json(200, patch_swarm_product_run_list())
+                    return
+                if parsed.path.startswith("/api/patch-swarm/runs/"):
+                    parts = [part for part in parsed.path.split("/") if part]
+                    if len(parts) == 4:
+                        self.send_json(200, patch_swarm_product_run_detail(parts[3]))
+                        return
                 if parsed.path == "/api/dev-pipeline-studio":
                     query = parse_qs(parsed.query)
                     project_id = str((query.get("project") or [""])[0])
                     template_id = str((query.get("template") or [""])[0])
-                    self.send_json(200, dev_pipeline_studio_state(project_id=project_id, template_id=template_id))
+                    run_id = str((query.get("run_id") or [""])[0])
+                    self.send_json(200, dev_pipeline_studio_state(project_id=project_id, template_id=template_id, run_id=run_id))
+                    return
+                if parsed.path == "/api/demo-evidence/latest":
+                    try:
+                        latest_demo = latest_demo_video_path()
+                    except AgentWorkAppError as exc:
+                        self.send_json(404, {"error": str(exc)})
+                        return
+                    self.send_response(302)
+                    self.send_header("Location", artifact_url(latest_demo))
+                    self.send_header("Cache-Control", "no-store")
+                    self.end_headers()
                     return
                 if parsed.path == "/api/review":
                     with connect(db_path) as conn:
@@ -4653,6 +9831,8 @@ def make_handler(db_path: Path) -> type[BaseHTTPRequestHandler]:
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
                 self.wfile.write(body)
+            except AgentWorkAppError as exc:
+                self.send_json(400, {"error": str(exc)})
             except Exception as exc:
                 self.send_json(500, {"error": str(exc)})
 
@@ -4662,6 +9842,23 @@ def make_handler(db_path: Path) -> type[BaseHTTPRequestHandler]:
                 payload = self.read_json()
                 if parsed.path == "/api/dev-pipeline-studio":
                     self.send_json(200, dev_pipeline_update(payload))
+                    return
+                if parsed.path == "/api/patch-swarm/runs":
+                    self.send_json(201, patch_swarm_product_create_run(payload))
+                    return
+                if parsed.path.startswith("/api/patch-swarm/runs/"):
+                    parts = [part for part in parsed.path.split("/") if part]
+                    if len(parts) == 5 and parts[4] in {"approve", "reject", "apply"}:
+                        if parts[4] == "approve":
+                            self.send_json(200, patch_swarm_product_approve(parts[3], payload))
+                            return
+                        if parts[4] == "reject":
+                            self.send_json(200, patch_swarm_product_reject(parts[3], payload))
+                            return
+                        self.send_json(200, patch_swarm_product_apply(parts[3], payload))
+                        return
+                if parsed.path == "/api/pipeline-runs":
+                    self.send_json(201, dev_pipeline_start_pipeline_run(payload))
                     return
                 with connect(db_path) as conn:
                     init_db(conn)
@@ -4709,6 +9906,8 @@ def make_handler(db_path: Path) -> type[BaseHTTPRequestHandler]:
                         self.send_json(200, decide_review(conn, issue_id, payload))
                         return
                 self.send_json(404, {"error": "Not found"})
+            except AgentWorkAppError as exc:
+                self.send_json(400, {"error": str(exc)})
             except Exception as exc:
                 self.send_json(500, {"error": str(exc)})
 

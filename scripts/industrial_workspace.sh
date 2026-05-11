@@ -227,6 +227,7 @@ placeholder_names = {
     "activity feed",
     "agent runs",
     "quick actions",
+    "mozilla vpn",
 }
 
 
@@ -377,7 +378,10 @@ launch_panel() {
     elif [[ "$panel" == "agents" ]]; then
         append_background_options "$panel" "0.92"
         command=("$ROOT_DIR/scripts/industrial_aux_tui.sh" "$panel")
-    elif [[ "$panel" == "activity" || "$panel" == "actions" ]]; then
+    elif [[ "$panel" == "actions" ]]; then
+        append_background_options "$panel" "0.92"
+        command=("$ROOT_DIR/scripts/mozilla_vpn_tui.sh")
+    elif [[ "$panel" == "activity" ]]; then
         append_background_options "$panel" "0.92"
         command=("$ROOT_DIR/scripts/industrial_aux_tui.sh" "$panel")
     fi
@@ -421,7 +425,7 @@ ensure_all_windows() {
     launch_panel "cento-industrial-jobs" "jobs dashboard" "jobs"
     launch_panel "cento-industrial-cluster" "cluster status" "cluster"
     launch_panel "cento-industrial-agents" "agent runs" "agents"
-    launch_panel "cento-industrial-actions" "quick actions" "actions"
+    launch_panel "cento-industrial-actions" "mozilla vpn" "actions"
 
     local klass
     for klass in "discord" "${GENERATED_CLASSES[@]}"; do

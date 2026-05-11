@@ -9,6 +9,7 @@ const store = {
   data: null,
   questionnaire: null,
   paths: null,
+  foundry: [],
   requestLog: [],
   error: '',
 };
@@ -87,6 +88,7 @@ async function loadState() {
     store.data = payload.state;
     store.questionnaire = payload.questionnaire;
     store.paths = payload.paths;
+    store.foundry = payload.foundry?.tools || [];
     store.error = '';
     await loadRequestLog();
   } catch (error) {
@@ -489,11 +491,45 @@ function renderTasks() {
   `;
 }
 
+function renderFoundryTools() {
+  const tools = store.foundry || [];
+  return `
+    <article class="panel">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Foundry tools</h2>
+          <p class="section-copy">Repo-ready tool bundles that Cento can surface inside this CRM.</p>
+        </div>
+      </div>
+      <div class="template-grid">
+        ${tools.map(tool => `
+          <article class="content-card">
+            <div class="card-head">
+              <h3 class="card-title">${escapeHtml(tool.title)}</h3>
+              <span class="stage-pill">${escapeHtml(tool.status)}</span>
+            </div>
+            <p>${escapeHtml(tool.description)}</p>
+            <div class="card-meta">${escapeHtml(tool.privacy)}</div>
+            <div class="chip-row">
+              <span class="pill">${escapeHtml(tool.target_root)}</span>
+              <span class="pill">${escapeHtml(tool.docs_path)}</span>
+            </div>
+            <div class="section-actions">
+              <a class="action-link primary-link" href="${escapeHtml(tool.preview_path)}" target="_blank" rel="noreferrer">Preview</a>
+            </div>
+          </article>
+        `).join('')}
+      </div>
+    </article>
+  `;
+}
+
 function renderStudio() {
   const state = store.data;
   return `
     <section class="view-grid">
       <div class="stack">
+        ${renderFoundryTools()}
         <article class="panel">
           <div class="section-head">
             <div>

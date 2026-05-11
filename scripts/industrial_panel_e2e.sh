@@ -8,10 +8,12 @@ ROOT_DIR=$(cd -- "$SCRIPT_DIR/.." && pwd)
 render_hero() {
     local columns=$1
     local lines=$2
+    local mission_fixture=${3:-}
     cd "$ROOT_DIR"
     COLUMNS=$columns \
     LINES=$lines \
     CENTO_INDUSTRIAL_HERO_BACKGROUND=1 \
+    CENTO_INDUSTRIAL_MISSION_FIXTURE=${mission_fixture:+$mission_fixture} \
     PYTHONPATH="$SCRIPT_DIR${PYTHONPATH:+:$PYTHONPATH}" \
     python3 "$SCRIPT_DIR/industrial_panel.py" hero --once --plain
 }
@@ -74,24 +76,44 @@ for number, line in enumerate(payload, 1):
 PY
 }
 
-output=$(render_hero 120 48)
+output=$(render_hero 120 48 "$SCRIPT_DIR/fixtures/industrial_panel/mission-busy.json")
 assert_widths 120 <<<"$output"
 
-grep -Fq 'MISSION CONTROL // CENTRAL ACTION PANE' <<<"$output"
-grep -Fq 'not a dashboard - an action router for the whole cockpit' <<<"$output"
+grep -Fq 'MISSION CONTROL // CENTO MISSION ROUTER' <<<"$output"
+grep -Fq 'live Cento tools, Taskstream, agent runs, cluster, git, jobs, and registered actions' <<<"$output"
 grep -Fq 'MISSION BRIEF' <<<"$output"
 grep -Fq 'ACTIVE WORK QUEUE' <<<"$output"
 grep -Fq 'CONTEXT ENGINE' <<<"$output"
 grep -Fq 'KEYBOARD / ACTION HUB' <<<"$output"
-grep -Fq 'ACTIONS 12 READY' <<<"$output"
-grep -Fq 'ACTION › implement action router' <<<"$output"
+grep -Fq 'REV 2  BLK 1  Q 1' <<<"$output"
+grep -Fq 'Review ready #101' <<<"$output"
+grep -Fq 'Review gate #102' <<<"$output"
+grep -Fq 'Blocked #103' <<<"$output"
+grep -Fq 'Dispatch dry-run #104' <<<"$output"
+grep -Fq 'Manual codex shell' <<<"$output"
+grep -Fq 'ACTION › ready' <<<"$output"
+grep -Fq 'DRY RUN' <<<"$output"
+grep -Fq 'CONTEXT' <<<"$output"
+
+if grep -Fq 'Finish industrial dashboard' <<<"$output"; then
+    printf 'industrial panel e2e failed: hero rendered fake queue item\n' >&2
+    exit 1
+fi
+if grep -Fq 'ACTIONS 12 READY' <<<"$output"; then
+    printf 'industrial panel e2e failed: hero rendered fake action count\n' >&2
+    exit 1
+fi
+if grep -Fq 'CAPTURE' <<<"$output" || grep -Fq 'BLOCK  ' <<<"$output"; then
+    printf 'industrial panel e2e failed: hero advertised unimplemented hub keys\n' >&2
+    exit 1
+fi
 
 if grep -Fq '▀' <<<"$output"; then
     printf 'industrial panel e2e failed: hero rendered image blocks\n' >&2
     exit 1
 fi
 
-compact_output=$(render_hero 92 38)
+compact_output=$(render_hero 92 38 "$SCRIPT_DIR/fixtures/industrial_panel/mission-busy.json")
 assert_widths 92 <<<"$compact_output"
 compact_lines=$(wc -l <<<"$compact_output")
 if (( compact_lines > 38 )); then
@@ -101,6 +123,11 @@ fi
 grep -Fq 'ACTIVE WORK QUEUE' <<<"$compact_output"
 grep -Fq 'CONTEXT ENGINE' <<<"$compact_output"
 grep -Fq 'KEYBOARD / ACTION HUB' <<<"$compact_output"
+
+clean_output=$(render_hero 100 40 "$SCRIPT_DIR/fixtures/industrial_panel/mission-clean.json")
+assert_widths 100 <<<"$clean_output"
+grep -Fq 'No active mission items.' <<<"$clean_output"
+grep -Fq 'low: board and cluster are quiet' <<<"$clean_output"
 
 empty_cluster_output=$(render_cluster 100 40 "$SCRIPT_DIR/fixtures/industrial_panel/cluster-empty.json")
 assert_widths 100 <<<"$empty_cluster_output"
@@ -144,6 +171,7 @@ grep -Fq 'IDLE Cluster status' <<<"$actions_output"
 grep -Fq 'No action has run yet.' <<<"$actions_output"
 grep -Fq 'Controls:' <<<"$actions_output"
 python3 "$SCRIPT_DIR/industrial_panel_actions_contract_check.py"
+python3 "$SCRIPT_DIR/industrial_mission_contract_check.py"
 
 empty_actions_output=$(render_actions 96 28 "$SCRIPT_DIR/fixtures/industrial_panel/empty_actions.json")
 grep -Fq 'No actions configured.' <<<"$empty_actions_output"

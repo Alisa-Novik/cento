@@ -4,10 +4,10 @@ This file is generated from `data/tools.json`.
 
 ## Summary
 
-- macOS tools: 34
-- Linux tools: 42
-- both platforms: 31
-- Linux only: 11
+- macOS tools: 42
+- Linux tools: 52
+- both platforms: 39
+- Linux only: 13
 - macOS only: 3
 
 ## Tool Matrix
@@ -26,12 +26,17 @@ This file is generated from `data/tools.json`.
 | `burp` | no | yes | Download, set up, and control PortSwigger Burp Suite Community through cento wrappers. |
 | `cento-cli` | yes | yes | Unified cento facade for built-ins, terminal docs browsing, tool dispatch, and user-defined aliases. |
 | `cento-mcp` | yes | yes | Local MCP stdio server that exposes safe Cento agent-work, story manifest, cluster, bridge, and context tools. |
+| `claude-chores` | yes | yes | Discover, document, schedule, and launch bounded Claude Code maintenance chores for Cento without metered OpenAI API spend. |
 | `cluster` | yes | yes | Manage Cento node identity, cluster registry, colored status, remote execution, bridge healing, and read-only git drift checks. |
+| `compute-policy` | yes | yes | Manage provider-share policy for Codex, Claude Code, and metered OpenAI API use, then sync Agent Work runtime weights. |
 | `crm` | yes | yes | Embedded cento CRM with questionnaire bootstrap, career-intake dossiers, local JSON persistence, and a self-hosted no-build SPA. |
 | `daily` | yes | yes | Bubble Tea execution cockpit for morning brief, midday recalibration, evening wrap-up, and local continuity. |
 | `dashboard` | no | yes | Run a localhost web dashboard with current state, recent cento activity, aliases, tools, and repo progress. |
+| `demo-evidence` | yes | yes | Record short 10-30 second desktop demo videos as Factory, Codex worker, and validation evidence with receipts. |
+| `discord` | no | yes | Update, rerun, and inspect Discord through a Cento-native Linux desktop control command. |
 | `display-layout-fix` | no | yes | Detect two connected monitors, stack them vertically, and refresh wallpaper plus polybar. |
 | `factory` | yes | yes | Deterministic no-model Factory planning, dispatch dry-runs, patch collection, validation, and Safe Integrator workflows. |
+| `foundry` | yes | yes | Create Cento-native business tools through Factory, Workset, parallel train promotion, storage policy, cost receipts, and demo evidence. |
 | `gather-context` | yes | yes | Gather AI-ready local and remote Cento context including platform support, repo state, command paths, MCP hints, and SSH connectivity. |
 | `i3reorg` | no | yes | Move numeric i3 workspaces to the bottom monitor, apply the preferred app map, and optionally place the Abao/Tokyo study YouTube window on top workspace L2 fullscreen. |
 | `incident` | yes | no | Bounded incident checks for Cento control-plane failures, with guarded SEV2 agent-work escalation for iPhone ce ingress failures. |
@@ -40,15 +45,19 @@ This file is generated from `data/tools.json`.
 | `kitty-theme-manager` | yes | yes | Manage Kitty themes with interactive selection, persistent logs, and tmux-aware refresh behavior. |
 | `mcp` | yes | yes | Manage repo-root MCP config, env templates, validation, and tool-call docs. |
 | `mobile` | yes | no | Native iOS/PWA mobile helper commands, including repeatable iOS e2e validation against the local mobile gateway. |
+| `mozilla-vpn` | no | yes | Native Mozilla VPN control pane for the Industrial OS workspace, with status, UI launch, login, activate, and deactivate actions. |
 | `network-tui` | yes | yes | Cluster-focused Bubble Tea monitor for Cento nodes, connection state, activity state, tmux presence, VM mesh sockets, and companion-device reachability. |
 | `notify` | yes | yes | Send cluster notifications to configured ntfy targets such as iPhone and Apple Watch mirrored alerts. |
+| `object-storage` | yes | yes | Write dummy objects and mirror Cento run images to private Oracle Object Storage through the OCI CLI. |
 | `opencode` | yes | yes | Thin wrapper around opencode (Alisa-Novik fork of sst/opencode) — an open-source AI coding agent TUI. |
+| `parallel-delivery` | yes | yes | Coordinate Hard ProReq fanout, Workset manifests, integrator/validator evidence, and demo receipts for the parallel AI delivery roadmap. |
 | `platform-report` | yes | yes | Report declared macOS and Linux support for registered cento tools and generate docs/platform-support.md. |
 | `preset` | no | yes | Apply managed Cento desktop presets such as the Industrial OS i3 theme and dashboard. |
 | `project-scaffold` | yes | yes | Scaffold a generic project with starter README, notes, scripts, data, and workspace folders. |
+| `proreq-light` | yes | yes | Run the Hard ProReq artifact chain with the Pro planning request replaced by Codex Exec using a ChatGPT Pro simulation prompt. |
 | `quick-help` | no | yes | Rofi-based searchable help palette for cento built-ins, tools, and aliases. |
 | `quick-help-fzf` | yes | yes | Cross-platform fzf command palette for cento built-ins, tools, and aliases. |
-| `rd` | no | yes | Terminate and relaunch Discord through the available desktop launcher. |
+| `rd` | no | yes | Compatibility shortcut for `cento discord rerun`. |
 | `repo-snapshot` | yes | yes | Create a compact repo status report including tree, git status, diffstat, and recent commits. |
 | `runtime` | yes | yes | Inspect and validate local builder runtime profiles used by Cento Build worker execution. |
 | `scan` | yes | yes | Scan cento for a topic and generate an archived HTML one-pager with explanation and snippets. |
@@ -57,6 +66,7 @@ This file is generated from `data/tools.json`.
 | `temp` | yes | yes | Short-lived operator wrappers for fragile one-off commands that should not be pasted as multiline shell. |
 | `tool-index` | yes | yes | Generate a Markdown tool index from the central registry. |
 | `tui` | yes | yes | Bubble Tea Telegram TUI with cached Go launcher, local config, and planned CRM hooks. |
+| `walk-autopilot` | yes | yes | Append-only follow-up coordinator for bounded Factory, spend-ledger, Hard ProReq, image fallback, agent-work hygiene, and worker-pool loops. |
 | `wallpaper-manager` | no | yes | Choose, preview, apply, and persist desktop wallpapers for i3 and feh. |
 | `workset` | yes | yes | Minimal local N-worker runner for exclusive-path build tasks, structured API artifacts, dependency gates, budget caps, and sequential integration. |
 
@@ -71,18 +81,25 @@ This file is generated from `data/tools.json`.
 - `build`
 - `cento-cli`
 - `cento-mcp`
+- `claude-chores`
 - `cluster`
+- `compute-policy`
 - `crm`
 - `daily`
+- `demo-evidence`
 - `factory`
+- `foundry`
 - `gather-context`
 - `kitty-theme-manager`
 - `mcp`
 - `network-tui`
 - `notify`
+- `object-storage`
 - `opencode`
+- `parallel-delivery`
 - `platform-report`
 - `project-scaffold`
+- `proreq-light`
 - `quick-help-fzf`
 - `repo-snapshot`
 - `runtime`
@@ -92,6 +109,7 @@ This file is generated from `data/tools.json`.
 - `temp`
 - `tool-index`
 - `tui`
+- `walk-autopilot`
 - `workset`
 
 ## Linux Only
@@ -100,9 +118,11 @@ This file is generated from `data/tools.json`.
 - `bluetooth-audio-doctor`
 - `burp`
 - `dashboard`
+- `discord`
 - `display-layout-fix`
 - `i3reorg`
 - `install-linux`
+- `mozilla-vpn`
 - `preset`
 - `quick-help`
 - `rd`

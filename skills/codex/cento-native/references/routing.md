@@ -17,6 +17,19 @@ rg -n 'KEYWORD|TOOL_ID|subcommand|usage' data scripts docs --glob '!docs/nav.htm
 
 If the user references "registered tools", inspect `data/tools.json`. If they reference "temp commands", use `cento temp` first, then `cluster`, `bridge`, and `batch-exec`.
 
+## Intent Defaults
+
+Classify intent before choosing a route:
+
+- Human docs: "somewhere in Docs", "save in Docs", "human Docs", or a manager/operator handoff. Use readable `docs/` pages, Cento Console `/docs`, and `docs/nav.html` where discoverability matters.
+- Command docs: "cento docs", "CLI docs", "tool docs", or "registry". Use `data/cento-cli.json`, `data/tools.json`, and generated references.
+- Read-only: "analysis", "summary", "suggestions", "check if", "calculate". Inspect and report without code edits unless the user asks to save an artifact.
+- Implementation: "implement", "fix", "add", "wire", "e2e", "coordinate until done". Make the change and validate it.
+- Plan execution: "Implement the plan" means execute the latest accepted plan, not write a second plan.
+- Cloud storage: "OCI CLI", "bucket", "namespace", "Object Storage". Prefer the registered `object-storage` route.
+
+When intent is ambiguous, use the lowest side-effect route and ask only if the wrong route would create spend, public exposure, destructive changes, broad dispatch, or a meaningfully different artifact.
+
 ## Common Routes
 
 - Local context: `cento gather-context --no-remote`

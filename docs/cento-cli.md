@@ -87,6 +87,9 @@ Routing rules:
   Dispatch to a registered tool id from `data/tools.json`.
 - `cento ALIAS [args...]`
   Dispatch to a configured alias from `~/.config/cento/aliases.sh`.
+- `cento walk-autopilot routing run --json`
+  Collect counts-only routing and Cento-native observability, write a decision
+  report, and hand off bounded follow-up work without implementing from cron.
 
 Terminal integration:
 

@@ -10,7 +10,9 @@ It answers:
 - which files are duplicate, bulky, private, or reproducible
 - which files are candidates for future compression, normalization, archive, or prune gates
 
-The first slice is intentionally conservative. It catalogs and plans lifecycle actions, but it does not delete artifacts and does not upload anything to cloud storage.
+The first slice is intentionally conservative. It catalogs and plans lifecycle actions, but it does not delete artifacts.
+
+OCI image mirroring now lives in the `object-storage` tool and has a readable guide at [`docs/oci-image-migration.html`](./oci-image-migration.html), with Markdown source at [`docs/oci-image-migration.md`](./oci-image-migration.md). That path is mirror-only: it uploads verified run images to private Standard Object Storage and leaves local originals unchanged.
 
 ## Commands
 
@@ -54,7 +56,7 @@ Storage v1 has a no-delete posture.
 - Raw screenshots are only marked for normalization/compression until derivatives are verified.
 - SQLite DB/WAL files require controlled snapshots and integrity checks before movement.
 - Build intermediates can be reported as deletion candidates, but v1 will not prune them.
-- Cloud upload is out of scope for v1.
+- General cloud upload is out of scope for Storage v1. The supported cloud path is the image-specific `cento object-storage` mirror described in [`docs/oci-image-migration.html`](./oci-image-migration.html).
 
 SQLite snapshots use SQLite backup semantics and write metadata next to the snapshot. The command does not delete active WAL/SHM files:
 

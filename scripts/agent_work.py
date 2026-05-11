@@ -1149,6 +1149,15 @@ def command_runtime(command: str) -> str:
     return ""
 
 
+def process_cwd(pid: int) -> str:
+    if pid <= 0:
+        return ""
+    try:
+        return os.readlink(f"/proc/{pid}/cwd")
+    except OSError:
+        return ""
+
+
 def read_agent_processes() -> list[dict[str, Any]]:
     try:
         proc = subprocess.run(["ps", "-eo", "pid=,ppid=,stat=,etime=,command="], text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, timeout=5, check=False)
@@ -1175,6 +1184,7 @@ def read_agent_processes() -> list[dict[str, Any]]:
                 "elapsed": elapsed,
                 "command": command,
                 "runtime": runtime,
+                "cwd": process_cwd(int(pid)),
             }
         )
     return processes
@@ -1220,7 +1230,7 @@ def untracked_interactive_runs(records: list[dict[str, Any]]) -> list[dict[str, 
                 "exit_code": None,
                 "prompt_path": "",
                 "log_path": "",
-                "cwd": "",
+                "cwd": proc.get("cwd", ""),
                 "git_head": "",
                 "ledger_path": "",
                 "source": "ps",
@@ -4523,7 +4533,7 @@ def run_validation_check(check: dict[str, Any], context: dict[str, str]) -> dict
     name = str(check.get("name") or kind)
     if kind == "command":
         result = run_command_check(check, context)
-    elif kind == "file":
+    elif kind in ("file", "file_exists"):
         result = run_file_check(check, context)
     elif kind == "url":
         result = run_url_check(check, context)

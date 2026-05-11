@@ -19,11 +19,13 @@ import tty
 import unicodedata
 import shlex
 import threading
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from industrial_activity import build_activity_events, classify_severity, dedupe_sort_events, event, filter_activity_events, load_agent_work_payload, parse_timestamp
+from industrial_mission import build_mission_model, command_is_safe as mission_command_is_safe, command_to_text as mission_command_text
 from industrial_status import metrics
 from jobs_server import load_jobs
 from network_web_server import build_cluster_panel_model, cluster_snapshot
@@ -58,44 +60,6 @@ SHOW_CURSOR = "\033[?25h"
 HOME = "\033[H"
 CLEAR_TO_END = "\033[J"
 CLEAR_LINE = "\033[K"
-HERO_QUEUE = [
-    {
-        "title": "Finish industrial dashboard",
-        "detail": "replace hero pane with mission model",
-        "group": "BUILD",
-        "key": "a",
-        "command": ["python3", "-m", "py_compile", "scripts/industrial_panel.py"],
-    },
-    {
-        "title": "Review funnel docs",
-        "detail": "extract blockers + next owner",
-        "group": "DOCS",
-        "key": "o",
-        "command": ["python3", "scripts/funnel_check.py"],
-    },
-    {
-        "title": "Run make check",
-        "detail": "execute test pack, capture failure",
-        "group": "VERIFY",
-        "key": "m",
-        "command": ["make", "check"],
-    },
-    {
-        "title": "Draft demo follow-up",
-        "detail": "6-line Slack update + ask",
-        "group": "ADOPT",
-        "key": "u",
-        "command": None,
-    },
-    {
-        "title": "Turn repeated step into job",
-        "detail": "scaffold job from command history",
-        "group": "AUTO",
-        "key": "g",
-        "command": ["python3", "scripts/cluster_job_runner.py", "--help"],
-    },
-]
-HERO_READY_ACTIONS = 12
 def normalize_platform_name(value: str) -> str:
     value = value.lower()
     if value == "darwin":
@@ -118,8 +82,8 @@ ACTIVITY_RENDER_OPTIONS: dict[str, Any] = {
 }
 HERO_STATE: dict[str, Any] = {
     "selected": 0,
-    "message": "implement action router",
-    "output": ["j/k or arrows move", "a or enter runs selected action", "o opens context", "u drafts update"],
+    "message": "ready",
+    "output": ["j/k or arrows move", "a/enter runs selected safe command", "d dry-runs selected command", "o opens context"],
     "last_key": "",
 }
 ACTIONS_STATE: dict[str, Any] = {
@@ -439,18 +403,7 @@ def action_command_text(command: Any) -> str:
 
 
 def action_command_is_safe(command: Any) -> tuple[bool, str]:
-    if not isinstance(command, list):
-        return False, "invalid command"
-    if not command:
-        return False, "no command configured"
-    first = str(command[0]).strip()
-    if not first:
-        return False, "no command configured"
-    if first in UNSAFE_ACTION_COMMANDS:
-        return False, f"unsafe shell wrapper blocked: {first}"
-    if first in SAFE_ACTION_COMMANDS or first.startswith("./scripts/"):
-        return True, ""
-    return False, f"unsafe command blocked: {first}"
+    return mission_command_is_safe(command)
 
 
 def cluster_panel_payload() -> tuple[dict[str, Any], str | None]:
@@ -626,6 +579,116 @@ def run_action(action: dict[str, Any], *, dry_run: bool = False) -> list[str]:
     return lines
 
 
+def hero_action_run_root() -> Path:
+    return Path(os.environ.get("CENTO_INDUSTRIAL_ACTION_RUN_ROOT", ROOT_DIR / "workspace" / "runs" / "industrial-os" / "action-runs"))
+
+
+def slug(value: str) -> str:
+    cleaned = []
+    for char in str(value or "action").lower():
+        if char.isalnum() or char in {"-", "_"}:
+            cleaned.append(char)
+        elif cleaned and cleaned[-1] != "-":
+            cleaned.append("-")
+    result = "".join(cleaned).strip("-")
+    return result[:60] or "action"
+
+
+def display_receipt_path(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT_DIR))
+    except ValueError:
+        return str(path)
+
+
+def write_hero_action_receipt(
+    item: dict[str, Any],
+    command: list[str],
+    *,
+    dry_run: bool,
+    status: str,
+    returncode: int | None,
+    output: str,
+) -> Path:
+    root = hero_action_run_root()
+    root.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().astimezone().isoformat(timespec="seconds")
+    filename_stamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+    receipt = {
+        "schema": "cento.industrial-os.hero-action-run.v1",
+        "timestamp": timestamp,
+        "dry_run": dry_run,
+        "selected_item_id": str(item.get("id") or ""),
+        "source": str(item.get("source") or ""),
+        "title": str(item.get("title") or ""),
+        "group": str(item.get("group") or ""),
+        "cwd": str(ROOT_DIR),
+        "command": [str(piece) for piece in command],
+        "command_text": mission_command_text(command),
+        "status": status,
+        "exit_code": returncode,
+        "output_tail": [line for line in output.splitlines() if line][-20:],
+    }
+    path = root / f"{filename_stamp}-{slug(str(item.get('id') or item.get('title') or 'action'))}-{uuid.uuid4().hex[:8]}.json"
+    path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
+def run_hero_action(item: dict[str, Any], *, dry_run: bool = False, timeout: float = 12.0) -> list[str]:
+    command = item.get("dry_run_command" if dry_run else "command") or item.get("command") or []
+    if not isinstance(command, list):
+        command = []
+    command = [str(piece) for piece in command if str(piece).strip()]
+    command_text = mission_command_text(command)
+    if not command:
+        receipt = write_hero_action_receipt(item, command, dry_run=dry_run, status="empty", returncode=0, output="No command configured")
+        return [f"EMPTY: {str(item.get('title') or 'selected item')}", "No command configured.", f"receipt: {display_receipt_path(receipt)}"]
+    safe, reason = action_command_is_safe(command)
+    if not safe:
+        receipt = write_hero_action_receipt(item, command, dry_run=dry_run, status="blocked", returncode=126, output=reason)
+        return [f"BLOCKED: {command_text}", reason, f"receipt: {display_receipt_path(receipt)}"]
+
+    started = time.time()
+    try:
+        result = subprocess.run(
+            command,
+            cwd=ROOT_DIR,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+        output = (result.stdout or "").strip()
+        status = "succeeded" if result.returncode == 0 else "failed"
+        returncode: int | None = result.returncode
+    except FileNotFoundError as exc:
+        output = f"unavailable: {exc}"
+        status = "unavailable"
+        returncode = None
+    except subprocess.TimeoutExpired as exc:
+        output = (exc.stdout or exc.stderr or f"timed out after {timeout}s")
+        if isinstance(output, bytes):
+            output = output.decode(errors="replace")
+        status = "failed"
+        returncode = 124
+    except Exception as exc:
+        output = str(exc)
+        status = "failed"
+        returncode = None
+    elapsed = time.time() - started
+    if not output:
+        output = f"exit {returncode}" if returncode is not None else status
+    receipt = write_hero_action_receipt(item, command, dry_run=dry_run, status=status, returncode=returncode, output=output)
+    output_lines = [line for line in output.splitlines() if line] or [status]
+    return [
+        f"{status.upper()}: {command_text}",
+        *output_lines[-8:],
+        f"elapsed {elapsed:.2f}s",
+        f"receipt: {display_receipt_path(receipt)}",
+    ]
+
+
 def idle_action_result(action: dict[str, Any]) -> dict[str, Any]:
     return {
         "label": action.get("label", "") or "action",
@@ -695,58 +758,139 @@ def hero_context_lines() -> list[str]:
     return rows
 
 
+def hero_queue(model: dict[str, Any]) -> list[dict[str, Any]]:
+    return [item for item in (model.get("queue") or []) if isinstance(item, dict)]
+
+
+def clamp_hero_selection(state: dict[str, Any], queue: list[dict[str, Any]]) -> int:
+    if not queue:
+        state["selected"] = 0
+        return 0
+    selected = max(0, min(len(queue) - 1, int(state.get("selected", 0))))
+    state["selected"] = selected
+    return selected
+
+
+def hero_item_context_output(item: dict[str, Any]) -> list[str]:
+    lines = [
+        f"{item.get('group') or 'MISSION'} {item.get('title') or 'selected item'}",
+        f"id={item.get('id') or 'n/a'} source={item.get('source') or 'n/a'}",
+        f"detail={item.get('detail') or 'n/a'}",
+    ]
+    command = item.get("command") or []
+    dry_run = item.get("dry_run_command") or []
+    if command:
+        lines.append(f"command={mission_command_text(command)}")
+    if dry_run:
+        lines.append(f"dry_run={mission_command_text(dry_run)}")
+    for line in item.get("context") or []:
+        if len(lines) >= 10:
+            break
+        lines.append(str(line))
+    return lines
+
+
+def hero_draft_note(model: dict[str, Any], selected_item: dict[str, Any] | None) -> list[str]:
+    stats = model.get("stats") or {}
+    brief = model.get("brief") or {}
+    selected_title = str((selected_item or {}).get("title") or "no selected queue item")
+    selected_detail = str((selected_item or {}).get("detail") or "")
+    return [
+        "Draft status note (not submitted)",
+        f"Objective: {brief.get('objective') or 'n/a'}",
+        f"Next: {selected_title}" + (f" - {selected_detail}" if selected_detail else ""),
+        (
+            "Counts: "
+            f"review={stats.get('review', 0)} "
+            f"blocked={stats.get('blocked', 0)} "
+            f"queued={stats.get('queued', 0)} "
+            f"runs={stats.get('runs', 0)} "
+            f"manual={stats.get('manual', 0)} "
+            f"cluster={stats.get('cluster', 0)}"
+        ),
+        f"Risk: {brief.get('risk') or 'n/a'}",
+    ]
+
+
+def hero_help_lines(model: dict[str, Any]) -> list[str]:
+    lines = []
+    for item in model.get("hub") or []:
+        key = str(item.get("key") or "").strip()
+        label = str(item.get("label") or "").strip()
+        detail = str(item.get("detail") or "").strip()
+        if key:
+            lines.append(f"{key}: {label}" + (f" - {detail}" if detail else ""))
+    return lines or ["No key bindings configured."]
+
+
 def handle_hero_key(state: dict[str, Any], key: str) -> bool:
     if not key:
         return True
+    model = build_mission_model()
+    queue = hero_queue(model)
+    max_index = len(queue) - 1
+    selected = clamp_hero_selection(state, queue)
     state["last_key"] = key.replace("\x1b", "esc")
-    selected = int(state.get("selected", 0))
     if key in {"q", "Q", "\x03"}:
         return False
-    if key in {"j", "J", "\x1b[B"}:
-        state["selected"] = min(len(HERO_QUEUE) - 1, selected + 1)
+    if key in {"j", "J", "\x1b[B", "\x1b[C", "down", "right"}:
+        state["selected"] = min(max_index, selected + 1) if queue else 0
         state["message"] = "selection moved"
         return True
-    if key in {"k", "K", "\x1b[A"}:
+    if key in {"k", "K", "\x1b[A", "\x1b[D", "up", "left"}:
         state["selected"] = max(0, selected - 1)
         state["message"] = "selection moved"
         return True
-    if key in {"1", "2", "3", "4", "5"}:
-        state["selected"] = min(len(HERO_QUEUE) - 1, int(key) - 1)
+    if key in {"1", "2", "3", "4", "5", "6", "7", "8", "9"}:
+        state["selected"] = min(max_index, int(key) - 1) if queue else 0
         state["message"] = "selection moved"
         return True
     if key in {"r", "R"}:
         state["message"] = "refreshed"
-        state["output"] = ["state rebuilt from jobs, logs, and local metrics"]
+        stats = model.get("stats") or {}
+        state["output"] = [
+            "Mission model rebuilt from Cento state.",
+            (
+                f"review={stats.get('review', 0)} blocked={stats.get('blocked', 0)} "
+                f"queued={stats.get('queued', 0)} runs={stats.get('runs', 0)} "
+                f"cluster={stats.get('cluster', 0)} actions={stats.get('actions', 0)}"
+            ),
+        ]
         return True
     if key in {"o", "O"}:
+        if not queue:
+            state["message"] = "context unavailable"
+            state["output"] = ["No selected mission queue item.", str((model.get("brief") or {}).get("next_action") or "")]
+            return True
         state["message"] = "context opened"
-        state["output"] = [strip_ansi(line) for line in hero_context_lines()]
+        state["output"] = hero_item_context_output(queue[int(state.get("selected", 0))])
         return True
     if key in {"u", "U"}:
         state["message"] = "update drafted"
-        state["output"] = [
-            "EOD update",
-            "Central action pane is now readable and keyboard-driven.",
-            "Volcano background remains in place.",
-            "Next: attach project-specific commands to each action.",
-        ]
+        selected_item = queue[int(state.get("selected", 0))] if queue else None
+        state["output"] = hero_draft_note(model, selected_item)
+        return True
+    if key in {"d", "D"}:
+        if not queue:
+            state["message"] = "no mission item"
+            state["output"] = ["No selected mission queue item to dry-run."]
+            return True
+        action = queue[int(state.get("selected", 0))]
+        state["message"] = "dry-running " + str(action.get("title") or "selected item")
+        state["output"] = run_hero_action(action, dry_run=True)
         return True
     if key in {"a", "A", "\r", "\n"}:
-        action = HERO_QUEUE[int(state.get("selected", 0))]
-        state["message"] = "running " + action["title"]
-        state["output"] = run_action(action)
+        if not queue:
+            state["message"] = "no mission item"
+            state["output"] = ["No selected mission queue item to run."]
+            return True
+        action = queue[int(state.get("selected", 0))]
+        state["message"] = "running " + str(action.get("title") or "selected item")
+        state["output"] = run_hero_action(action)
         return True
     if key == "?":
         state["message"] = "palette"
-        state["output"] = [
-            "j/k or arrows: move",
-            "1-5: direct select",
-            "a/enter: run selected",
-            "o: context",
-            "u: draft update",
-            "r: refresh",
-            "q: quit pane",
-        ]
+        state["output"] = hero_help_lines(model)
         return True
     return True
 
@@ -1288,49 +1432,92 @@ def activity_row(item: dict[str, Any], width: int) -> str:
     return f"{age} {severity} {sources} {message}"
 
 
+def mission_context_lines(model: dict[str, Any], state: dict[str, Any], width: int, compact: bool) -> list[str]:
+    context = model.get("context") or {}
+    rows: list[str] = []
+    ordered = [
+        ("CHANGE RADAR", "change_radar"),
+        ("ANTI-STALL", "anti_stall"),
+        ("BLAST RADIUS", "blast_radius"),
+        ("BLOCKER WATCH", "blocker_watch"),
+        ("SESSION HEAT", "session_heat"),
+    ]
+    max_pairs = 4 if compact else len(ordered)
+    for label, key in ordered[:max_pairs]:
+        value = str(context.get(key) or "n/a")
+        rows.append(styled(label, AMBER, bold=True))
+        rows.append(styled(clip_text(value, max(12, width - 2)), TEXT if key != "blocker_watch" else WHITE))
+    output = [str(line) for line in (state.get("output") or []) if str(line).strip()]
+    if output:
+        rows.append(styled("SELECTED CONTEXT", AMBER, bold=True))
+        for line in output[: max(3, 7 if not compact else 4)]:
+            rows.append(styled(clip_text(line, max(12, width - 2)), WHITE))
+    return rows
+
+
+def mission_hub_lines(model: dict[str, Any], width: int, very_compact: bool) -> list[str]:
+    items = [item for item in (model.get("hub") or []) if isinstance(item, dict)]
+    if not items:
+        return [styled("No key bindings configured.", MUTED)]
+    columns = 3 if width < 100 else 4
+    col_width = max(18, (width - (columns - 1) * 2) // columns)
+    rows: list[str] = []
+    for row_start in range(0, len(items), columns):
+        row = items[row_start:row_start + columns]
+        titles = []
+        details = []
+        for item in row:
+            key = str(item.get("key") or "")
+            label = str(item.get("label") or "")
+            detail = str(item.get("detail") or "")
+            titles.append(ansi_cell(f"{badge(key)}  {styled(label, AMBER, bold=True)}", col_width))
+            if not very_compact:
+                details.append(ansi_cell(styled("   " + clip_text(detail, max(8, col_width - 4)), WHITE), col_width))
+        rows.append("  ".join(titles))
+        if details:
+            rows.append("  ".join(details))
+    return rows
+
+
 def render_hero() -> None:
     columns, lines = term_size()
-    compact = lines < 56
-    very_compact = lines < 44
+    compact = lines < 52
+    very_compact = lines < 42
     width = max(64, min(columns - 2, 120))
     content = width - 4
     now = datetime.now().strftime("%H:%M:%S")
-    try:
-        payload = load_jobs()
-        jobs = payload.get("jobs", [])
-    except Exception:
-        jobs = []
-    active_jobs = sum(
-        1
-        for job in jobs
-        if str(job.get("status") or "").lower() not in {"succeeded", "failed", "done", "completed"}
-    )
-    active_jobs = active_jobs or min(7, max(1, len(jobs)))
-    selected = int(HERO_STATE.get("selected", 0))
-    selected_action = HERO_QUEUE[selected]
+    model = build_mission_model()
+    stats = model.get("stats") or {}
+    queue = hero_queue(model)
+    selected = clamp_hero_selection(HERO_STATE, queue)
+    selected_action = queue[selected] if queue else None
 
     top_left = styled(f"{now}  hero", MUTED)
-    top_right = styled(f"JOBS {active_jobs} ACTIVE  •  ACTIONS {HERO_READY_ACTIONS} READY", AMBER, bold=True)
-    print(ansi_cell(top_left, content - visible_len(top_right) - 1) + " " + top_right)
-    brand = styled("> INDUSTRIAL OPS v1.1.0", ORANGE, bold=True)
+    raw_top_right = (
+        f"REV {stats.get('review', 0)}  BLK {stats.get('blocked', 0)}  "
+        f"Q {stats.get('queued', 0)}  RUN {stats.get('runs', 0)}  "
+        f"MAN {stats.get('manual', 0)}  CL {stats.get('cluster', 0)}  ACT {stats.get('actions', 0)}"
+    )
+    top_right = styled(clip_text(raw_top_right, max(10, content - visible_len(top_left) - 1)), AMBER, bold=True)
+    print(ansi_cell(top_left, max(1, content - visible_len(top_right) - 1)) + " " + top_right)
+    brand = styled("> CENTO INDUSTRIAL OS v1.2.0", ORANGE, bold=True)
     print(brand)
     print(f"{ORANGE}{'─' * width}{RESET}")
-    headline = styled("MISSION CONTROL // CENTRAL ACTION PANE", AMBER, bold=True)
-    subtitle = styled("not a dashboard - an action router for the whole cockpit", WHITE)
+    headline = styled("MISSION CONTROL // CENTO MISSION ROUTER", AMBER, bold=True)
+    subtitle = styled("live Cento tools, Taskstream, agent runs, cluster, git, jobs, and registered actions", WHITE)
     print(headline)
     print(subtitle)
     print()
 
+    brief = model.get("brief") or {}
     mission_body: list[str] = []
-    mission_body.extend(mission_row("OBJECTIVE", "Ship central pane that turns intent → task → action.", content - 2))
-    mission_body.extend(mission_row("NEXT ACTION", "Wire selected queue item to an executable command.", content - 2, GREEN))
+    mission_body.extend(mission_row("OBJECTIVE", str(brief.get("objective") or "Read Cento state."), content - 2))
+    mission_body.extend(mission_row("NEXT ACTION", str(brief.get("next_action") or "No active mission item."), content - 2, GREEN))
     if not compact:
-        mission_body.extend(mission_row("PROJECT", "Cento Industrial Cockpit / Bubble Tea TUI", content - 2))
-        mission_body.extend(mission_row("DEADLINE", "Today 18:00  •  demo-ready by EOD", content - 2, AMBER))
-        mission_body.extend(mission_row("SUCCESS", "3 real keybinds, 1 screenshot, 1 follow-up narrative.", content - 2))
-        mission_body.extend(mission_row("WHY NOW", "Make the cockpit useful for 100+ engineers, not just pretty.", content - 2))
+        mission_body.extend(mission_row("PROJECT", str(brief.get("project") or "Cento"), content - 2))
+        mission_body.extend(mission_row("UPDATED", str(model.get("updated_at") or "unknown"), content - 2))
         mission_body.append("")
-    mission_body.append(badge("CONFIDENCE 72%") + styled("  •  RISK: pane looks cool but does not reduce clicks", TEXT))
+    mission_body.append(badge("LIVE MODEL") + styled("  RISK: " + str(brief.get("risk") or "unknown"), TEXT))
     print("\n".join(hero_section("MISSION BRIEF", mission_body, width, "LIVE", "▫")))
     print()
 
@@ -1339,29 +1526,31 @@ def render_hero() -> None:
     right_width = width - left_width - 2 if side_by_side else width
     left_body_width = max(24, left_width - 5)
     queue_lines: list[str] = []
-    for index, action in enumerate(HERO_QUEUE):
+    if not queue:
+        queue_lines.extend(
+            [
+                styled("No active mission items.", WHITE, bold=True),
+                styled("Taskstream, active runs, cluster, git, jobs, and registered actions did not yield queued work.", MUTED),
+            ]
+        )
+    max_queue_items = min(len(queue), 4 if very_compact else (6 if compact else 9))
+    queue_start = 0
+    if queue and len(queue) > max_queue_items:
+        queue_start = max(0, min(selected - max_queue_items // 2, len(queue) - max_queue_items))
+    if queue_start > 0:
+        queue_lines.append(styled(f"     +{queue_start} earlier mission item(s)", MUTED))
+    visible_queue = queue[queue_start:queue_start + max_queue_items]
+    for offset, action in enumerate(visible_queue):
+        index = queue_start + offset
         item_lines = queue_item_lines(action, index, left_body_width, index == selected, compact)
-        if index == len(HERO_QUEUE) - 1 and not compact:
+        if offset == len(visible_queue) - 1 and not compact:
             item_lines = item_lines[:-1]
         queue_lines.extend(item_lines)
+    remaining_queue = len(queue) - queue_start - len(visible_queue)
+    if remaining_queue > 0:
+        queue_lines.append(styled(f"     +{remaining_queue} more mission item(s)", MUTED))
 
-    context_lines = [
-        styled("CHANGE RADAR", AMBER, bold=True),
-        styled("2 files changed since last green", TEXT),
-        styled("ANTI-STALL", AMBER, bold=True),
-        styled("same failed cmd seen 3x", TEXT),
-        styled("BLAST RADIUS", AMBER, bold=True),
-        styled("cluster pane + docs + PR linked", TEXT),
-        styled("BLOCKER WATCH", AMBER, bold=True),
-        styled("no owner on docs review", TEXT),
-        styled("SESSION HEAT", ORANGE, bold=True),
-        styled("▂▃▂▃▄▃▄▅▄▆▅▇▆", ORANGE, bold=True),
-    ]
-    if not compact:
-        context_lines[6:6] = [
-            styled("NARRATIVE", AMBER, bold=True),
-            styled("demo update can be generated", TEXT),
-        ]
+    context_lines = mission_context_lines(model, HERO_STATE, max(20, right_width - 5 if side_by_side else width - 5), compact)
 
     queue_box = hero_box("ACTIVE WORK QUEUE", queue_lines, left_width, "SELECTABLE", "▦")
     detail_box = hero_box("CONTEXT ENGINE", context_lines, right_width, "HOT", "⚡")
@@ -1374,35 +1563,11 @@ def render_hero() -> None:
         print("\n".join(detail_box))
     print()
 
-    col_width = max(20, (width - 10) // 3)
-    hub_items = [
-        ("j", "JOBS", "focus job queue + show last exit code"),
-        ("c", "CLUSTER", "jump to cluster health / owners / blast radius"),
-        ("a", "ACT", "run selected next action"),
-        ("r", "REFRESH", "rebuild state from jobs, git, TODOs"),
-        ("o", "OPEN", "launch context pack: docs, PR, logs"),
-        ("n", "CAPTURE", "turn current line / clipboard into a task"),
-        ("b", "BLOCK", "file blocker + draft owner ask"),
-        ("u", "UPDATE", "generate EOD / demo follow-up from session"),
-        ("?", "PALETTE", "type any cockpit command"),
-    ]
-    hub_lines: list[str] = []
-    for row_start in range(0, len(hub_items), 3):
-        row = hub_items[row_start:row_start + 3]
-        titles = []
-        details = []
-        for key, label, detail in row:
-            titles.append(ansi_cell(f"{badge(key)}  {styled(label, AMBER, bold=True)}", col_width))
-            if not very_compact:
-                details.append(ansi_cell(styled("   " + clip_text(detail, col_width - 4), WHITE), col_width))
-        hub_lines.append("  ".join(titles))
-        if details:
-            hub_lines.append("  ".join(details))
-        if row_start < 6 and not compact:
-            hub_lines.append("")
+    hub_lines = mission_hub_lines(model, width - 4, very_compact)
     print("\n".join(hero_box("KEYBOARD / ACTION HUB", hub_lines, width, "GLOBAL", "⌘")))
-    selected_line = styled("SELECTED › " + selected_action["title"], AMBER, bold=True)
-    action_line = styled(f"ACTION › {HERO_STATE.get('message', 'ready')} | press [a] run [o] context [u] update", TEXT)
+    selected_title = str((selected_action or {}).get("title") or "No mission item selected")
+    selected_line = styled("SELECTED › " + selected_title, AMBER, bold=True)
+    action_line = styled(f"ACTION › {HERO_STATE.get('message', 'ready')} | [a] run [d] dry-run [o] context [u] note", TEXT)
     selected_width = min(content, visible_len(selected_line) + 2)
     print()
     print(f"{ORANGE}{'─' * width}{RESET}")

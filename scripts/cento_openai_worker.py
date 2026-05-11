@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shlex
 import sys
 import time
 import urllib.error
@@ -24,6 +25,42 @@ DEFAULT_CONFIG = ROOT / ".cento" / "api_workers.yaml"
 RESPONSES_URL = "https://api.openai.com/v1/responses"
 
 SCHEMA_API_WORKER_ARTIFACT = "cento.api_worker_artifact.v1"
+
+
+def load_local_cento_secrets() -> None:
+    config_root = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    secrets_path = Path(os.environ.get("CENTO_SECRETS_ENV", config_root / "cento" / "secrets.env"))
+    try:
+        lines = secrets_path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return
+    allowed = {
+        "OPENAI_API_KEY",
+        "CENTO_OPENAI_PLANNER_MODEL",
+        "CENTO_OPENAI_WORKER_MODEL",
+        "CENTO_OPENAI_REVIEWER_MODEL",
+        "CENTO_OPENAI_PRO_MODEL",
+    }
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped.startswith("export "):
+            stripped = stripped[7:].lstrip()
+        if "=" not in stripped:
+            continue
+        key, raw_value = stripped.split("=", 1)
+        key = key.strip()
+        if key not in allowed or os.environ.get(key):
+            continue
+        try:
+            parsed = shlex.split(raw_value, posix=True)
+        except ValueError:
+            parsed = [raw_value.strip().strip("\"'")]
+        os.environ[key] = parsed[0] if parsed else ""
+
+
+load_local_cento_secrets()
 
 
 class WorkerError(RuntimeError):
@@ -186,6 +223,50 @@ OUTPUT_SCHEMAS: dict[str, dict[str, Any]] = {
             "validation": string_array_schema(),
         },
         "required": ["schema_version", "summary", "owned_path_contents", "risks", "validation"],
+        "additionalProperties": False,
+    },
+    "hard_proreq_plan.v1": {
+        "type": "object",
+        "properties": {
+            "schema_version": {"type": "string", "enum": ["cento.hard_proreq_backend_plan.v1"]},
+            "summary": string_schema("Backend-only plan summary."),
+            "backend_workstreams": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": string_schema(),
+                        "title": string_schema(),
+                        "intent": string_schema(),
+                        "owned_paths": string_array_schema(),
+                        "read_paths": string_array_schema(),
+                        "depends_on": string_array_schema(),
+                        "validation_commands": string_array_schema(),
+                        "handoff_artifacts": string_array_schema(),
+                    },
+                    "required": ["id", "title", "intent", "owned_paths", "read_paths", "depends_on", "validation_commands", "handoff_artifacts"],
+                    "additionalProperties": False,
+                },
+            },
+            "integration_plan": string_array_schema(),
+            "validation_plan": string_array_schema(),
+            "parallelization_notes": string_array_schema(),
+            "codex_exec_prompts": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": string_schema(),
+                        "prompt": string_schema(),
+                        "output_schema": string_schema(),
+                    },
+                    "required": ["id", "prompt", "output_schema"],
+                    "additionalProperties": False,
+                },
+            },
+            "risks": string_array_schema(),
+        },
+        "required": ["schema_version", "summary", "backend_workstreams", "integration_plan", "validation_plan", "parallelization_notes", "codex_exec_prompts", "risks"],
         "additionalProperties": False,
     },
 }

@@ -170,33 +170,25 @@ cento agent-work dispatch 123 --node linux --agent codex --model gpt-5.3-codex-s
 
 ## Spark Worker Pool
 
-Use `dispatch-pool` to keep cheap Spark/Codex workers busy without interrupting the main operator session. It is plan-only by default and does not start agents unless `--execute` is passed.
+Use `agent-pool-kick` to keep cheap Spark/Codex workers busy without interrupting the main operator session. It is plan-only by default (`--dry-run`) and does not start agents unless `--dry-run` is omitted.
 
-Plan the next three queued items:
-
-```bash
-cento agent-work dispatch-pool --limit 3
-```
-
-Plan queued work for one package:
+Plan the next pool cycle (dry run):
 
 ```bash
-cento agent-work dispatch-pool --package spark-docs-evidence-lane --limit 2
+cento agent-pool-kick --dry-run
 ```
 
-Start the planned Spark workers explicitly:
+Plan queued work for one package (dry run):
 
 ```bash
-cento agent-work dispatch-pool --limit 2 --runtime codex --model gpt-5.3-codex-spark --execute
+cento agent-pool-kick --package spark-docs-evidence-lane --dry-run
 ```
 
-For automation and dashboards:
+Launch Spark workers (live, up to two):
 
 ```bash
-cento agent-work dispatch-pool --limit 5 --json
+cento agent-pool-kick --max-launch 2 --runtime codex --model gpt-5.3-codex-spark
 ```
-
-The JSON output includes `diagnostics`, including `zero_launch_reason`, so a zero-worker result explains whether the cause was no matching status, filters, companion-node exclusion, non-task epics, or `--limit 0`.
 
 Check what is actually running:
 
@@ -247,6 +239,8 @@ cento agent-pool-kick --dry-run
 cento agent-pool-kick --max-launch 3
 cento agent-pool-kick --max-launch 3 --model gpt-5.3-codex-spark
 ```
+
+If live dispatch fails on missing canonical manifests, treat it as an incident and repair the contract instead of disabling workers. See [Agent Work Live Dispatch Incident](agent-work-live-dispatch-incident.md).
 
 It writes the latest summary to:
 

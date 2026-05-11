@@ -29,7 +29,7 @@
       </nav>
       <div class="headerActions" aria-label="Cento actions">
         <a href="/review?status=open">Review queue</a>
-        <button id="headerNewIssueButton" type="button">New issue</button>
+        <button id="headerNewIssueButton" type="button">New request</button>
       </div>
     </header>
 
@@ -78,14 +78,24 @@
                 <span>▣</span>
                 <strong>Factory</strong>
               </a>
+              <a href="/patch-swarm" data-sd-hub-route="patch-swarm">
+                <span>▥</span>
+                <strong>Patch Swarm</strong>
+              </a>
               <a href="/dev-pipeline-studio" data-sd-hub-route="dev-pipeline-studio">
                 <span>⌘</span>
                 <strong>Dev Pipeline Studio</strong>
+              </a>
+              <a href="/dev-pipeline-studio#pipeline-flow">
+                <span>▶</span>
+                <strong>Execution Flow</strong>
               </a>
             </section>
             <section class="sdHubRailLinks" aria-label="Software Delivery Hub links">
               <h2>Surfaces</h2>
               <a href="/software-delivery-hub" data-sd-hub-route="software-delivery"><span class="navIcon">⌁</span>Overview</a>
+              <a href="/patch-swarm" data-sd-hub-route="patch-swarm"><span class="navIcon">▥</span>Patch Swarm</a>
+              <a href="/dev-pipeline-studio#pipeline-flow"><span class="navIcon">▶</span>Execution Flow</a>
               <a href="/dev-pipeline-studio#manifest-explorer"><span class="navIcon">▦</span>Manifest Explorer</a>
               <a href="/dev-pipeline-studio#pipeline-evidence"><span class="navIcon">▥</span>Evidence</a>
               <a href="/docs#factory"><span class="navIcon">▧</span>Factory Docs</a>
@@ -138,7 +148,7 @@
                   <a href="/software-delivery-hub"><span class="navIcon">⌁</span>Overview</a>
                   <a href="/factory"><span class="navIcon">▣</span>Factory</a>
                   <a href="/issues"><span class="navIcon">▤</span>Taskstream</a>
-                  <a href="/dev-pipeline-studio"><span class="navIcon">⌘</span>Dev Pipeline Studio</a>
+                  <a href="/dev-pipeline-studio#pipeline-evidence"><span class="navIcon">▥</span>Evidence Studio</a>
                 </section>
                 <section>
                   <h2>Cluster</h2>
@@ -167,7 +177,7 @@
                 </div>
                 <div class="hubMetricGrid">
                   <article class="hubMetricCard"><span>System Health</span><strong><i></i>Healthy</strong><small>All systems nominal</small></article>
-                  <article class="hubMetricCard"><span>Active Pipelines</span><strong>8 / 8</strong><small>Running</small></article>
+                  <article class="hubMetricCard"><span>Active Workflows</span><strong>8</strong><small>Monitored</small></article>
                   <article class="hubMetricCard"><span>Open Issues</span><strong>248</strong><small>Across all projects</small></article>
                   <article class="hubMetricCard"><span>Cluster Nodes</span><strong>24</strong><small>Online</small></article>
                   <article class="hubMetricCard"><span>Artifacts</span><strong>1,024</strong><small>Stored</small></article>
@@ -198,7 +208,7 @@
                     <span class="hubModuleIcon">▤</span>
                     <div>
                       <h3>Taskstream</h3>
-                      <p>Track and manage work across agents, packages, and pipelines. Plan, prioritize, and ship with confidence.</p>
+                      <p>Track and manage work across agents and packages. Plan, prioritize, and ship with confidence.</p>
                     </div>
                     <dl class="hubStatStrip">
                       <div><dt>Open</dt><dd>248</dd></div>
@@ -208,19 +218,19 @@
                     </dl>
                     <b>Open Taskstream</b>
                   </a>
-                  <a class="hubModuleCard" href="/dev-pipeline-studio">
-                    <span class="hubModuleIcon">⌘</span>
+                  <a class="hubModuleCard" href="/dev-pipeline-studio#pipeline-evidence">
+                    <span class="hubModuleIcon">▥</span>
                     <div>
-                      <h3>Dev Pipeline Studio</h3>
-                      <p>Design, visualize, and operate your development pipelines. From code to evidence.</p>
+                      <h3>Evidence Library</h3>
+                      <p>Review manifests, receipts, worker handoffs, release proof, and recorded delivery demos.</p>
                     </div>
                     <dl class="hubStatStrip">
-                      <div><dt>Pipelines</dt><dd>8</dd></div>
-                      <div><dt>Healthy</dt><dd>8</dd></div>
-                      <div><dt>Stages</dt><dd>42</dd></div>
-                      <div><dt>Success Rate</dt><dd>98%</dd></div>
+                      <div><dt>Bundles</dt><dd>8</dd></div>
+                      <div><dt>Demos</dt><dd>5</dd></div>
+                      <div><dt>Receipts</dt><dd>61</dd></div>
+                      <div><dt>Status</dt><dd>Ready</dd></div>
                     </dl>
-                    <b>Open Dev Pipeline Studio</b>
+                    <b>Open Evidence</b>
                   </a>
                 </div>
               </section>
@@ -243,10 +253,10 @@
               <div class="hubActivityGrid">
                 <section class="hubPanel hubEventList" aria-labelledby="activity-title">
                   <h2 id="activity-title">Recent Activity</h2>
-                  <a href="/dev-pipeline-studio"><span>▣</span>Pipeline docs-app-page-kanji deployed to production<time>2m ago</time></a>
+                  <a href="/api/demo-evidence/latest"><span>▣</span>Latest Cento web app demo recorded<time>Latest</time></a>
                   <a href="/factory"><span>▧</span>Factory run factory-autopilot-runtime-v1 completed<time>5m ago</time></a>
                   <a href="/issues/1000120"><span>▤</span>Issue #1000120 assigned to codex<time>10m ago</time></a>
-                  <a href="/dev-pipeline-studio#pipeline-evidence"><span>▥</span>Evidence bundle generated for release 2026.05.01<time>15m ago</time></a>
+                  <a href="/factory"><span>▥</span>Release evidence bundle generated for 2026.05.01<time>15m ago</time></a>
                 </section>
                 <section class="hubPanel hubHealthList" aria-labelledby="health-title">
                   <h2 id="health-title">System Health</h2>
@@ -262,11 +272,11 @@
               <section class="hubPanel">
                 <h2>Quick Actions</h2>
                 <div class="hubQuickList">
-                  <button type="button"><span>＋</span><strong>New Issue</strong><small>Create a new task or request</small></button>
-                  <a href="/factory"><span>▣</span><strong>Start Factory Run</strong><small>Execute integration or release</small></a>
-                  <a href="/dev-pipeline-studio"><span>⌘</span><strong>View Pipelines</strong><small>Open Dev Pipeline Studio</small></a>
-                  <a href="/dev-pipeline-studio#manifest-explorer"><span>▧</span><strong>Browse Manifests</strong><small>Search and view pipeline manifests</small></a>
-                  <a href="/dev-pipeline-studio"><span>⚙</span><strong>Pipeline Settings</strong><small>Configure studio defaults</small></a>
+                  <a href="/api/demo-evidence/latest" class="hubPrimaryAction"><span>▶</span><strong>Watch Latest Demo</strong><small>Open the newest Cento MP4 recording</small></a>
+                  <a href="/factory"><span>▣</span><strong>Open Factory</strong><small>Review delivery and release evidence</small></a>
+                  <a href="/issues"><span>▤</span><strong>Open Taskstream</strong><small>Review agent work and handoffs</small></a>
+                  <a href="/review?status=open"><span>▥</span><strong>Review Queue</strong><small>Inspect pending validation items</small></a>
+                  <a href="/docs"><span>▧</span><strong>Browse Docs</strong><small>Read platform references and guides</small></a>
                 </div>
               </section>
               <section class="hubPanel">
@@ -289,9 +299,11 @@
                 <section>
                   <h2>Software Delivery Hub <b>New</b></h2>
                   <a class="active" href="/software-delivery-hub"><span class="navIcon">⌁</span>Overview</a>
+                  <a href="/patch-swarm"><span class="navIcon">▥</span>Patch Swarm</a>
                   <a href="/factory"><span class="navIcon">▣</span>Factory</a>
                   <a href="/issues"><span class="navIcon">▤</span>Taskstream</a>
                   <a href="/dev-pipeline-studio"><span class="navIcon">⌘</span>Dev Pipeline Studio</a>
+                  <a href="/dev-pipeline-studio#pipeline-flow"><span class="navIcon">▶</span>Execution Flow</a>
                   <a href="/dev-pipeline-studio#pipeline-evidence"><span class="navIcon">▥</span>Evidence</a>
                   <a href="/dev-pipeline-studio"><span class="navIcon">⚙</span>Settings</a>
                 </section>
@@ -346,8 +358,9 @@
                 </div>
                 <div class="hubModuleGrid">
                   <a class="hubModuleCard" href="/factory"><span class="hubModuleIcon">▥</span><div><h3>Factory</h3><p>Manifest-driven integration, validation, release packets, and policy guardrails.</p></div><b>Open Factory</b></a>
+                  <a class="hubModuleCard" href="/patch-swarm"><span class="hubModuleIcon">▥</span><div><h3>Patch Swarm</h3><p>Generate many candidate patches for a local Git repo, review ranked winners, and approve supervised apply.</p></div><b>Open Patch Swarm</b></a>
                   <a id="taskstream-board" class="hubModuleCard" href="/issues"><span class="hubModuleIcon">▤</span><div><h3>Taskstream</h3><p>Agent work tracking, review queues, package status, and validation handoffs.</p></div><b>Open Taskstream</b></a>
-                  <a class="hubModuleCard" href="/dev-pipeline-studio"><span class="hubModuleIcon">⌘</span><div><h3>Dev Pipeline Studio</h3><p>Visualize worker contracts, claimed paths, validators, receipts, and evidence bundles.</p></div><b>Open Studio</b></a>
+                  <a class="hubModuleCard" href="/dev-pipeline-studio#pipeline-flow"><span class="hubModuleIcon">▶</span><div><h3>Execution Flow</h3><p>Watch the default prompt pipeline progress through live runs, history, logs, and evidence.</p></div><b>Open Execution Flow</b></a>
                 </div>
               </section>
 
@@ -362,6 +375,7 @@
                     <a href="/issues"><span>▤</span>Taskstream</a>
                     <a href="/factory"><span>▣</span>Factory</a>
                     <a class="active" href="/dev-pipeline-studio" aria-current="page"><span>⌘</span>Dev Pipeline Studio</a>
+                    <a href="/dev-pipeline-studio#pipeline-flow"><span>▶</span>Execution Flow</a>
                     <a href="/dev-pipeline-studio#manifest-explorer"><span>▦</span>Manifest Explorer</a>
                   </nav>
                 </header>
@@ -384,6 +398,8 @@
                     <label>
                       <span>Project</span>
                       <select id="pipelineProjectSelect">
+                        <option value="hard-proreq-project">Hard Proreq Project</option>
+                        <option value="multipipeline-proreq-project">Multipipeline ProReq Project</option>
                         <option value="generic-easy-medium-task">Generic Easy-Medium Task</option>
                         <option value="kanji-a-day">Kanji a Day</option>
                         <option value="cento-console-docs">Cento Console Docs</option>
@@ -393,6 +409,8 @@
                     <label>
                       <span>Template</span>
                       <select id="pipelineTemplateSelect">
+                        <option value="hard-proreq-task">Hard proreq task</option>
+                        <option value="multipipeline-proreq-chain">Multipipeline ProReq chain</option>
                         <option value="generic-task">Automation blueprint task</option>
                         <option value="doc-page">Doc page creation</option>
                         <option value="dashboard-module">Dashboard module</option>
@@ -402,6 +420,8 @@
                     <label>
                       <span>Target surface</span>
                       <select id="pipelineSurfaceSelect" aria-label="Target surface for selected project">
+                        <option value="hard-proreq-task">Cento pro requirements route</option>
+                        <option value="multipipeline-proreq-chain">Sequential ProReq meta-pipeline</option>
                         <option value="generic-task">Cento repo task</option>
                         <option value="docs-app-page">Docs app page</option>
                         <option value="console-doc-page">Console documentation page</option>
@@ -415,7 +435,17 @@
                     </div>
                   </div>
                   <div class="pipelineTemplateLibrary" aria-label="Reusable pipeline templates">
-                    <button class="pipelineTemplateCard active" type="button" data-template-card="generic-task" aria-pressed="true">
+                    <button class="pipelineTemplateCard active" type="button" data-template-card="hard-proreq-task" aria-pressed="true">
+                      <strong>Hard proreq task</strong>
+                      <span>Turns operator thoughts into Cento context, muted UI screenshot request, GPT pro backend plan, backend work, integration, validation, and evidence.</span>
+                      <small>Default prompt route</small>
+                    </button>
+                    <button class="pipelineTemplateCard" type="button" data-template-card="multipipeline-proreq-chain" aria-pressed="false">
+                      <strong>Multipipeline ProReq chain</strong>
+                      <span>Schedules four sequential ProReq request passes where each pass feeds guidance to the next.</span>
+                      <small>Sequential meta-pipeline</small>
+                    </button>
+                    <button class="pipelineTemplateCard" type="button" data-template-card="generic-task" aria-pressed="false">
                       <strong>Automation blueprint task</strong>
                       <span>Bounded programming task contracts with deterministic discovery, Factory execution, validation, and evidence.</span>
                       <small>Generic non-UI easy/medium blueprint</small>
@@ -462,6 +492,81 @@
                   <a href="#pipeline-evidence" data-pipeline-tab="evidence">Evidence</a>
                   <a href="#pipeline-practices" data-pipeline-tab="best-practices">Best Practices</a>
                 </nav>
+
+                <section id="pipeline-flow" class="pipelineExecutionPage hidden" aria-label="Pipeline execution flow run page">
+                  <header class="pipelineExecutionHeader">
+                    <div>
+                      <strong>Pipeline Runs</strong>
+                      <span data-execution-field="runId">pending</span>
+                      <b data-execution-field="status">configured</b>
+                    </div>
+                    <div>
+                      <button id="pipelineExecutionRunButton" type="button">↻ Re-run</button>
+                    </div>
+                  </header>
+                  <section id="pipelineExecutionLivePanel" class="pipelineExecutionLivePanel" aria-label="Live delivery status">
+                    <div class="pipelineExecutionNow">
+                      <div class="pipelineExecutionNowHeader">
+                        <span id="pipelineExecutionLiveBadge">Real delivery</span>
+                        <strong id="pipelineExecutionNowStatus">Waiting for run data</strong>
+                      </div>
+                      <h2 id="pipelineExecutionNowTitle">Execution Flow</h2>
+                      <p id="pipelineExecutionNowMessage"></p>
+                      <div id="pipelineExecutionProgressSteps" class="pipelineExecutionProgressSteps"></div>
+                    </div>
+                    <aside class="pipelineExecutionProof" aria-label="Execution proof">
+                      <header><strong>Proof</strong><span id="pipelineExecutionProofStatus">No receipt yet</span></header>
+                      <dl id="pipelineExecutionProofFacts"></dl>
+                    </aside>
+                  </section>
+                  <section id="pipelineExecutionParallelPanel" class="pipelineExecutionParallelPanel hidden" aria-label="Parallel worker lanes"></section>
+                  <section class="pipelineExecutionMeta" aria-label="Run metadata">
+                    <div><span>Started</span><strong data-execution-field="started">-</strong></div>
+                    <div><span>Duration</span><strong data-execution-field="duration">-</strong></div>
+                    <div><span>Run Mode</span><strong data-execution-field="runMode">-</strong></div>
+                    <div><span>Overall Status</span><strong data-execution-field="overallStatus">-</strong></div>
+                  </section>
+                  <details class="pipelineExecutionRuns pipelineExecutionDisclosure" aria-label="Previous execution runs">
+                    <summary><strong>Previous Runs</strong><span id="pipelineExecutionRunsCount">0 runs</span></summary>
+                    <div id="pipelineExecutionRunsList"></div>
+                  </details>
+                  <div id="pipelineExecutionStageStrip" class="pipelineExecutionStageStrip"></div>
+                  <div class="pipelineExecutionGrid">
+                    <section class="pipelineExecutionTimeline" aria-label="Execution timeline">
+                      <header><strong>Execution Timeline</strong><span id="pipelineExecutionTimelineWindow"></span></header>
+                      <div id="pipelineExecutionTimelineBody" class="pipelineExecutionTimelineBody"></div>
+                    </section>
+                    <details class="pipelineExecutionDetails pipelineExecutionDisclosure" open aria-label="Selected stage details">
+                      <summary>
+                        <div><strong>Stage Details: <span id="pipelineExecutionSelectedTitle">Factory Execution</span></strong><span id="pipelineExecutionSelectedStatus">Completed</span></div>
+                      </summary>
+                      <div id="pipelineExecutionSelectedMeta" class="pipelineExecutionSelectedMeta"></div>
+                      <div id="pipelineExecutionStepTable" class="pipelineExecutionStepTable"></div>
+                    </details>
+                    <aside class="pipelineExecutionSide" aria-label="Execution artifacts and validation results">
+                      <details class="pipelineExecutionDisclosure" open>
+                        <summary><strong>Artifacts (<span id="pipelineExecutionArtifactCount">0</span>)</strong></summary>
+                        <dl id="pipelineExecutionArtifactFacts" class="pipelineExecutionArtifactFacts"></dl>
+                      </details>
+                      <details class="pipelineExecutionDisclosure" open>
+                        <summary><strong>Run Artifacts</strong></summary>
+                        <div id="pipelineExecutionArtifactList" class="pipelineExecutionArtifactList"></div>
+                      </details>
+                      <details class="pipelineExecutionDisclosure">
+                        <summary><strong>Validation Results</strong></summary>
+                        <div id="pipelineExecutionValidationResults" class="pipelineExecutionValidationResults"></div>
+                      </details>
+                    </aside>
+                  </div>
+                  <details class="pipelineExecutionLogs pipelineExecutionDisclosure" aria-label="Execution logs">
+                    <summary><strong>Logs</strong><span>filters and raw rows</span></summary>
+                    <div class="pipelineExecutionLogsTools">
+                      <nav id="pipelineExecutionLogFilters" aria-label="Log filters"></nav>
+                      <input id="pipelineExecutionLogSearch" type="search" placeholder="Search logs..." autocomplete="off">
+                    </div>
+                    <pre id="pipelineExecutionLogRows"></pre>
+                  </details>
+                </section>
 
                 <div class="pipelineWorkbench">
                   <section id="pipeline-stages" class="pipelineCanvas" aria-label="Parallelized execution contracts visualization">
@@ -533,7 +638,7 @@
                       </article>
                     </div>
 
-                    <section id="pipeline-flow" class="pipelineDataFlow" aria-label="Pipeline data flow">
+                    <section id="pipeline-data-flow" class="pipelineDataFlow" aria-label="Pipeline data flow">
                       <h2>Pipeline Data Flow</h2>
                       <div>
                         <article><strong>Input Contract</strong><p>Task kind, surfaces, allowed changes, forbidden changes, and acceptance boundaries.</p><span>input_manifest.json</span><span>pipeline_manifest.json</span></article>
@@ -568,9 +673,12 @@
                       <div class="pipelineInputInspectorGrid">
                         <label class="wide"><span>Input</span><input id="pipelineInputTitleInput" type="text" autocomplete="off"></label>
                         <label><span>Type</span><select id="pipelineInputTypeSelect"><option value="text">Text</option><option value="details">Details</option><option value="image">Image</option><option value="questionnaire">Questionnaire</option><option value="path">Path target</option><option value="evidence">Evidence artifact</option></select></label>
-                        <label><span>Status</span><select id="pipelineInputStatusSelect"><option value="provided">Provided</option><option value="configured">Configured</option><option value="missing">Missing</option><option value="optional">Optional</option></select></label>
+                        <label><span>Source</span><select id="pipelineInputSourceSelect"><option value="user">User</option><option value="auto">Auto</option></select></label>
+                        <label><span>Status</span><select id="pipelineInputStatusSelect"><option value="provided">Provided</option><option value="configured">Configured</option><option value="missing">Missing</option><option value="optional">Optional</option><option value="muted">Muted</option><option value="skipped">Skipped</option></select></label>
+                        <label><span>Automation</span><input id="pipelineInputAutomationInput" type="text" autocomplete="off" placeholder="cento-context, openai-image, schema-artifact"></label>
                         <label class="wide"><span>Details</span><textarea id="pipelineInputDetailInput" spellcheck="false"></textarea></label>
                         <label class="pipelineInputRequiredToggle"><input id="pipelineInputRequiredCheckbox" type="checkbox">Required before AI work starts</label>
+                        <label class="pipelineInputRequiredToggle"><input id="pipelineInputMutedCheckbox" type="checkbox">Muted / non-blocking automation lane</label>
                       </div>
                       <div class="pipelineInputTypeEditors">
                         <section class="pipelineInputTypeEditor" data-input-type-editor="text details" aria-label="Text input details">
@@ -580,6 +688,7 @@
                         <section class="pipelineInputTypeEditor" data-input-type-editor="image" aria-label="Image input details">
                           <header><strong>Image References</strong><span>Screenshots, mockups, wireframes, or visual assets used by the pipeline.</span></header>
                           <label><span>Image paths or URLs</span><textarea id="pipelineInputImageRefsInput" spellcheck="false" placeholder="Downloads/devpipelinestudio.png"></textarea></label>
+                          <div id="pipelineInputImagePreview" class="pipelineImagePreviewGrid hidden" aria-label="Rendered image references"></div>
                           <label><span>Image notes</span><textarea id="pipelineInputImageNotesInput" spellcheck="false" placeholder="What should workers inspect in these images?"></textarea></label>
                         </section>
                         <section class="pipelineInputTypeEditor" data-input-type-editor="questionnaire" aria-label="Questionnaire input details">
@@ -726,6 +835,7 @@
                         <span id="pipelineEvidenceConfigPath">Config output pending</span>
                         <span id="pipelineEvidenceArtifactPath">Artifact output pending</span>
                       </div>
+                      <div id="pipelineEvidenceArtifactPreview" class="pipelineImagePreviewGrid hidden" aria-label="Rendered evidence images"></div>
                       <button id="pipelineEvidenceSaveButton" type="button">Save evidence</button>
                       <span id="pipelineEvidenceInspectorStatus">Select an evidence card to configure it.</span>
                     </section>
@@ -1143,6 +1253,7 @@
                   <a href="/issues"><span class="navIcon">▤</span>Taskstream</a>
                   <a class="active" href="/factory" aria-current="page"><span class="navIcon">▣</span>Factory</a>
                   <a href="/dev-pipeline-studio"><span class="navIcon">⌘</span>Dev Pipeline Studio</a>
+                  <a href="/dev-pipeline-studio#pipeline-flow"><span class="navIcon">▶</span>Execution Flow</a>
                 </section>
                 <section>
                   <h2>Linked Surfaces</h2>
@@ -1222,6 +1333,124 @@
           </div>
         </section>
 
+        <section id="patchSwarmView" class="view hidden softwareDeliverySubView patchSwarmView">
+          <div class="hubLayout hubSectionLayout">
+            <aside class="hubSidebar" aria-label="Software Delivery Hub navigation">
+              <nav>
+                <section>
+                  <h2>Software Delivery Hub <b>App</b></h2>
+                  <a class="active" href="/patch-swarm" aria-current="page"><span class="navIcon">▥</span>Patch Swarm</a>
+                  <a href="/factory"><span class="navIcon">▣</span>Factory</a>
+                  <a href="/issues"><span class="navIcon">▤</span>Taskstream</a>
+                  <a href="/dev-pipeline-studio"><span class="navIcon">⌘</span>Dev Pipeline Studio</a>
+                </section>
+                <section>
+                  <h2>Linked Surfaces</h2>
+                  <a href="/software-delivery-hub"><span class="navIcon">⌁</span>Hub Overview</a>
+                  <a href="/docs#patch-swarm"><span class="navIcon">▧</span>Patch Swarm Docs</a>
+                  <a href="/dev-pipeline-studio#pipeline-flow"><span class="navIcon">▶</span>Execution Flow</a>
+                </section>
+              </nav>
+            </aside>
+
+            <section class="hubMain patchSwarmMain" aria-label="Patch Swarm">
+              <header class="sdHubChildHeader" aria-label="Patch Swarm sections">
+                <div>
+                  <span class="eyebrow">Software Delivery Hub</span>
+                  <h1>Patch Swarm</h1>
+                  <p>Local-first candidate generation, deterministic validation, and supervised Safe Integrator apply.</p>
+                </div>
+                <nav class="sdHubChildNav" aria-label="Patch Swarm child navigation">
+                  <a class="active" href="/patch-swarm" aria-current="page"><span>▥</span>Patch Swarm</a>
+                  <a href="/factory"><span>▣</span>Factory</a>
+                  <a href="/dev-pipeline-studio"><span>⌘</span>Dev Pipeline Studio</a>
+                </nav>
+              </header>
+
+              <div class="patchSwarmGrid">
+                <section class="patchSwarmPanel patchSwarmComposer" aria-labelledby="patch-swarm-compose-title">
+                  <div class="panelTitle">
+                    <div>
+                      <h2 id="patch-swarm-compose-title">Start Run</h2>
+                      <p>Choose a startable local Git repo, then describe the change to generate fixture candidates.</p>
+                    </div>
+                    <button id="patchSwarmRefreshRepos" type="button">Refresh</button>
+                  </div>
+                  <form id="patchSwarmForm" class="patchSwarmForm">
+                    <label><span>Repository</span><select id="patchSwarmRepoSelect"></select></label>
+                    <label><span>Task</span><textarea id="patchSwarmTask" rows="5" placeholder="Describe the software change"></textarea></label>
+                    <div class="patchSwarmFormRow">
+                      <label><span>Candidates</span><input id="patchSwarmCandidateTarget" type="number" min="10" max="500" step="10" value="30" /></label>
+                      <label><span>Agents</span><input id="patchSwarmMaxAgents" type="number" min="1" max="20" value="3" /></label>
+                    </div>
+                    <div class="patchSwarmFormRow">
+                      <label><span>Mode</span><select id="patchSwarmMode"><option value="fixture">Fixture - safe/no-spend default</option><option value="live">Live gated - budget required</option></select></label>
+                      <label><span>Providers</span><input id="patchSwarmProviders" value="codex-exec,claude-code,api-openai" /></label>
+                    </div>
+                    <div id="patchSwarmRepoState" class="patchSwarmRepoState">Loading repositories...</div>
+                    <button id="patchSwarmStartButton" class="primaryAction" type="submit">Start Patch Swarm</button>
+                    <p id="patchSwarmStartHint" class="patchSwarmStartHint">Fixture generation writes run artifacts only. It does not mutate the selected repo.</p>
+                    <div id="patchSwarmStartStatus" class="patchSwarmStatusLine" role="status"></div>
+                  </form>
+                </section>
+
+                <section class="patchSwarmPanel patchSwarmHistory" aria-labelledby="patch-swarm-history-title">
+                  <div class="panelTitle">
+                    <div>
+                      <h2 id="patch-swarm-history-title">Run History</h2>
+                      <p>Recent product and engine runs.</p>
+                    </div>
+                  </div>
+                  <div id="patchSwarmRunList" class="patchSwarmRunList" aria-live="polite">
+                    <div class="factoryEmpty">Loading Patch Swarm runs...</div>
+                  </div>
+                </section>
+              </div>
+
+              <section class="patchSwarmPanel patchSwarmRunDetail" aria-labelledby="patch-swarm-detail-title">
+                <div class="patchSwarmDetailHeader">
+                  <div>
+                    <span class="eyebrow">Candidate Review</span>
+                    <h2 id="patch-swarm-detail-title">No run selected</h2>
+                    <p id="patchSwarmRunSubtitle">Start or select a run to inspect ranked candidates.</p>
+                  </div>
+                  <div class="patchSwarmActions">
+                    <button id="patchSwarmApproveButton" type="button">Approve Winners</button>
+                    <button id="patchSwarmApplyButton" type="button">Apply In Worktree</button>
+                  </div>
+                </div>
+                <div id="patchSwarmDetailEmpty" class="patchSwarmDetailEmpty">
+                  <strong>Select or start a fixture run</strong>
+                  <p>Use the composer above with a startable repo and a task brief, or select a recent product run to review candidates.</p>
+                </div>
+                <div id="patchSwarmStats" class="patchSwarmStats hidden" aria-label="Patch Swarm stats">
+                  <article><span>Candidates</span><strong id="patchSwarmCandidateCount">0</strong></article>
+                  <article><span>Selected</span><strong id="patchSwarmSelectedCount">0</strong></article>
+                  <article><span>Validation</span><strong id="patchSwarmValidationStatus">Unknown</strong></article>
+                  <article><span>Cost</span><strong id="patchSwarmCost">$0.000000</strong></article>
+                  <article><span>Approval</span><strong id="patchSwarmApprovalStatus">Not approved</strong></article>
+                </div>
+                <div id="patchSwarmReviewGrid" class="patchSwarmReviewGrid hidden">
+                  <div class="patchSwarmCandidateList" id="patchSwarmCandidateList">
+                    <div class="factoryEmpty">No candidates loaded.</div>
+                  </div>
+                  <div class="patchSwarmDiffPanel">
+                    <div class="panelTitle">
+                      <div>
+                        <h2 id="patchSwarmDiffTitle">Diff Preview</h2>
+                        <p id="patchSwarmDiffMeta">Select a candidate.</p>
+                      </div>
+                      <button id="patchSwarmRejectButton" type="button">Reject</button>
+                    </div>
+                    <pre id="patchSwarmDiffPreview">No diff selected.</pre>
+                  </div>
+                </div>
+                <div id="patchSwarmEvidence" class="patchSwarmEvidence hidden"></div>
+              </section>
+            </section>
+          </div>
+        </section>
+
         <section id="docsView" class="view hidden">
           <aside class="docsSidebar" data-doc-section="left-nav" aria-label="Documentation navigation">
             <nav>
@@ -1259,11 +1488,12 @@
                 <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">▣</span>Research Overview</span>
                 <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">⌘</span>Codebase Intelligence</span>
                 <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">▧</span>Research report</span>
-                <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">◫</span>AI optimization</span>
+                <a href="/api/artifacts?path=docs/ai-cento-native-rework.html"><span class="navIcon">◫</span>Cento-native AI</a>
               </details>
               <details>
                 <summary>Platform</summary>
                 <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">▱</span>Architecture</span>
+                <a href="/api/artifacts?path=docs/oci-image-migration.html"><span class="navIcon">▣</span>OCI image migration</a>
                 <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">▦</span>Components</span>
                 <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">◇</span>Security</span>
                 <span class="docsMutedLink" aria-disabled="true"><span class="navIcon">⌘</span>CLI Reference</span>
@@ -1390,11 +1620,11 @@
                       </div>
                       <b>↗</b>
                     </a>
-                    <a class="docsAreaCard" href="#ai-optimization">
+                    <a class="docsAreaCard" href="/api/artifacts?path=docs/ai-cento-native-rework.html">
                       <span class="docGlyph">◫</span>
                       <div>
-                        <h3>AI optimization</h3>
-                        <p>No-model validation, prompt budgets, execution modes, and evidence-first delivery constraints.</p>
+                        <h3>Cento-native AI</h3>
+                        <p>Readable digest of the AI runtime rework, skills/MCP direction, Execution Flow findings, and roadmap.</p>
                       </div>
                       <b>↗</b>
                     </a>
@@ -1428,6 +1658,14 @@
                       <div>
                         <h3>API Reference</h3>
                         <p>Local endpoint contracts, CLI surfaces, generated tool index, and integration boundaries.</p>
+                      </div>
+                      <b>↗</b>
+                    </a>
+                    <a class="docsAreaCard" href="/api/artifacts?path=docs/oci-image-migration.html">
+                      <span class="docGlyph">▣</span>
+                      <div>
+                        <h3>OCI image migration</h3>
+                        <p>Private Standard Object Storage mirror for run images, restore verification, risk posture, and next steps.</p>
                       </div>
                       <b>↗</b>
                     </a>
@@ -2120,6 +2358,8 @@ cento workset materialize-artifact .cento/worksets/&lt;run_id&gt;/workers/&lt;wo
             <section id="updates" class="docsSection docsOverviewOnly" data-doc-section="updates">
               <h2>Recent updates</h2>
               <div class="docsUpdates">
+                <div><strong>OCI image migration guide added</strong><time datetime="2026-05-05">May 5, 2026</time></div>
+                <div><strong>Cento-native AI rework docs page added</strong><time datetime="2026-05-04">May 4, 2026</time></div>
                 <div><strong>Pipeline Studio Template Editor docs page added</strong><time datetime="2026-05-02">May 2, 2026</time></div>
                 <div><strong>Parallel Execution Engine docs page added</strong><time datetime="2026-05-02">May 2, 2026</time></div>
                 <div><strong>Kanji a Day docs page added</strong><time datetime="2026-05-01">May 1, 2026</time></div>
@@ -2591,6 +2831,7 @@ cento workset materialize-artifact .cento/worksets/&lt;run_id&gt;/workers/&lt;wo
               <a class="active" href="/issues" aria-current="page"><span>▤</span>Taskstream</a>
               <a href="/factory"><span>▣</span>Factory</a>
               <a href="/dev-pipeline-studio"><span>⌘</span>Dev Pipeline Studio</a>
+              <a href="/dev-pipeline-studio#pipeline-flow"><span>▶</span>Execution Flow</a>
             </nav>
           </header>
           <div class="viewHeader listHeader">
@@ -2609,7 +2850,7 @@ cento workset materialize-artifact .cento/worksets/&lt;run_id&gt;/workers/&lt;wo
             </div>
           </div>
           <div class="toolbar">
-            <button id="newIssueButton" class="primary" type="button">＋ New issue</button>
+              <button id="newIssueButton" class="primary" type="button">▶ Run pipeline</button>
           </div>
           <section class="filterPanel" aria-label="Issue filters">
             <label>
@@ -2811,8 +3052,8 @@ cento workset materialize-artifact .cento/worksets/&lt;run_id&gt;/workers/&lt;wo
       <section class="modalCard" role="dialog" aria-modal="true" aria-labelledby="issueModalTitle">
         <header class="modalHeader">
           <div>
-            <span class="eyebrow">Issue editor</span>
-            <h2 id="issueModalTitle">Create from prompt</h2>
+            <span id="issueModalEyebrow" class="eyebrow">Pipeline runner</span>
+            <h2 id="issueModalTitle">Run Pipeline</h2>
           </div>
           <button type="button" class="modalClose" data-modal-close>×</button>
         </header>
@@ -2829,13 +3070,26 @@ cento workset materialize-artifact .cento/worksets/&lt;run_id&gt;/workers/&lt;wo
           <input id="issueNode" type="hidden" />
           <input id="issueDoneRatio" type="hidden" value="0" />
           <input id="issueValidationReport" type="hidden" />
+          <label id="runPipelineTemplateField" class="fieldBlock runPipelineTemplateField">
+            <span>Pipeline</span>
+            <select id="runPipelineTemplateSelect" aria-label="Pipeline to run"></select>
+          </label>
+          <div class="issuePipelineRoute">
+            <strong id="runPipelineRouteTitle">Selected route</strong>
+            <span id="runPipelineRouteDescription">Inputs are validated against the selected template contract, then Dev Pipeline Studio opens Execution Flow.</span>
+          </div>
+          <div id="runPipelineInputCards" class="runPipelineInputCards" aria-label="Pipeline input contract"></div>
           <label class="fieldBlock">
-            <span>Prompt</span>
-            <textarea id="issueDescription" rows="13" required autofocus></textarea>
+            <span>Optional screenshot</span>
+            <input id="runPipelineScreenshot" type="text" placeholder="workspace/runs/ui/reference.png" />
+          </label>
+          <label id="issueDescriptionField" class="fieldBlock issueDescriptionField">
+            <span>Operator thoughts</span>
+            <textarea id="issueDescription" rows="9"></textarea>
           </label>
           <div class="modalActions">
             <button type="button" data-modal-close>Cancel</button>
-            <button id="issueSubmitButton" type="submit" class="primary">Create issue</button>
+            <button id="issueSubmitButton" type="submit" class="primary">Run pipeline</button>
           </div>
         </form>
       </section>

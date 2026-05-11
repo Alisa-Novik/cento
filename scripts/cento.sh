@@ -12,6 +12,7 @@ CLI_INTERACTIVE="$ROOT_DIR/scripts/cento_interactive.sh"
 PLATFORM_REPORT="$ROOT_DIR/scripts/platform_report.py"
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/cento"
 CONFIG_FILE="$CONFIG_DIR/aliases.sh"
+SECRETS_FILE="${CENTO_SECRETS_ENV:-$CONFIG_DIR/secrets.env}"
 CONFIG_TEMPLATE="$ROOT_DIR/templates/cento/aliases.sh"
 COMPLETION_TEMPLATE="$ROOT_DIR/scripts/completion/_cento"
 COMPLETION_DIR="$CONFIG_DIR/completions"
@@ -83,6 +84,8 @@ Examples:
   cento mcp doctor
   cento mcp docs
   cento scan --query "mcp"
+  cento discord update
+  cento discord rerun
   cento kitty-theme-manager --list-custom
   cento monk
   cento cyber
@@ -133,6 +136,14 @@ load_config() {
     CENTO_ALIAS_DESCRIPTIONS=()
     # shellcheck disable=SC1090
     source "$CONFIG_FILE"
+}
+
+load_secrets_env() {
+    [[ -f "$SECRETS_FILE" ]] || return 0
+    set -a
+    # shellcheck disable=SC1090
+    source "$SECRETS_FILE"
+    set +a
 }
 
 choose_editor() {
@@ -597,4 +608,5 @@ main() {
     esac
 }
 
+load_secrets_env
 main "$@"

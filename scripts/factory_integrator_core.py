@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import json
 import os
+import hashlib
 import shutil
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -47,6 +49,16 @@ def append_jsonl(path: Path, row: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(row, sort_keys=True) + "\n")
+
+
+def file_sha256(path: Path) -> str:
+    if not path.exists():
+        return ""
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def run(command: list[str], *, cwd: Path, timeout: int = 120, input_text: str | None = None) -> dict[str, Any]:
@@ -231,6 +243,128 @@ def create_apply_plan(run_dir: Path) -> dict[str, Any]:
     return payload
 
 
+def validation_suite_for(changed_files: list[str]) -> list[str]:
+    suites = {"schema", "owned-path", "git-apply-check"}
+    if any(path.endswith(".py") for path in changed_files):
+        suites.add("python")
+    if any(path.endswith(".json") for path in changed_files):
+        suites.add("json")
+    if any(path.startswith("docs/") or path.endswith(".md") for path in changed_files):
+        suites.add("docs")
+    return sorted(suites)
+
+
+def fanout_cache_key(run_dir: Path, record: dict[str, Any], patch_hash: str, suites: list[str]) -> str:
+    payload = {
+        "base_sha": dispatch.git_sha(short=False),
+        "run_id": run_dir.name,
+        "task_id": str(record.get("task_id") or ""),
+        "patch_hash": patch_hash,
+        "suites": suites,
+    }
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
+
+
+def validate_fanout_candidate(run_dir: Path, record: dict[str, Any], *, cache_dir: Path) -> dict[str, Any]:
+    task_id = str(record.get("task_id") or "")
+    patch_bundle = read_json(patch_json_path(run_dir, task_id)) if patch_json_path(run_dir, task_id).exists() else {}
+    patch_file = patch_diff_path(run_dir, patch_bundle) if patch_bundle else Path(str(record.get("patch_file") or ""))
+    changed_files = [str(path) for path in record.get("changed_files") or patch_bundle.get("changed_files") or []]
+    patch_hash = file_sha256(patch_file)
+    suites = validation_suite_for(changed_files)
+    cache_key = fanout_cache_key(run_dir, record, patch_hash, suites)
+    cache_path = cache_dir / f"{cache_key}.json"
+    if cache_path.exists():
+        cached = read_json(cache_path)
+        if cached:
+            return {**cached, "cache": "hit", "cache_key": cache_key}
+
+    started = time.perf_counter()
+    checks: list[dict[str, Any]] = []
+
+    def add(name: str, passed: bool, detail: str = "") -> None:
+        checks.append({"name": name, "status": "passed" if passed else "failed", "detail": detail})
+
+    add("schema.task_id", bool(task_id))
+    add("patch.exists", patch_file.exists(), rel(patch_file) if patch_file.exists() else "missing patch file")
+    add("patch.non_empty", bool(patch_hash), "sha256 present" if patch_hash else "missing or empty patch")
+    if patch_bundle:
+        errors = dispatch.validate_patch_json(patch_json_path(run_dir, task_id))
+        add("factory_patch.schema", not errors, "; ".join(errors))
+    validation_status = str(record.get("validation_status") or "")
+    add("worker.validation", validation_status in {"passed", "pass", "ok"}, validation_status or "missing")
+    registry_status, registry_reason = docs_gate(changed_files)
+    add("docs.registry_gate", registry_status != "failed", registry_reason)
+    apply_check = run(["git", "apply", "--check", str(patch_file)], cwd=ROOT, timeout=60) if patch_file.exists() and patch_hash else {
+        "exit_code": 1,
+        "passed": False,
+        "stderr_tail": "patch file missing",
+    }
+    add("git.apply_check", bool(apply_check.get("passed")), str(apply_check.get("stderr_tail") or apply_check.get("stdout_tail") or ""))
+
+    decision = "passed" if all(item["status"] == "passed" for item in checks) else "failed"
+    payload = {
+        "schema_version": "factory-validation-fanout-candidate/v1",
+        "run_id": run_dir.name,
+        "task_id": task_id,
+        "decision": decision,
+        "cache": "miss",
+        "cache_key": cache_key,
+        "patch_hash": patch_hash,
+        "patch_file": rel(patch_file) if patch_file else "",
+        "changed_files": changed_files,
+        "suites": suites,
+        "checks": checks,
+        "git_apply_check": apply_check,
+        "duration_ms": round((time.perf_counter() - started) * 1000, 3),
+        "validated_at": now_iso(),
+        "ai_calls_used": 0,
+    }
+    write_json(cache_path, payload)
+    return payload
+
+
+def validate_fanout(run_dir: Path, *, max_parallel: int = 32) -> dict[str, Any]:
+    apply_plan = create_apply_plan(run_dir)
+    cache_dir = integration_dir(run_dir) / "validation-cache"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    records = [item for item in apply_plan.get("candidates") or [] if isinstance(item, dict)]
+    results: list[dict[str, Any]] = []
+    started = time.perf_counter()
+    worker_count = max(1, min(int(max_parallel or 1), 128, len(records) or 1))
+    with ThreadPoolExecutor(max_workers=worker_count) as pool:
+        future_map = {pool.submit(validate_fanout_candidate, run_dir, record, cache_dir=cache_dir): record for record in records}
+        for future in as_completed(future_map):
+            result = future.result()
+            results.append(result)
+    results.sort(key=lambda item: str(item.get("task_id") or ""))
+    cache_hits = sum(1 for item in results if item.get("cache") == "hit")
+    failed = [item for item in results if item.get("decision") != "passed"]
+    payload = {
+        "schema_version": "factory-validation-fanout/v1",
+        "run_id": run_dir.name,
+        "status": "passed" if records and not failed else ("blocked" if not records else "failed"),
+        "candidate_count": len(records),
+        "passed_count": len(records) - len(failed),
+        "failed_count": len(failed),
+        "max_parallel": worker_count,
+        "cache_hits": cache_hits,
+        "cache_misses": len(records) - cache_hits,
+        "duration_ms": round((time.perf_counter() - started) * 1000, 3),
+        "results": results,
+        "generated_at": now_iso(),
+        "ai_calls_used": 0,
+    }
+    write_json(integration_dir(run_dir) / "validation-fanout.json", payload)
+    append_jsonl(
+        integration_dir(run_dir) / "validation-fanout-log.jsonl",
+        {"ts": now_iso(), "event": "validation_fanout_completed", "status": payload["status"], "candidate_count": len(records), "cache_hits": cache_hits},
+    )
+    merge_readiness(run_dir)
+    update_integration_state(run_dir)
+    return payload
+
+
 def read_branch_metadata(run_dir: Path) -> dict[str, Any]:
     path = integration_dir(run_dir) / "integration-branch.json"
     return read_json(path) if path.exists() else {}
@@ -408,8 +542,17 @@ def apply_patches(
         rejected.append({**record, "quarantine": quarantine_patch(run_dir, record, reason, {"phase": "apply_plan"})})
     validations: list[dict[str, Any]] = []
     apply_log = integration_dir(run_dir) / "apply-log.jsonl"
-    if apply_log.exists():
-        apply_log.unlink()
+    append_jsonl(
+        apply_log,
+        {
+            "ts": now_iso(),
+            "event": "apply_started",
+            "run_id": run_dir.name,
+            "branch": branch or str(branch_meta.get("branch") or default_branch(run_dir)),
+            "limit": int(limit or 0),
+            "validate_each": bool(validate_each),
+        },
+    )
     candidates = list(apply_plan.get("candidates") or [])
     if limit > 0:
         candidates = candidates[:limit]
@@ -528,10 +671,11 @@ def registry_gate(run_dir: Path) -> dict[str, Any]:
     return payload
 
 
-def merge_readiness(run_dir: Path) -> dict[str, Any]:
+def merge_readiness(run_dir: Path, *, auto_merge: bool = False) -> dict[str, Any]:
     applied = read_json(integration_dir(run_dir) / "applied-patches.json") if (integration_dir(run_dir) / "applied-patches.json").exists() else {"patches": []}
     rejected = read_json(integration_dir(run_dir) / "rejected-patches.json") if (integration_dir(run_dir) / "rejected-patches.json").exists() else {"patches": []}
     validation = read_json(integration_dir(run_dir) / "validation-after-each-patch.json") if (integration_dir(run_dir) / "validation-after-each-patch.json").exists() else {"validations": []}
+    fanout = read_json(integration_dir(run_dir) / "validation-fanout.json") if (integration_dir(run_dir) / "validation-fanout.json").exists() else {}
     registry = registry_gate(run_dir)
     branch = read_branch_metadata(run_dir)
     blockers = []
@@ -545,21 +689,37 @@ def merge_readiness(run_dir: Path) -> dict[str, Any]:
         blockers.append("registry_gate_failed")
     if not branch:
         blockers.append("integration_branch_missing")
+    if fanout and fanout.get("status") != "passed":
+        blockers.append("validation_fanout_failed")
+    rollback = read_json(integration_dir(run_dir) / "rollback-plan.json") if (integration_dir(run_dir) / "rollback-plan.json").exists() else {}
+    if auto_merge and not rollback:
+        blockers.append("rollback_plan_missing")
+    decision = "not_ready" if blockers else ("ready_for_auto_merge" if auto_merge else "ready_for_human_merge_review")
+    residual_risk = (
+        [
+            "Automatic merge is allowed only through `cento factory merge --auto-merge-main` after post-merge validation.",
+            "Cross-node build farm validation is deferred.",
+        ]
+        if decision == "ready_for_auto_merge"
+        else [
+            "No automatic merge to main was performed.",
+            "Human review is still required before merging the integration branch.",
+            "Cross-node build farm validation is deferred.",
+        ]
+    )
     payload = {
         "schema_version": "factory-merge-readiness/v1",
         "run_id": run_dir.name,
-        "decision": "ready_for_human_merge_review" if not blockers else "not_ready",
+        "decision": decision,
         "blockers": blockers,
         "applied_count": len(applied.get("patches") or []),
         "rejected_count": len(rejected.get("patches") or []),
         "validation_count": len(validation.get("validations") or []),
+        "validation_fanout": fanout.get("status", ""),
         "registry_gate": registry.get("status"),
         "branch": branch,
-        "residual_risk": [
-            "No automatic merge to main was performed.",
-            "Human review is still required before merging the integration branch.",
-            "Cross-node build farm validation is deferred.",
-        ],
+        "auto_merge_requested": bool(auto_merge),
+        "residual_risk": residual_risk,
         "generated_at": now_iso(),
         "ai_calls_used": 0,
     }
@@ -645,9 +805,11 @@ def update_integration_state(run_dir: Path) -> dict[str, Any]:
     applied = read_json(idir / "applied-patches.json") if (idir / "applied-patches.json").exists() else {"patches": []}
     rejected = read_json(idir / "rejected-patches.json") if (idir / "rejected-patches.json").exists() else {"patches": apply_plan.get("rejected") or []}
     validation = read_json(idir / "validation-after-each-patch.json") if (idir / "validation-after-each-patch.json").exists() else {"validations": []}
+    fanout = read_json(idir / "validation-fanout.json") if (idir / "validation-fanout.json").exists() else {}
     rollback = read_json(idir / "rollback-plan.json") if (idir / "rollback-plan.json").exists() else {}
     readiness = read_json(idir / "merge-readiness.json") if (idir / "merge-readiness.json").exists() else {}
     taskstream = read_json(idir / "taskstream-sync-preview.json") if (idir / "taskstream-sync-preview.json").exists() else {}
+    merge_receipt = read_json(idir / "merge-receipt.json") if (idir / "merge-receipt.json").exists() else {}
     payload = {
         "schema_version": "factory-integration-state/v1",
         "run_id": run_dir.name,
@@ -657,8 +819,10 @@ def update_integration_state(run_dir: Path) -> dict[str, Any]:
         "applied_patches": applied.get("patches") or [],
         "rejected_patches": rejected.get("patches") or [],
         "validation_after_each_patch": validation,
+        "validation_fanout": fanout,
         "rollback_plan": rel(idir / "rollback-plan.json") if rollback else "",
         "merge_readiness": readiness,
+        "merge_receipt": merge_receipt,
         "taskstream_sync_preview": taskstream,
         "release_candidate": rel(idir / "release-candidate.md") if (idir / "release-candidate.md").exists() else "",
         "residual_risks": rel(idir / "residual-risks.md") if (idir / "residual-risks.md").exists() else "",
@@ -686,14 +850,15 @@ def validate_integration_state(path: Path) -> list[str]:
     return errors
 
 
-def validate_integrated(run_dir: Path) -> dict[str, Any]:
+def validate_integrated(run_dir: Path, *, auto_merge: bool = False) -> dict[str, Any]:
     state = update_integration_state(run_dir)
     errors = validate_integration_state(integration_dir(run_dir) / "integration-state.json")
-    readiness = merge_readiness(run_dir)
+    readiness = merge_readiness(run_dir, auto_merge=auto_merge)
+    ready_decisions = {"ready_for_human_merge_review", "ready_for_auto_merge"}
     payload = {
         "schema_version": "factory-integrated-validation/v1",
         "run_id": run_dir.name,
-        "decision": "approve" if not errors and readiness.get("decision") == "ready_for_human_merge_review" else "blocked",
+        "decision": "approve" if not errors and readiness.get("decision") in ready_decisions else "blocked",
         "errors": errors,
         "merge_readiness": readiness,
         "integration_state": rel(integration_dir(run_dir) / "integration-state.json"),
@@ -702,3 +867,137 @@ def validate_integrated(run_dir: Path) -> dict[str, Any]:
     }
     write_json(integration_dir(run_dir) / "integrated-validation.json", payload)
     return payload
+
+
+def post_merge_commands() -> list[list[str]]:
+    return [
+        ["python3", "-m", "py_compile", "scripts/factory.py", "scripts/factory_integrator_core.py", "scripts/parallel_delivery.py"],
+    ]
+
+
+def command_result_passed(result: dict[str, Any]) -> bool:
+    return int(result.get("exit_code") or 0) == 0 and bool(result.get("passed", True))
+
+
+def auto_merge_main(
+    run_dir: Path,
+    *,
+    target_branch: str = "main",
+    remote: str = "origin",
+    push: bool = False,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    idir = integration_dir(run_dir)
+    branch = read_branch_metadata(run_dir)
+    blockers: list[str] = []
+    if not branch:
+        blockers.append("integration_branch_missing")
+    worktree_value = str(branch.get("worktree") or "")
+    worktree = ROOT / worktree_value if worktree_value and not Path(worktree_value).is_absolute() else Path(worktree_value or "")
+    if not worktree_value or not worktree.exists():
+        blockers.append("integration_worktree_missing")
+    if not (idir / "release-candidate.md").exists():
+        blockers.append("release_candidate_missing")
+    if not (idir / "rollback-plan.json").exists():
+        blockers.append("rollback_plan_missing")
+
+    fanout = read_json(idir / "validation-fanout.json") if (idir / "validation-fanout.json").exists() else validate_fanout(run_dir)
+    if fanout.get("status") != "passed":
+        blockers.append("validation_fanout_failed")
+    integrated = validate_integrated(run_dir, auto_merge=True)
+    if integrated.get("decision") != "approve":
+        blockers.append("integrated_validation_blocked")
+    root_status = run(["git", "status", "--porcelain"], cwd=ROOT, timeout=30)
+    if str(root_status.get("stdout_tail") or "").strip():
+        blockers.append("main_worktree_dirty")
+    current_branch = run(["git", "branch", "--show-current"], cwd=ROOT, timeout=30)
+    if str(current_branch.get("stdout_tail") or "").strip() != target_branch:
+        blockers.append(f"current_branch_not_{target_branch}")
+
+    receipt: dict[str, Any] = {
+        "schema_version": "factory-auto-merge-receipt/v1",
+        "run_id": run_dir.name,
+        "target_branch": target_branch,
+        "remote": remote,
+        "push_requested": bool(push),
+        "dry_run": bool(dry_run),
+        "status": "blocked" if blockers else ("planned" if dry_run else "running"),
+        "blockers": sorted(set(blockers)),
+        "integration_branch": branch,
+        "validation_fanout": rel(idir / "validation-fanout.json"),
+        "integrated_validation": rel(idir / "integrated-validation.json"),
+        "commands": [],
+        "written_at": now_iso(),
+    }
+    if blockers or dry_run:
+        write_json(idir / "merge-receipt.json", receipt)
+        append_jsonl(idir / "merge-events.jsonl", {"ts": now_iso(), "event": "auto_merge_blocked" if blockers else "auto_merge_planned", "blockers": receipt["blockers"]})
+        update_integration_state(run_dir)
+        return receipt
+
+    pre_merge_validation = [run(command, cwd=worktree, timeout=240) for command in post_merge_commands()]
+    receipt["pre_merge_validation"] = pre_merge_validation
+    if not all(command_result_passed(item) for item in pre_merge_validation):
+        receipt["status"] = "blocked"
+        receipt["blockers"] = ["pre_merge_validation_failed"]
+        write_json(idir / "merge-receipt.json", receipt)
+        append_jsonl(idir / "merge-events.jsonl", {"ts": now_iso(), "event": "auto_merge_blocked", "blockers": receipt["blockers"]})
+        update_integration_state(run_dir)
+        return receipt
+
+    for command in (["git", "add", "-A"], ["git", "commit", "-m", f"Factory integration: {run_dir.name}"]):
+        result = run(command, cwd=worktree, timeout=120)
+        receipt["commands"].append(result)
+        if result["exit_code"] != 0:
+            receipt["status"] = "blocked"
+            receipt["blockers"] = ["integration_commit_failed"]
+            write_json(idir / "merge-receipt.json", receipt)
+            append_jsonl(idir / "merge-events.jsonl", {"ts": now_iso(), "event": "auto_merge_blocked", "blockers": receipt["blockers"]})
+            update_integration_state(run_dir)
+            return receipt
+    commit_sha_result = run(["git", "rev-parse", "HEAD"], cwd=worktree, timeout=30)
+    commit_sha = str(commit_sha_result.get("stdout_tail") or "").strip()
+    receipt["integration_commit_sha"] = commit_sha
+    merge_result = run(["git", "merge", "--ff-only", commit_sha], cwd=ROOT, timeout=120)
+    receipt["commands"].append(merge_result)
+    if merge_result["exit_code"] != 0:
+        receipt["status"] = "blocked"
+        receipt["blockers"] = ["main_merge_failed"]
+        write_json(idir / "merge-receipt.json", receipt)
+        append_jsonl(idir / "merge-events.jsonl", {"ts": now_iso(), "event": "auto_merge_blocked", "blockers": receipt["blockers"]})
+        update_integration_state(run_dir)
+        return receipt
+
+    post_validation = [run(command, cwd=ROOT, timeout=240) for command in post_merge_commands()]
+    receipt["post_merge_validation"] = post_validation
+    if not all(command_result_passed(item) for item in post_validation):
+        receipt["status"] = "blocked_after_local_merge"
+        receipt["blockers"] = ["post_merge_validation_failed_push_blocked"]
+        write_json(idir / "merge-receipt.json", receipt)
+        append_jsonl(idir / "merge-events.jsonl", {"ts": now_iso(), "event": "auto_merge_blocked_after_local_merge", "blockers": receipt["blockers"]})
+        update_integration_state(run_dir)
+        return receipt
+
+    receipt["status"] = "merged_local"
+    receipt["merged_at"] = now_iso()
+    if push:
+        push_result = run(["git", "push", remote, target_branch], cwd=ROOT, timeout=240)
+        push_receipt = {
+            "schema_version": "factory-push-receipt/v1",
+            "run_id": run_dir.name,
+            "remote": remote,
+            "target_branch": target_branch,
+            "commit_sha": commit_sha,
+            "status": "pushed" if push_result["exit_code"] == 0 else "blocked",
+            "command": push_result,
+            "written_at": now_iso(),
+        }
+        write_json(idir / "push-receipt.json", push_receipt)
+        receipt["push_receipt"] = rel(idir / "push-receipt.json")
+        receipt["status"] = "pushed" if push_result["exit_code"] == 0 else "merged_local_push_failed"
+        if push_result["exit_code"] != 0:
+            receipt["blockers"] = ["push_failed"]
+    write_json(idir / "merge-receipt.json", receipt)
+    append_jsonl(idir / "merge-events.jsonl", {"ts": now_iso(), "event": "auto_merge_completed", "status": receipt["status"], "commit_sha": commit_sha})
+    update_integration_state(run_dir)
+    return receipt

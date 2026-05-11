@@ -11,6 +11,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   cento temp run
+  cento temp run openai-key
   cento temp run [ID] [--dry-run] [--no-copy]
   cento temp show [ID]
   cento temp list
@@ -36,6 +37,7 @@ this node or another cluster node.
 
 Examples:
   cento temp run
+  cento temp run openai-key
   cento temp show
   cento temp add watch-diag --title "Watch diagnostics" --node macos --command-file /tmp/watch-diag.sh
   cento temp run watch-diag
@@ -43,6 +45,14 @@ Examples:
   cento temp run watch-diag --no-copy
   cento temp remove watch-diag
 USAGE
+}
+
+secrets_env_path() {
+  if [[ -n "${CENTO_SECRETS_ENV:-}" ]]; then
+    printf '%s\n' "$CENTO_SECRETS_ENV"
+    return 0
+  fi
+  printf '%s/cento/secrets.env\n' "${XDG_CONFIG_HOME:-$HOME/.config}"
 }
 
 platform() {
@@ -340,6 +350,13 @@ run_command() {
     shift || true
   fi
   [[ -n "$id" ]] || id=$(default_command_id)
+  case "$id" in
+    openai-key|openai|api-key|api-openai)
+      [[ $# -eq 0 ]] || { printf 'Usage: cento temp run openai-key\n' >&2; exit 2; }
+      setup_openai_key
+      return 0
+      ;;
+  esac
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --dry-run)
@@ -413,6 +430,25 @@ run_command() {
     fi
   fi
   return "$status"
+}
+
+setup_openai_key() {
+  local secrets_path api_key default_model model
+  secrets_path=$(secrets_env_path)
+  default_model="${CENTO_OPENAI_WORKER_MODEL:-gpt-5.4-mini}"
+  printf 'OpenAI API key (input hidden): ' >&2
+  IFS= read -r -s api_key
+  printf '\n' >&2
+  [[ -n "$api_key" ]] || { printf 'No key entered; nothing saved.\n' >&2; return 2; }
+  printf 'Worker model [%s]: ' "$default_model" >&2
+  IFS= read -r model
+  model=${model:-$default_model}
+
+  printf '%s\0%s' "$api_key" "$model" | python3 "$SCRIPT_DIR/write_cento_secret_env.py" "$secrets_path"
+  export OPENAI_API_KEY="$api_key"
+  export CENTO_OPENAI_WORKER_MODEL="$model"
+  printf 'Saved OpenAI worker env to: %s\n' "$secrets_path"
+  printf 'Permissions set to 600. Cento CLI and Dev Pipeline Studio load it automatically.\n'
 }
 
 remove_command() {

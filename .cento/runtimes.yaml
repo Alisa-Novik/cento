@@ -4,8 +4,32 @@ runtimes:
     argv:
       - codex
       - exec
-      - --prompt-file
-      - "{prompt}"
+      - -C
+      - "{worktree}"
+      - --sandbox
+      - workspace-write
+      - "-"
+    stdin_file: "{prompt}"
+    timeout_seconds: 180
+    cwd: "{worktree}"
+    env_allowlist:
+      - PATH
+      - HOME
+      - LANG
+      - LC_ALL
+      - TERM
+    max_changed_files: 3
+    max_patch_lines: 600
+    allow_network: false
+
+  claude-code-fast:
+    type: command
+    argv:
+      - claude
+      - -p
+      - --output-format
+      - text
+    stdin_file: "{prompt}"
     timeout_seconds: 180
     cwd: "{worktree}"
     env_allowlist:

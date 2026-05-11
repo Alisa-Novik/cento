@@ -810,7 +810,11 @@ def materialize_api_artifact(
         entry_paths = [entry["path"] for entry in entries]
         add_intent = cento_build.run(["git", "add", "-N", "--", *entry_paths], cwd=worktree_path, timeout=120)
         if add_intent["exit_code"] != 0:
-            warnings.append("git add -N failed: " + (str(add_intent["stderr"]) or str(add_intent["stdout"])).strip())
+            forced_add_intent = cento_build.run(["git", "add", "-N", "-f", "--", *entry_paths], cwd=worktree_path, timeout=120)
+            if forced_add_intent["exit_code"] == 0:
+                warnings.append("git add -N required -f for ignored owned path")
+            else:
+                warnings.append("git add -N failed: " + (str(add_intent["stderr"]) or str(add_intent["stdout"])).strip())
         diff_result = cento_build.run(["git", "diff", "--binary", "--", *entry_paths], cwd=worktree_path, timeout=120)
         if diff_result["exit_code"] != 0:
             raise cento_build.BuildError("materializer diff failed: " + (str(diff_result["stderr"]) or str(diff_result["stdout"])).strip())
@@ -1215,7 +1219,7 @@ def run_workset_execute(args: argparse.Namespace) -> dict[str, Any]:
         workset_path = ROOT / workset_path
     source_workset = load_workset(workset_path)
     runtime = str(args.runtime)
-    allow_missing_paths = runtime == "api-openai"
+    allow_missing_paths = runtime == "api-openai" or bool(getattr(args, "allow_creates", False))
     validation = validate_workset(source_workset, allow_missing_write_paths=allow_missing_paths)
     run_stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S%f")
     workset_id = str(source_workset.get("id") or workset_path.stem)
@@ -1617,6 +1621,10 @@ def run_workset_execute(args: argparse.Namespace) -> dict[str, Any]:
         "max_parallel": max_parallel,
         "integration": args.integrate,
         "apply": apply_mode,
+        "path_policy": {
+            "allow_creates": bool(getattr(args, "allow_creates", False)),
+            "missing_write_paths_allowed": allow_missing_paths,
+        },
         "total_tasks": len(records),
         **summary,
         "total_cost_usd": round(total_cost_usd, 6),
@@ -1666,7 +1674,13 @@ def run_workset_execute(args: argparse.Namespace) -> dict[str, Any]:
 def command_check(args: argparse.Namespace) -> int:
     try:
         workset = load_workset(Path(args.workset))
-        result = validate_workset(workset)
+        allow_creates = bool(args.allow_creates or args.runtime == "api-openai")
+        result = validate_workset(workset, allow_missing_write_paths=allow_creates)
+        result["path_policy"] = {
+            "runtime": args.runtime,
+            "allow_creates": allow_creates,
+            "missing_write_paths_allowed": allow_creates,
+        }
     except cento_build.BuildError as exc:
         result = {"status": "failed", "errors": [str(exc)], "warnings": []}
     if args.json:
@@ -1745,6 +1759,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     check = sub.add_parser("check", help="Validate workset shape, dependencies, and exclusive write paths.")
     check.add_argument("workset", help="workset.json path.")
+    check.add_argument("--runtime", choices=["api-openai", "fixture", "local-command"], default="", help="Declared runtime policy for path validation.")
+    check.add_argument("--allow-creates", action="store_true", help="Allow explicit owned write paths that do not exist yet.")
     check.add_argument("--json", action="store_true", help="Print JSON result.")
     check.set_defaults(func=command_check)
 
@@ -1781,6 +1797,7 @@ def build_parser() -> argparse.ArgumentParser:
     execute.add_argument("--command", help="Raw command template for --runtime local-command.")
     execute.add_argument("--allow-unsafe-command", action="store_true", help="Allow raw shell command runtime.")
     execute.add_argument("--allow-dirty-owned", action="store_true", help="Allow dirty owned paths; recorded by build receipts.")
+    execute.add_argument("--allow-creates", action="store_true", help="Allow explicit owned write paths that do not exist yet.")
     execute.add_argument("--json", action="store_true", help="Print JSON result.")
     execute.set_defaults(func=command_execute)
 

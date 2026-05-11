@@ -259,6 +259,9 @@ def validate_runtime_profile(name: str, profile: Any) -> dict[str, Any]:
         cwd = profile.get("cwd")
         if cwd is not None and not isinstance(cwd, str):
             errors.append("cwd must be a string when provided")
+        stdin_file = profile.get("stdin_file")
+        if stdin_file is not None and not isinstance(stdin_file, str):
+            errors.append("stdin_file must be a string when provided")
         env_allowlist = profile.get("env_allowlist")
         if env_allowlist is not None and (
             not isinstance(env_allowlist, list) or not all(isinstance(item, str) and item for item in env_allowlist)
@@ -1418,6 +1421,17 @@ def run_worker_runtime(
                 command_cwd = cwd / command_cwd
             if not command_cwd.exists():
                 raise BuildError(f"runtime profile cwd does not exist: {command_cwd}")
+            stdin_text = None
+            stdin_rel = None
+            if profile_config.get("stdin_file") is not None:
+                stdin_value = format_runtime_value(profile_config.get("stdin_file"), context)
+                stdin_path = Path(stdin_value)
+                if not stdin_path.is_absolute():
+                    stdin_path = command_cwd / stdin_path
+                if not stdin_path.exists():
+                    raise BuildError(f"runtime profile stdin_file does not exist: {stdin_path}")
+                stdin_text = stdin_path.read_text(encoding="utf-8")
+                stdin_rel = rel(stdin_path)
             started = time.perf_counter()
             try:
                 proc = subprocess.run(
@@ -1425,6 +1439,7 @@ def run_worker_runtime(
                     cwd=command_cwd,
                     shell=False,
                     env=env,
+                    input=stdin_text,
                     text=True,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
@@ -1438,6 +1453,7 @@ def run_worker_runtime(
                 "runtime_profile": profile_name,
                 "argv": argv,
                 "cwd": str(command_cwd),
+                "stdin_file": stdin_rel,
                 "exit_code": proc.returncode,
                 "status": "passed" if proc.returncode == 0 else "failed",
                 "stdout": proc.stdout,

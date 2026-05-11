@@ -33,6 +33,7 @@ workspace/runs/temp/commands/
 
 ```bash
 cento temp run
+cento temp run openai-key
 cento temp show
 cento temp list
 cento temp add ID --title TITLE --node local|macos|linux --command '...'
@@ -47,6 +48,12 @@ cento temp path
 
 Use `cento temp run ID` only for advanced one-off temp commands. The ChatGPT Pro
 bridge must use `cento temp run` with no suffix.
+
+Use `cento temp run openai-key` to enter an OpenAI API key once. Input is hidden,
+and Cento writes `OPENAI_API_KEY` plus `CENTO_OPENAI_WORKER_MODEL` to
+`~/.config/cento/secrets.env` with `0600` permissions. The Cento CLI, Dev
+Pipeline Studio, and API worker load that file automatically. Do not put these
+values in repo files.
 
 ## Cluster Targets
 
