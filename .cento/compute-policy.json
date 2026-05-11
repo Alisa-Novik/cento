@@ -1,0 +1,73 @@
+{
+  "schema_version": "cento.compute_policy.v1",
+  "profile": "codex-first",
+  "providers": {
+    "codex": {
+      "share": 85,
+      "kind": "agent",
+      "runtime": "codex",
+      "model": "gpt-5.3-codex-spark",
+      "cost_mode": "subscription_or_limit",
+      "enabled": true,
+      "notes": "Prefer Codex when interactive/agent limit is available."
+    },
+    "claude": {
+      "share": 15,
+      "kind": "agent",
+      "runtime": "claude-code",
+      "model": "claude-sonnet-4-6",
+      "cost_mode": "subscription_or_limit",
+      "enabled": true,
+      "notes": "Fallback for agent work when Codex is unavailable or weighted routing selects it."
+    },
+    "openai_api": {
+      "share": 0,
+      "kind": "api",
+      "runtime": "api-openai",
+      "model": "${CENTO_OPENAI_WORKER_MODEL}",
+      "cost_mode": "metered",
+      "enabled": false,
+      "notes": "Use only when a pipeline explicitly needs API-only behavior such as structured Responses or image generation."
+    }
+  },
+  "updated_at": "2026-05-05T06:08:59Z",
+  "agent_runtime_weights": {
+    "codex": 85,
+    "claude-code": 15
+  },
+  "metered_api_policy": {
+    "openai_api_share": 0,
+    "prefer_agent_when_possible": true,
+    "requires_explicit_api_runtime": true,
+    "agent_preference_policy": {
+      "codex_claude_utilization_threshold_percent": 30,
+      "eligible_work_agent_preference_percent_range": [
+        70,
+        80
+      ],
+      "eligible_work_agent_preference_target_percent": 75,
+      "metered_openai_api_reserved_for": [
+        "structured Responses API work",
+        "image generation",
+        "ProReq planning",
+        "other API-only behavior"
+      ],
+      "notes": "When Codex/Claude weekly utilization is above 30% and capacity remains usable, prefer agent lanes for roughly 70-80% of eligible non-API-only work."
+    }
+  },
+  "agent_preference_policy": {
+    "codex_claude_utilization_threshold_percent": 30,
+    "eligible_work_agent_preference_percent_range": [
+      70,
+      80
+    ],
+    "eligible_work_agent_preference_target_percent": 75,
+    "metered_openai_api_reserved_for": [
+      "structured Responses API work",
+      "image generation",
+      "ProReq planning",
+      "other API-only behavior"
+    ],
+    "notes": "When Codex/Claude weekly utilization is above 30% and capacity remains usable, prefer agent lanes for roughly 70-80% of eligible non-API-only work."
+  }
+}

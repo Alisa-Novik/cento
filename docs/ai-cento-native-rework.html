@@ -1,0 +1,799 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cento-Native AI Rework</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7f8;
+      --paper: #ffffff;
+      --paper-2: #eef3f4;
+      --ink: #172124;
+      --muted: #53656a;
+      --line: #d6e0e2;
+      --teal: #08746f;
+      --teal-soft: #dff1ef;
+      --blue: #315f9f;
+      --blue-soft: #e3ebf7;
+      --orange: #bf5a1f;
+      --orange-soft: #fff0e6;
+      --green: #237b4b;
+      --green-soft: #e3f3e9;
+      --red: #ad3f32;
+      --red-soft: #f8e4e1;
+      --code: #11191b;
+      --code-line: #253236;
+      --code-text: #e8f3f2;
+      --shadow: 0 18px 44px rgba(23, 33, 36, 0.08);
+      --radius: 8px;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 80% 0%, rgba(8, 116, 111, 0.10), transparent 30rem),
+        linear-gradient(180deg, #fbfcfd 0, var(--bg) 24rem);
+      color: var(--ink);
+      font-family: var(--sans);
+      line-height: 1.56;
+    }
+
+    a {
+      color: var(--teal);
+      text-decoration-color: rgba(8, 116, 111, 0.32);
+      text-underline-offset: 3px;
+    }
+
+    a:hover {
+      text-decoration-color: currentColor;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 270px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .rail {
+      position: sticky;
+      top: 0;
+      align-self: start;
+      height: 100vh;
+      padding: 26px 18px;
+      border-right: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(16px);
+      overflow-y: auto;
+    }
+
+    .brand {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius);
+      background: var(--teal);
+      color: white;
+      font-family: var(--mono);
+      font-weight: 850;
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 17px;
+      line-height: 1.2;
+    }
+
+    .brand span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    nav {
+      display: grid;
+      gap: 4px;
+    }
+
+    nav a {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      border-radius: var(--radius);
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    nav a:hover {
+      background: var(--teal-soft);
+      color: #075752;
+    }
+
+    .rail-note {
+      margin-top: 24px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    main {
+      min-width: 0;
+    }
+
+    .hero {
+      padding: 54px clamp(22px, 5vw, 76px) 30px;
+      border-bottom: 1px solid var(--line);
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(223, 241, 239, 0.62));
+    }
+
+    .eyebrow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.76);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 760;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 900px;
+      margin: 0 0 14px;
+      font-size: clamp(36px, 5vw, 66px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 850px;
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(17px, 1.7vw, 21px);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 750;
+      box-shadow: 0 8px 20px rgba(23, 33, 36, 0.06);
+    }
+
+    .button.primary {
+      border-color: transparent;
+      background: var(--teal);
+      color: white;
+    }
+
+    .content {
+      padding: 28px clamp(22px, 5vw, 76px) 72px;
+    }
+
+    section {
+      padding: 28px 0 38px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    section:last-child {
+      border-bottom: 0;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: clamp(25px, 2.4vw, 34px);
+      line-height: 1.14;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 14px;
+      color: var(--muted);
+    }
+
+    ul, ol {
+      margin: 0;
+      padding-left: 22px;
+      color: var(--muted);
+    }
+
+    li {
+      margin: 7px 0;
+    }
+
+    strong {
+      color: var(--ink);
+    }
+
+    .lead {
+      max-width: 900px;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .four {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .card {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    .card-body {
+      padding: 18px;
+    }
+
+    .metric {
+      min-height: 146px;
+      border-top: 4px solid var(--teal);
+    }
+
+    .metric:nth-child(2) {
+      border-top-color: var(--blue);
+    }
+
+    .metric:nth-child(3) {
+      border-top-color: var(--orange);
+    }
+
+    .metric:nth-child(4) {
+      border-top-color: var(--green);
+    }
+
+    .label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 820;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .metric strong {
+      display: block;
+      margin-bottom: 8px;
+      font-family: var(--mono);
+      font-size: 18px;
+    }
+
+    .callout {
+      margin: 18px 0 0;
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--teal);
+      border-radius: var(--radius);
+      background: var(--paper);
+    }
+
+    .callout.warn {
+      border-left-color: var(--orange);
+      background: var(--orange-soft);
+    }
+
+    .callout.problem {
+      border-left-color: var(--red);
+      background: var(--red-soft);
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(130px, 1fr));
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .step {
+      position: relative;
+      min-height: 150px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+    }
+
+    .step span {
+      display: inline-grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      margin-bottom: 14px;
+      border-radius: 50%;
+      background: var(--teal-soft);
+      color: var(--teal);
+      font-family: var(--mono);
+      font-weight: 850;
+    }
+
+    .step:nth-child(2) span {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .step:nth-child(3) span {
+      background: var(--orange-soft);
+      color: var(--orange);
+    }
+
+    .step:nth-child(4) span {
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    .step:nth-child(5) span {
+      background: var(--red-soft);
+      color: var(--red);
+    }
+
+    .step p,
+    .card p,
+    .callout p {
+      margin: 0;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 18px;
+      align-items: start;
+      margin-top: 18px;
+    }
+
+    .compact-list {
+      display: grid;
+      gap: 10px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .compact-list li {
+      margin: 0;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      color: var(--muted);
+    }
+
+    .compact-list strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 18px;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    th,
+    td {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--paper-2);
+      color: var(--ink);
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    td {
+      color: var(--muted);
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    code {
+      font-family: var(--mono);
+      font-size: 0.92em;
+    }
+
+    p code,
+    li code,
+    td code {
+      padding: 2px 5px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #f9fbfb;
+      color: #134f4b;
+    }
+
+    pre {
+      margin: 18px 0 0;
+      padding: 18px;
+      overflow: auto;
+      border: 1px solid var(--code-line);
+      border-radius: var(--radius);
+      background: var(--code);
+      color: var(--code-text);
+      font: 13px/1.56 var(--mono);
+    }
+
+    .timeline {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .timeline-item {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr);
+      gap: 14px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+    }
+
+    .timeline-item time {
+      color: var(--teal);
+      font-family: var(--mono);
+      font-weight: 820;
+    }
+
+    .source-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .source-grid a {
+      display: block;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      color: var(--ink);
+      text-decoration: none;
+      font-family: var(--mono);
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .source-grid a:hover {
+      border-color: rgba(8, 116, 111, 0.52);
+      background: var(--teal-soft);
+    }
+
+    footer {
+      padding: 24px clamp(22px, 5vw, 76px) 42px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 1040px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .rail {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      nav {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .flow,
+      .three,
+      .four {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 720px) {
+      .hero,
+      .content,
+      footer {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      nav,
+      .two,
+      .three,
+      .four,
+      .flow,
+      .split,
+      .source-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .timeline-item {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail" aria-label="Page navigation">
+      <div class="brand">
+        <div class="brand-mark">C</div>
+        <div>
+          <strong>Cento-Native AI Rework</strong>
+          <span>Readable page from the full research report</span>
+        </div>
+      </div>
+      <nav>
+        <a href="#summary">Summary <span>01</span></a>
+        <a href="#live-flow">Live flow <span>02</span></a>
+        <a href="#findings">Findings <span>03</span></a>
+        <a href="#target">Target loop <span>04</span></a>
+        <a href="#skills">Skills and MCP <span>05</span></a>
+        <a href="#structure">Code structure <span>06</span></a>
+        <a href="#roadmap">Roadmap <span>07</span></a>
+        <a href="#sources">Sources <span>08</span></a>
+      </nav>
+      <p class="rail-note">The short version: keep skills as routing adapters. Make Cento contracts, tools, MCP, validation, and evidence the source of truth for AI work.</p>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <div class="eyebrow">
+          <span class="pill">Research digest</span>
+          <span class="pill">Dev Pipeline Studio</span>
+          <span class="pill">2026-05-04</span>
+        </div>
+        <h1>Rework AI around Cento as the execution layer</h1>
+        <p>Cento already has tools, Taskstream, MCP, worksets, Factory, structured workers, validation, and evidence. The next step is to make every AI request become a typed Cento run instead of a loose chat thread.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="/dev-pipeline-studio#pipeline-flow">Open Execution Flow</a>
+          <a class="button" href="/api/artifacts?path=docs/ai-cento-native-rework-research.md">Full Markdown report</a>
+          <a class="button" href="/api/artifacts?path=workspace/runs/ai-cento-native-rework/dev-pipeline-flow-20260504.png">Screenshot evidence</a>
+        </div>
+      </header>
+
+      <div class="content">
+        <section id="summary">
+          <h2>30-second summary</h2>
+          <p class="lead">The current hard-proreq pipeline proves the direction: capture the prompt, gather Cento context, separate UI screenshot work, ask for schema-backed planning, materialize backend work, validate, and preserve evidence. That pattern should become the standard AI runtime.</p>
+          <div class="grid four" aria-label="Summary metrics">
+            <article class="card metric"><div class="card-body"><span class="label">Current proof point</span><strong>Hard-proreq route</strong><p>Live Execution Flow already turns a prompt into staged artifacts and evidence.</p></div></article>
+            <article class="card metric"><div class="card-body"><span class="label">Main gap</span><strong>Contracts split</strong><p>Story, validation, workset, pipeline, and evidence manifests are not unified by one AI run envelope.</p></div></article>
+            <article class="card metric"><div class="card-body"><span class="label">Best lever</span><strong>MCP + tools</strong><p>Agents should prefer Cento MCP and registered CLI tools before shell improvisation.</p></div></article>
+            <article class="card metric"><div class="card-body"><span class="label">Validation rule</span><strong>No-model first</strong><p>Durable receipts, commands, screenshots, and evidence should decide done state.</p></div></article>
+          </div>
+          <div class="callout">
+            <strong>Core recommendation</strong>
+            <p>Build a Cento AI Runtime with five stages: intent router, context builder, contract planner, execution lanes, and evidence gate. Skills should trigger that runtime, not replace it.</p>
+          </div>
+        </section>
+
+        <section id="live-flow">
+          <h2>What the live page already proves</h2>
+          <p class="lead">The inspected run at <code>http://127.0.0.1:47910/dev-pipeline-studio#pipeline-flow</code> was a completed hard-proreq run with nine execution steps and run-scoped artifacts.</p>
+          <div class="flow" aria-label="Observed hard-proreq flow">
+            <article class="step"><span>1</span><h3>Operator intake</h3><p>Preserves the raw prompt and questionnaire answers before planning starts.</p></article>
+            <article class="step"><span>2</span><h3>Cento context</h3><p>Builds <code>mini_cento_context.json</code> from repo, tools, docs, and task-relevant files.</p></article>
+            <article class="step"><span>3</span><h3>Muted UI lane</h3><p>Separates screenshot generation from backend planning so visual work does not block the run.</p></article>
+            <article class="step"><span>4</span><h3>Schema-backed plan</h3><p>Prepares a GPT Pro backend request and strict output schema for planning.</p></article>
+            <article class="step"><span>5</span><h3>Evidence handoff</h3><p>Writes backend work, integration plan, validation plan, and evidence artifacts.</p></article>
+          </div>
+          <table>
+            <thead><tr><th>Observed item</th><th>Value</th><th>Why it matters</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Run source</strong></td><td><code>cento-hard-proreq-pro</code></td><td>Shows a dedicated Cento route, not a generic prompt.</td></tr>
+              <tr><td><strong>Runtime</strong></td><td><code>cento-native + GPT pro request</code></td><td>Model planning is inside a Cento runtime frame.</td></tr>
+              <tr><td><strong>Run mode</strong></td><td><code>backend-plan-first</code></td><td>Keeps backend work structured before code execution.</td></tr>
+              <tr><td><strong>Artifacts</strong></td><td>Context, schema, request, plan, work manifest, validation, evidence</td><td>Work can be reviewed outside the chat thread.</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="findings">
+          <h2>Findings that matter</h2>
+          <div class="grid two">
+            <article class="card"><div class="card-body"><h3>Hard-proreq is the strategic seed</h3><p>It already models the desired lifecycle: typed input, Cento context, schema-backed planning, bounded backend work, and evidence.</p></div></article>
+            <article class="card"><div class="card-body"><h3>Skills are not enough</h3><p>Skills are useful steering instructions, but durable contracts and receipts need to live in Cento tools and manifests.</p></div></article>
+            <article class="card"><div class="card-body"><h3>MCP needs a wider surface</h3><p>Current MCP handles context, Taskstream, story, cluster, and bridge. It should also cover Dev Pipeline, Build, Workset, Factory, runtime, scan, and evidence checks.</p></div></article>
+            <article class="card"><div class="card-body"><h3>Proof and validation need alignment</h3><p>The live proof panel can show pending while hard-proreq evidence exists. The UI should resolve proof by run source.</p></div></article>
+            <article class="card"><div class="card-body"><h3>The app script is doing too much</h3><p><code>agent_work_app.py</code> now owns API serving, docs, Dev Pipeline state, hard-proreq execution, artifacts, and handlers. That should be split before the runtime grows.</p></div></article>
+            <article class="card"><div class="card-body"><h3>Evaluation needs metrics</h3><p>Track cost, validation pass rate, rework rate, missing evidence, bypassed Cento routes, and time from prompt to contract.</p></div></article>
+          </div>
+          <div class="callout problem">
+            <strong>The trust problem</strong>
+            <p>When the UI status, validator receipts, and evidence files disagree, the operator cannot treat the page as the control plane. Proof resolution should be normalized before more routes are added.</p>
+          </div>
+        </section>
+
+        <section id="target">
+          <h2>Target Cento AI loop</h2>
+          <p class="lead">The target loop makes the model a worker inside a contract. It does not let the model invent scope and mutate the worktree in one unbounded step.</p>
+          <pre>user request
+  -> intent route
+  -> Cento context bundle
+  -> typed contract
+  -> preflight checks
+  -> bounded model or tool lane
+  -> deterministic validation
+  -> evidence bundle
+  -> Taskstream or direct handoff</pre>
+          <div class="split">
+            <div>
+              <h3>Runtime layers</h3>
+              <ol>
+                <li><strong>Intent router:</strong> choose the registered Cento path.</li>
+                <li><strong>Context builder:</strong> gather repo, tool, route, and validation context.</li>
+                <li><strong>Contract planner:</strong> write story, workset, pipeline, and validation contracts.</li>
+                <li><strong>Execution lanes:</strong> run bounded planner, builder, validator, docs, and integrator work.</li>
+                <li><strong>Evidence gate:</strong> validate with commands, receipts, screenshots, and review summaries.</li>
+              </ol>
+            </div>
+            <div>
+              <h3>Run envelope</h3>
+              <p>The missing top-level artifact is <code>cento.ai_run.v1</code>. It should link source, route decision, context bundle, contracts, execution, artifacts, receipts, validation status, and handoff state.</p>
+              <div class="callout warn">
+                <strong>Design constraint</strong>
+                <p>Strong models can plan. Code workers can edit only declared owned paths. Validators prove with deterministic evidence first.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="skills">
+          <h2>How skills and MCP should change</h2>
+          <table>
+            <thead><tr><th>Surface</th><th>New role</th><th>Concrete change</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Skills</strong></td><td>Thin routing adapters</td><td>Trigger the right Cento path and point to focused references. Avoid copying executable logic into skill bodies.</td></tr>
+              <tr><td><strong>MCP</strong></td><td>Structured Cento interface</td><td>Add tools for Dev Pipeline state/start, scan, runtime, evidence check, build init, workset execute, and Factory plan/status.</td></tr>
+              <tr><td><strong>CLI tools</strong></td><td>Durable execution contract</td><td>Keep <code>cento tools</code> and <code>data/tools.json</code> as the source of truth for registered operations.</td></tr>
+              <tr><td><strong>Validation</strong></td><td>Mechanical done gate</td><td>Use story and validation manifests, command receipts, screenshots, and evidence summaries before Review.</td></tr>
+            </tbody>
+          </table>
+          <div class="grid three">
+            <article class="card"><div class="card-body"><h3><code>cento-native</code></h3><p>Keep it short: discover Cento tools, prefer MCP, preserve dirty work, and route to Taskstream only when needed.</p></div></article>
+            <article class="card"><div class="card-body"><h3><code>cento-ai-run</code></h3><p>New skill: start the standard AI runtime from a prompt, screenshot, route, issue, or PR context.</p></div></article>
+            <article class="card"><div class="card-body"><h3><code>cento-validator</code></h3><p>New skill: read <code>story.json</code> and <code>validation.json</code>, run deterministic checks, and write validator evidence.</p></div></article>
+          </div>
+        </section>
+
+        <section id="structure">
+          <h2>Small code structure improvement</h2>
+          <p class="lead">Do not do a broad rewrite. Split the Dev Pipeline runtime out of the monolithic app script behind compatibility wrappers.</p>
+          <pre>scripts/
+  agent_work_app.py
+  agent_work_api.py
+  dev_pipeline/
+    state.py
+    routes.py
+    manifests.py
+    execution.py
+    hard_proreq.py
+    validation.py
+    artifacts.py
+    schemas.py</pre>
+          <ul class="compact-list">
+            <li><strong>Move hard-proreq defaults to data.</strong> Store project/template/schema defaults under <code>data/dev-pipeline/</code> and load them from Python.</li>
+            <li><strong>Normalize statuses once.</strong> Export one backend mapping for configured, queued, running, completed, passed, failed, blocked, muted, skipped, and accepted.</li>
+            <li><strong>Add proof resolver.</strong> Resolve proof by run source: workset receipt, hard-proreq evidence, build receipts, or Factory release receipts.</li>
+          </ul>
+        </section>
+
+        <section id="roadmap">
+          <h2>Roadmap</h2>
+          <div class="timeline">
+            <article class="timeline-item"><time>Phase 0</time><div><h3>Align current Execution Flow</h3><p>Fix hard-proreq proof, validation mapping, source labels, and add an MCP read tool for Dev Pipeline state.</p></div></article>
+            <article class="timeline-item"><time>Phase 1</time><div><h3>Add AI run envelope</h3><p>Define <code>cento.ai_run.v1</code>, add create/show/check commands, and link existing Dev Pipeline runs to it.</p></div></article>
+            <article class="timeline-item"><time>Phase 2</time><div><h3>Widen MCP</h3><p>Add structured tools for Dev Pipeline, scan, runtime, evidence, build, workset, and Factory operations.</p></div></article>
+            <article class="timeline-item"><time>Phase 3</time><div><h3>Rework skills</h3><p>Keep skills small and point them to MCP/CLI contracts, focused references, and evidence requirements.</p></div></article>
+            <article class="timeline-item"><time>Phase 4</time><div><h3>Generalize hard-proreq</h3><p>Turn the specialized route into the standard Cento AI runtime used by generic tasks, docs, UI, and Factory work.</p></div></article>
+          </div>
+        </section>
+
+        <section id="sources">
+          <h2>Research sources</h2>
+          <p class="lead">The full report inspected Cento core, Codex skills, GitHub plugin skills, OpenCode, docmgmt, and an Airflow pipeline project.</p>
+          <div class="source-grid">
+            <a href="/api/artifacts?path=docs/ai-cento-native-rework-research.md">docs/ai-cento-native-rework-research.md</a>
+            <a href="/api/artifacts?path=workspace/runs/ai-cento-native-rework/dev-pipeline-flow-20260504.png">workspace/runs/ai-cento-native-rework/dev-pipeline-flow-20260504.png</a>
+            <a href="/api/artifacts?path=workspace/runs/scan-onepager/latest/summary.json">workspace/runs/scan-onepager/latest/summary.json</a>
+            <a href="/dev-pipeline-studio#pipeline-flow">/dev-pipeline-studio#pipeline-flow</a>
+            <a href="/api/artifacts?path=docs/agent-work.md">docs/agent-work.md</a>
+            <a href="/api/artifacts?path=docs/agent-work-story-manifest.md">docs/agent-work-story-manifest.md</a>
+            <a href="/api/artifacts?path=docs/agent-work-validator-lane.md">docs/agent-work-validator-lane.md</a>
+            <a href="/api/artifacts?path=docs/dev-pipeline-run-contracts.md">docs/dev-pipeline-run-contracts.md</a>
+          </div>
+        </section>
+      </div>
+
+      <footer>
+        Cento Console docs page generated from the research report. The Markdown remains the full audit trail; this page is the operator digest.
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

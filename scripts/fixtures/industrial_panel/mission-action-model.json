@@ -1,0 +1,39 @@
+{
+  "stats": {
+    "blocked": 0,
+    "review": 1,
+    "queued": 0,
+    "runs": 0,
+    "manual": 0,
+    "cluster": 0,
+    "actions": 1
+  },
+  "brief": {
+    "objective": "Exercise hero action execution.",
+    "next_action": "Safe Python action",
+    "project": "industrial-os-test",
+    "risk": "fixture only"
+  },
+  "queue": [
+    {
+      "id": "safe-python",
+      "source": "fixture",
+      "title": "Safe Python action",
+      "detail": "contract test action",
+      "group": "TEST",
+      "command": ["python3", "-c", "print('hero command ok')"],
+      "dry_run_command": ["python3", "-c", "print('hero dry-run ok')"],
+      "context": [
+        "Fixture action context",
+        "Evidence: hero dry-run ok"
+      ]
+    }
+  ],
+  "context": {
+    "change_radar": "fixture",
+    "anti_stall": "fixture",
+    "blast_radius": "fixture",
+    "blocker_watch": "fixture",
+    "session_heat": "#........"
+  }
+}

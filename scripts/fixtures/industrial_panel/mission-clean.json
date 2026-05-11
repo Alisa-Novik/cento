@@ -1,0 +1,25 @@
+{
+  "stats": {
+    "blocked": 0,
+    "review": 0,
+    "queued": 0,
+    "runs": 0,
+    "manual": 0,
+    "cluster": 0,
+    "actions": 3
+  },
+  "brief": {
+    "objective": "Keep Cento idle state visible without inventing work.",
+    "next_action": "No actionable mission items from Taskstream, active runs, cluster, git, or jobs.",
+    "project": "Cento",
+    "risk": "low: board and cluster are quiet"
+  },
+  "queue": [],
+  "context": {
+    "change_radar": "clean worktree",
+    "anti_stall": "no stall signals from Taskstream",
+    "blast_radius": "packages: none; runs=0; jobs=0; cluster=healthy",
+    "blocker_watch": "no blocker details",
+    "session_heat": "........."
+  }
+}

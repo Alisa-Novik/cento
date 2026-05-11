@@ -1,0 +1,53 @@
+{
+  "stats": {
+    "blocked": 0,
+    "review": 0,
+    "queued": 0,
+    "runs": 0,
+    "manual": 0,
+    "cluster": 1,
+    "actions": 2
+  },
+  "brief": {
+    "objective": "Recover mission state from available Cento sources.",
+    "next_action": "Cluster macos: repair stale socket",
+    "project": "Cento",
+    "risk": "agent-work unavailable: replacement API timeout"
+  },
+  "queue": [
+    {
+      "id": "cluster-macos",
+      "source": "cluster",
+      "title": "Cluster macos: repair stale socket",
+      "detail": "cluster status=disconnected; stale mesh socket",
+      "group": "CLUSTER",
+      "command": ["./scripts/cento.sh", "bridge", "mesh-status"],
+      "dry_run_command": ["./scripts/cento.sh", "bridge", "mesh-status"],
+      "context": [
+        "Overall: degraded",
+        "Node: macos",
+        "Action: repair stale socket"
+      ]
+    },
+    {
+      "id": "git-dirty",
+      "source": "git",
+      "title": "Dirty worktree check",
+      "detail": "1 dirty path(s): M README.md",
+      "group": "GIT",
+      "command": ["git", "status", "--short"],
+      "dry_run_command": ["git", "status", "--short"],
+      "context": [
+        "Dirty worktree:",
+        " M README.md"
+      ]
+    }
+  ],
+  "context": {
+    "change_radar": "1 dirty path(s): M README.md",
+    "anti_stall": "no stall signals from Taskstream",
+    "blast_radius": "packages: none; runs=0; jobs=0; cluster=degraded",
+    "blocker_watch": "agent-work unavailable: replacement API timeout; stale mesh socket",
+    "session_heat": "#........"
+  }
+}

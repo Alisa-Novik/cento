@@ -1,0 +1,95 @@
+{
+  "agent_work": {
+    "payload": {},
+    "error": "replacement API timeout"
+  },
+  "runs": {
+    "payload": {},
+    "error": "agent run ledger unavailable"
+  },
+  "cluster": {
+    "payload": {
+      "updated_at": "2026-05-06T18:00:00+00:00",
+      "nodes": [
+        {
+          "id": "macos",
+          "platform": "macos",
+          "socket": "/tmp/cento-mac.sock"
+        }
+      ],
+      "health": {
+        "overall": "degraded",
+        "local": "linux",
+        "counts": {
+          "online": 0,
+          "offline": 0,
+          "degraded": 1
+        },
+        "nodes": [
+          {
+            "id": "macos",
+            "platform": "macos",
+            "role": "worker",
+            "state": "degraded",
+            "is_local": false,
+            "socket": "/tmp/cento-mac.sock",
+            "socket_present": true,
+            "reasons": ["stale mesh socket"],
+            "remediation": {
+              "severity": "warning",
+              "owner": "macos operator",
+              "action": "repair stale socket",
+              "commands": ["cento bridge mesh-status", "cento cluster heal macos"]
+            }
+          }
+        ],
+        "reasons": ["stale mesh socket"],
+        "actions": [
+          {
+            "node": "macos",
+            "severity": "warning",
+            "owner": "macos operator",
+            "action": "repair stale socket",
+            "commands": ["cento bridge mesh-status", "cento cluster heal macos"]
+          }
+        ]
+      },
+      "status": {
+        "ok": true,
+        "stdout": "nodes\nmacos disconnected",
+        "stderr": ""
+      },
+      "mesh": {
+        "ok": true,
+        "stdout": "srw------- /tmp/cento-mac.sock",
+        "stderr": ""
+      }
+    },
+    "error": null
+  },
+  "git": {
+    "status_short": " M README.md",
+    "error": null
+  },
+  "jobs": {
+    "payload": {
+      "jobs": [],
+      "counts": {},
+      "states": {}
+    },
+    "error": null
+  },
+  "actions": {
+    "payload": [
+      {
+        "id": "cluster_status",
+        "label": "Cluster status",
+        "allowlist": ["linux", "macos"],
+        "command": ["./scripts/cento.sh", "cluster", "status"],
+        "dry_run_command": ["./scripts/cento.sh", "cluster", "status"],
+        "availability_check": "always"
+      }
+    ],
+    "error": null
+  }
+}

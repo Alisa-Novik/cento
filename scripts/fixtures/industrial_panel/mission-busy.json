@@ -1,0 +1,126 @@
+{
+  "stats": {
+    "blocked": 1,
+    "review": 2,
+    "queued": 1,
+    "runs": 2,
+    "manual": 1,
+    "cluster": 1,
+    "actions": 5
+  },
+  "brief": {
+    "objective": "Route the next Cento mission item from live Taskstream and run state.",
+    "next_action": "Review ready #101: validation pass with evidence",
+    "project": "mission-control",
+    "risk": "1 blocked Taskstream item and degraded cluster"
+  },
+  "queue": [
+    {
+      "id": "issue-101",
+      "source": "taskstream",
+      "title": "Review ready #101",
+      "detail": "Mission router patch | validation pass with evidence",
+      "group": "REVIEW",
+      "command": ["./scripts/cento.sh", "agent-work", "review-drain", "--package", "mission-control", "--dry-run"],
+      "dry_run_command": ["./scripts/cento.sh", "agent-work", "review-drain", "--package", "mission-control", "--dry-run"],
+      "context": [
+        "Issue #101",
+        "Status: Review",
+        "Package: mission-control",
+        "Evidence: workspace/runs/agent-work/101/validation-report.md",
+        "Safe command: ./scripts/cento.sh agent-work review-drain --package mission-control --dry-run"
+      ]
+    },
+    {
+      "id": "issue-102",
+      "source": "taskstream",
+      "title": "Review gate #102",
+      "detail": "Evidence lane docs | review gate failures present",
+      "group": "REVIEW",
+      "command": ["./scripts/cento.sh", "agent-work", "show", "102", "--json"],
+      "dry_run_command": ["./scripts/cento.sh", "agent-work", "show", "102", "--json"],
+      "context": [
+        "Issue #102",
+        "Status: Review",
+        "Signal: review gate failures present"
+      ]
+    },
+    {
+      "id": "issue-103",
+      "source": "taskstream",
+      "title": "Blocked #103",
+      "detail": "Internal Cento validation gap | missing validation_report",
+      "group": "BLOCKED",
+      "command": ["./scripts/cento.sh", "agent-work", "show", "103", "--json"],
+      "dry_run_command": ["./scripts/cento.sh", "agent-work", "show", "103", "--json"],
+      "context": [
+        "Issue #103",
+        "Status: Blocked",
+        "Signal: internal Cento gap"
+      ]
+    },
+    {
+      "id": "issue-104",
+      "source": "taskstream",
+      "title": "Dispatch dry-run #104",
+      "detail": "Queued validator | dry-run dispatch to linux",
+      "group": "QUEUED",
+      "command": ["./scripts/cento.sh", "agent-work", "dispatch", "104", "--dry-run", "--node", "linux", "--agent", "codex"],
+      "dry_run_command": ["./scripts/cento.sh", "agent-work", "dispatch", "104", "--dry-run", "--node", "linux", "--agent", "codex"],
+      "context": [
+        "Issue #104",
+        "Status: Queued",
+        "Safety: dry-run only"
+      ]
+    },
+    {
+      "id": "run-untracked-codex-222",
+      "source": "agent-runs",
+      "title": "Manual codex shell",
+      "detail": "pid 222 | elapsed 05:20 | not attached to Taskstream",
+      "group": "MANUAL",
+      "command": ["./scripts/cento.sh", "agent-work", "runs", "--json", "--active"],
+      "dry_run_command": ["./scripts/cento.sh", "agent-work", "runs", "--json", "--active"],
+      "context": [
+        "Run: untracked-codex-222",
+        "Runtime: codex",
+        "Status: untracked_interactive"
+      ]
+    },
+    {
+      "id": "cluster-macos",
+      "source": "cluster",
+      "title": "Cluster macos: repair stale socket",
+      "detail": "cluster status=disconnected; stale mesh socket",
+      "group": "CLUSTER",
+      "command": ["./scripts/cento.sh", "bridge", "mesh-status"],
+      "dry_run_command": ["./scripts/cento.sh", "bridge", "mesh-status"],
+      "context": [
+        "Overall: degraded",
+        "Node: macos",
+        "Action: repair stale socket"
+      ]
+    },
+    {
+      "id": "git-dirty",
+      "source": "git",
+      "title": "Dirty worktree check",
+      "detail": "2 dirty path(s): M scripts/industrial_panel.py",
+      "group": "GIT",
+      "command": ["git", "status", "--short"],
+      "dry_run_command": ["git", "status", "--short"],
+      "context": [
+        "Dirty worktree:",
+        " M scripts/industrial_panel.py",
+        "?? scripts/industrial_mission.py"
+      ]
+    }
+  ],
+  "context": {
+    "change_radar": "2 dirty path(s): M scripts/industrial_panel.py",
+    "anti_stall": "1 blocked, 1 review gate gap, 1 manual shell",
+    "blast_radius": "packages: mission-control, agent-ops; runs=2; jobs=1; cluster=degraded",
+    "blocker_watch": "cluster status=disconnected; stale mesh socket",
+    "session_heat": "######..."
+  }
+}

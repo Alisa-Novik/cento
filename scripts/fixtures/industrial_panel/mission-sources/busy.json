@@ -1,0 +1,205 @@
+{
+  "agent_work": {
+    "payload": {
+      "issues": [
+        {
+          "id": 101,
+          "subject": "Mission router patch",
+          "status": "Review",
+          "node": "linux",
+          "agent": "alice",
+          "role": "validator",
+          "package": "mission-control",
+          "validation_report": "{\"result\":\"pass\",\"result_after_gate\":\"pass\",\"review_gate_failures\":[],\"evidence\":[\"workspace/runs/agent-work/101/validation-report.md\"]}"
+        },
+        {
+          "id": 102,
+          "subject": "Evidence lane docs",
+          "status": "Review",
+          "node": "linux",
+          "agent": "validator-pool",
+          "role": "validator",
+          "package": "mission-control",
+          "validation_report": "{\"result\":\"pass\",\"result_after_gate\":\"fail\",\"review_gate_failures\":[\"Review note is missing section: Evidence\"],\"evidence\":[\"workspace/runs/agent-work/102/validation-report.md\"]}"
+        },
+        {
+          "id": 103,
+          "subject": "Internal Cento validation gap",
+          "status": "Blocked",
+          "node": "linux",
+          "agent": "validator-pool",
+          "role": "validator",
+          "package": "agent-ops",
+          "validation_report": ""
+        },
+        {
+          "id": 104,
+          "subject": "Queued validator",
+          "status": "Queued",
+          "node": "linux",
+          "agent": "codex",
+          "role": "builder",
+          "package": "mission-control",
+          "validation_report": ""
+        }
+      ]
+    },
+    "error": null
+  },
+  "runs": {
+    "payload": {
+      "runs": [
+        {
+          "run_id": "issue-104-running",
+          "issue_id": 104,
+          "runtime": "codex",
+          "status": "running",
+          "health": "running",
+          "pid": 111,
+          "elapsed": "00:04:00"
+        },
+        {
+          "run_id": "untracked-codex-222",
+          "issue_id": null,
+          "runtime": "codex",
+          "status": "untracked_interactive",
+          "health": "untracked",
+          "pid": 222,
+          "command": "node /home/alice/.npm-global/bin/codex",
+          "elapsed": "05:20"
+        }
+      ],
+      "count": 2
+    },
+    "error": null
+  },
+  "cluster": {
+    "payload": {
+      "updated_at": "2026-05-06T18:00:00+00:00",
+      "nodes": [
+        {
+          "id": "linux",
+          "platform": "linux",
+          "socket": "/tmp/cento-linux.sock"
+        },
+        {
+          "id": "macos",
+          "platform": "macos",
+          "socket": "/tmp/cento-mac.sock"
+        }
+      ],
+      "relay": {
+        "host": "relay.example"
+      },
+      "health": {
+        "overall": "degraded",
+        "local": "linux",
+        "counts": {
+          "online": 1,
+          "offline": 0,
+          "degraded": 1
+        },
+        "nodes": [
+          {
+            "id": "linux",
+            "platform": "linux",
+            "role": "worker",
+            "state": "online",
+            "is_local": true,
+            "socket": "/tmp/cento-linux.sock",
+            "socket_present": true,
+            "reasons": [],
+            "remediation": {
+              "severity": "ok",
+              "owner": "local operator",
+              "action": "monitor",
+              "commands": ["cento cluster status"]
+            }
+          },
+          {
+            "id": "macos",
+            "platform": "macos",
+            "role": "worker",
+            "state": "degraded",
+            "is_local": false,
+            "socket": "/tmp/cento-mac.sock",
+            "socket_present": true,
+            "reasons": ["cluster status=disconnected", "stale mesh socket"],
+            "remediation": {
+              "severity": "warning",
+              "owner": "macos operator",
+              "action": "repair stale socket",
+              "commands": ["cento bridge mesh-status", "cento cluster heal macos"]
+            }
+          }
+        ],
+        "reasons": ["cluster status=disconnected", "stale mesh socket"],
+        "actions": [
+          {
+            "node": "macos",
+            "severity": "warning",
+            "owner": "macos operator",
+            "action": "repair stale socket",
+            "commands": ["cento bridge mesh-status", "cento cluster heal macos"]
+          }
+        ]
+      },
+      "status": {
+        "ok": true,
+        "stdout": "nodes\nlinux connected\nmacos disconnected",
+        "stderr": ""
+      },
+      "mesh": {
+        "ok": true,
+        "stdout": "srw------- /tmp/cento-mac.sock",
+        "stderr": ""
+      }
+    },
+    "error": null
+  },
+  "git": {
+    "status_short": " M scripts/industrial_panel.py\n?? scripts/industrial_mission.py",
+    "error": null
+  },
+  "jobs": {
+    "payload": {
+      "jobs": [
+        {
+          "id": "job-1",
+          "status": "running",
+          "job_summary": {
+            "state": "ok"
+          }
+        }
+      ],
+      "counts": {
+        "running": 1
+      },
+      "states": {
+        "ok": 1
+      }
+    },
+    "error": null
+  },
+  "actions": {
+    "payload": [
+      {
+        "id": "cluster_status",
+        "label": "Cluster status",
+        "allowlist": ["linux", "macos"],
+        "command": ["./scripts/cento.sh", "cluster", "status"],
+        "dry_run_command": ["./scripts/cento.sh", "cluster", "status"],
+        "availability_check": "always"
+      },
+      {
+        "id": "cluster_heal",
+        "label": "Repair degraded cluster",
+        "allowlist": ["linux", "macos"],
+        "command": ["./scripts/cento.sh", "cluster", "heal"],
+        "dry_run_command": ["./scripts/cento.sh", "cluster", "heal", "--help"],
+        "availability_check": "degraded_nodes"
+      }
+    ],
+    "error": null
+  }
+}

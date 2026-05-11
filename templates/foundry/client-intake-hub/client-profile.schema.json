@@ -1,0 +1,26 @@
+{
+  "fields": {
+    "client_id": "string",
+    "deliverables": [
+      "intake-synthesis",
+      "resume-review",
+      "linkedin-review",
+      "action-plan"
+    ],
+    "name": "string",
+    "source_materials": [
+      "resume",
+      "linkedin",
+      "job-description",
+      "notes"
+    ],
+    "target_role": "string"
+  },
+  "fixture_profile": {
+    "client_id": "fixture-client-001",
+    "contains_real_client_data": false,
+    "name": "Ada Lovelace",
+    "target_role": "Principal platform engineer"
+  },
+  "schema_version": "cento.client_intake_hub.profile.v1"
+}
