@@ -111,6 +111,8 @@ The bias is toward low-dependency tooling that works well from a terminal and ca
   Inspect and validate `.cento/runtimes.yaml` profiles for hardened local builder execution.
 - `cento_workset.py`
   Run small exclusive-path local worksets with parallel worker patch collection, structured API artifact workers, simple dependency gates, budget caps, and sequential integration/apply.
+- `parallel_delivery_taskstream.py`
+  Convert Patch Swarm split plans into local `agent-work` story and validation manifests, handoff notes, command previews, preflight reports, and apply-gated Taskstream receipts without direct database writes.
 - `storage.py`
   Catalog Cento run artifacts into SQLite, classify evidence/logs/screenshots/patches/manifests, plan no-delete lifecycle actions, verify hashes, and render storage reports before high-fanout Factory runs create artifact pressure.
 - `object_storage.py`
@@ -193,6 +195,8 @@ make cento ARGS="workset execute .cento/worksets/docs_page.json --max-parallel 6
 make cento ARGS="build artifact check tests/fixtures/cento_build/worker_artifact.valid.json"
 make cento ARGS="build bundle synthesize --manifest tests/fixtures/cento_build/manifest.valid.json --patch tests/fixtures/cento_build/patch.valid.diff"
 make cento ARGS="build integrate tests/fixtures/cento_build/manifest.valid.json --bundle .cento/builds/build_fixture_docs_page_001/integration/patch_bundle.json --dry-run"
+make taskstream-fixture
+make test-taskstream-handoff
 make cento ARGS="storage scan --root workspace/runs --db workspace/storage/catalog.sqlite"
 make cento ARGS="storage plan --dry-run"
 make cento ARGS="storage query --largest --limit 20"

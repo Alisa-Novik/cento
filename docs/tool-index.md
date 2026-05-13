@@ -885,6 +885,9 @@
   - `cento parallel-delivery patch-swarm integrate RUN_ID --apply --factory-run workspace/runs/factory/patch-swarm-RUN_ID --validate-each --json`
   - `cento parallel-delivery patch-swarm validate RUN_ID --json`
   - `cento parallel-delivery patch-swarm status RUN_ID --json`
+  - `cento parallel-delivery taskstream emit --split-plan workspace/runs/parallel-delivery/taskstream-fixture/input/split-plan.json --out workspace/runs/parallel-delivery/taskstream-fixture --transport manifest-only --run-preflight`
+  - `cento parallel-delivery taskstream preflight --manifest-dir workspace/runs/parallel-delivery/taskstream-fixture/work-packages --out workspace/runs/parallel-delivery/taskstream-fixture/preflight`
+  - `cento parallel-delivery taskstream apply --manifest-dir workspace/runs/parallel-delivery/taskstream-fixture/work-packages --out workspace/runs/parallel-delivery/taskstream-fixture/apply --transport agent-work --apply`
   - `cento parallel-delivery patch-swarm e2e --candidate-target 30 --max-parallel-agents 3 --fixture --json`
   - `cento parallel-delivery self-improve run --json`
   - `cento parallel-delivery self-improve e2e --candidate-target 30 --max-parallel-agents 3 --budget-cap-usd 1 --max-budget-usd 1 --apply --validate-each --auto-merge-gate --json`
@@ -896,4 +899,5 @@
   - [`docs/ai-self-improvement-nightly.md`](./ai-self-improvement-nightly.md)
   - [`docs/parallel-integration-train.md`](./parallel-integration-train.md)
   - [`docs/parallel-ai-delivery-roadmap.md`](./parallel-ai-delivery-roadmap.md)
+  - [`docs/parallel-delivery/patch-swarm-taskstream.md`](./patch-swarm-taskstream.md)
   - [`docs/patch-swarm.md`](./patch-swarm.md)
