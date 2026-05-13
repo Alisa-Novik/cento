@@ -570,3 +570,142 @@ python3 scripts/patch_swarm_product_e2e.py
 ```
 
 It creates clean, unprotected-dirty, and protected-dirty fixture repos, starts the Cento Console in-process, drives the `/api/patch-swarm/*` product lifecycle, checks no selected-repo mutation, applies one approved candidate in a Patch Swarm product worktree, and captures `/patch-swarm` plus `/patch-swarm/runs/:run_id` screenshots at `390x900`, `1365x1000`, and `2048x1000`. The summary is written to `workspace/runs/patch-swarm-product-e2e/<run-id>/summary.json`.
+
+## What Patch Swarm Is
+
+Patch Swarm is the Parallel Delivery path for turning one product request into bounded implementation candidates, validating the candidates with local deterministic gates, and integrating only receipt-backed results. It is centered on the existing `cento parallel-delivery` command family and reuses Build, Workset, Factory, Taskstream, and Console surfaces rather than creating a second scheduler.
+
+The operator-facing output is not a raw worker transcript. A healthy run produces a request artifact, split plan, task graph, path leases, worker packets, patch bundle receipts, integration plan, validation summary, release candidate, status payload, and evidence index under `workspace/runs/`.
+
+## Safe Mental Model
+
+- A target of 100 means up to 100 candidate tasks in the plan, not 100 uncontrolled live writers.
+- `--max-parallel-agents` bounds active fixture or worker batches.
+- Workset-compatible path leases keep write ownership explicit before workers touch code.
+- Patch bundles are collected and validated before integration.
+- Integration remains sequential or dependency ordered and is recorded in receipts.
+- Fixture mode is the default adoption gate; live providers, live workers, and live Taskstream mutation stay explicit opt-ins.
+- Dirty work is preserved. Patch Swarm should inspect and classify dirty targets instead of wiping the worktree.
+
+## Quickstart
+
+Run the local fixture gate from the repo root:
+
+```bash
+cento parallel-delivery patch-swarm e2e --candidate-target 100 --max-parallel-agents 5 --fixture --json
+cento parallel-delivery validate --json
+cento parallel-delivery status --json
+```
+
+Then inspect the emitted run directory from the JSON payload. The key files are `validation-summary.json`, `validation-report.md`, `integration/integration-plan.json`, `integration/conflict-report.md`, and `release-candidate/release-candidate.json`.
+
+## Full Fixture Demo
+
+The full deterministic demo is:
+
+```bash
+cento parallel-delivery patch-swarm e2e --candidate-target 100 --max-parallel-agents 5 --fixture --json
+```
+
+Expected behavior:
+
+- 100 candidate tasks are planned.
+- Worker batches are bounded to 5 at a time.
+- One unsafe fixture bundle is rejected.
+- Accepted bundles are ordered in `integration/integration-plan.json`.
+- No live provider call, live worker launch, selected-repo mutation, or Taskstream mutation occurs.
+- Durable evidence is written under `workspace/runs/parallel-delivery/e2e-fixture/<run-id>/`.
+
+## ChatGPT Pro / ProReq Flow
+
+ProReq and ChatGPT Pro prompts are generated as local prompt bundles. The operator can review or paste them manually, but prompt generation does not require a live provider by default.
+
+```bash
+cento parallel-delivery patch-swarm prompts --run-dir workspace/runs/parallel-delivery/proreq-fixture --count 20 --lane all --json
+```
+
+Each prompt should include mission, owned paths, prohibited paths or safety rules, validation commands, evidence expectations, and a Codex output contract. The generated prompt bundle can be connected to `cento temp` when the existing temp bridge is available.
+
+## Codex Paste Flow
+
+Codex worker packets are generated from a split plan and task graph. Each packet is intended for one Codex thread or worker lane and should be pasted only after the operator has reviewed path ownership and validation requirements.
+
+Typical packet contents:
+
+- thread title
+- task ID
+- mission
+- discovery commands
+- owned write paths
+- read-only paths
+- prohibited paths
+- implementation steps
+- tests and validation commands
+- evidence paths
+- patch bundle or handoff instructions
+- blocker protocol
+
+## Worker Packet Format
+
+Worker packets must be scoped enough for an agent to act without inventing workflow. A worker packet is valid only when it names the task, lease, expected touched paths, acceptance contract, validation commands, evidence path, and safety constraints. It must not instruct a worker to wipe or broadly restore the worktree, copy secret files, or mutate Taskstream/Redmine outside the approved `cento agent-work` or MCP surfaces.
+
+## Artifacts and Evidence
+
+The fixture and product paths both converge on the same evidence model:
+
+- `run.json`: run identity, state, constraints, provenance, and artifact pointers.
+- `request.md` and `context-pack.json`: request and local context.
+- `split-plan.json` and `task-graph.json`: bounded task plan and dependencies.
+- `path-leases.json`: write ownership and guarded paths.
+- `worker-packets/`: paste-ready worker instructions.
+- `patch-bundles/` and validation receipts: accepted, rejected, and evidence-only results.
+- `integration/integration-plan.json`: deterministic ordering and conflict buckets.
+- `integration/conflict-report.md`: human-readable conflict triage.
+- `validation-summary.json` and `validation-report.md`: final gate results.
+- `release-candidate/release-candidate.json`: release packet status and evidence pointers.
+
+## Safety Rules
+
+- Keep fixture and dry-run behavior as the default.
+- Require explicit operator flags for live provider fanout, live worker launch, and live Taskstream creation.
+- Use existing Build, Workset, Factory, Taskstream, MCP, and `agent-work` surfaces.
+- Reject or flag absolute paths, traversal paths, protected local secret paths, undeclared deletes, unowned renames, unsupported binary patches, and broad lockfile edits.
+- Preserve unrelated dirty work and record dirty-target risk in evidence.
+- Never copy local secret files or token values into prompts, bundles, docs, or evidence.
+
+## Validation
+
+The adoption gate is:
+
+```bash
+python3 -m json.tool data/tools.json
+cento tools
+cento docs parallel-delivery
+python3 -m pytest -q tests/test_patch_swarm.py
+python3 -m pytest -q tests -k "patch_swarm or parallel_delivery or build or workset or factory or cli or registry or docs"
+cento parallel-delivery validate --json
+cento parallel-delivery status --json
+cento parallel-delivery patch-swarm e2e --candidate-target 100 --max-parallel-agents 5 --fixture --json
+```
+
+If `make patch-swarm-check` exists in the local Makefile, it should be a wrapper around deterministic local gates only.
+
+## Console/status Visibility
+
+Status JSON and Console should show the current run, candidate count, active or simulated worker batches, pending/accepted/rejected bundles, integration status, validation status, release candidate status, evidence links, and the next safe operator action. Console reads local artifacts and should not invent a separate state database for Patch Swarm.
+
+## Troubleshooting
+
+- If `validate --json` fails, inspect the failing gate and the evidence path in the JSON payload.
+- If the 100-candidate fixture fails, inspect `validation-report.md`, `integration/conflict-report.md`, and rejected bundle receipts in the run directory.
+- If status is empty, run the fixture E2E once and then rerun `cento parallel-delivery status --json`.
+- If a path lease conflict appears, group the conflicting tasks sequentially or reduce the task split before dispatch.
+- If live execution is blocked, first make the fixture path green and then inspect the explicit opt-in gate that refused the live action.
+
+## Extension Guide
+
+Add new Patch Swarm behavior by extending the existing `parallel-delivery` surface and associated helper module. A safe extension should add a fixture, schema or receipt updates, tests, docs, and evidence. Prefer additive command routes and stable JSON over rewriting the orchestration path. New lanes should declare owned paths, validation commands, evidence outputs, and failure handling before they are eligible for worker packets or integration.
+
+## Adoption Narrative
+
+Patch Swarm scales delivery without losing control because it separates exploration from mutation. Many candidate tasks can be planned, prompted, and evaluated, while write ownership, patch validation, integration, and release evidence remain deterministic. Staff engineers can review the artifacts asynchronously, leads can track progress through status and Console, and teams can adopt live workers only after the local fixture gate is routine.
