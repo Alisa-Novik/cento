@@ -7474,7 +7474,9 @@ function renderPatchSwarmDetail(payload) {
   renderPatchSwarmCandidates(candidates);
   const artifacts = run.artifacts || {};
   const repo = run.selected_repo || {};
+  const consoleHref = run.run_id ? `/patch-swarm/runs/${encodeURIComponent(run.run_id)}/console` : "";
   patchSwarmEvidence.innerHTML = `
+    ${consoleHref ? `<a href="${escapeHtml(consoleHref)}" target="_blank" rel="noreferrer">Status console</a>` : ""}
     <a href="${escapeHtml(`/api/artifacts?path=${encodeURIComponent(artifacts.decision_report || "")}`)}" target="_blank" rel="noreferrer">Decision report</a>
     <a href="${escapeHtml(`/api/artifacts?path=${encodeURIComponent(artifacts.candidate_index || "")}`)}" target="_blank" rel="noreferrer">Candidate index</a>
     <code>${escapeHtml(repo.path || run.run_dir || "")}</code>

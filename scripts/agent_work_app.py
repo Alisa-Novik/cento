@@ -9065,6 +9065,12 @@ def patch_swarm_engine():
     return patch_swarm
 
 
+def patch_swarm_console_tool():
+    import parallel_delivery_patch_swarm_console as console_tool
+
+    return console_tool
+
+
 def patch_swarm_git(repo: Path, *args: str, timeout: int = 20) -> subprocess.CompletedProcess[str]:
     return subprocess.run(["git", *args], cwd=repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout, check=False)
 
@@ -9177,6 +9183,30 @@ def patch_swarm_detect_test_commands(repo: Path) -> list[str]:
 
 def patch_swarm_run_path(run_id: str) -> Path:
     return patch_swarm_engine().resolve_patch_swarm_run_dir(run_id)
+
+
+def patch_swarm_console_run_dir(run_id: str = "", raw_run_dir: str = "") -> Path:
+    tool = patch_swarm_console_tool()
+    if raw_run_dir:
+        run_dir = tool.normalize_run_dir(Path(raw_run_dir))
+    elif run_id:
+        run_dir = patch_swarm_run_path(run_id)
+    else:
+        run_dir = tool.normalize_run_dir(tool.RUNS_ROOT)
+    workspace_root = (ROOT_DIR / "workspace" / "runs").resolve()
+    if workspace_root not in run_dir.parents and run_dir != workspace_root:
+        raise AgentWorkAppError("Patch Swarm console run_dir must be under workspace/runs.")
+    return run_dir
+
+
+def patch_swarm_console_render(run_id: str = "", raw_run_dir: str = "") -> tuple[dict[str, Any], Path]:
+    tool = patch_swarm_console_tool()
+    run_dir = patch_swarm_console_run_dir(run_id=run_id, raw_run_dir=raw_run_dir)
+    console_data, metadata = tool.render_console(run_dir, write_html=True)
+    html_path = (ROOT_DIR / metadata["start_here"]).resolve()
+    payload = tool.console_data_to_dict(console_data)
+    payload["artifacts"] = metadata
+    return payload, html_path
 
 
 def patch_swarm_append_product_event(run_dir: Path, event: str, payload: dict[str, Any]) -> None:
@@ -9630,6 +9660,22 @@ def make_handler(db_path: Path) -> type[BaseHTTPRequestHandler]:
                         },
                     )
                     return
+                if parsed.path == "/patch-swarm/console" or (parsed.path.startswith("/patch-swarm/runs/") and parsed.path.endswith("/console")):
+                    query = parse_qs(parsed.query)
+                    raw_run_dir = str((query.get("run_dir") or [""])[0])
+                    run_id = ""
+                    parts = [part for part in parsed.path.split("/") if part]
+                    if len(parts) == 4 and parts[0] == "patch-swarm" and parts[1] == "runs" and parts[3] == "console":
+                        run_id = parts[2]
+                    _payload, html_path = patch_swarm_console_render(run_id=run_id, raw_run_dir=raw_run_dir)
+                    body = html_path.read_bytes()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Cache-Control", "no-store")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
+                    return
                 if parsed.path == "/api/projects":
                     with connect(db_path) as conn:
                         init_db(conn)
@@ -9729,8 +9775,20 @@ def make_handler(db_path: Path) -> type[BaseHTTPRequestHandler]:
                 if parsed.path == "/api/patch-swarm/runs":
                     self.send_json(200, patch_swarm_product_run_list())
                     return
+                if parsed.path == "/api/patch-swarm/console":
+                    query = parse_qs(parsed.query)
+                    raw_run_dir = str((query.get("run_dir") or [""])[0])
+                    payload, _html_path = patch_swarm_console_render(raw_run_dir=raw_run_dir)
+                    self.send_json(200, payload)
+                    return
                 if parsed.path.startswith("/api/patch-swarm/runs/"):
                     parts = [part for part in parsed.path.split("/") if part]
+                    if len(parts) == 5 and parts[4] == "console":
+                        query = parse_qs(parsed.query)
+                        raw_run_dir = str((query.get("run_dir") or [""])[0])
+                        payload, _html_path = patch_swarm_console_render(run_id=parts[3], raw_run_dir=raw_run_dir)
+                        self.send_json(200, payload)
+                        return
                     if len(parts) == 4:
                         self.send_json(200, patch_swarm_product_run_detail(parts[3]))
                         return
