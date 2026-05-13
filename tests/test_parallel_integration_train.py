@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -19,6 +20,48 @@ def configure_train_root(monkeypatch, tmp_path: Path) -> Path:
     train_root = tmp_path / "train"
     monkeypatch.setattr(pd, "TRAIN_RUNS_ROOT", train_root)
     return train_root
+
+
+def configure_parallel_delivery_root(monkeypatch, tmp_path: Path) -> Path:
+    run_root = tmp_path / "parallel-delivery"
+    monkeypatch.setattr(pd, "RUNS_ROOT", run_root)
+    return run_root
+
+
+def write_completed_parallel_delivery_run(run_dir: Path, *, demo_required: bool = False) -> None:
+    pd.write_json(run_dir / "implementation_manifest.json", {"schema_version": pd.SCHEMA_PLAN})
+    pd.write_json(
+        run_dir / "proreq_receipt.json",
+        {
+            "schema_version": pd.SCHEMA_RECEIPT,
+            "status": "completed",
+            "expected_pass_count": 1,
+            "demo_required": demo_required,
+            "passes": [{"status": "completed", "workset_check": {"status": "passed"}}],
+        },
+    )
+    pd.write_json(
+        run_dir / "execution_manifest.json",
+        {"schema_version": "cento.parallel_delivery.execution_manifest.v1"},
+    )
+
+
+def write_minimal_patch_swarm_fixture_e2e_run(run_dir: Path) -> None:
+    pd.write_json(
+        run_dir / "validation-summary.json",
+        {
+            "run_id": run_dir.name,
+            "overall": "passed",
+            "state": "fixture_e2e_completed",
+            "candidate_count": 1,
+            "counts": {"accepted_patch_bundles": 1},
+        },
+    )
+    pd.write_json(run_dir / "split-plan.json", {"tasks": [{"task_id": "task-0001"}]})
+    pd.write_json(run_dir / "path-leases.json", {"leases": [{"task_id": "task-0001"}]})
+    pd.write_json(run_dir / "worker-packets" / "codex-packet-index.json", {"packets": [{"task_id": "task-0001"}]})
+    pd.write_json(run_dir / "integration" / "integration-plan.json", {"queue": [{"bundle_id": "bundle-task-0001"}]})
+    pd.write_json(run_dir / "integration" / "integration-receipt.json", {"integrated": [{"bundle_id": "bundle-task-0001"}]})
 
 
 def configure_factory_root(monkeypatch, tmp_path: Path) -> Path:
@@ -78,6 +121,38 @@ def write_fake_workset_receipt(tmp_path: Path, task_paths: dict[str, str]) -> Pa
         encoding="utf-8",
     )
     return receipt
+
+
+def test_parallel_delivery_validate_ignores_recovery_fixture_roots(monkeypatch, tmp_path: Path, capsys) -> None:
+    run_root = configure_parallel_delivery_root(monkeypatch, tmp_path)
+    valid_run = run_root / "vp-e2e"
+    write_completed_parallel_delivery_run(valid_run)
+    noisy_root = run_root / "outage-recovery"
+    write_minimal_patch_swarm_fixture_e2e_run(noisy_root / "fixture-e2e-latest")
+    os.utime(valid_run, (1, 1))
+    os.utime(noisy_root, (2, 2))
+
+    code = pd.command_validate(argparse.Namespace(run_dir="", json=True))
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 0
+    assert payload["run_kind"] != "patch_swarm_fixture_e2e"
+    assert payload["run_dir"].endswith("vp-e2e")
+    assert payload["status"] == "passed"
+
+
+def test_parallel_delivery_validate_dispatches_explicit_fixture_e2e(monkeypatch, tmp_path: Path, capsys) -> None:
+    configure_parallel_delivery_root(monkeypatch, tmp_path)
+    fixture_run = tmp_path / "fixture-e2e"
+    write_minimal_patch_swarm_fixture_e2e_run(fixture_run)
+
+    code = pd.command_validate(argparse.Namespace(run_dir=str(fixture_run), json=True))
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 0
+    assert payload["run_kind"] == "patch_swarm_fixture_e2e"
+    assert payload["status"] == "passed"
+    assert payload["validated_run_dir"].endswith("fixture-e2e")
 
 
 def prepare_completed_train(monkeypatch, tmp_path: Path) -> tuple[Path, Path]:

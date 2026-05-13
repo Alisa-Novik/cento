@@ -843,3 +843,777 @@ The operator provided a 180-minute implementation plan to improve Patch Swarm fi
 #### Tags
 
 `cento-native`, `self-improvement`, `patch-swarm`, `cento-console`, `operator-workflow`, `ui`, `validation`
+
+### 2026-05-11T20:06:49Z - Patch Swarm Product Release Candidate Gate
+
+- `record_id`: 2026-05-11-patch-swarm-product-rc-gate
+- `actor`: codex
+- `scope`: patch-swarm, cento-console, local-fixture-product-workflow, api-contract, ui-validation
+- `status`: implemented
+- `artifacts_changed`: `scripts/agent_work_app.py`, `scripts/patch_swarm_product_e2e.py`, `templates/agent-work-app/app.js`, `templates/agent-work-app/index.html`, `templates/agent-work-app/styles.css`, `tests/test_patch_swarm.py`, `docs/patch-swarm.md`, `docs/ai-self-improvement-log.md`
+- `evidence`: `node --check templates/agent-work-app/app.js`, `python3 -m py_compile scripts/agent_work_app.py scripts/parallel_delivery.py scripts/patch_swarm_product_e2e.py`, `python3 -m pytest tests/test_patch_swarm.py -q`, `python3 scripts/patch_swarm_product_e2e.py`, `make check`, `workspace/runs/patch-swarm-product-e2e/patch-swarm-product-e2e-20260511T200649Z/summary.json`, screenshots under `workspace/runs/patch-swarm-product-e2e/patch-swarm-product-e2e-20260511T200649Z/screenshots/`
+- `checked_prior_records`: `2026-05-11-patch-swarm-product-module-mvp`, `2026-05-11-patch-swarm-first-run-clarity-ui`
+- `corrects_record_id`: none
+
+#### Trigger
+
+The operator provided Patch Swarm Production Step 2 and asked to implement the safe local fixture product release-candidate gate before any live provider rollout.
+
+#### What Changed
+
+- Added `run_kind` to Patch Swarm run list/detail payloads and `action_gates` to run detail payloads.
+- Enforced product approval, rejection, and apply gates in the backend; engine-only runs now remain read-only through the product API.
+- Kept product runs fixture-only for this release candidate and deferred live provider dispatch.
+- Added clean, unprotected-dirty, and protected-dirty repo states with explicit safety labels.
+- Added product create and no-selected-repo-mutation receipts for fixture creation and worktree apply.
+- Routed product apply through Patch Swarm-owned product worktrees only, even when a request includes `use_factory`.
+- Updated the Patch Swarm UI to render review action disabled states from `action_gates` and show decision report, candidate index, selected repo, worktree, and no-mutation receipt evidence.
+- Added `scripts/patch_swarm_product_e2e.py` to run the local product lifecycle and capture required screenshots at `390x900`, `1365x1000`, and `2048x1000`.
+
+#### What Worked
+
+- The product e2e proved repo discovery, protected dirty blocking, unprotected dirty labeling, fixture run creation, rejection, approval, approval-gated apply, worktree-only apply, no selected-repo mutation, nonblank screenshots, no horizontal overflow, and no browser console errors.
+- Screenshot inspection caught a hidden-state CSS specificity defect; the e2e was tightened to assert correct empty/detail panel visibility and passed after the fix.
+- `make check` passed after the focused Patch Swarm and product e2e gates.
+
+#### What Did Not Work
+
+- The first screenshot pass showed the empty detail panel alongside loaded run details because component display rules overrode the generic `.hidden` rule. The fix added a Patch Swarm-scoped hidden rule and e2e assertions for that state.
+
+#### Next Steps
+
+- Keep live Codex/Claude/OpenAI provider dispatch deferred until a separate gated rollout.
+- Promote the product e2e command into any release checklist that validates Patch Swarm UI/API behavior.
+- Consider adding a small browser-test harness around `action_gates` once Cento has a first-class frontend regression runner.
+
+#### Tags
+
+`cento-native`, `self-improvement`, `patch-swarm`, `product-rc`, `local-fixture`, `api-contract`, `worktree-only`, `no-mutation`, `ui`, `validation`
+
+### 2026-05-12T17:50:25Z - Patch Swarm Product Architecture Contract
+
+- `record_id`: 2026-05-12-patch-swarm-product-architecture-contract
+- `actor`: codex
+- `scope`: patch-swarm, parallel-delivery, product-architecture, factory, workset, build, taskstream-visibility, safe-integrator
+- `status`: documented
+- `artifacts_changed`: `docs/patch-swarm.md`, `docs/patch-swarm-lifecycle.md`, `docs/patch-swarm-implementation-map.md`, `docs/patch-swarm-validation-matrix.md`, `docs/ai-self-improvement-log.md`, `workspace/runs/patch-swarm-call-1-product-architecture/`
+- `evidence`: `workspace/runs/patch-swarm-call-1-product-architecture/discovery.log`, `workspace/runs/patch-swarm-call-1-product-architecture/validation.log`, `workspace/runs/patch-swarm-call-1-product-architecture/spec-summary.md`
+- `checked_prior_records`: `2026-05-11-patch-swarm-product-module-mvp`, `2026-05-11-patch-swarm-first-run-clarity-ui`, `2026-05-11-patch-swarm-product-rc-gate`
+- `corrects_record_id`: none
+
+#### Trigger
+
+The operator requested Call 1 for the Patch Swarm / Parallel Software Delivery system: a durable product architecture spec and implementation map, not a runtime implementation.
+
+#### What Changed
+
+- Promoted `docs/patch-swarm.md` into the canonical product spec for Patch Swarm / Parallel Software Delivery.
+- Added the planned `cento parallel-delivery init|plan|emit-prompts|collect|validate|integrate|rc|status|evidence|demo` contract while preserving the existing implemented `cento parallel-delivery patch-swarm ...` command family.
+- Defined the artifact lifecycle, run states, task states, path leasing rules, patch bundle contract, deterministic validation contract, Safe Integrator contract, release candidate contract, Console/Taskstream visibility, and unsafe rejection rules.
+- Added supporting lifecycle, implementation-map, and validation-matrix docs.
+- Wrote discovery and validation evidence under `workspace/runs/patch-swarm-call-1-product-architecture/`.
+
+#### What Worked
+
+- Discovery found existing `parallel-delivery`, Factory, Workset, Build, Patch Swarm, Console, and Safe Integrator surfaces, so the spec could route through existing Cento architecture instead of inventing a duplicate workflow.
+- The docs-only validation passed with required headings, states, CLI contract, artifact paths, unsafe rules, implementation milestones, validation matrix rows, and `cento docs` smoke commands.
+
+#### What Did Not Work
+
+- `cento docs parallel-delivery` still reflects registry metadata and the canonical `docs/patch-swarm.md`; the new companion docs are linked from the canonical spec but were not added to `data/tools.json` in this docs-only call.
+
+#### Next Steps
+
+- Implement the run directory and artifact schema slice.
+- Implement request intake / ProReq packet generation.
+- Implement Factory task splitting, Workset leasing, prompt emission, patch collection, deterministic validation, Safe Integrator queueing, release candidate building, Console/Taskstream summaries, and the bounded e2e demo harness in separate slices.
+
+#### Tags
+
+`cento-native`, `self-improvement`, `patch-swarm`, `parallel-delivery`, `factory`, `workset`, `build`, `safe-integrator`, `taskstream`, `validation`, `docs`
+
+### 2026-05-12T19:10:55Z - Patch Swarm Repo Recon Baseline
+
+- `record_id`: 2026-05-12-patch-swarm-repo-recon-baseline
+- `actor`: codex
+- `scope`: patch-swarm, parallel-delivery, repo-recon, path-ownership, registered-entrypoints, dirty-work-preservation
+- `status`: documented
+- `artifacts_changed`: `docs/ai-self-improvement-log.md`, `workspace/runs/parallel-delivery/recon/20260512T184119Z/`
+- `evidence`: `workspace/runs/parallel-delivery/recon/20260512T184119Z/implementation-map.json`, `workspace/runs/parallel-delivery/recon/20260512T184119Z/implementation-map.md`, `workspace/runs/parallel-delivery/recon/20260512T184119Z/owned-paths-plan.json`, `workspace/runs/parallel-delivery/recon/20260512T184119Z/recon-summary.md`, `workspace/runs/parallel-delivery/recon/20260512T184119Z/validation.log`
+- `checked_prior_records`: `2026-05-12-patch-swarm-product-architecture-contract`, `2026-05-11-patch-swarm-product-rc-gate`, `2026-05-11-patch-swarm-first-run-clarity-ui`
+- `corrects_record_id`: none
+
+#### Trigger
+
+The operator requested an append-only record based on the Call 2 reconnaissance findings so future Patch Swarm / Parallel Delivery implementation threads can quickly find the entrypoint, ownership map, and preservation guards.
+
+#### What Changed
+
+- Added this append-only reference record after the recon-only Call 2 artifacts were generated and validated.
+- Captured the durable recon directory as `workspace/runs/parallel-delivery/recon/20260512T184119Z/`.
+- Recorded that `parallel-delivery` is registered in `data/tools.json` and maps to `./scripts/parallel_delivery.py`.
+- Recorded that all required related surfaces were represented: `parallel-delivery`, `patch-swarm`, `factory`, `workset`, `build`, `agent-work`, `proreq-light`, `temp`, `agent-pool-kick`, and `agent-processes`.
+- Recorded that 28 dirty paths were captured and marked `preserve_carefully` in `implementation-map.json`.
+
+#### What Worked
+
+- Recon stayed read-only for product/source files and wrote only under the timestamped recon run directory.
+- `cento gather-context --no-remote`, `cento tools`, `cento docs`, targeted `cento docs` commands, registry scans, tracked-file scans, JSON validation, surface checks, and Markdown checks were captured.
+- The generated `owned-paths-plan.json` gives future slices concrete candidate owned paths, read-only dependencies, dirty paths to preserve, expected artifacts, validation focus, and risk notes.
+- No high-severity unresolved finding remained because the registered `parallel-delivery` entrypoint was found.
+
+#### What Did Not Work
+
+- The current working tree already contains broad dirty work, including registry, docs, UI, scripts, tests, and untracked files. Future threads must inspect before editing and preserve unrelated hunks.
+- Untracked file contents were intentionally not scanned, so future work must not infer behavior from untracked paths without a fresh, explicit inspection.
+- `data/tools.json` is dirty, so registry-related future calls must treat it as both source of truth and a preserve-carefully target.
+
+#### Useful Future References
+
+- Use `workspace/runs/parallel-delivery/recon/20260512T184119Z/implementation-map.json` for machine-readable surface, registry, dirty-file, and entrypoint data.
+- Use `workspace/runs/parallel-delivery/recon/20260512T184119Z/owned-paths-plan.json` before assigning implementation slices or editing candidate paths.
+- Use `workspace/runs/parallel-delivery/recon/20260512T184119Z/recon-summary.md` for a short operator-readable overview.
+- Re-run dirty-state discovery before every future implementation call; this recon is a baseline, not a license to edit stale ownership assumptions.
+- Preserve the integration rule: `parallel-delivery` should route to existing Factory, Workset, Build, ProReq-light, and Safe Integrator surfaces rather than creating a duplicate workflow.
+
+#### Next Steps
+
+- Start future implementation with `run-artifact-schema`, then `parallel-delivery-cli-contract`, using the recon `owned-paths-plan.json` as the ownership baseline.
+- Before any registry, docs, UI, or test change, inspect the corresponding dirty file and preserve unrelated hunks.
+- Keep Taskstream visibility routed through existing MCP or `cento agent-work`; do not add direct database writes.
+
+#### Tags
+
+`cento-native`, `self-improvement`, `patch-swarm`, `parallel-delivery`, `repo-recon`, `path-ownership`, `dirty-work`, `factory`, `workset`, `build`, `agent-work`, `validation`
+
+### 2026-05-12T19:30:08Z - Pro Loop Fresh-Context Skill
+
+- `record_id`: 2026-05-12-pro-loop-fresh-context-skill
+- `actor`: codex
+- `scope`: codex-skills, fresh-context-prompts, cento-native, operator-workflow, validation-evidence
+- `status`: implemented
+- `artifacts_changed`: `/home/alice/.codex/skills/pro-loop/SKILL.md`, `docs/ai-self-improvement-log.md`, `workspace/runs/pro-loop/20260512T192952Z/validation.log`
+- `evidence`: `cento gather-context --no-remote`, `cento tools`, `cento docs`, `git status --short --branch`, `workspace/runs/context/cento-ai-context-brief.md`, `workspace/runs/pro-loop/20260512T192952Z/validation.log`
+- `checked_prior_records`: `2026-05-12-patch-swarm-repo-recon-baseline`, `2026-05-12-patch-swarm-product-architecture-contract`
+- `corrects_record_id`: none
+
+#### Trigger
+
+The operator provided a fresh-context implementation plan to create a local Codex `pro-loop` skill for future Cento implementation prompts that must start from context gathering, explicit prompt intake, discovery-before-edits, validation evidence, dirty-work preservation, and append-only logging.
+
+#### What Changed
+
+- Added `/home/alice/.codex/skills/pro-loop/SKILL.md` with the requested `name: pro-loop` frontmatter and trigger description.
+- Defined the required context pass: read the self-improvement log, run `cento gather-context --no-remote`, `cento tools`, `cento docs`, capture `git status --short --branch`, and read `workspace/runs/context/cento-ai-context-brief.md` when present.
+- Required an explicit prompt file path and forbade defaulting to the newest Telegram download.
+- Captured discovery-before-edits, Cento-native routing, dirty-work preservation, Taskstream/Redmine database safety, secret handling, workspace evidence, validation, and closeout rules.
+- Kept v1 to `SKILL.md` only; no `agents/openai.yaml` or repo docs were added.
+
+#### What Worked
+
+- The skill file was created outside the repo-local dirty surfaces and validation confirmed the required metadata and workflow phrases.
+- `cento gather-context --no-remote`, `cento tools`, and `cento docs` were available locally and supported the expected context pass.
+- Validation evidence was written under `workspace/runs/pro-loop/20260512T192952Z/`.
+
+#### What Did Not Work
+
+- The new local skill may not appear in the active skill list until a future Codex session reloads local skills.
+- No external implementation prompt was executed because this run did not include an explicit prompt file path from the operator.
+
+#### Next Steps
+
+- Invoke `pro-loop` with an explicit prompt path, such as a specific file under `/home/alice/Downloads/Telegram Desktop/`, when the next fresh-context Cento implementation prompt is ready.
+- For Patch Swarm Call 3, inspect the dirty `data/tools.json`, `docs/patch-swarm.md`, `templates/agent-work-app/*`, and `tests/test_patch_swarm.py` targets before editing and preserve unrelated hunks.
+- Continue appending self-improvement records for Cento workflow changes with exact evidence paths and validation results.
+
+#### Tags
+
+`cento-native`, `self-improvement`, `codex-skill`, `pro-loop`, `fresh-context`, `operator-workflow`, `dirty-work`, `validation`
+
+### 2026-05-12T20:42:04Z - Patch Swarm Call 4 Artifact Schema
+
+- `record_id`: 2026-05-12-patch-swarm-call-4-artifact-schema
+- `actor`: codex
+- `scope`: patch-swarm, parallel-delivery, artifact-schema, run-state-model, fixture-validation, docs, tests
+- `status`: implemented
+- `artifacts_changed`: `scripts/parallel_delivery_artifacts.py`, `tests/test_parallel_delivery_artifact_schema.py`, `docs/parallel-delivery/patch-swarm-artifacts.md`, `data/tools.json`, `workspace/runs/parallel-delivery/schema-fixture/`, `workspace/runs/parallel-delivery/call-4-artifact-schema/20260512T202925Z/`, `docs/ai-self-improvement-log.md`
+- `evidence`: `workspace/runs/parallel-delivery/call-4-artifact-schema/20260512T202925Z/raw/`, `workspace/runs/parallel-delivery/call-4-artifact-schema/20260512T202925Z/resolved-schema-implementation.md`, `workspace/runs/parallel-delivery/call-4-artifact-schema/20260512T202925Z/resolved-schema-tool.txt`, `workspace/runs/parallel-delivery/call-4-artifact-schema/20260512T202925Z/json/schema-summary.json`, `workspace/runs/parallel-delivery/call-4-artifact-schema/20260512T202925Z/json/schema-fixture-validation.json`, `workspace/runs/parallel-delivery/call-4-artifact-schema/20260512T202925Z/schema-check-report.md`, `workspace/runs/parallel-delivery/call-4-artifact-schema/20260512T202925Z/summary.md`, `workspace/runs/parallel-delivery/call-4-artifact-schema/20260512T202925Z/validation/validation.log`
+- `checked_prior_records`: `2026-05-12-patch-swarm-product-architecture-contract`, `2026-05-12-patch-swarm-repo-recon-baseline`, `2026-05-12-pro-loop-fresh-context-skill`
+- `corrects_record_id`: none
+
+#### Trigger
+
+The operator provided Patch Swarm Call 4 and asked to implement the repo-native artifact schema and run state model without live planning, worker dispatch, patch application, or full integration runtime.
+
+#### What Changed
+
+- Added `scripts/parallel_delivery_artifacts.py` as the adjacent standard-library schema helper for the existing `parallel-delivery` / Patch Swarm surface.
+- Defined schema versioning, artifact type constants, run states, task states, lease states, run and task transition validation, compatibility rules, deterministic JSON writing, Markdown metadata validation, unsafe path rejection, evidence pointer checks, and run-directory validation.
+- Added validators for `run.json`, `request.md`, `context-pack.json`, `split-plan.json`, `task-graph.json`, `path-leases.json`, `worker-prompts/`, `worker-ledger.jsonl`, `patch-bundles/`, `integration-plan.json`, `integration-receipt.json`, `validation.json`, `validation-report.md`, `release-candidate.json`, `release-notes.md`, and `start-here.md`.
+- Added CLI actions: `write-fixture`, `validate-run`, and `print-schema-summary`.
+- Generated deterministic fixture artifacts under `workspace/runs/parallel-delivery/schema-fixture/`.
+- Added `tests/test_parallel_delivery_artifact_schema.py` with valid and invalid artifact coverage.
+- Added `docs/parallel-delivery/patch-swarm-artifacts.md` and a minimal `data/tools.json` note so `cento docs parallel-delivery` points to the schema doc/helper without adding a new registered command.
+
+#### What Worked
+
+- Discovery confirmed `parallel-delivery` is registered to `./scripts/parallel_delivery.py` and no dedicated artifact/schema helper existed, so the implementation remained adjacent and additive.
+- `python3 scripts/parallel_delivery_artifacts.py print-schema-summary --json` produced parseable schema summary JSON with required artifact, run-state, and task-state entries.
+- `write-fixture` generated the full required fixture bundle, including worker prompt and patch bundle directory artifacts.
+- `validate-run --json` returned `ok: true` for the fixture with no errors.
+- Two fixture generations with the same fixed timestamp had no diff.
+- `pytest -q tests/test_parallel_delivery_artifact_schema.py` passed with 15 tests.
+- Existing Patch Swarm / parallel-delivery test selection passed with 30 tests.
+- `cento tools`, `cento docs parallel-delivery`, registry JSON validation, and `make check` passed.
+
+#### What Did Not Work
+
+- The discovery command hit zsh unmatched-glob behavior when no Call 3 directory existed; the run continued and recorded `latest_call3=`. No Call 3 evidence was inferred.
+- The first existing-test invocation passed a newline-separated test list as one zsh scalar argument. The same discovered files were rerun with explicit line splitting and passed.
+
+#### Next Steps
+
+- Use these schemas in the next runtime slice when request intake / ProReq packet generation starts writing durable run directories.
+- Keep live planning, worker dispatch, patch application, and full integration runtime as separate gated calls.
+- Preserve the rule that Patch Swarm runtime behavior routes through existing `parallel-delivery`, Factory, Workset, Build, and Safe Integrator surfaces instead of creating a duplicate workflow.
+
+#### Tags
+
+`cento-native`, `self-improvement`, `patch-swarm`, `parallel-delivery`, `artifact-schema`, `run-state-model`, `fixture`, `validation`, `docs`, `tests`
+
+### 2026-05-12T21:05:29Z - Patch Swarm Call 5 Request Splitter Planner
+
+- `record_id`: 2026-05-12-patch-swarm-call-5-request-splitter-planner
+- `actor`: codex
+- `scope`: patch-swarm, parallel-delivery, request-splitter, planner, task-graph, proreq, manual-import, docs, tests
+- `status`: implemented
+- `artifacts_changed`: `scripts/parallel_delivery_planner.py`, `scripts/parallel_delivery.py`, `tests/test_parallel_delivery_planner.py`, `docs/parallel-delivery/patch-swarm-planner.md`, `docs/patch-swarm.md`, `data/tools.json`, `workspace/runs/parallel-delivery/planner-fixture/`, `workspace/runs/parallel-delivery/call-5-request-splitter/20260512T204920Z/`, `docs/ai-self-improvement-log.md`
+- `evidence`: `workspace/runs/parallel-delivery/call-5-request-splitter/20260512T204920Z/raw/`, `workspace/runs/parallel-delivery/call-5-request-splitter/20260512T204920Z/resolved-planner-implementation.md`, `workspace/runs/parallel-delivery/call-5-request-splitter/20260512T204920Z/resolved-planner-tool.txt`, `workspace/runs/parallel-delivery/call-5-request-splitter/20260512T204920Z/planner-summary.json`, `workspace/runs/parallel-delivery/call-5-request-splitter/20260512T204920Z/planner-check-report.md`, `workspace/runs/parallel-delivery/call-5-request-splitter/20260512T204920Z/summary.md`, `workspace/runs/parallel-delivery/call-5-request-splitter/20260512T204920Z/validation/validation.log`
+- `checked_prior_records`: `2026-05-12-patch-swarm-product-architecture-contract`, `2026-05-12-patch-swarm-repo-recon-baseline`, `2026-05-12-pro-loop-fresh-context-skill`, `2026-05-12-patch-swarm-call-4-artifact-schema`
+- `corrects_record_id`: none
+
+#### Trigger
+
+The operator provided Patch Swarm Call 5 and asked to implement the request splitter and bounded 100-task planner using `/home/alice/Downloads/Telegram Desktop/message (3).txt` as the next prompt.
+
+#### What Changed
+
+- Added `scripts/parallel_delivery_planner.py` as the adjacent standard-library planner helper for the existing `parallel-delivery` / Patch Swarm surface.
+- Added planner modes: `fixture`, `no-model`, `proreq`, and `manual-import`.
+- Added validation for candidate target bounds, max parallel bounds, task IDs, lanes, risk tiers, worker profiles, unsafe paths, non-overlapping owned paths, dependencies, acyclic task graphs, and parallel group width.
+- Added `cento parallel-delivery patch-swarm split` to the existing registered CLI surface without adding an unrelated root command.
+- Updated `cento parallel-delivery patch-swarm e2e --fixture` so the requested 100-candidate e2e path also writes `workspace/runs/parallel-delivery/planner-fixture/`.
+- Added `docs/parallel-delivery/patch-swarm-planner.md` and linked it from the Patch Swarm product spec and `data/tools.json`.
+- Added `tests/test_parallel_delivery_planner.py`.
+
+#### What Worked
+
+- Discovery confirmed `parallel-delivery` is registered to `./scripts/parallel_delivery.py`, `patch-swarm split` did not exist yet, and Call 4's artifact helper was available for stable JSON, task states, and safe path validation.
+- The requested e2e command produced parseable JSON and generated a 100-task planner fixture with `split-plan.json`, `task-graph.json`, `task-contracts/task-0001.md`, `task-contracts/task-0100.md`, ProReq prompt artifacts, `planner-report.md`, and `start-here.md`.
+- Fixture mode generated exactly 5, 20, and 100 tasks in validation.
+- No-model mode planned a small help-text request with `candidate_target=100` and `candidate_count=3`, proving the cap is not blindly filled.
+- ProReq mode emitted planning manifest and prompt artifacts with `live_pro_called=false`.
+- Manual import accepted a valid generated plan and rejected overlapping owned paths with a nonzero exit code.
+- `pytest -q tests/test_parallel_delivery_planner.py` passed with 14 tests.
+- Existing Patch Swarm / parallel-delivery tests passed with 44 tests.
+- `python3 -m json.tool data/tools.json`, `python3 -m json.tool data/cento-cli.json`, `cento tools`, `cento docs parallel-delivery`, and `make check` passed.
+
+#### What Did Not Work
+
+- The first evidence-summary write command had a shell quoting error around a multi-line `jq` filter. It was rerun using a quoted bash heredoc and succeeded.
+- The planner intentionally does not perform live ChatGPT Pro calls, worker dispatch, patch application, or Taskstream mutation. Those remain later explicit calls.
+
+#### Next Steps
+
+- Use the planner output as the input contract for later prompt emission, path lease materialization, worker bundle collection, and integration-plan calls.
+- Keep `candidate_target` documented as a cap outside fixture mode.
+- Keep live Pro and worker dispatch behind separate explicit gates with budget, secret, and evidence controls.
+
+#### Tags
+
+`cento-native`, `self-improvement`, `patch-swarm`, `parallel-delivery`, `request-splitter`, `planner`, `task-graph`, `proreq`, `manual-import`, `validation`, `docs`, `tests`
+
+### 2026-05-12T23:47:38Z - Patch Swarm Call 8 Codex Worker Packets
+
+- `record_id`: 2026-05-12-patch-swarm-call-8-codex-worker-packets
+- `actor`: codex
+- `scope`: patch-swarm, parallel-delivery, codex-worker-packets, path-leases, workset, build, agent-work, docs, tests
+- `status`: implemented
+- `artifacts_changed`: `scripts/parallel_delivery_codex_packets.py`, `scripts/parallel_delivery.py`, `tests/test_parallel_delivery_codex_worker_packets.py`, `docs/parallel-delivery/patch-swarm-codex-worker-packets.md`, `docs/patch-swarm.md`, `data/tools.json`, `workspace/runs/parallel-delivery/codex-packets-fixture/`, `workspace/runs/parallel-delivery/call-8-codex-worker-packets/20260512T234738Z/`, `docs/ai-self-improvement-log.md`
+- `evidence`: `workspace/runs/parallel-delivery/call-8-codex-worker-packets/20260512T234738Z/raw/`, `workspace/runs/parallel-delivery/call-8-codex-worker-packets/20260512T234738Z/resolved-codex-packet-implementation.md`, `workspace/runs/parallel-delivery/call-8-codex-worker-packets/20260512T234738Z/resolved-codex-packet-tool.txt`, `workspace/runs/parallel-delivery/call-8-codex-worker-packets/20260512T234738Z/build-workset-packet-compatibility.md`, `workspace/runs/parallel-delivery/call-8-codex-worker-packets/20260512T234738Z/json/write-codex-packets-fixture.json`, `workspace/runs/parallel-delivery/call-8-codex-worker-packets/20260512T234738Z/json/validate-codex-packets-fixture.json`, `workspace/runs/parallel-delivery/call-8-codex-worker-packets/20260512T234738Z/validation/validation.log`
+- `checked_prior_records`: `2026-05-12-patch-swarm-repo-recon-baseline`, `2026-05-12-patch-swarm-call-4-artifact-schema`, `2026-05-12-patch-swarm-call-5-request-splitter-planner`
+- `corrects_record_id`: none
+
+#### Trigger
+
+The operator provided Patch Swarm Call 8 and asked to implement local-first Codex worker packet generation from split-plan, task-graph, and path-leases artifacts without live dispatch.
+
+#### What Changed
+
+- Added `scripts/parallel_delivery_codex_packets.py` with local policy output, fixture writing, packet generation, bundle validation, hash checks, path non-overlap checks, and secret-like value guards.
+- Added `cento parallel-delivery patch-swarm worker-packets` to the existing `parallel-delivery` / `patch-swarm` CLI surface instead of adding a duplicate root workflow.
+- Generated a deterministic 10-packet fixture covering builder, validator, docs-evidence, coordinator, and integrator lanes.
+- Added `docs/parallel-delivery/patch-swarm-codex-worker-packets.md` and linked the command from the canonical Patch Swarm docs and registry metadata.
+- Added focused tests for fixture shape, required packet sections, lane coverage, non-overlapping owned paths, shared read-only paths, packet hashes, secret-like value checks, validation output, and CLI JSON.
+
+#### What Worked
+
+- Discovery confirmed Build, Workset, Agent Work, lease, planner, and ChatGPT Pro prompt conventions. The Codex packet generator reuses Build patch bundle/handoff wording, Workset exclusive write path rules, and Agent Work lane/handoff conventions.
+- `python3 scripts/parallel_delivery_codex_packets.py print-policy --json`, `write-fixture`, and `validate-bundle` produced parseable JSON and passed jq checks.
+- The fixture generated `codex-packet-bundle.json`, `codex-packet-index.json`, `codex-packet-index.md`, 10 packet Markdown files, patch-bundle/handoff directories, validation artifacts, and `start-here.md`.
+- `pytest -q tests/test_parallel_delivery_codex_worker_packets.py` passed with 8 tests.
+- Existing related tests passed with 83 tests.
+- `make check` passed.
+
+#### What Did Not Work
+
+- The initial discovery output was very large and some Call 6/7 files were only visible after later inspection; the implementation adjusted by preserving those existing lease and prompt helpers and adding a separate Codex worker packet helper.
+
+#### Next Steps
+
+- Later Patch Swarm slices can collect returned worker patch bundles and feed them through deterministic validation and Safe Integrator paths.
+- Keep this generator local-only; any live worker launch should remain a separate explicit dispatch slice with budget, lease, and evidence gates.
+
+#### Tags
+
+`cento-native`, `self-improvement`, `patch-swarm`, `parallel-delivery`, `codex-worker-packets`, `path-leases`, `workset`, `build`, `agent-work`, `validation`, `docs`, `tests`
+
+### 2026-05-12T23:39:39Z - Patch Swarm Call 6 Path Leasing
+
+- `record_id`: 2026-05-12-patch-swarm-call-6-path-leasing
+- `actor`: codex
+- `scope`: patch-swarm, parallel-delivery, path-leasing, workset-compatibility, operation-validation, docs, tests
+- `status`: implemented
+- `artifacts_changed`: `scripts/parallel_delivery_leases.py`, `scripts/parallel_delivery.py`, `tests/test_parallel_delivery_path_leases.py`, `docs/parallel-delivery/patch-swarm-leasing.md`, `docs/patch-swarm.md`, `data/tools.json`, `workspace/runs/parallel-delivery/lease-fixture/`, `workspace/runs/parallel-delivery/call-6-path-leasing/20260512T233939Z/`, `docs/ai-self-improvement-log.md`
+- `evidence`: `workspace/runs/parallel-delivery/call-6-path-leasing/20260512T233939Z/raw/`, `workspace/runs/parallel-delivery/call-6-path-leasing/20260512T233939Z/resolved-lease-implementation.md`, `workspace/runs/parallel-delivery/call-6-path-leasing/20260512T233939Z/resolved-lease-tool.txt`, `workspace/runs/parallel-delivery/call-6-path-leasing/20260512T233939Z/workset-compatibility.md`, `workspace/runs/parallel-delivery/call-6-path-leasing/20260512T233939Z/lease-summary.json`, `workspace/runs/parallel-delivery/call-6-path-leasing/20260512T233939Z/lease-check-report.md`, `workspace/runs/parallel-delivery/call-6-path-leasing/20260512T233939Z/summary.md`, `workspace/runs/parallel-delivery/call-6-path-leasing/20260512T233939Z/validation/validation.log`
+- `checked_prior_records`: `2026-05-12-patch-swarm-call-4-artifact-schema`, `2026-05-12-patch-swarm-call-5-request-splitter-planner`
+- `corrects_record_id`: none
+
+#### Trigger
+
+The operator provided Patch Swarm Call 6 and asked to implement exclusive path leasing plus Workset-compatible validation for Patch Swarm.
+
+#### What Changed
+
+- Added `scripts/parallel_delivery_leases.py` for deterministic lease IDs, path normalization, protected/guarded path checks, dirty target warnings, dependency gates, safe parallel groups, Workset compatibility artifacts, and planned operation validation.
+- Added `cento parallel-delivery patch-swarm leases` and `cento parallel-delivery patch-swarm validate-leases` under the existing Patch Swarm CLI surface.
+- Generated the deterministic lease fixture at `workspace/runs/parallel-delivery/lease-fixture/`.
+- Added conflict examples for exact overlap, parent/child overlap, protected paths, unsafe delete, unowned rename, binary patch, broad cleanup, and lockfile outside contract.
+- Added `docs/parallel-delivery/patch-swarm-leasing.md` and linked it from `docs/patch-swarm.md` and `data/tools.json`.
+- Added `tests/test_parallel_delivery_path_leases.py`.
+
+#### What Worked
+
+- Discovery confirmed Workset v1 owns exclusive `write_paths`, dependency checks, and overlap validation, while Build owns patch safety concepts such as protected paths, lockfiles, binary patches, deletes, renames, and dirty-owned checks.
+- `path-leases.json` was generated with 5 deterministic leases, 6 dependency/manual/dirty gates, 4 parallel groups, and one dirty target warning for `data/tools.json`.
+- `validate --run-dir workspace/runs/parallel-delivery/lease-fixture --json` returned `ok: true` with no errors.
+- `check-operations` returned `ok: true` for the valid planned operations fixture.
+- All conflict examples exited nonzero under `validate --path-leases`.
+- The Workset-compatible manifest subset passed the supported positional command `cento workset check WORKSET --allow-creates --json`.
+- `pytest -q tests/test_parallel_delivery_path_leases.py` passed with 20 tests.
+- Existing related Workset / Build / Patch Swarm / parallel-delivery tests passed with 75 tests.
+- `python3 -m json.tool data/tools.json`, `python3 -m json.tool data/cento-cli.json`, `cento tools`, `cento docs parallel-delivery`, `cento docs workset`, `cento docs build`, and `make check` passed.
+
+#### What Did Not Work
+
+- The initial discovery shell exited early under strict shell settings after the context pass. Missing discovery commands were rerun before source edits and evidence was captured in the same Call 6 directory.
+- The common Workset compatibility validation shape `cento workset check --manifest ...` is not supported by the current Workset CLI and exited with code 2. The supported positional Workset check was run and passed; the gap is recorded in `workset-compatibility.md`.
+
+#### Next Steps
+
+- Require a successful lease validation before prompt emission writes worker prompt bundles.
+- Validate future patch bundle metadata against `path-leases.json` before integration planning.
+- Keep actual patch application behind Build / Factory / Safe Integrator gates.
+
+#### Tags
+
+`cento-native`, `self-improvement`, `patch-swarm`, `parallel-delivery`, `path-leasing`, `workset`, `build`, `operation-validation`, `fixture`, `validation`, `docs`, `tests`
+
+### 2026-05-12T23:58:14Z - Patch Swarm Call 7 ProReq Prompt Bundles
+
+- `record_id`: 2026-05-12-patch-swarm-call-7-proreq-prompt-bundles
+- `actor`: codex
+- `scope`: patch-swarm, parallel-delivery, proreq, chatgpt-pro-prompts, temp-bridge, docs, tests
+- `status`: implemented
+- `artifacts_changed`: `scripts/parallel_delivery_prompts.py`, `scripts/parallel_delivery.py`, `tests/test_parallel_delivery_proreq_prompts.py`, `docs/parallel-delivery/patch-swarm-proreq-prompts.md`, `docs/patch-swarm.md`, `data/tools.json`, `workspace/runs/parallel-delivery/proreq-fixture/`, `workspace/runs/temp/chatgpt-pro/proreq-fixture/`, `workspace/runs/parallel-delivery/call-7-proreq-prompt-generator/20260512T234222Z/`, `docs/ai-self-improvement-log.md`
+- `evidence`: `workspace/runs/parallel-delivery/call-7-proreq-prompt-generator/20260512T234222Z/raw/`, `workspace/runs/parallel-delivery/call-7-proreq-prompt-generator/20260512T234222Z/resolved-prompt-implementation.md`, `workspace/runs/parallel-delivery/call-7-proreq-prompt-generator/20260512T234222Z/resolved-prompt-tool.txt`, `workspace/runs/parallel-delivery/call-7-proreq-prompt-generator/20260512T234222Z/proreq-temp-compatibility.md`, `workspace/runs/parallel-delivery/call-7-proreq-prompt-generator/20260512T234222Z/prompt-summary.json`, `workspace/runs/parallel-delivery/call-7-proreq-prompt-generator/20260512T234222Z/prompt-check-report.md`, `workspace/runs/parallel-delivery/call-7-proreq-prompt-generator/20260512T234222Z/summary.md`, `workspace/runs/parallel-delivery/call-7-proreq-prompt-generator/20260512T234222Z/validation/validation.log`
+- `checked_prior_records`: `2026-05-12-patch-swarm-call-5-request-splitter-planner`, `2026-05-12-patch-swarm-call-6-path-leasing`
+- `corrects_record_id`: none
+
+#### Trigger
+
+The operator provided Patch Swarm Call 7 and asked for a local-first ProReq / ChatGPT Pro prompt bundle generator that turns run artifacts into one master prompt, lane and task-cluster prompts, a prompt index, temp bridge artifacts, validation, docs, tests, and durable evidence.
+
+#### What Changed
+
+- Added `scripts/parallel_delivery_prompts.py` with local prompt bundle generation, deterministic fixture writing, prompt validation, JSON output, lane filtering, secret-like text redaction, and temp mirror support.
+- Added `cento parallel-delivery patch-swarm prompts` under the existing Patch Swarm CLI surface without adding a new root workflow.
+- Generated the 20-prompt fixture at `workspace/runs/parallel-delivery/proreq-fixture/` and the local temp mirror at `workspace/runs/temp/chatgpt-pro/proreq-fixture/`.
+- Added `docs/parallel-delivery/patch-swarm-proreq-prompts.md` and linked it from the Patch Swarm product spec and `data/tools.json`.
+- Added `tests/test_parallel_delivery_proreq_prompts.py`.
+
+#### What Worked
+
+- Discovery confirmed `proreq-light`, `parallel-delivery`, `patch-swarm`, and `cento temp` surfaces before editing.
+- `write-fixture --count 20` generated exactly 20 prompts with one master prompt first and `prompt-0020-evidence.md` last.
+- `write-fixture --count 15` generated exactly 15 prompts.
+- `write-fixture --lane builder --count 15` generated a builder-scoped bundle with a master overview prompt.
+- Prompt validation passed with matching prompt hashes, required prompt sections, the 11-part Codex output schema, evidence requirements, validation plans, and safety rules.
+- Secret-like request text was redacted in tests and no live AI/API/worker calls are required by default.
+- The CLI route `cento parallel-delivery patch-swarm prompts --json` emitted parseable JSON.
+- `pytest -q tests/test_parallel_delivery_proreq_prompts.py` passed with 11 tests.
+- Existing related Patch Swarm / parallel-delivery / ProReq / prompt tests passed with 83 tests.
+- `python3 -m json.tool data/tools.json`, `python3 -m json.tool data/cento-cli.json`, `cento tools`, `cento docs parallel-delivery`, and `make check` passed.
+
+#### What Did Not Work
+
+- `cento temp run --file PATH` and positional prompt-file forms are not supported by the current temp CLI. The generator writes the default temp command to point at the generated current prompt, and `cento temp run --dry-run --no-copy` returned 0.
+- An initial temp validation wrapper used zsh while reading Bash `PIPESTATUS`; it failed before recording return codes and was rerun under Bash successfully.
+
+#### Next Steps
+
+- Use `cento parallel-delivery patch-swarm prompts --run-dir RUN --count 15|20 --lane all --copy-to-temp --json` after split planning and path leasing are available for a run.
+- Keep ChatGPT Pro execution as an operator copy/paste workflow unless a later explicit bridge is designed and validated.
+
+#### Tags
+
+`cento-native`, `self-improvement`, `patch-swarm`, `parallel-delivery`, `proreq`, `chatgpt-pro`, `prompt-bundle`, `temp-bridge`, `fixture`, `validation`, `docs`, `tests`
+
+### 2026-05-13T00:17:27Z - Patch Swarm Call 12 Deterministic Validation E2E
+
+- `record_id`: 2026-05-13-patch-swarm-call-12-validation-e2e
+- `actor`: codex
+- `scope`: patch-swarm, parallel-delivery, deterministic-validation, fixture-e2e, simulated-workers, dry-run-integration, release-candidate-evidence, docs, tests
+- `status`: implemented
+- `artifacts_changed`: `scripts/parallel_delivery_validation_e2e.py`, `scripts/parallel_delivery.py`, `tests/test_parallel_delivery_validation_e2e.py`, `docs/parallel-delivery/patch-swarm-validation-e2e.md`, `docs/patch-swarm.md`, `data/tools.json`, `workspace/runs/parallel-delivery/e2e-fixture/fixture-5-workers/`, `workspace/runs/parallel-delivery/e2e-fixture/fixture-100-agents/`, `workspace/runs/parallel-delivery/call-12-validation-e2e/20260513T000316Z/`, `docs/ai-self-improvement-log.md`
+- `evidence`: `workspace/runs/parallel-delivery/call-12-validation-e2e/20260513T000316Z/raw/`, `workspace/runs/parallel-delivery/call-12-validation-e2e/20260513T000316Z/resolved-validation-e2e-implementation.md`, `workspace/runs/parallel-delivery/call-12-validation-e2e/20260513T000316Z/resolved-validation-e2e-tool.txt`, `workspace/runs/parallel-delivery/call-12-validation-e2e/20260513T000316Z/validation-e2e-summary.json`, `workspace/runs/parallel-delivery/call-12-validation-e2e/20260513T000316Z/validation-e2e-check-report.md`, `workspace/runs/parallel-delivery/call-12-validation-e2e/20260513T000316Z/summary.md`, `workspace/runs/parallel-delivery/call-12-validation-e2e/20260513T000316Z/validation/validation.log`
+- `checked_prior_records`: `2026-05-12-patch-swarm-call-5-request-splitter-planner`, `2026-05-12-patch-swarm-call-6-path-leasing`, `2026-05-12-patch-swarm-call-7-proreq-prompt-bundles`
+- `corrects_record_id`: none
+
+#### Trigger
+
+The operator provided Patch Swarm Call 12 and asked to strengthen deterministic validation plus the product-quality 100-agent fixture E2E without live Pro, OpenAI API, Codex dispatch, MCP mutation, Taskstream/Redmine direct writes, or real patch application.
+
+#### What Changed
+
+- Added `scripts/parallel_delivery_validation_e2e.py` for deterministic fixture E2E runs, validation policy, existing-run validation, simulated worker batches, patch bundle safety validation, malformed artifact rejection, dry-run integration receipts, release-candidate evidence, and stable JSON output.
+- Updated `cento parallel-delivery patch-swarm e2e` to delegate fixture dry-run CLI runs to the new validation E2E engine while preserving the older direct programmatic e2e path.
+- Added required E2E CLI flags: `--run-root`, `--dry-run`, `--fixed-timestamp`, and `--include-unsafe-fixture`.
+- Added `docs/parallel-delivery/patch-swarm-validation-e2e.md` and linked it from Patch Swarm docs and the tool registry.
+- Added `tests/test_parallel_delivery_validation_e2e.py`.
+
+#### What Worked
+
+- Discovery probed the existing e2e command before edits; it exited 1 and produced a legacy blocked run without the requested validation fixture summary.
+- The exact acceptance command `cento parallel-delivery patch-swarm e2e --candidate-target 100 --max-parallel-agents 5 --fixture --json` returned `ok: true`.
+- The deterministic 5-task fixture passed and wrote validation, integration, release-candidate, command log, and start-here artifacts.
+- The deterministic 100-task fixture passed with 100 tasks, 100 leases, 100 worker packets, 20 simulated worker batches, 100 accepted patch bundles, and one rejected unsafe bundle.
+- Unsafe out-of-lease and malformed missing-run-id artifacts were rejected and recorded as passing negative checks.
+- The integration plan excluded rejected bundles, and the dry-run integration receipt included accepted bundles only.
+- `pytest -q tests/test_parallel_delivery_validation_e2e.py` passed with 8 tests.
+- Existing related Patch Swarm / parallel-delivery / validation / integration tests passed with 123 tests.
+- `python3 -m json.tool data/tools.json`, `python3 -m json.tool data/cento-cli.json`, `cento tools`, `cento docs parallel-delivery`, `cento docs build`, `cento docs workset`, and `make check` passed.
+
+#### What Did Not Work
+
+- The pre-edit e2e probe returned `status: blocked` and `validation: failed`; this was the gap this call addressed.
+- The fixture release-candidate evidence is intentionally local and dry-run only. It does not apply patches or claim a production release.
+
+#### Next Steps
+
+- Future live/apply paths can consume the deterministic validation summary only after explicit Factory/Safe Integrator gates.
+- Keep fixture workers as artifact writers unless a later call explicitly designs a live dispatch bridge with budget and safety gates.
+
+#### Tags
+
+`cento-native`, `self-improvement`, `patch-swarm`, `parallel-delivery`, `validation-e2e`, `100-agents`, `simulated-workers`, `dry-run-integration`, `release-candidate`, `fixture`, `docs`, `tests`
+
+### 2026-05-13T00:06:00Z - Patch Swarm Call 9 Patch Bundle Collection
+
+- `record_id`: 2026-05-13-patch-swarm-call-9-patch-bundle-collection
+- `actor`: codex
+- `scope`: patch-swarm, parallel-delivery, patch-bundles, build-safety, leases, docs, tests
+- `status`: implemented
+- `artifacts_changed`: `scripts/parallel_delivery_patch_bundles.py`, `scripts/parallel_delivery/patch_bundle_fixture.py`, `scripts/parallel_delivery.py`, `tests/test_patch_bundle_validation.py`, `tests/test_patch_bundle_collector.py`, `docs/parallel-delivery/patch-bundle-validation.md`, `docs/patch-swarm.md`, `data/tools.json`, `README.md`, `Makefile`, `workspace/runs/parallel-delivery/patch-bundle-fixture/`, `workspace/runs/parallel-delivery/call-9-patch-bundles/20260512T235900Z/`, `docs/ai-self-improvement-log.md`
+- `evidence`: `workspace/runs/parallel-delivery/patch-bundle-fixture/patch-bundle-report.json`, `workspace/runs/parallel-delivery/patch-bundle-fixture/patch-bundle-report.md`, `workspace/runs/parallel-delivery/patch-bundle-fixture/receipts/`, `workspace/runs/parallel-delivery/patch-bundle-fixture/collect.stdout`, `workspace/runs/parallel-delivery/patch-bundle-fixture/validation-summary.txt`, `workspace/runs/parallel-delivery/call-9-patch-bundles/20260512T235900Z/summary.md`, `workspace/runs/parallel-delivery/call-9-patch-bundles/20260512T235900Z/validation/validation.log`
+- `checked_prior_records`: `2026-05-12-patch-swarm-call-6-path-leasing`, `2026-05-12-patch-swarm-call-7-proreq-prompt-bundles`
+- `corrects_record_id`: none
+
+#### Trigger
+
+The operator provided Patch Swarm Call 9 and asked for a local-first patch bundle collector and safety validator that accepts patch bundles or evidence-only results, rejects unsafe bundles before integration, and writes deterministic receipts and aggregate evidence.
+
+#### What Changed
+
+- Added `scripts/parallel_delivery_patch_bundles.py` with `cento.patch_bundle.v1`, lease manifest, receipt, and collection report support.
+- Added `cento parallel-delivery patch-bundles validate` and `cento parallel-delivery patch-bundles collect` under the existing `parallel-delivery` surface.
+- Reused `cento_build` path matching and lockfile helpers for existing Build safety policy where practical.
+- Added deterministic fixture input generation through `scripts/parallel_delivery/patch_bundle_fixture.py`.
+- Generated the required fixture under `workspace/runs/parallel-delivery/patch-bundle-fixture/`.
+- Added docs, README entries, Makefile targets, registry metadata, and targeted tests.
+
+#### What Worked
+
+- Discovery found the root CLI facade at `scripts/cento.sh`, `parallel-delivery` at `scripts/parallel_delivery.py`, and Build patch safety helpers in `scripts/cento_build.py`.
+- The fixture generated 14 bundle manifests and collector receipts: 2 accepted, 12 rejected, and 1 accepted evidence-only result.
+- Required rejection codes were present for outside lease, protected path, `.env.mcp` / local secret path, traversal, absolute path, symlink, submodule, binary patch, undeclared delete, unowned rename, broad lockfile change, and fake secret-looking added content.
+- `cento parallel-delivery patch-bundles collect --json` and `validate --json` emitted parseable JSON.
+- `pytest -q tests/test_patch_bundle_validation.py tests/test_patch_bundle_collector.py` passed with 13 tests.
+- Related Patch Swarm tests passed with 68 tests.
+- Full `pytest -q tests` passed with 246 tests.
+- `python3 -m json.tool data/tools.json`, `python3 -m json.tool data/cento-cli.json`, `cento tools`, `cento docs parallel-delivery`, `make test-patch-bundles`, and `make patch-bundle-fixture` passed.
+
+#### What Did Not Work
+
+- The prompt's fallback command form used `python -m cento`, but this host has `python3` and `scripts/cento.sh`, not a `python` binary or package entrypoint. Validation used the discovered repo-native `./scripts/cento.sh` route and `python3`.
+
+#### Next Steps
+
+- Feed accepted receipts into a later integration planning slice without applying patches in the collector.
+- Reuse these receipts as the mechanical gate before Factory / Safe Integrator promotion.
+
+#### Tags
+
+`cento-native`, `self-improvement`, `patch-swarm`, `parallel-delivery`, `patch-bundles`, `build-safety`, `leases`, `fixture`, `validation`, `docs`, `tests`
+
+### 2026-05-13T00:14:09Z - Parallel Delivery Call 11 Safe Apply And Release Candidate
+
+- `record_id`: 2026-05-13-parallel-delivery-call-11-safe-apply-release-candidate
+- `actor`: codex
+- `scope`: patch-swarm, parallel-delivery, safe-apply, integration-receipts, rollback-metadata, release-candidate, docs, tests
+- `status`: implemented
+- `artifacts_changed`: `scripts/parallel_delivery_release_candidate.py`, `scripts/parallel_delivery/release_candidate_fixture.py`, `scripts/parallel_delivery.py`, `tests/test_parallel_delivery_safe_apply.py`, `tests/test_parallel_delivery_release_candidate.py`, `docs/parallel-delivery/release-candidate-safe-apply.md`, `docs/patch-swarm.md`, `data/tools.json`, `Makefile`, `workspace/runs/parallel-delivery/release-candidate-fixture/`, `docs/ai-self-improvement-log.md`
+- `evidence`: `workspace/runs/parallel-delivery/release-candidate-fixture/dry-run/apply-report.json`, `workspace/runs/parallel-delivery/release-candidate-fixture/apply/apply-report.json`, `workspace/runs/parallel-delivery/release-candidate-fixture/apply/release-candidate.json`, `workspace/runs/parallel-delivery/release-candidate-fixture/apply/release-notes.md`, `workspace/runs/parallel-delivery/release-candidate-fixture/apply/rollback-metadata.json`, `workspace/runs/parallel-delivery/release-candidate-fixture/validation-summary.txt`
+- `checked_prior_records`: `2026-05-13-patch-swarm-call-9-patch-bundle-collection`
+- `corrects_record_id`: none
+
+#### Trigger
+
+The operator provided Parallel Delivery Call 11 and asked for safe patch application, rollback metadata, and release-candidate creation from accepted integration receipts without adding a duplicate root workflow.
+
+#### What Changed
+
+- Added a `parallel-delivery` release-candidate create route that verifies accepted integration receipts and accepted bundle receipts before any dry-run or apply step.
+- Added deterministic apply-step receipts, aggregate apply reports, metadata-only rollback records, release-candidate JSON, release notes, and integrated diff output.
+- Added a fixture generator that creates isolated local target inputs under `workspace/runs/parallel-delivery/release-candidate-fixture/`.
+- Added targeted tests for receipt refusal, patch hash mismatch, dry-run no mutation, sequential apply, first-failure stopping, rollback metadata, final validation gating, and CLI JSON output.
+- Added docs, registry metadata, and Makefile shortcuts.
+
+#### What Worked
+
+- Discovery found existing Build accepted-receipt apply checks and Factory Safe Integrator worktree/release evidence conventions.
+- The new route stays under `cento parallel-delivery release-candidate create`.
+- Dry-run applies zero patches and writes rollback metadata.
+- Apply mode requires an isolated target worktree, applies accepted bundles sequentially, validates after each bundle, and writes release-candidate artifacts only after final validation passes.
+- Targeted tests passed.
+
+#### What Did Not Work
+
+- The prompt's validation snippets used `python`, but this host exposes `python3`. The safe-apply runner maps leading `python ...` validation commands to `python3 ...` when no `python` binary exists.
+
+#### Next Steps
+
+- Feed accepted Call 9/10 bundle collection receipts into this release-candidate layer when a real Patch Swarm integration receipt is available.
+- Optionally add a Factory adapter that converts Factory integration state into `cento.parallel_delivery.integration_receipt.v1`.
+
+#### Tags
+
+`cento-native`, `patch-swarm`, `parallel-delivery`, `safe-apply`, `rollback-metadata`, `release-candidate`, `fixture`, `validation`, `docs`, `tests`
+
+### 2026-05-13T00:32:45Z - Patch Swarm Outage Recovery Validation Gate
+
+- `record_id`: 2026-05-13-patch-swarm-outage-recovery-validation-gate
+- `actor`: codex
+- `scope`: patch-swarm, parallel-delivery, validation, agent-work, outage-recovery, dirty-worktree-preservation
+- `status`: implemented
+- `artifacts_changed`: `scripts/parallel_delivery.py`, `tests/test_parallel_integration_train.py`, `workspace/runs/parallel-delivery/outage-recovery/20260513T002709Z/`, `workspace/runs/parallel-delivery/e2e-fixture/fixture-e2e-20260513T003140Z/`, `docs/ai-self-improvement-log.md`
+- `evidence`: `workspace/runs/parallel-delivery/outage-recovery/20260513T002709Z/`, `python3 -m pytest -q tests/test_parallel_integration_train.py`, `python3 -m pytest -q tests/test_parallel_delivery_artifact_schema.py tests/test_parallel_delivery_planner.py tests/test_parallel_delivery_path_leases.py tests/test_parallel_delivery_proreq_prompts.py tests/test_parallel_delivery_codex_worker_packets.py tests/test_patch_bundle_validation.py tests/test_patch_bundle_collector.py tests/test_parallel_delivery_release_candidate.py tests/test_parallel_delivery_safe_apply.py tests/test_parallel_delivery_validation_e2e.py tests/test_parallel_integration_train.py tests/test_patch_swarm.py`, `cento parallel-delivery patch-swarm e2e --candidate-target 100 --max-parallel-agents 5 --fixture --run-root workspace/runs/parallel-delivery/e2e-fixture --json`, `cento parallel-delivery validate --json`, `cento parallel-delivery validate --run-dir workspace/runs/parallel-delivery/e2e-fixture/fixture-e2e-20260513T003140Z --json`, `cento tools`, `cento docs parallel-delivery`, `make check`
+- `checked_prior_records`: `2026-05-13-patch-swarm-call-9-patch-bundle-collection`, `2026-05-13-parallel-delivery-call-11-safe-apply-release-candidate`, `2026-05-13-patch-swarm-call-12-validation-e2e`
+- `corrects_record_id`: none
+
+#### Trigger
+
+The operator reported an outage after OOO/i3 disruption with several Codex agents likely interrupted, many dirty files, and missing context around Patch Swarm Calls 9-13.
+
+#### What Changed
+
+- Captured a recovery bundle with git status, binary diff, untracked inventory, worktrees, process probes, agent-work hygiene, and dirty-path classification before source edits.
+- Fixed top-level `cento parallel-delivery validate` and `status` so no-arg runs ignore non-run roots such as `outage-recovery`, `recovery-smoke`, and fixture directories.
+- Added explicit Patch Swarm fixture E2E validation dispatch for `cento parallel-delivery validate --run-dir PATH` when PATH is an E2E run directory or contains one.
+- Added regression tests covering noisy recovery roots and explicit fixture E2E validation.
+
+#### What Worked
+
+- `cento agent-work-hygiene` and `cento agent-processes --once` showed untracked interactive Codex sessions but no managed worker session that needed harvesting.
+- The fixed no-arg `cento parallel-delivery validate --json` now selects the last valid legacy run, not a fresh recovery artifact directory.
+- Explicit fixture validation passed for `workspace/runs/parallel-delivery/e2e-fixture/fixture-e2e-20260513T003140Z`.
+- The 100-candidate fixture E2E passed with 100 accepted patch bundles, one rejected unsafe bundle, 20 simulated worker batches, and dry-run integration only.
+- Focused tests passed with 127 tests, and `make check` passed.
+
+#### What Did Not Work
+
+- The initial top-level validation selected a fresh `recovery-smoke` directory and failed legacy ProReq schema checks before this fix.
+- A broad temporary secret scan pattern matched normal `task-*` text; the stricter API-key/private-key scan found no secret token values.
+- Agent Processes still reports untracked interactive Codex sessions; these were preserved rather than killed.
+
+#### Next Steps
+
+- Resume Patch Swarm at Call 13 only after the dirty tree is intentionally packaged or committed.
+- Keep live Pro/API/worker dispatch frozen until fixture validation remains green and the operator deliberately opts in.
+- Split unrelated Industrial OS work from the Patch Swarm recovery scope before review.
+
+#### Tags
+
+`cento-native`, `self-improvement`, `patch-swarm`, `parallel-delivery`, `outage-recovery`, `validation`, `dirty-worktree`, `agent-work-hygiene`, `fixture`, `tests`
+
+### 2026-05-13T00:29:44Z - Patch Swarm Call 14 Worker Pool Status
+
+- `record_id`: 2026-05-13-patch-swarm-call-14-worker-pool-status
+- `actor`: codex
+- `scope`: patch-swarm, parallel-delivery, worker-pool, dry-run-dispatch, process-visibility, console-status, docs, tests
+- `status`: implemented
+- `artifacts_changed`: `scripts/parallel_delivery_worker_status.py`, `scripts/parallel_delivery.py`, `tests/test_parallel_delivery_worker_status.py`, `docs/parallel-delivery/patch-swarm-worker-status.md`, `docs/patch-swarm.md`, `data/tools.json`, `workspace/runs/parallel-delivery/worker-status-fixture/`, `workspace/runs/parallel-delivery/call-14-worker-status/20260513T002944Z/`, `docs/ai-self-improvement-log.md`
+- `evidence`: `workspace/runs/parallel-delivery/call-14-worker-status/20260513T002944Z/raw/`, `workspace/runs/parallel-delivery/call-14-worker-status/20260513T002944Z/resolved-worker-status-implementation.md`, `workspace/runs/parallel-delivery/call-14-worker-status/20260513T002944Z/process-visibility-compatibility.md`, `workspace/runs/parallel-delivery/call-14-worker-status/20260513T002944Z/json/`, `workspace/runs/parallel-delivery/call-14-worker-status/20260513T002944Z/validation/validation.log`
+- `checked_prior_records`: `2026-05-12-patch-swarm-call-5-request-splitter-planner`, `2026-05-12-patch-swarm-call-6-path-leasing`, `2026-05-12-patch-swarm-call-7-proreq-prompt-bundles`, `2026-05-13-patch-swarm-call-12-validation-e2e`, `2026-05-13-patch-swarm-outage-recovery`
+- `corrects_record_id`: none
+
+#### Trigger
+
+The operator provided Patch Swarm Call 14 and asked for bounded worker-pool planning plus process/status visibility that represents 100 candidate tasks without blindly launching 100 workers.
+
+#### What Changed
+
+- Added `scripts/parallel_delivery_worker_status.py` for local-only worker-pool planning, dry-run dispatch metadata, worker queue JSONL, worker status JSON, stale/risk indicators, process visibility metadata, Console/UI status JSON, fixture generation, and validation.
+- Added `cento parallel-delivery patch-swarm dispatch` and `cento parallel-delivery patch-swarm worker-status` under the existing Patch Swarm CLI surface.
+- Extended top-level `cento parallel-delivery status --run ... --run-root ... --json` so it can render the worker-status fixture without adding a root `cento patch-swarm` workflow.
+- Generated `workspace/runs/parallel-delivery/worker-status-fixture/` with 100 candidate tasks, 20 planned batches, 5 active dry-run workers, 92 pending tasks, 1 completed task, 1 blocked task, 1 stale task, and 0 failed tasks.
+- Added `docs/parallel-delivery/patch-swarm-worker-status.md` and linked it from the Patch Swarm product spec and tool registry.
+- Added `tests/test_parallel_delivery_worker_status.py`.
+
+#### What Worked
+
+- Discovery inspected `parallel-delivery`, `agent-pool-kick`, `agent-processes`, `cluster`, and `bridge` surfaces before source edits.
+- `agent-pool-kick` compatibility is recorded as dry-run metadata only; no external worker launch was performed.
+- `agent-processes`, `cluster`, and `bridge` compatibility is read-only and platform guarded.
+- The worker pool plan contains 100 tasks, max parallel agents 5, 20 batches, no duplicate batch membership, and no external launch.
+- Queue ledger JSONL parsed and included queue, task, dispatch, dry-run skip, worker state, and snapshot events.
+- `worker-status.json`, `console-status.json`, `stale-workers.json`, and `process-visibility.json` parsed and matched expected fixture counts.
+- CLI JSON for dispatch, worker-status, and top-level status parsed.
+- `pytest -q tests/test_parallel_delivery_worker_status.py` passed with 10 tests.
+- Existing related tests passed with 123 tests.
+- `python3 -m json.tool data/tools.json`, `python3 -m json.tool data/cento-cli.json`, `cento tools`, `cento docs parallel-delivery`, and `make check` passed.
+
+#### What Did Not Work
+
+- The pre-edit `patch-swarm dispatch` and `patch-swarm worker-status` routes did not exist. The new routes are local dry-run/status routes only.
+- Live dispatch remains unsupported in this layer and fails closed; future live launch must be owned by an explicit existing backend.
+
+#### Next Steps
+
+- Let future live-dispatch work consume `worker-pool-plan.json` and `dry-run-dispatch.json` only after explicit operator opt-in and backend validation.
+- Keep Console/UI integrations pointed at `console-status.json` for compact status while retaining detailed ledgers separately.
+- Preserve the current broad dirty worktree until it is intentionally packaged or committed.
+
+#### Tags
+
+`cento-native`, `self-improvement`, `patch-swarm`, `parallel-delivery`, `worker-pool`, `dry-run-dispatch`, `process-visibility`, `console-status`, `fixture`, `docs`, `tests`
+
+### 2026-05-13T00:46:30Z - Patch Swarm Call 15 Console Status Surface
+
+- `record_id`: 2026-05-13-patch-swarm-call-15-console-status
+- `actor`: codex
+- `scope`: patch-swarm, parallel-delivery, console, static-hub, status-json, agent-work-app, docs, tests, evidence
+- `status`: implemented
+- `artifacts_changed`: `scripts/parallel_delivery_patch_swarm_console.py`, `scripts/parallel_delivery.py`, `scripts/parallel_delivery_validation_e2e.py`, `scripts/agent_work_app.py`, `templates/agent-work-app/app.js`, `tests/parallel_delivery/test_patch_swarm_console.py`, `docs/parallel-delivery/patch-swarm-console.md`, `docs/patch-swarm.md`, `README.md`, `data/tools.json`, `docs/tool-index.md`, `workspace/runs/parallel-delivery/console-fixture/fixture-console-25/`, `docs/ai-self-improvement-log.md`
+- `evidence`: `workspace/runs/parallel-delivery/console-fixture/fixture-console-25/start-here.html`, `workspace/runs/parallel-delivery/console-fixture/fixture-console-25/start-here.png`, `workspace/runs/parallel-delivery/console-fixture/fixture-console-25/console-data.json`, `workspace/runs/parallel-delivery/console-fixture/fixture-console-25/link-check.json`, `workspace/runs/parallel-delivery/console-fixture/fixture-console-25/console-validation-summary.json`, `workspace/runs/parallel-delivery/console-fixture/pytest-parallel-delivery-console.log`
+- `checked_prior_records`: `2026-05-13-patch-swarm-call-12-validation-e2e`, `2026-05-13-patch-swarm-call-14-worker-status`
+- `corrects_record_id`: none
+
+#### Trigger
+
+The operator provided Patch Swarm Call 15 and asked for an operator-visible run status surface that reads generated run artifacts, writes stable console data, renders a static hub, reuses existing Cento surfaces, validates evidence links, and preserves dirty work.
+
+#### What Changed
+
+- Added `scripts/parallel_delivery_patch_swarm_console.py` with artifact aggregation, normalized dataclasses, deterministic next-action rules, `console-data.json` writing, self-contained `start-here.html` rendering, relative-link validation, and compact JSON emission.
+- Extended the existing `cento parallel-delivery patch-swarm status` command with `--run-dir`, `--output-dir`, `--write-html`, and `--strict-links`.
+- Added `--output-dir` compatibility to `cento parallel-delivery patch-swarm e2e` so fixture runs can target `workspace/runs/parallel-delivery/console-fixture/<run-id>`.
+- Added `release-candidate/demo-evidence.md` to the deterministic fixture E2E release-candidate evidence.
+- Added a Cento Console route for `/patch-swarm/console?run_dir=...` and `/patch-swarm/runs/<run_id>/console`, plus a `Status console` link in the existing Patch Swarm run detail evidence row.
+- Added docs and registry entries for rendering and opening the console hub.
+- Added focused tests under `tests/parallel_delivery/test_patch_swarm_console.py`.
+
+#### What Worked
+
+- Discovery ran before source edits and found the existing registered `parallel-delivery` and `patch-swarm status` surfaces plus an existing agent-work app Patch Swarm UI.
+- The console reads run artifacts directly and does not create a database.
+- The `fixture-console-25` run generated 25 candidates, 25 accepted fixture bundles, one rejected unsafe bundle, five simulated worker batches, integration receipts, validation summary/report, and release-candidate evidence.
+- `start-here.html` and `console-data.json` were generated under `workspace/runs/parallel-delivery/console-fixture/fixture-console-25/`.
+- Link validation passed with all generated HTML links relative, existing, and inside the run directory.
+- Browser screenshot validation captured `start-here.png`; the page shows current run, next action, summary cards, task graph, and worker status without obvious clipping or overlap.
+- `pytest -q tests/parallel_delivery/test_patch_swarm_console.py` passed with 5 tests.
+- Relevant existing Patch Swarm and parallel-delivery tests passed with 52 tests.
+- `python3 -m json.tool data/tools.json`, `python3 -m json.tool data/cento-cli.json`, `cento tools`, and `cento docs parallel-delivery` passed.
+
+#### What Did Not Work
+
+- This host has no `python` executable, so validation used `python3`.
+- The original pre-edit discovery E2E command used `--output-dir` before the CLI supported it; it failed and wrote only the discovery log. The new implementation adds that compatibility.
+- The current fixture schema uses paths such as `split-plan.json`, `task-graph.json`, `integration/integration-plan.json`, and `release-candidate/release-candidate.json`; the console maps these alongside the prompt's numbered directory shape rather than duplicating all artifacts.
+
+#### Next Steps
+
+- Future live Patch Swarm runs can reuse the same console aggregator if they write the known artifact names or add compatible evidence links.
+- If the SPA needs richer inline console details later, consume `/api/patch-swarm/runs/<run_id>/console` instead of reimplementing aggregation in JavaScript.
+
+#### Tags
+
+`cento-native`, `self-improvement`, `patch-swarm`, `parallel-delivery`, `console`, `static-hub`, `status-json`, `agent-work-app`, `fixture`, `docs`, `tests`, `visual-validation`
+
+### 2026-05-13T00:52:10Z - Patch Swarm Call 13 Taskstream Handoff
+
+- `record_id`: 2026-05-13-patch-swarm-call-13-taskstream-handoff
+- `actor`: codex
+- `scope`: patch-swarm, parallel-delivery, taskstream, agent-work, story-manifest, validation-manifest, dry-run-handoff, docs, tests, evidence
+- `status`: implemented
+- `artifacts_changed`: `scripts/parallel_delivery_taskstream.py`, `scripts/parallel_delivery.py`, `scripts/parallel_delivery/taskstream_fixture.py`, `tests/test_parallel_delivery_taskstream.py`, `tests/test_parallel_delivery_agent_work_manifests.py`, `docs/parallel-delivery/patch-swarm-taskstream.md`, `docs/patch-swarm.md`, `README.md`, `Makefile`, `data/tools.json`, `docs/tool-index.md`, `workspace/runs/parallel-delivery/taskstream-fixture/`, `docs/ai-self-improvement-log.md`
+- `evidence`: `python3 -m pytest -q tests/test_parallel_delivery_taskstream.py tests/test_parallel_delivery_agent_work_manifests.py`, `make test-taskstream-handoff`, `make taskstream-fixture`, `workspace/runs/parallel-delivery/taskstream-fixture/taskstream-handoff-report.json`, `workspace/runs/parallel-delivery/taskstream-fixture/taskstream-handoff-report.md`, `workspace/runs/parallel-delivery/taskstream-fixture/validation-summary.txt`, `workspace/runs/parallel-delivery/taskstream-fixture/live-refusal.exit-code`, `python3 -m pytest -q tests/test_parallel_delivery_taskstream.py tests/test_parallel_delivery_agent_work_manifests.py tests/test_parallel_delivery_validation_e2e.py tests/test_patch_swarm.py tests/test_parallel_integration_train.py`, `python3 -m json.tool data/tools.json`, `python3 -m json.tool data/cento-cli.json`, `cento tools`, `cento docs parallel-delivery`, `git diff --check`, `cento parallel-delivery validate --json`, `cento parallel-delivery patch-swarm e2e --candidate-target 100 --max-parallel-agents 5 --fixture --run-root workspace/runs/parallel-delivery/e2e-fixture --json`, `make check`
+- `checked_prior_records`: `2026-05-13-patch-swarm-call-12-validation-e2e`, `2026-05-13-patch-swarm-call-14-worker-status`, `2026-05-13-patch-swarm-call-15-console-status`
+- `corrects_record_id`: none
+
+#### Trigger
+
+The operator provided Patch Swarm Call 13 and asked for Taskstream / `cento agent-work` integration while preserving the dirty worktree and avoiding interference with parallel Call 14+ Codex work.
+
+#### What Changed
+
+- Added a local-first Patch Swarm to `agent-work` adapter that loads split plans, validates task contracts, rejects unsafe path and secret references, routes implementation tasks to `agent-work`, and keeps evidence-only tasks manifest-only.
+- Generated existing `agent-work` compatible `story.json` manifests with `schema_version: 1.0`, `issue.id: 0`, lane metadata, run paths, acceptance contracts, expected outputs, and validation policy.
+- Generated existing `cento.validation-manifest.v1` `validation.json` files with Patch Swarm metadata, evidence links, deterministic checks, and record-back transport metadata.
+- Added `cento parallel-delivery taskstream emit|preflight|apply`; emit is dry-run by default, preflight calls the existing `cento agent-work preflight` surface, and apply refuses live creation unless `--apply` is present.
+- Added a deterministic fixture writer and Makefile targets for taskstream handoff testing and fixture evidence generation.
+- Documented the operator flow and registered the new durable commands in `data/tools.json` and the generated tool index.
+
+#### What Worked
+
+- Discovery found `agent-work preflight` as the approved story/validation gate and confirmed `cento mcp` only exposes init, doctor, docs, and paths on this host.
+- The fixture generated three work packages: two `agent-work` implementation tasks and one manifest-only evidence task.
+- Every generated work package includes `story.json`, `validation.json`, `handoff.md`, and `agent-work-command.txt`.
+- `agent-work` preflight passed over generated packages without creating live issues.
+- The apply path without `--apply` returned a nonzero refusal and wrote refusal evidence.
+- Targeted taskstream tests passed with 12 tests, broader Patch Swarm tests passed with 47 tests, and `make check` passed.
+
+#### What Did Not Work
+
+- No live MCP story/board/evidence creation route was available from `cento mcp` on this host, so live apply falls back to the existing `cento agent-work create --manifest ...` command path.
+- Live `taskstream apply --apply` was not run during validation because tests and fixtures must not create live Taskstream issues.
+
+#### Next Steps
+
+- Use generated work packages as the approved handoff input when Patch Swarm tasks need Taskstream visibility.
+- Keep live task creation behind explicit `--apply` and review the command preview files before running it.
+- If MCP story tools are added later, wire `transport auto` to prefer those tools before `agent-work` command fallback.
+
+#### Tags
+
+`cento-native`, `self-improvement`, `patch-swarm`, `parallel-delivery`, `taskstream`, `agent-work`, `story-manifest`, `validation-manifest`, `dry-run`, `evidence`, `tests`

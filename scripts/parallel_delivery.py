@@ -64,6 +64,16 @@ import agent_work_app as app  # noqa: E402
 import factory as factory_tool  # noqa: E402
 import factory_dispatch_core as factory_dispatch  # noqa: E402
 import factory_integrator_core as factory_integrator  # noqa: E402
+import parallel_delivery_codex_packets as codex_packets_tool  # noqa: E402
+import parallel_delivery_leases as lease_tool  # noqa: E402
+import parallel_delivery_patch_bundles as patch_bundles_tool  # noqa: E402
+import parallel_delivery_patch_swarm_console as patch_swarm_console_tool  # noqa: E402
+import parallel_delivery_planner as planner_tool  # noqa: E402
+import parallel_delivery_prompts as prompts_tool  # noqa: E402
+import parallel_delivery_release_candidate as release_candidate_tool  # noqa: E402
+import parallel_delivery_taskstream as taskstream_tool  # noqa: E402
+import parallel_delivery_validation_e2e as validation_e2e_tool  # noqa: E402
+import parallel_delivery_worker_status as worker_status_tool  # noqa: E402
 
 
 BASE_VISION = (
@@ -339,10 +349,61 @@ def append_jsonl(path: Path, payload: dict[str, Any]) -> None:
         handle.write(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n")
 
 
+def is_parallel_delivery_run_dir(path: Path) -> bool:
+    return path.is_dir() and (path / "implementation_manifest.json").exists()
+
+
+def is_parallel_delivery_validatable_run_dir(path: Path) -> bool:
+    return (
+        is_parallel_delivery_run_dir(path)
+        and (path / "proreq_receipt.json").exists()
+        and (path / "execution_manifest.json").exists()
+    )
+
+
+def is_patch_swarm_fixture_e2e_run_dir(path: Path) -> bool:
+    return (
+        path.is_dir()
+        and (path / "validation-summary.json").exists()
+        and (path / "split-plan.json").exists()
+        and (path / "path-leases.json").exists()
+        and (path / "integration" / "integration-receipt.json").exists()
+    )
+
+
+def latest_patch_swarm_fixture_e2e_run_dir(root: Path | None = None) -> Path | None:
+    search_root = root or RUNS_ROOT
+    if not search_root.exists():
+        return None
+    candidates = [
+        path.parent
+        for path in search_root.glob("**/validation-summary.json")
+        if is_patch_swarm_fixture_e2e_run_dir(path.parent)
+    ]
+    if not candidates:
+        return None
+    return max(candidates, key=lambda path: path.stat().st_mtime)
+
+
+def selected_patch_swarm_fixture_e2e_run_dir(path: Path) -> Path | None:
+    if is_patch_swarm_fixture_e2e_run_dir(path):
+        return path
+    return latest_patch_swarm_fixture_e2e_run_dir(path)
+
+
 def latest_run_dir() -> Path | None:
     if not RUNS_ROOT.exists():
         return None
-    candidates = [path for path in RUNS_ROOT.iterdir() if path.is_dir()]
+    candidates = [path for path in RUNS_ROOT.iterdir() if is_parallel_delivery_run_dir(path)]
+    if not candidates:
+        return None
+    return max(candidates, key=lambda path: path.stat().st_mtime)
+
+
+def latest_validatable_run_dir() -> Path | None:
+    if not RUNS_ROOT.exists():
+        return None
+    candidates = [path for path in RUNS_ROOT.iterdir() if is_parallel_delivery_validatable_run_dir(path)]
     if not candidates:
         return None
     return max(candidates, key=lambda path: path.stat().st_mtime)
@@ -360,6 +421,12 @@ def resolve_run_dir(value: str | None, *, create: bool = False) -> Path:
     if create:
         path.mkdir(parents=True, exist_ok=True)
     return path
+
+
+def resolve_validation_run_dir(value: str | None) -> Path:
+    if value:
+        return resolve_run_dir(value)
+    return latest_validatable_run_dir() or latest_run_dir() or (latest_patch_swarm_fixture_e2e_run_dir() or RUNS_ROOT / now_stamp())
 
 
 @contextmanager
@@ -3047,6 +3114,74 @@ def validate_run(run_dir: Path) -> dict[str, Any]:
     return payload
 
 
+def validate_selected_run(run_dir: Path) -> dict[str, Any]:
+    fixture_run_dir = selected_patch_swarm_fixture_e2e_run_dir(run_dir)
+    if fixture_run_dir:
+        validation = validation_e2e_tool.validate_e2e_run(fixture_run_dir)
+        status = "passed" if validation.get("ok") else "failed"
+        return {
+            "schema_version": SCHEMA_VALIDATION,
+            "written_at": now_iso(),
+            "status": status,
+            "run_kind": "patch_swarm_fixture_e2e",
+            "validated_run_dir": rel(fixture_run_dir),
+            "checks": [
+                {
+                    "name": "patch_swarm_fixture_e2e",
+                    "status": status,
+                    "detail": "; ".join(str(item) for item in validation.get("errors") or []),
+                }
+            ],
+            "patch_swarm_e2e": validation,
+        }
+    payload = validate_run(run_dir)
+    payload.setdefault("run_kind", "parallel_delivery")
+    return payload
+
+
+def status_for_selected_run(run_dir: Path) -> dict[str, Any]:
+    if (run_dir / "worker-status.json").exists():
+        payload = worker_status_tool.status_for_run(run_dir)
+        payload.update(
+            {
+                "schema_version": "cento.parallel_delivery.status.v1",
+                "run_kind": "patch_swarm_worker_status",
+                "status": "dry_run_dispatch_planned" if payload.get("ok") else "blocked",
+                "validation": "worker_status_ready" if payload.get("ok") else "worker_status_failed",
+                "demo": "not_applicable",
+                "execution_manifest": "",
+            }
+        )
+        return payload
+    fixture_run_dir = selected_patch_swarm_fixture_e2e_run_dir(run_dir)
+    if fixture_run_dir:
+        summary = read_json(fixture_run_dir / "validation-summary.json")
+        return {
+            "schema_version": "cento.parallel_delivery.status.v1",
+            "run_kind": "patch_swarm_fixture_e2e",
+            "run_dir": rel(run_dir),
+            "validated_run_dir": rel(fixture_run_dir),
+            "status": summary.get("state") or summary.get("overall", "unknown"),
+            "pass_count": int(summary.get("candidate_count") or 0),
+            "validation": summary.get("overall", "unknown"),
+            "demo": "not_applicable",
+            "execution_manifest": "",
+        }
+    receipt = read_json(run_dir / "proreq_receipt.json")
+    validation = read_json(run_dir / "validation_summary.json")
+    demo = read_json(run_dir / "demo" / "demo_receipt.json")
+    return {
+        "schema_version": "cento.parallel_delivery.status.v1",
+        "run_kind": "parallel_delivery",
+        "run_dir": rel(run_dir),
+        "status": receipt.get("status", "unknown"),
+        "pass_count": len(receipt.get("passes") or []),
+        "validation": validation.get("status", "unknown"),
+        "demo": demo.get("status", "unknown"),
+        "execution_manifest": rel(run_dir / "execution_manifest.json"),
+    }
+
+
 def self_latest_dir() -> Path:
     return SELF_IMPROVE_RUNS_ROOT / "latest"
 
@@ -3873,25 +4008,20 @@ def command_demo(args: argparse.Namespace) -> int:
 
 
 def command_validate(args: argparse.Namespace) -> int:
-    run_dir = resolve_run_dir(args.run_dir)
-    payload = validate_run(run_dir)
+    run_dir = resolve_validation_run_dir(args.run_dir)
+    payload = validate_selected_run(run_dir)
     print(json.dumps({"run_dir": rel(run_dir), **payload}, indent=2) if args.json else f"{payload['status']} {rel(run_dir)}")
     return 0 if payload["status"] == "passed" else 1
 
 
 def command_status(args: argparse.Namespace) -> int:
-    run_dir = resolve_run_dir(args.run_dir)
-    receipt = read_json(run_dir / "proreq_receipt.json")
-    validation = read_json(run_dir / "validation_summary.json")
-    demo = read_json(run_dir / "demo" / "demo_receipt.json")
-    payload = {
-        "run_dir": rel(run_dir),
-        "status": receipt.get("status", "unknown"),
-        "pass_count": len(receipt.get("passes") or []),
-        "validation": validation.get("status", "unknown"),
-        "demo": demo.get("status", "unknown"),
-        "execution_manifest": rel(run_dir / "execution_manifest.json"),
-    }
+    if getattr(args, "run", ""):
+        run_root_value = Path(getattr(args, "run_root", "") or RUNS_ROOT)
+        run_root = run_root_value if run_root_value.is_absolute() else ROOT / run_root_value
+        run_dir = run_root / str(args.run)
+    else:
+        run_dir = resolve_validation_run_dir(args.run_dir)
+    payload = status_for_selected_run(run_dir)
     print(json.dumps(payload, indent=2) if args.json else f"{payload['status']} {payload['validation']} {payload['run_dir']}")
     return 0
 
@@ -4086,6 +4216,206 @@ def command_patch_swarm_plan(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_patch_swarm_split(args: argparse.Namespace) -> int:
+    payload, code = planner_tool.run_from_args(args, command="parallel-delivery patch-swarm split")
+    if args.json:
+        print(planner_tool.stable_json_dumps(payload), end="")
+    elif payload.get("ok"):
+        print(f"{payload.get('state')} {payload.get('candidate_count')} tasks {payload.get('run_dir')}")
+    else:
+        print("; ".join(payload.get("errors", ["split plan failed"])), file=sys.stderr)
+    return code
+
+
+def command_patch_swarm_leases(args: argparse.Namespace) -> int:
+    payload, code = lease_tool.run_create(args, command="parallel-delivery patch-swarm leases")
+    if args.json:
+        print(lease_tool.stable_json_dumps(payload), end="")
+    elif payload.get("ok"):
+        print(f"leases {payload.get('run_id')} {payload.get('run_dir')}")
+    else:
+        print("; ".join(payload.get("errors", ["lease generation failed"])), file=sys.stderr)
+    return code
+
+
+def command_patch_swarm_validate_leases(args: argparse.Namespace) -> int:
+    payload, code = lease_tool.run_validate(args)
+    if args.json:
+        print(lease_tool.stable_json_dumps(payload), end="")
+    elif payload.get("ok"):
+        print(f"lease validation passed {payload.get('run_id')} {payload.get('run_dir', '')}")
+    else:
+        print("; ".join(payload.get("errors", ["lease validation failed"])), file=sys.stderr)
+    return code
+
+
+def command_patch_bundles_validate(args: argparse.Namespace) -> int:
+    payload, code = patch_bundles_tool.run_validate_from_args(args)
+    if args.json:
+        print(patch_bundles_tool.stable_json_dumps(payload), end="")
+    elif payload.get("validation_status") == "accepted":
+        print(f"accepted {payload.get('bundle_id')} {payload.get('receipt_id')}")
+    else:
+        print("; ".join(payload.get("reason_codes") or ["patch bundle rejected"]), file=sys.stderr)
+    return code
+
+
+def command_patch_bundles_collect(args: argparse.Namespace) -> int:
+    payload, code = patch_bundles_tool.run_collect_from_args(args)
+    if args.json:
+        print(patch_bundles_tool.stable_json_dumps(payload), end="")
+    else:
+        print(
+            "patch bundles "
+            f"accepted={payload.get('accepted_count')} "
+            f"rejected={payload.get('rejected_count')} "
+            f"report={Path(args.out) / 'patch-bundle-report.json'}"
+        )
+    return code
+
+
+def command_patch_swarm_prompts(args: argparse.Namespace) -> int:
+    payload, code = prompts_tool.run_generate_from_args(args, command="parallel-delivery patch-swarm prompts")
+    if args.json:
+        print(prompts_tool.stable_json_dumps(payload), end="")
+    elif payload.get("ok"):
+        print(f"{payload.get('state')} {payload.get('prompt_count')} prompts {payload.get('run_dir')}")
+    else:
+        print("; ".join(payload.get("errors", ["prompt bundle failed"])), file=sys.stderr)
+    return code
+
+
+def command_patch_swarm_worker_packets(args: argparse.Namespace) -> int:
+    try:
+        if getattr(args, "fixture", False):
+            result = codex_packets_tool.build_codex_packets_fixture(
+                Path(args.run_dir),
+                run_id=args.run_id or "codex-packets-fixture",
+                count=int(args.count or codex_packets_tool.DEFAULT_PACKET_COUNT),
+                timestamp=args.fixed_timestamp or "2026-01-01T00:00:00Z",
+            )
+        else:
+            result = codex_packets_tool.write_packet_bundle(
+                codex_packets_tool.CodexPacketRequest(
+                    run_id=args.run_id,
+                    run_dir=Path(args.run_dir),
+                    count=args.count,
+                    fixed_timestamp=args.fixed_timestamp or None,
+                )
+            )
+        payload = codex_packets_tool.result_payload(result)
+        code = 0 if payload.get("ok") else 1
+    except codex_packets_tool.CodexPacketError as exc:
+        payload = {
+            "ok": False,
+            "run_id": args.run_id or Path(args.run_dir).name,
+            "packet_count": 0,
+            "errors": [str(exc)],
+            "warnings": [],
+        }
+        code = 1
+    if args.json:
+        print(codex_packets_tool.stable_json_dumps(payload), end="")
+    elif payload.get("ok"):
+        print(f"codex packets {payload.get('packet_count')} {payload.get('run_dir')}")
+    else:
+        print("; ".join(payload.get("errors", ["worker packet generation failed"])), file=sys.stderr)
+    return code
+
+
+def command_patch_swarm_dispatch(args: argparse.Namespace) -> int:
+    payload = worker_status_tool.plan_dispatch(
+        Path(args.run_dir),
+        run_id=getattr(args, "run_id", "") or None,
+        candidate_target=int(getattr(args, "candidate_target", worker_status_tool.MAX_CANDIDATE_TASKS) or worker_status_tool.MAX_CANDIDATE_TASKS),
+        max_parallel_agents=int(getattr(args, "max_parallel_agents", 5) or 5),
+        dry_run=bool(getattr(args, "dry_run", True)),
+        live=bool(getattr(args, "live", False)),
+        timestamp=getattr(args, "fixed_timestamp", "") or None,
+        fixture=bool(getattr(args, "fixture", False)),
+    )
+    code = 0 if payload.get("ok") else 1
+    if args.json:
+        print(worker_status_tool.stable_json_dumps(payload), end="")
+    elif payload.get("ok"):
+        print(f"worker dispatch dry-run {payload.get('candidate_tasks')} tasks {payload.get('run_dir')}")
+    else:
+        print("; ".join(payload.get("errors", ["worker dispatch planning failed"])), file=sys.stderr)
+    return code
+
+
+def command_patch_swarm_worker_status(args: argparse.Namespace) -> int:
+    try:
+        payload = worker_status_tool.status_for_run(Path(args.run_dir))
+        code = 0 if payload.get("ok") else 1
+    except worker_status_tool.WorkerStatusError as exc:
+        payload = {
+            "ok": False,
+            "run_id": Path(args.run_dir).name,
+            "run_dir": args.run_dir,
+            "errors": [str(exc)],
+            "warnings": [],
+        }
+        code = 1
+    if args.json:
+        print(worker_status_tool.stable_json_dumps(payload), end="")
+    elif payload.get("ok"):
+        print(f"worker status {payload.get('candidate_tasks')} tasks {payload.get('run_dir')}")
+    else:
+        print("; ".join(payload.get("errors", ["worker status unavailable"])), file=sys.stderr)
+    return code
+
+
+def command_release_candidate_create(args: argparse.Namespace) -> int:
+    payload, code = release_candidate_tool.run_create_from_args(args)
+    if args.json:
+        print(release_candidate_tool.stable_json_dumps(payload), end="")
+    elif payload.get("ok"):
+        print(f"{payload.get('status')} {payload.get('release_candidate') or payload.get('out')}")
+    else:
+        print(str(payload.get("error") or "release candidate creation failed"), file=sys.stderr)
+    return code
+
+
+def command_taskstream_emit(args: argparse.Namespace) -> int:
+    payload, code = taskstream_tool.run_emit_from_args(args)
+    if args.json:
+        print(taskstream_tool.stable_json_dumps(payload), end="")
+    elif code == 0:
+        print(
+            "taskstream handoff "
+            f"tasks={payload.get('task_count')} "
+            f"agent_work={payload.get('agent_work_routed_count')} "
+            f"manifest_only={payload.get('manifest_only_count')} "
+            f"report={Path(args.out) / 'taskstream-handoff-report.json'}"
+        )
+    else:
+        print("; ".join(payload.get("errors", ["taskstream emit failed"])), file=sys.stderr)
+    return code
+
+
+def command_taskstream_preflight(args: argparse.Namespace) -> int:
+    payload, code = taskstream_tool.run_preflight_from_args(args)
+    if args.json:
+        print(taskstream_tool.stable_json_dumps(payload), end="")
+    elif code == 0:
+        print(f"taskstream preflight passed {payload.get('manifest_dir')}")
+    else:
+        print("; ".join(payload.get("errors") or ["taskstream preflight blocked"]), file=sys.stderr)
+    return code
+
+
+def command_taskstream_apply(args: argparse.Namespace) -> int:
+    payload, code = taskstream_tool.run_apply_from_args(args)
+    if args.json:
+        print(taskstream_tool.stable_json_dumps(payload), end="")
+    elif code == 0:
+        print(f"taskstream apply receipts={len(payload.get('receipts') or [])}")
+    else:
+        print("; ".join(payload.get("errors", ["taskstream apply failed"])), file=sys.stderr)
+    return code
+
+
 def command_patch_swarm_execute(args: argparse.Namespace) -> int:
     run_dir = resolve_patch_swarm_run_dir(args.run_id)
     receipt = execute_patch_swarm(
@@ -4127,6 +4457,47 @@ def command_patch_swarm_validate(args: argparse.Namespace) -> int:
 
 
 def command_patch_swarm_status(args: argparse.Namespace) -> int:
+    console_mode = bool(
+        getattr(args, "run_dir", "")
+        or getattr(args, "output_dir", "")
+        or getattr(args, "write_html", False)
+        or getattr(args, "strict_links", False)
+        or (getattr(args, "run_id", "") and ("/" in getattr(args, "run_id", "") or "\\" in getattr(args, "run_id", "")))
+    )
+    if console_mode:
+        raw_run_dir = getattr(args, "run_dir", "") or ""
+        if raw_run_dir:
+            run_dir = Path(raw_run_dir)
+        elif getattr(args, "run_id", "") and ("/" in args.run_id or "\\" in args.run_id):
+            run_dir = Path(args.run_id)
+        elif getattr(args, "run_id", ""):
+            run_dir = resolve_patch_swarm_run_dir(args.run_id)
+        else:
+            run_dir = latest_patch_swarm_fixture_e2e_run_dir() or patch_swarm_latest_run_dir() or RUNS_ROOT
+        output_dir = Path(args.output_dir) if getattr(args, "output_dir", "") else None
+        try:
+            console_data, metadata = patch_swarm_console_tool.render_console(
+                run_dir,
+                output_dir=output_dir,
+                write_html=bool(getattr(args, "write_html", False)),
+                strict_links=bool(getattr(args, "strict_links", False)),
+            )
+        except RuntimeError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        if args.json:
+            print(
+                patch_swarm_console_tool.stable_json(
+                    patch_swarm_console_tool.emit_console_json(console_data, output_dir=output_dir or run_dir),
+                    pretty=False,
+                ),
+                end="",
+            )
+        else:
+            target = metadata.get("start_here") or metadata.get("console_data") or console_data.run_dir
+            print(f"{console_data.current_run.get('result', 'unknown')} {console_data.candidate_count} candidates {target}")
+        return 0
+
     run_dir = resolve_patch_swarm_run_dir(args.run_id)
     manifest = read_json(run_dir / "patch_swarm_manifest.json")
     receipt = read_json(run_dir / "patch_swarm_receipt.json")
@@ -4153,8 +4524,40 @@ def command_patch_swarm_status(args: argparse.Namespace) -> int:
 
 
 def command_patch_swarm_e2e(args: argparse.Namespace) -> int:
+    if hasattr(args, "run_root") and not bool(getattr(args, "live", False)) and not bool(getattr(args, "apply", False)):
+        payload, code = validation_e2e_tool.run_from_args(args, command="parallel-delivery patch-swarm e2e")
+        if args.json:
+            print(validation_e2e_tool.stable_json_dumps(payload), end="")
+        elif payload.get("ok"):
+            print(f"{payload.get('state')} {payload.get('candidate_count')} tasks {payload.get('run_dir')}")
+        else:
+            print("; ".join(payload.get("errors", ["fixture e2e failed"])), file=sys.stderr)
+        return code
+
     run_id = args.run_id or f"patch-swarm-e2e-{now_stamp()}"
     run_dir = resolve_patch_swarm_run_dir(run_id, create=True)
+    planner_fixture_dir = run_dir.parent.parent / "planner-fixture"
+    planner_payload, planner_code = planner_tool.run_planner_command(
+        candidate_target=int(getattr(args, "candidate_target", 100) or 100),
+        command="parallel-delivery patch-swarm e2e",
+        dry_run=False,
+        live_pro=bool(getattr(args, "live", False)),
+        max_parallel_agents=int(getattr(args, "max_parallel_agents", 5) or 5),
+        mode="fixture" if bool(getattr(args, "fixture", False) or not getattr(args, "live", False)) else "no-model",
+        request_text=getattr(args, "objective", "") or PATCH_SWARM_OBJECTIVE,
+        run_dir=planner_fixture_dir,
+        run_id="planner-fixture",
+    )
+    if planner_code != 0:
+        payload = {
+            "status": "blocked",
+            "run_id": run_dir.name,
+            "run_dir": rel(run_dir),
+            "planner": planner_payload,
+            "errors": planner_payload.get("errors", []),
+        }
+        print(json.dumps(payload, indent=2) if args.json else f"blocked {rel(run_dir)}")
+        return planner_code
     manifest = build_patch_swarm_plan(
         run_dir,
         objective=getattr(args, "objective", "") or PATCH_SWARM_OBJECTIVE,
@@ -4199,6 +4602,13 @@ def command_patch_swarm_e2e(args: argparse.Namespace) -> int:
         "safe_integrator_handoff": integration.get("safe_integrator_handoff", ""),
         "ui_state": rel(run_dir / "ui_state.json"),
         "decision_report": rel(run_dir / "decision_report.md"),
+        "planner": {
+            "run_dir": planner_payload.get("run_dir", ""),
+            "split_plan": "workspace/runs/parallel-delivery/planner-fixture/split-plan.json",
+            "task_graph": "workspace/runs/parallel-delivery/planner-fixture/task-graph.json",
+            "candidate_count": planner_payload.get("candidate_count", 0),
+            "state": planner_payload.get("state", "unknown"),
+        },
     }
     print(json.dumps(payload, indent=2) if args.json else f"{status} {payload['candidate_count']} candidates {rel(run_dir)}")
     return 0 if status == "completed" else 1
@@ -4666,6 +5076,39 @@ def add_patch_swarm_parser(sub: argparse._SubParsersAction[argparse.ArgumentPars
     plan.add_argument("--json", action="store_true")
     plan.set_defaults(func=command_patch_swarm_plan)
 
+    split = swarm_sub.add_parser("split", help="Create Patch Swarm split-plan, task-graph, and task contract artifacts.")
+    planner_tool.add_split_args(split)
+    split.set_defaults(func=command_patch_swarm_split)
+
+    leases = swarm_sub.add_parser("leases", help="Create Patch Swarm path leases from split-plan/task-graph artifacts.")
+    lease_tool.add_create_args(leases)
+    leases.set_defaults(func=command_patch_swarm_leases)
+
+    validate_leases = swarm_sub.add_parser("validate-leases", help="Validate Patch Swarm path leases without applying patches.")
+    lease_tool.add_validate_args(validate_leases)
+    validate_leases.set_defaults(func=command_patch_swarm_validate_leases)
+
+    prompts = swarm_sub.add_parser("prompts", help="Generate local ChatGPT Pro prompt bundles from Patch Swarm run artifacts.")
+    prompts_tool.add_common_generation_args(prompts)
+    prompts.set_defaults(func=command_patch_swarm_prompts)
+
+    worker_packets = swarm_sub.add_parser("worker-packets", help="Generate local Codex worker packets from Patch Swarm task leases.")
+    worker_packets.add_argument("--run-dir", required=True, help="Run directory containing request.md, split-plan.json, task-graph.json, and path-leases.json.")
+    worker_packets.add_argument("--run-id", default="")
+    worker_packets.add_argument("--fixture", action="store_true", help="Write deterministic fixture inputs before generating packets.")
+    worker_packets.add_argument("--count", type=int, default=None)
+    worker_packets.add_argument("--fixed-timestamp", default="")
+    worker_packets.add_argument("--json", action="store_true")
+    worker_packets.set_defaults(func=command_patch_swarm_worker_packets)
+
+    dispatch = swarm_sub.add_parser("dispatch", help="Plan bounded dry-run Patch Swarm worker dispatch without launching agents.")
+    worker_status_tool.add_dispatch_args(dispatch)
+    dispatch.set_defaults(func=command_patch_swarm_dispatch)
+
+    worker_status = swarm_sub.add_parser("worker-status", help="Show Patch Swarm worker-pool and process visibility status.")
+    worker_status_tool.add_status_args(worker_status)
+    worker_status.set_defaults(func=command_patch_swarm_worker_status)
+
     execute = swarm_sub.add_parser("execute", help="Generate normalized candidate_patch.v1 receipts.")
     execute.add_argument("run_id", nargs="?", default="")
     execute.add_argument("--fixture", action="store_true", help="Use deterministic fixture candidates. This is the default.")
@@ -4697,11 +5140,17 @@ def add_patch_swarm_parser(sub: argparse._SubParsersAction[argparse.ArgumentPars
 
     status = swarm_sub.add_parser("status", help="Show latest or selected Patch Swarm status.")
     status.add_argument("run_id", nargs="?", default="")
+    status.add_argument("--run-dir", default="", help="Read console status from an explicit Patch Swarm run directory.")
+    status.add_argument("--output-dir", default="", help="Write console export files here. Defaults to --run-dir.")
+    status.add_argument("--write-html", action="store_true", help="Write start-here.html next to console-data.json.")
+    status.add_argument("--strict-links", action="store_true", help="Fail if generated console links are missing or escape the run directory.")
     status.add_argument("--json", action="store_true")
     status.set_defaults(func=command_patch_swarm_status)
 
     e2e = swarm_sub.add_parser("e2e", help="Plan, generate 100+ candidates, integrate winners, and validate.")
     e2e.add_argument("--run-id", default="")
+    e2e.add_argument("--run-root", default=str(validation_e2e_tool.DEFAULT_RUN_ROOT), help="Fixture E2E run root.")
+    e2e.add_argument("--output-dir", default="", help="Exact fixture run directory to write. Overrides --run-root when provided.")
     e2e.add_argument("--objective", default=PATCH_SWARM_OBJECTIVE)
     e2e.add_argument("--candidate-target", type=int, default=100)
     e2e.add_argument("--max-parallel-agents", type=int, default=5)
@@ -4719,8 +5168,71 @@ def add_patch_swarm_parser(sub: argparse._SubParsersAction[argparse.ArgumentPars
     e2e.add_argument("--branch", default="")
     e2e.add_argument("--worktree", default="")
     e2e.add_argument("--limit", type=int, default=0)
+    e2e.add_argument("--dry-run", action=argparse.BooleanOptionalAction, default=True, help="Write dry-run integration receipts without applying patches. This is the fixture default.")
+    e2e.add_argument("--fixed-timestamp", default="", help="Use a deterministic timestamp for fixture E2E artifacts.")
+    e2e.add_argument("--include-unsafe-fixture", action=argparse.BooleanOptionalAction, default=True, help="Include an unsafe out-of-lease bundle and prove it is rejected.")
     e2e.add_argument("--json", action="store_true")
     e2e.set_defaults(func=command_patch_swarm_e2e)
+
+
+def add_patch_bundles_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    bundles = sub.add_parser("patch-bundles", help="Collect and validate local Patch Swarm patch bundles.")
+    bundle_sub = bundles.add_subparsers(dest="patch_bundle_command", required=True)
+
+    validate = bundle_sub.add_parser("validate", help="Validate one local Patch Swarm bundle without applying it.")
+    validate.add_argument("--bundle", required=True)
+    validate.add_argument("--lease-manifest", required=True)
+    validate.add_argument("--out", required=True)
+    validate.add_argument("--run-id", default="")
+    validate.add_argument("--base-commit", default="")
+    validate.add_argument("--json", action="store_true")
+    validate.set_defaults(func=command_patch_bundles_validate)
+
+    collect = bundle_sub.add_parser("collect", help="Collect and validate a directory of local Patch Swarm bundles.")
+    collect.add_argument("--bundles-dir", required=True)
+    collect.add_argument("--lease-manifest", required=True)
+    collect.add_argument("--out", required=True)
+    collect.add_argument("--run-id", required=True)
+    collect.add_argument("--base-commit", default="")
+    collect.add_argument("--json", action="store_true")
+    collect.set_defaults(func=command_patch_bundles_collect)
+
+
+def add_release_candidate_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    release = sub.add_parser("release-candidate", help="Create safe apply receipts and release-candidate evidence from accepted integration receipts.")
+    release_sub = release.add_subparsers(dest="release_candidate_command", required=True)
+
+    create = release_sub.add_parser("create", help="Dry-run or apply accepted patch bundles in an isolated target and write release-candidate evidence.")
+    release_candidate_tool.add_create_args(create)
+    create.set_defaults(func=command_release_candidate_create)
+
+
+def add_taskstream_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    taskstream = sub.add_parser("taskstream", help="Emit Patch Swarm task handoff manifests for cento agent-work.")
+    taskstream_sub = taskstream.add_subparsers(dest="taskstream_command", required=True)
+
+    emit = taskstream_sub.add_parser("emit", help="Generate local story/validation manifests from a Patch Swarm split plan.")
+    emit.add_argument("--split-plan", required=True)
+    emit.add_argument("--out", required=True)
+    emit.add_argument("--transport", choices=["auto", "mcp", "agent-work", "manifest-only"], default="manifest-only")
+    emit.add_argument("--run-preflight", action=argparse.BooleanOptionalAction, default=True)
+    emit.add_argument("--default-route", choices=["agent-work", "manifest-only"], default="agent-work")
+    emit.add_argument("--json", action="store_true")
+    emit.set_defaults(func=command_taskstream_emit)
+
+    preflight = taskstream_sub.add_parser("preflight", help="Validate generated work packages and run safe agent-work preflight.")
+    preflight.add_argument("--manifest-dir", required=True)
+    preflight.add_argument("--out", required=True)
+    preflight.add_argument("--json", action="store_true")
+    preflight.set_defaults(func=command_taskstream_preflight)
+
+    apply_parser = taskstream_sub.add_parser("apply", help="Submit generated work packages through approved Taskstream surfaces.")
+    apply_parser.add_argument("--manifest-dir", required=True)
+    apply_parser.add_argument("--out", required=True)
+    apply_parser.add_argument("--transport", choices=["auto", "mcp", "agent-work"], default="auto")
+    apply_parser.add_argument("--apply", action="store_true", help="Required for live task creation.")
+    apply_parser.add_argument("--json", action="store_true")
+    apply_parser.set_defaults(func=command_taskstream_apply)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -4761,9 +5273,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     status = sub.add_parser("status", help="Summarize the latest or selected run.")
     status.add_argument("--run-dir", default="")
+    status.add_argument("--run", default="", help="Run id under --run-root.")
+    status.add_argument("--run-root", default=str(RUNS_ROOT), help="Run root for --run lookup.")
     status.add_argument("--json", action="store_true")
     status.set_defaults(func=command_status)
     add_train_parser(sub)
+    add_patch_bundles_parser(sub)
+    add_release_candidate_parser(sub)
+    add_taskstream_parser(sub)
     add_patch_swarm_parser(sub)
     add_self_improve_parser(sub)
     return parser
