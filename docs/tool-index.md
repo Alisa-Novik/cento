@@ -24,6 +24,16 @@
   - `cento install zsh`
   - `cento install tmux`
   - `cento run scan --query "mcp"`
+  - `cento build --help`
+  - `cento build init --task "Fixture docs page patch" --mode fast --write tests/fixtures/cento_build/app_page.html --route /fixture`
+  - `cento build check tests/fixtures/cento_build/manifest.valid.json`
+  - `cento runtime check codex-fast`
+  - `cento workset check tests/fixtures/cento_workset/workset.valid.json`
+  - `cento workset run tests/fixtures/cento_workset/workset.valid.json --max-workers 2 --runtime-profile fixture-valid --apply sequential --validation smoke`
+  - `cento workset execute tests/fixtures/cento_workset/workset.execute.fixture.json --max-parallel 3 --runtime fixture --integrate sequential --validation smoke`
+  - `cento workset execute .cento/worksets/docs_page.json --max-parallel 6 --runtime api-openai --budget-usd 3 --max-budget-usd 5 --integrate sequential --apply --validation smoke`
+  - `cento build bundle synthesize --manifest tests/fixtures/cento_build/manifest.valid.json --patch tests/fixtures/cento_build/patch.valid.diff`
+  - `cento build integrate tests/fixtures/cento_build/manifest.valid.json --bundle .cento/builds/build_fixture_docs_page_001/integration/patch_bundle.json --dry-run`
   - `cento platforms`
   - `cento platforms macos`
   - `cento platforms linux`
@@ -99,7 +109,6 @@
   - `cento crm intake init --person "Ada Lovelace"`
   - `cento crm intake add --person "Ada Lovelace" --kind resume --file ./resume.pdf`
   - `cento crm intake plan --person "Ada Lovelace"`
-  - `cento crm integration --provider redmine --person "Ada Lovelace" --start-workflow --dry-run`
   - `cento crm serve --open`
   - `cento crm show`
   - `cento crm docs`
@@ -134,6 +143,19 @@
   - `cento mcp docs`
   - `cento mcp paths`
 
+## Cento MCP Server
+
+- `id`: `cento-mcp`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/cento_mcp_server.py`
+- description: Local MCP stdio server that exposes safe Cento agent-work, story manifest, cluster, bridge, and context tools.
+- commands:
+  - `python3 scripts/cento_mcp_server.py --list-tools`
+  - `python3 scripts/cento_mcp_server.py --call-tool cento_agent_work_list --arguments '{}'`
+  - `python3 scripts/cento_mcp_server.py --call-tool cento_context --arguments '{"remote":false}'`
+  - `cento mcp doctor`
+
 ## Scan One Pager
 
 - `id`: `scan`
@@ -146,64 +168,6 @@
   - `cento scan --query "telegram" --no-open`
   - `cento scan --query "crm" --case-sensitive`
   - `cento scan --query "mcp" --port 47890`
-
-## Validator Tier 0
-
-- `id`: `validator-tier0`
-- `lane`: `agent ops`
-- `kind`: `python`
-- `entrypoint`: `./scripts/validator_tier0.py`
-- description: Create validation packets and run deterministic Tier 0 checks with mandatory timing and AI budget stats.
-- commands:
-  - `cento validator-tier0 stories`
-  - `cento validator-tier0 run workspace/runs/validator-tier0/e2e/sample-pass.json`
-  - `cento validator-tier0 e2e`
-  - `cento validator-tier0 run workspace/runs/agent-work/no-model-validation-e2e/validation.json --run-dir workspace/runs/agent-work/no-model-validation-e2e/tier0`
-
-## Story Manifest
-
-- `id`: `story-manifest`
-- `lane`: `agent ops`
-- `kind`: `python`
-- `entrypoint`: `./scripts/story_manifest.py`
-- description: Validate, draft, and render Cento agent-work story.json manifests.
-- commands:
-  - `cento story-manifest draft --title "Fix dashboard" --package app --expected-output workspace/runs/agent-work/drafts/fix-dashboard/evidence.md`
-  - `cento story-manifest validate workspace/runs/agent-work/no-model-validation-e2e/story.json`
-  - `cento story-manifest render-hub workspace/runs/agent-work/1000086/story.json`
-
-## Validation Manifest
-
-- `id`: `validation-manifest`
-- `lane`: `agent ops`
-- `kind`: `python`
-- `entrypoint`: `./scripts/validation_manifest.py`
-- description: Generate deterministic validation.json checks from story.json and enforce no-model coverage guardrails.
-- commands:
-  - `cento validation-manifest draft workspace/runs/agent-work/no-model-validation-e2e/story.json --output workspace/runs/agent-work/no-model-validation-e2e/validation.json`
-  - `cento validation-manifest validate workspace/runs/agent-work/no-model-validation-e2e/validation.json`
-
-## No-model Validation E2E
-
-- `id`: `no-model-validation-e2e`
-- `lane`: `agent ops`
-- `kind`: `python`
-- `entrypoint`: `./scripts/no_model_validation_e2e.py`
-- description: Run generated story manifest, generated validation manifest, agent-work preflight, and Tier 0 validation in one zero-AI evidence loop.
-- commands:
-  - `cento no-model-validation-e2e`
-  - `cento no-model-validation-e2e --run-dir workspace/runs/agent-work/no-model-validation-e2e`
-
-## Manifest Validate
-
-- `id`: `manifest-validate`
-- `lane`: `agent ops`
-- `kind`: `python`
-- `entrypoint`: `./scripts/manifest_validate.py`
-- description: Deterministically validate story.json and validation.json pairs, including evidence paths, API specs, and allowlisted commands without AI.
-- commands:
-  - `cento manifest-validate --story workspace/runs/agent-work/1000088/story.json --validation workspace/runs/agent-work/1000088/validation.json --json --report workspace/runs/agent-work/1000088/validation-report.md`
-  - `python3 ./scripts/manifest_validate.py --story workspace/runs/agent-work/1000088/story.json --json`
 
 ## Bluetooth Audio Doctor
 
@@ -259,6 +223,23 @@
   - `cento preset industrial-os --session`
   - `cento preset industrial-os --dashboard-only --open`
   - `cento dashboard --theme industrial --open`
+
+## Darth Lolipopus Pet Pane
+
+- `id`: `industrial-pet`
+- `lane`: `desktop ops`
+- `kind`: `shell`
+- `entrypoint`: `./scripts/industrial_pet_tui.sh`
+- description: Cute Sith Tamagotchi pane for Darth Lolipopus in the Industrial OS workspace.
+- commands:
+  - `cento industrial-pet`
+  - `cento industrial-pet --once --width 98 --height 24`
+  - `cento industrial-pet --action nap`
+  - `cento industrial-pet --image assets/industrial-os/darth-lolipopus.png`
+  - `cento industrial-pet --portrait slot`
+  - `cento industrial-pet --reset`
+- docs:
+  - [`docs/industrial-pet.md`](./industrial-pet.md)
 
 ## Quick Help
 
@@ -370,6 +351,16 @@
   - `./scripts/batch_exec.sh --root ~/projects --pattern '*' --command 'git status --short'`
   - `./scripts/batch_exec.sh --root ~/projects --pattern '*' --git-only --dry-run --command 'pwd'`
 
+## Cento Temporary Commands
+
+- `id`: `temp`
+- `lane`: `ops`
+- `kind`: `shell`
+- `entrypoint`: `./scripts/cento_temp.sh`
+- description: One-command operator clipboard bridge that copies the fixed Markdown reference configured in scripts/cento_temp.sh through pbcopy.
+- commands:
+  - `cento temp run`
+
 ## Search Report
 
 - `id`: `search-report`
@@ -381,15 +372,29 @@
   - `./scripts/search_report.sh --query TODO --root ~/projects/cento`
   - `./scripts/search_report.sh --query bluetooth --root ~/projects`
 
+## Discord Control
+
+- `id`: `discord`
+- `lane`: `desktop ops`
+- `kind`: `shell`
+- `entrypoint`: `./scripts/restart_discord.sh`
+- description: Update, rerun, and inspect Discord through a Cento-native Linux desktop control command.
+- commands:
+  - `cento discord status`
+  - `cento discord update`
+  - `cento discord update --rerun`
+  - `cento discord rerun`
+
 ## Restart Discord
 
 - `id`: `rd`
 - `lane`: `desktop ops`
 - `kind`: `shell`
 - `entrypoint`: `./scripts/restart_discord.sh`
-- description: Terminate and relaunch Discord through the available desktop launcher.
+- description: Compatibility shortcut for `cento discord rerun`.
 - commands:
   - `cento rd`
+  - `cento rd rerun`
 
 ## Tool Index Generator
 
@@ -471,6 +476,7 @@
   - `cento cluster status`
   - `cento cluster exec linux -- tmux ls`
   - `cento cluster exec macos -- cento gather-context --no-remote`
+  - `CENTO_IPHONE_URL=http://iphone-cento.local:47919 cento cluster exec iphone -- health`
   - `cento cluster sync`
   - `cento cluster heal`
   - `cento cluster heal linux`
@@ -496,6 +502,24 @@
   - `cento gather-context --json`
   - `cento gather-context --output workspace/runs/cento-context.md`
 
+## Mozilla VPN Pane
+
+- `id`: `mozilla-vpn`
+- `lane`: `desktop ops`
+- `kind`: `shell`
+- `entrypoint`: `./scripts/mozilla_vpn_tui.sh`
+- description: Native Mozilla VPN control pane for the Industrial OS workspace, with status, UI launch, login, activate, and deactivate actions.
+- commands:
+  - `cento mozilla-vpn`
+  - `cento mozilla-vpn --once`
+  - `cento mozilla-vpn status`
+  - `cento mozilla-vpn countries`
+  - `cento mozilla-vpn select COUNTRY`
+  - `cento mozilla-vpn ui`
+  - `cento mozilla-vpn login`
+  - `cento mozilla-vpn activate`
+  - `cento mozilla-vpn deactivate`
+
 ## Cento Network Monitor
 
 - `id`: `network-tui`
@@ -508,149 +532,139 @@
   - `cento network-tui --no-remote`
   - `./scripts/network_tui.sh`
 
-## Cento Taskstream CLI
+## Agent Work Tracker
 
 - `id`: `agent-work`
 - `lane`: `agent ops`
 - `kind`: `python`
 - `entrypoint`: `./scripts/agent_work.py`
-- description: Cento Taskstream CLI for assigning, splitting, dispatching, reviewing, archiving, and cutting over Cento agent tasks across the Mac/Linux cluster.
+- description: Lifecycle and governance substrate for Taskstream-backed Cento work: story/validation manifests, prompt handoff, dispatch/run ledgers, and review across the Mac/Linux cluster.
 - commands:
   - `cento agent-work bootstrap`
-  - `cento agent-work create --title "Fix dashboard" --manifest workspace/runs/agent-work/drafts/fix-dashboard/story.json --node linux --agent codex`
-  - `CENTO_AGENT_WORK_BACKEND=dual cento agent-work create --title "Validate parity" --manifest workspace/runs/agent-work/drafts/validate-parity/story.json --node linux --agent codex`
-  - `cento agent-work preflight workspace/runs/agent-work/no-model-validation-e2e/story.json --validation-manifest workspace/runs/agent-work/no-model-validation-e2e/validation.json`
+  - `cento agent-work create --title "Fix dashboard" --node linux --agent codex`
   - `cento agent-work split --title "Improve mission control" --nodes linux,macos --task "Backend status" --task "Mac tile view"`
   - `cento agent-work list`
   - `cento agent-work show 123`
   - `cento agent-work claim 123 --node linux --agent codex`
   - `cento agent-work update 123 --status review --note "implemented and tested"`
-  - `CENTO_AGENT_WORK_BACKEND=dual cento agent-work update 123 --status validating --note "builder update path check"`
-  - `CENTO_AGENT_WORK_BACKEND=dual cento agent-work validate 123 --result pass --note "validation accepted" --evidence workspace/runs/agent-work/validation-report.md`
-  - `CENTO_AGENT_WORK_BACKEND=dual cento agent-work cutover-parity --all --run-dir workspace/runs/agent-work/cutover`
-  - `cento agent-work backup --run-dir workspace/runs/agent-work/cutover/e2e-check`
-  - `cento agent-work restore --bundle workspace/runs/agent-work/cutover/e2e-check/backup --verify`
-  - `cento agent-work archive --query "cutover"`
-  - `cento agent-work cutover-status`
-  - `cento agent-work cutover-freeze`
-  - `cento agent-work cutover-verify --run-dir workspace/runs/agent-work/cutover/e2e-check`
-  - `cento agent-work cutover-finalize --force`
-  - `cento agent-work review-drain --package mission-control --dry-run`
-  - `cento agent-work review-drain --package mission-control --apply`
   - `cento agent-work prompt 123`
   - `cento agent-work dispatch 123 --node linux --dry-run`
-  - `CENTO_AGENT_WORK_BACKEND=dual make agent-work-e2e`
-  - `CENTO_AGENT_WORK_BACKEND=dual make agent-work-dual-backend-stress`
+  - `cento agent-pool-kick --dry-run`
+  - `cento agent-pool-kick --max-launch 2 --runtime codex --model gpt-5.3-codex-spark`
   - `cento agent-work runs`
   - `cento agent-work runs --json --active`
   - `cento agent-work run-status RUN_ID --json`
 
-## Agent Manager
+## Compute Policy
 
-- `id`: `agent-manager`
+- `id`: `compute-policy`
 - `lane`: `agent ops`
 - `kind`: `python`
-- `entrypoint`: `./scripts/agent_manager.py`
-- description: Control-plane scanner for Cento agents that detects stale, idle, stuck, errored, duplicated, manual, and low-value runs and writes actionable reports.
+- `entrypoint`: `./scripts/compute_policy.py`
+- description: Manage provider-share policy for Codex, Claude Code, and metered OpenAI API use, then sync Agent Work runtime weights.
 - commands:
-  - `cento agent-manager scan`
-  - `cento agent-manager scan --json`
-  - `cento agent-manager report`
-  - `cento agent-manager recommend --limit 10`
-  - `cento agent-manager classify --issue-id 81`
-  - `cento agent-manager mark-stale RUN_ID --reason "stuck validator" --dry-run`
-  - `cento agent-manager mark-blocked 81 --reason "stuck validator" --evidence RUN_ID --dry-run`
-  - `cento agent-manager terminate-tmux cento-agent-81-095103 --reason "stuck validator" --dry-run`
-  - `make agent-manager ARGS="pool-stats --json"`
+  - `cento compute-policy show`
+  - `cento compute-policy show --json`
+  - `cento compute-policy preset codex-first --json`
+  - `cento compute-policy preset agent-preferred --json`
+  - `cento compute-policy set --codex 85 --claude 15 --openai-api 0 --json`
+  - `cento compute-policy apply --json`
 
-## Cento Factory
+## Agent Pool Kicker
 
-- `id`: `factory`
-- `lane`: `planning`
-- `kind`: `python`
-- `entrypoint`: `./scripts/factory.py`
-- description: Manifest-driven factory workflow that turns a high-level request into intake artifacts, a validated factory-plan.json, story manifests, validation manifests, queue ledgers, owned-path leases, worktree metadata, prompt bundles, patch collection, integration dry-runs, isolated Safe Integrator branches, per-patch validation, rollback metadata, release candidates, release status, Autopilot dry-run control cycles, runtime adapter contracts, and static evidence hubs without default AI dispatch.
-- commands:
-  - `cento factory intake "develop me a career consulting module" --dry-run --out workspace/runs/factory/factory-planning-e2e`
-  - `cento factory plan workspace/runs/factory/factory-planning-e2e --no-model`
-  - `cento factory materialize workspace/runs/factory/factory-planning-e2e`
-  - `cento factory create-issues workspace/runs/factory/factory-planning-e2e --dry-run`
-  - `cento factory preflight workspace/runs/factory/factory-planning-e2e --json`
-  - `cento factory queue workspace/runs/factory/factory-planning-e2e`
-  - `cento factory lease workspace/runs/factory/factory-planning-e2e --task crm-schema-extension --dry-run`
-  - `cento factory dispatch workspace/runs/factory/factory-planning-e2e --lane builder --max 4 --dry-run`
-  - `cento factory collect workspace/runs/factory/factory-planning-e2e`
-  - `cento factory validate workspace/runs/factory/factory-planning-e2e`
-  - `cento factory integrate workspace/runs/factory/factory-planning-e2e --dry-run`
-  - `cento factory integrate factory-integration-e2e --plan`
-  - `cento factory integrate factory-integration-e2e --prepare-branch --branch factory/factory-integration-e2e/integration`
-  - `cento factory integrate factory-integration-e2e --apply --validate-each --limit 3`
-  - `cento factory validate-integrated factory-integration-e2e`
-  - `cento factory release-candidate factory-integration-e2e`
-  - `cento factory sync-taskstream factory-integration-e2e --dry-run`
-  - `cento factory release workspace/runs/factory/factory-planning-e2e --json`
-  - `cento factory render-hub workspace/runs/factory/factory-planning-e2e`
-  - `cento factory status workspace/runs/factory/factory-planning-e2e`
-  - `cento factory autopilot factory-autopilot-runtime-e2e --dry-run --cycles 5`
-  - `cento factory autopilot-status factory-autopilot-runtime-e2e --json`
-  - `cento factory autopilot-render factory-autopilot-runtime-e2e`
-  - `cento factory runtime list --json`
-  - `cento factory runtime prepare factory-runtime-adapters-e2e --task factory-runtime-task-01 --runtime noop --dry-run`
-  - `cento factory runtime launch factory-runtime-adapters-e2e --task factory-runtime-task-01 --runtime noop --dry-run`
-  - `cento factory runtime status factory-runtime-adapters-e2e --task factory-runtime-task-01 --json`
-  - `cento factory runtime collect factory-runtime-adapters-e2e --task factory-runtime-task-01`
-  - `cento factory runtime cancel factory-runtime-adapters-e2e --task factory-runtime-task-01 --dry-run`
-
-## Cento Storage
-
-- `id`: `storage`
-- `lane`: `platform ops`
-- `kind`: `python`
-- `entrypoint`: `./scripts/storage.py`
-- description: No-delete artifact catalog and retention planner for Cento run ledgers, manifests, patches, validation logs, screenshots, SQLite snapshots, prompts, and release evidence before high-fanout Factory work increases artifact volume.
-- commands:
-  - `cento storage scan --root workspace/runs --db workspace/storage/catalog.sqlite`
-  - `cento storage plan --dry-run`
-  - `cento storage query --largest --limit 20`
-  - `cento storage query --class screenshot_raw`
-  - `cento storage pressure --json`
-  - `cento storage normalize screenshots --dry-run`
-  - `cento storage compress logs --dry-run`
-  - `cento storage snapshot-db --path workspace/storage/catalog.sqlite --out workspace/storage/db-snapshots/catalog-snapshot.db`
-  - `cento storage restore-test --sample 10`
-  - `cento storage verify --all`
-  - `cento storage report --out workspace/storage/reports/storage-summary.md`
-  - `python3 scripts/storage_e2e.py --fixture mixed-artifacts --out workspace/runs/storage/cento-storage-v1`
-
-## Cento Console App
-
-- `id`: `agent-work-app`
+- `id`: `agent-pool-kick`
 - `lane`: `agent ops`
 - `kind`: `python`
-- `entrypoint`: `./scripts/agent_work_app.py`
-- description: Self-hosted Cento Console web app with Taskstream, Cluster, Consulting, and Docs sections, plus background process control, health checks, and migration import sync.
+- `entrypoint`: `./scripts/agent_pool_kick.py`
+- description: Dry-run-first bounded worker-pool planner and launcher for builder, validator, small-task, and coordinator lanes without unbounded dispatch.
 - commands:
-  - `cento agent-work-app start`
-  - `cento agent-work-app stop`
-  - `cento agent-work-app status`
-  - `cento agent-work-app import-redmine`
-  - `cento agent-work-app install-sync`
-  - `cento agent-work backup`
-  - `cento agent-work restore --bundle workspace/runs/agent-work/cutover/e2e-check/backup --verify`
-  - `cento agent-work archive --query "migration"`
-  - `cento agent-work cutover-status`
+  - `cento agent-pool-kick --dry-run`
+  - `cento agent-pool-kick --max-launch 3 --dry-run`
+  - `cento agent-pool-kick --repair-missing-manifests --repair-apply --repair-lanes all --max-launch 0 --dry-run`
+  - `cento agent-pool-kick --package claude-chores --runtime claude-code --model claude-sonnet-4-6 --max-launch 2`
+  - `cento agent-pool-kick --max-launch 3 --model gpt-5.3-codex-spark`
+  - `cento agent-pool-kick --builder-target 2 --validator-target 2 --small-target 1 --coordinator-target 1`
+  - `python3 scripts/agent_pool_kick.py --dry-run`
 
-## Story Screenshot Runner
+## Claude Code Chores
 
-- `id`: `story-screenshot-runner`
+- `id`: `claude-chores`
 - `lane`: `agent ops`
 - `kind`: `python`
-- `entrypoint`: `./scripts/story_screenshot_runner.py`
-- description: Read screenshot requirements from story.json, capture desktop and mobile evidence with Playwright, and write deterministic metadata plus an index for Docs/Evidence and Validator lanes.
+- `entrypoint`: `./scripts/claude_chores.py`
+- description: Discover, document, schedule, and launch bounded Claude Code maintenance chores for Cento without metered OpenAI API spend.
 - commands:
-  - `cento story-screenshot-runner workspace/runs/agent-work/59/story.json`
-  - `cento story-screenshot-runner workspace/runs/agent-work/59/story.json --force`
-  - `./scripts/story_screenshot_runner.py workspace/runs/agent-work/59/story.json --force`
+  - `cento claude-chores plan --scope broad-repo --json`
+  - `cento claude-chores run --scope broad-repo --chore-limit 2 --max-launch 2 --runtime claude-code --model claude-sonnet-4-6 --json`
+  - `cento claude-chores run --scope broad-repo --chore-limit 2 --max-launch 2 --dry-run --json`
+  - `cento claude-chores status --json`
+  - `cento claude-chores install-cron --interval-minutes 30 --json`
+  - `cento claude-chores uninstall-cron --json`
+
+## Walk Autopilot
+
+- `id`: `walk-autopilot`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/walk_autopilot.py`
+- description: Append-only follow-up coordinator for bounded Factory, spend-ledger, Hard ProReq, image fallback, agent-work hygiene, and worker-pool loops.
+- commands:
+  - `cento walk-autopilot run --loops 12 --cadence-seconds 1200 --soft-cap-usd 12 --hard-cap-usd 20`
+  - `cento walk-autopilot start-tmux --loops 12 --cadence-seconds 1200 --hard-cap-usd 20 --allow-live-api --dashboard-total-spend-usd 0 --notify-target iphone`
+  - `cento walk-autopilot run --loops 1 --cadence-seconds 0`
+  - `cento walk-autopilot start-tmux --loops 12 --cadence-seconds 1200 --notify-target iphone`
+  - `cento walk-autopilot status`
+  - `cento walk-autopilot review-unblock run --mode report --json`
+  - `cento walk-autopilot review-unblock run --mode aggressive --json`
+  - `cento walk-autopilot review-unblock status --json`
+  - `cento walk-autopilot run --live-workers --review-unblock-mode aggressive`
+  - `cento walk-autopilot patch-swarm run --candidate-target 100 --max-parallel-agents 5 --json`
+  - `cento walk-autopilot patch-swarm status --json`
+  - `cento walk-autopilot routing run --json`
+  - `cento walk-autopilot routing status --json`
+  - `cento walk-autopilot routing install-cron --every-hours 4 --json`
+  - `cento walk-autopilot routing uninstall-cron --json`
+  - `cento walk-autopilot factory-scale start --duration-hours 6 --proreq-executions 30 --min-proreq-calls 100 --patch-swarm --json`
+  - `cento walk-autopilot factory-scale start-day --target-proreq-calls 3000 --max-proreq-calls 10000 --duration-hours 12 --batch-size 5 --json`
+  - `cento walk-autopilot factory-scale preflight --run-id RUN_ID --json`
+  - `cento walk-autopilot factory-scale advance --run-id RUN_ID --promotion-limit 25 --json`
+  - `cento walk-autopilot factory-scale promote --run-id RUN_ID --limit 100 --factory-run workspace/runs/factory/factory-scale-promotion-RUN_ID --json`
+  - `cento walk-autopilot factory-scale tick --run-id RUN_ID --batch-size 5 --json`
+  - `cento walk-autopilot factory-scale status --run-id RUN_ID --json`
+  - `cento walk-autopilot factory-scale install-cron --run-id RUN_ID --duration-hours 6 --json`
+  - `cento walk-autopilot factory-scale uninstall-cron --json`
+- docs:
+  - [`docs/ai-review-unblock-autopilot.md`](./ai-review-unblock-autopilot.md)
+  - [`docs/ai-routing-nativeness-loop.md`](./ai-routing-nativeness-loop.md)
+  - [`docs/agent-work-live-dispatch-incident.md`](./agent-work-live-dispatch-incident.md)
+  - [`docs/factory-1000-patch-swarm-roadmap.md`](./factory-1000-patch-swarm-roadmap.md)
+  - [`docs/walk-autopilot-spend-cap-incident.md`](./walk-autopilot-spend-cap-incident.md)
+
+## Agent Work Hygiene
+
+- `id`: `agent-work-hygiene`
+- `lane`: `agent ops`
+- `kind`: `shell`
+- `entrypoint`: `./scripts/agent_work_hygiene.sh`
+- description: Collect a point-in-time reconciliation report of agent run ledgers, tmux sessions, and Codex/Claude processes.
+- commands:
+  - `cento agent-work-hygiene`
+  - `cento agent-work-hygiene --issue 94`
+  - `cento agent-work-hygiene --out-dir workspace/runs/agent-work/reconciliation`
+  - `./scripts/agent_work_hygiene.sh`
+
+## Agent Processes Dashboard
+
+- `id`: `agent-processes`
+- `lane`: `agent ops`
+- `kind`: `shell`
+- `entrypoint`: `./scripts/agent_processes_tui.sh`
+- description: Read-only process and worker visibility for cluster-wide managed/manual agent sessions, stale/risk indicators, and queue pressure.
+- commands:
+  - `cento agent-processes`
+  - `cento agent-processes --once`
+  - `./scripts/agent_processes_tui.sh`
+  - `./scripts/agent_processes_tui.sh --once`
 
 ## Cento Incident Response
 
@@ -697,14 +711,226 @@
   - `cento mobile watch-status`
   - `cento mobile docs`
 
-## Cento Temporary Commands
+## Demo Evidence Recorder
 
-- `id`: `temp`
-- `lane`: `ops`
-- `kind`: `shell`
-- `entrypoint`: `./scripts/cento_temp.sh`
-- description: Short-lived operator wrappers for fragile one-off commands that should not be pasted as multiline shell.
+- `id`: `demo-evidence`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/demo_evidence.py`
+- description: Operator evidence utility for short 10-30 second desktop demo videos after real Factory, Codex worker, or validation flows exist.
 - commands:
-  - `cento run temp 1`
-  - `cento run temp 1 status`
-  - `cento run temp 1 rollback`
+  - `cento demo-evidence record --title "Factory UI walkthrough" --duration 15`
+  - `cento demo-evidence record --factory-run workspace/runs/factory/<run> --task <task-id> --worker <worker-id> --duration 15 --notes "Shows accepted flow"`
+  - `cento demo-evidence record --duration 10 --recorder synthetic --out workspace/runs/demo-evidence/smoke --json`
+  - `cento demo-evidence record --duration 15 --dry-run --json`
+  - `cento demo-evidence verify workspace/runs/demo-evidence/<run>`
+  - `cento demo-evidence status workspace/runs/demo-evidence/<run> --json`
+
+## Cento Factory
+
+- `id`: `factory`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/factory.py`
+- description: Orchestration substrate for deterministic intake, planning, materialization, queueing, dry-run dispatch, patch collection, validation, integration, release candidates, and hubs.
+- commands:
+  - `cento factory --help`
+  - `cento factory intake "develop me a career consulting module" --dry-run --out workspace/runs/factory/factory-planning-e2e`
+  - `cento factory plan workspace/runs/factory/factory-planning-e2e --no-model`
+  - `cento factory materialize workspace/runs/factory/factory-planning-e2e`
+  - `cento factory queue workspace/runs/factory/factory-planning-e2e`
+  - `cento factory dispatch workspace/runs/factory/factory-planning-e2e --lane builder --max 4 --dry-run`
+  - `cento factory collect workspace/runs/factory/factory-planning-e2e`
+  - `cento factory validate workspace/runs/factory/factory-planning-e2e`
+  - `cento factory integrate workspace/runs/factory/factory-planning-e2e --dry-run`
+  - `cento factory validate-fanout factory-integration-e2e --max-parallel 32 --json`
+  - `cento factory merge factory-integration-e2e --auto-merge-main --dry-run --json`
+  - `cento factory merge factory-integration-e2e --auto-merge-main --push --json`
+  - `cento factory status workspace/runs/factory/factory-planning-e2e`
+
+## Cento Build
+
+- `id`: `build`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/cento_build.py`
+- description: Patch unit and safety substrate for manifest-owned paths, Builder prompts, patch bundles, dry-run integration, safe apply, and receipts.
+- commands:
+  - `cento build --help`
+  - `cento build init --task "Fixture docs page patch" --mode fast --write tests/fixtures/cento_build/app_page.html --route /fixture`
+  - `cento build check tests/fixtures/cento_build/manifest.valid.json`
+  - `cento build prompt tests/fixtures/cento_build/manifest.valid.json`
+  - `cento build artifact check tests/fixtures/cento_build/worker_artifact.valid.json`
+  - `cento build worker run .cento/builds/<id>/manifest.json --worker builder_1 --runtime fixture --fixture-case valid --worktree --timeout 180`
+  - `cento build worker run .cento/builds/<id>/manifest.json --worker builder_1 --runtime-profile codex-fast --worktree`
+  - `cento build worker run .cento/builds/<id>/manifest.json --worker builder_1 --runtime command --command "codex exec --prompt-file {prompt}" --allow-unsafe-command --worktree --timeout 180`
+  - `cento build bundle synthesize --manifest tests/fixtures/cento_build/manifest.valid.json --patch tests/fixtures/cento_build/patch.valid.diff`
+  - `cento build integrate .cento/builds/<id>/manifest.json --bundle .cento/builds/<id>/workers/builder_1/patch_bundle.json --worktree --dry-run`
+  - `cento build apply .cento/builds/<id>/manifest.json --bundle .cento/builds/<id>/workers/builder_1/patch_bundle.json --from-receipt .cento/builds/<id>/integration_receipt.json`
+  - `cento build receipt .cento/builds/build_fixture_docs_page_001`
+
+## Cento Runtime Profiles
+
+- `id`: `runtime`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/cento_runtime.py`
+- description: Inspect and validate local builder runtime profiles used by Cento Build worker execution.
+- commands:
+  - `cento runtime list`
+  - `cento runtime list --json`
+  - `cento runtime check codex-fast`
+  - `cento runtime check codex-fast --json`
+  - `cento runtime check claude-code-fast --json`
+  - `cento runtime check python-fixture --require-executable`
+
+## Cento Workset
+
+- `id`: `workset`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/cento_workset.py`
+- description: Parallel lease substrate for exclusive-path N-worker tasks, structured API artifacts, dependency gates, budget caps, and sequential integration.
+- commands:
+  - `cento workset check tests/fixtures/cento_workset/workset.valid.json`
+  - `cento workset check tests/fixtures/cento_workset/workset.execute.api.json --runtime api-openai`
+  - `cento workset check tests/fixtures/cento_workset/workset.overlap.json`
+  - `cento workset run tests/fixtures/cento_workset/workset.valid.json --max-workers 2 --runtime-profile fixture-valid --apply sequential --validation smoke`
+  - `cento workset run workset.json --max-workers 3 --runtime-profile codex-fast --apply sequential --validation smoke`
+  - `cento workset execute tests/fixtures/cento_workset/workset.execute.fixture.json --max-parallel 3 --runtime fixture --integrate sequential --validation smoke`
+  - `cento workset execute .cento/worksets/docs_page.json --max-parallel 6 --runtime api-openai --budget-usd 3 --max-budget-usd 5 --integrate sequential --apply --validation smoke`
+  - `cento workset materialize-artifact .cento/worksets/<run_id>/workers/<worker_id>/artifact.json`
+
+## Oracle Object Storage
+
+- `id`: `object-storage`
+- `lane`: `cloud ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/object_storage.py`
+- description: Write dummy objects and mirror Cento run images to private Oracle Object Storage through the OCI CLI.
+- commands:
+  - `cento object-storage status`
+  - `cento object-storage status --probe --json`
+  - `cento object-storage ensure-bucket --name cento-images-standard --region us-ashburn-1 --namespace NAMESPACE --json`
+  - `cento object-storage put-dummy --dry-run --json`
+  - `cento object-storage put-dummy --region us-ashburn-1 --bucket CENTO_BUCKET --namespace NAMESPACE --json`
+  - `cento object-storage e2e --json`
+  - `cento object-storage e2e --live --region us-ashburn-1 --bucket CENTO_BUCKET --namespace NAMESPACE --json`
+  - `cento object-storage plan-images --root workspace/runs --bucket cento-images-standard --namespace NAMESPACE --region us-ashburn-1 --json`
+  - `cento object-storage upload-images --manifest workspace/runs/object-storage/<run-id>/manifest.json --live --json`
+  - `cento object-storage verify-images --manifest workspace/runs/object-storage/<run-id>/upload-receipt.json --sample 10 --json`
+- docs:
+  - [`docs/oci-image-migration.html`](./oci-image-migration.html)
+  - [`docs/oci-image-migration.md`](./oci-image-migration.md)
+
+## ProReq Light
+
+- `id`: `proreq-light`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/proreq_light.py`
+- description: Run the Hard ProReq artifact chain with the Pro planning request replaced by Codex Exec using a ChatGPT Pro simulation prompt.
+- commands:
+  - `cento proreq-light all`
+  - `cento proreq-light pro-request`
+  - `cento proreq-light codex-plan`
+  - `cento proreq-light backend-work`
+  - `cento proreq-light validation-plan`
+  - `cento proreq-light deliver --max-parallel 3 --runtime-profile codex-fast --json`
+- docs:
+  - [`docs/dev-pipeline-run-contracts.md`](./dev-pipeline-run-contracts.md)
+
+## Cento Tool Foundry
+
+- `id`: `foundry`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/tool_foundry.py`
+- description: Create Cento-native business tools through Factory, Workset, parallel train promotion, storage policy, cost receipts, and demo evidence.
+- commands:
+  - `cento foundry create "client intake hub" --domain career-consulting --max-parallel 6 --budget-usd 10 --max-budget-usd 20 --json`
+  - `cento foundry plan RUN_ID --json`
+  - `cento foundry execute RUN_ID --runtime fixture --json`
+  - `cento foundry execute RUN_ID --runtime api-openai --budget-usd 10 --max-budget-usd 20 --json`
+  - `cento foundry promote RUN_ID --dry-run --json`
+  - `cento foundry materialize RUN_ID --target-root templates/foundry/client-intake-hub --dry-run --json`
+  - `cento foundry materialize RUN_ID --target-root templates/foundry/client-intake-hub --apply --json`
+  - `cento foundry status RUN_ID --json`
+  - `cento foundry validate RUN_ID --json`
+  - `cento foundry e2e --fixture client-intake-hub --dry-run --json`
+  - `cento foundry e2e --fixture client-intake-hub --dry-run --real-files --target-root templates/foundry/client-intake-hub --json`
+  - `cento foundry e2e --fixture client-intake-hub --live --budget-usd 10 --max-budget-usd 20 --json`
+- docs:
+  - [`docs/tool-foundry.md`](./tool-foundry.md)
+  - [`docs/client-intake-hub.md`](./client-intake-hub.md)
+
+## Parallel AI Delivery
+
+- `id`: `parallel-delivery`
+- `lane`: `agent ops`
+- `kind`: `python`
+- `entrypoint`: `./scripts/parallel_delivery.py`
+- description: Patch Swarm and Parallel AI Delivery product facade over Factory orchestration, Build patch units, Workset leases, Agent Work lifecycle, and worker visibility.
+- commands:
+  - `cento parallel-delivery plan --json`
+  - `cento parallel-delivery execute --sleep-seconds 1 --json`
+  - `cento parallel-delivery execute --live-pro --sleep-seconds 1 --json`
+  - `cento parallel-delivery demo --json`
+  - `cento parallel-delivery validate --json`
+  - `cento parallel-delivery status --json`
+  - `cento parallel-delivery train plan --workset tests/fixtures/cento_workset/workset.valid.json --max-parallel 10 --json`
+  - `cento parallel-delivery train run RUN_ID --simulate --json`
+  - `cento parallel-delivery train run RUN_ID --workset-execute --runtime fixture --validation smoke --allow-dirty-owned --json`
+  - `cento parallel-delivery train promote RUN_ID --dry-run --json`
+  - `cento parallel-delivery train e2e --workset tests/fixtures/cento_workset/workset.execute.fixture.json --max-parallel 3 --runtime fixture --allow-dirty-owned --dry-run --json`
+  - `cento parallel-delivery train integrate RUN_ID --dry-run --json`
+  - `cento parallel-delivery train status RUN_ID --json`
+  - `cento parallel-delivery train validate RUN_ID --json`
+  - `cento parallel-delivery patch-swarm plan --candidate-target 100 --max-parallel-agents 5 --json`
+  - `cento parallel-delivery patch-swarm split --request-file REQUEST.md --candidate-target 20 --max-parallel-agents 5 --mode no-model --json`
+  - `cento parallel-delivery patch-swarm leases --run-dir workspace/runs/parallel-delivery/lease-fixture --run-id lease-fixture --fixture --json`
+  - `cento parallel-delivery patch-swarm validate-leases --run-dir workspace/runs/parallel-delivery/lease-fixture --json`
+  - `cento parallel-delivery patch-swarm prompts --run-dir workspace/runs/parallel-delivery/proreq-fixture --count 20 --lane all --chatgpt-pro --copy-to-temp --json`
+  - `cento parallel-delivery patch-swarm worker-packets --run-dir workspace/runs/parallel-delivery/codex-packets-fixture --run-id codex-packets-fixture --fixture --count 10 --json`
+  - `cento parallel-delivery patch-swarm dispatch --run-dir workspace/runs/parallel-delivery/worker-status-fixture --run-id worker-status-fixture --candidate-target 100 --max-parallel-agents 5 --dry-run --fixture --json`
+  - `cento parallel-delivery patch-swarm worker-status --run-dir workspace/runs/parallel-delivery/worker-status-fixture --json`
+  - `cento parallel-delivery status --run worker-status-fixture --run-root workspace/runs/parallel-delivery --json`
+  - `cento parallel-delivery patch-bundles validate --bundle workspace/runs/parallel-delivery/patch-bundle-fixture/input/bundles/bundle-safe-001.json --lease-manifest workspace/runs/parallel-delivery/patch-bundle-fixture/input/leases.json --out workspace/runs/parallel-delivery/patch-bundle-fixture --base-commit HEAD --json`
+  - `cento parallel-delivery patch-bundles collect --run-id patch-bundle-fixture --bundles-dir workspace/runs/parallel-delivery/patch-bundle-fixture/input/bundles --lease-manifest workspace/runs/parallel-delivery/patch-bundle-fixture/input/leases.json --out workspace/runs/parallel-delivery/patch-bundle-fixture --base-commit HEAD --json`
+  - `cento parallel-delivery release-candidate create --integration-receipt workspace/runs/parallel-delivery/release-candidate-fixture/input/integration-receipt.accepted.json --out workspace/runs/parallel-delivery/release-candidate-fixture/dry-run --mode dry-run --target-repo workspace/runs/parallel-delivery/release-candidate-fixture/fixture-repo --base-commit HEAD --json`
+  - `cento parallel-delivery release-candidate create --integration-receipt workspace/runs/parallel-delivery/release-candidate-fixture/input/integration-receipt.accepted.json --out workspace/runs/parallel-delivery/release-candidate-fixture/apply --mode apply --target-repo workspace/runs/parallel-delivery/release-candidate-fixture/fixture-repo --target-worktree workspace/runs/parallel-delivery/release-candidate-fixture/integration-worktree --base-commit HEAD --final-validation-cmd "python -m pytest -q tests" --json`
+  - `cento parallel-delivery taskstream emit --split-plan workspace/runs/parallel-delivery/taskstream-fixture/input/split-plan.json --out workspace/runs/parallel-delivery/taskstream-fixture --transport manifest-only --run-preflight`
+  - `cento parallel-delivery taskstream preflight --manifest-dir workspace/runs/parallel-delivery/taskstream-fixture/work-packages --out workspace/runs/parallel-delivery/taskstream-fixture/preflight`
+  - `cento parallel-delivery taskstream apply --manifest-dir workspace/runs/parallel-delivery/taskstream-fixture/work-packages --out workspace/runs/parallel-delivery/taskstream-fixture/apply --transport agent-work --apply`
+  - `cento parallel-delivery patch-swarm execute RUN_ID --fixture --json`
+  - `cento parallel-delivery patch-swarm execute RUN_ID --live --budget-cap-usd 1 --max-budget-usd 1 --api-sandbox-candidates 1 --json`
+  - `cento parallel-delivery patch-swarm integrate RUN_ID --dry-run --json`
+  - `cento parallel-delivery patch-swarm integrate RUN_ID --apply --factory-run workspace/runs/factory/patch-swarm-RUN_ID --validate-each --json`
+  - `cento parallel-delivery patch-swarm validate RUN_ID --json`
+  - `cento parallel-delivery patch-swarm status RUN_ID --json`
+  - `cento parallel-delivery patch-swarm status --run-dir workspace/runs/parallel-delivery/console-fixture/fixture-console-25 --write-html --json`
+  - `cento parallel-delivery patch-swarm e2e --candidate-target 30 --max-parallel-agents 3 --fixture --json`
+  - `cento parallel-delivery patch-swarm e2e --candidate-target 25 --max-parallel-agents 5 --fixture --run-id fixture-console-25 --output-dir workspace/runs/parallel-delivery/console-fixture/fixture-console-25 --json`
+  - `cento parallel-delivery patch-swarm e2e --candidate-target 100 --max-parallel-agents 5 --fixture --run-root workspace/runs/parallel-delivery/e2e-fixture --json`
+  - `cento parallel-delivery self-improve run --json`
+  - `cento parallel-delivery self-improve e2e --candidate-target 30 --max-parallel-agents 3 --budget-cap-usd 1 --max-budget-usd 1 --apply --validate-each --auto-merge-gate --json`
+  - `cento parallel-delivery self-improve validate --json`
+  - `cento parallel-delivery self-improve status --json`
+  - `cento parallel-delivery self-improve install-cron --time 02:30`
+- docs:
+  - [`docs/ai-self-improvement-autopilot.md`](./ai-self-improvement-autopilot.md)
+  - [`docs/ai-self-improvement-nightly.md`](./ai-self-improvement-nightly.md)
+  - [`docs/parallel-integration-train.md`](./parallel-integration-train.md)
+  - [`docs/parallel-ai-delivery-roadmap.md`](./parallel-ai-delivery-roadmap.md)
+  - [`docs/parallel-delivery/patch-swarm-artifacts.md`](./patch-swarm-artifacts.md)
+  - [`docs/parallel-delivery/patch-swarm-planner.md`](./patch-swarm-planner.md)
+  - [`docs/parallel-delivery/patch-swarm-leasing.md`](./patch-swarm-leasing.md)
+  - [`docs/parallel-delivery/patch-swarm-proreq-prompts.md`](./patch-swarm-proreq-prompts.md)
+  - [`docs/parallel-delivery/patch-swarm-codex-worker-packets.md`](./patch-swarm-codex-worker-packets.md)
+  - [`docs/parallel-delivery/patch-swarm-console.md`](./patch-swarm-console.md)
+  - [`docs/parallel-delivery/patch-bundle-validation.md`](./patch-bundle-validation.md)
+  - [`docs/parallel-delivery/release-candidate-safe-apply.md`](./release-candidate-safe-apply.md)
+  - [`docs/parallel-delivery/patch-swarm-validation-e2e.md`](./patch-swarm-validation-e2e.md)
+  - [`docs/parallel-delivery/patch-swarm-taskstream.md`](./patch-swarm-taskstream.md)
+  - [`docs/parallel-delivery/patch-swarm-worker-status.md`](./patch-swarm-worker-status.md)
+  - [`docs/patch-swarm.md`](./patch-swarm.md)

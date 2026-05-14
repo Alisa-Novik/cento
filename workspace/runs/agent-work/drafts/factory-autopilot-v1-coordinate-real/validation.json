@@ -4,19 +4,19 @@
       "name": "file-exists-factory-adaptive-fanout-autopilot-prompt-md",
       "path": "workspace/runs/coordination/factory-autopilot-v1/factory-adaptive-fanout-autopilot-prompt.md",
       "required": true,
-      "type": "file_exists"
+      "type": "file"
     },
     {
       "name": "file-exists-story-json",
       "path": "workspace/runs/agent-work/drafts/factory-autopilot-v1-coordinate-real/story.json",
       "required": true,
-      "type": "file_exists"
+      "type": "file"
     },
     {
       "name": "file-exists-validation-json",
       "path": "workspace/runs/agent-work/drafts/factory-autopilot-v1-coordinate-real/validation.json",
       "required": true,
-      "type": "file_exists"
+      "type": "file"
     },
     {
       "command": "test -f workspace/runs/coordination/factory-autopilot-v1/factory-adaptive-fanout-autopilot-prompt.md",
@@ -52,7 +52,7 @@
     "deterministic_checks": 6,
     "manual_review_items": 0
   },
-  "created_at": "2026-05-01T02:12:26-04:00",
+  "created_at": "2026-05-01T02:21:24-04:00",
   "decision_requested": "approve",
   "manual_review": [],
   "risk": "medium",

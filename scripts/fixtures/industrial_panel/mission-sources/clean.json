@@ -1,0 +1,92 @@
+{
+  "agent_work": {
+    "payload": {
+      "issues": []
+    },
+    "error": null
+  },
+  "runs": {
+    "payload": {
+      "runs": [],
+      "count": 0
+    },
+    "error": null
+  },
+  "cluster": {
+    "payload": {
+      "updated_at": "2026-05-06T18:00:00+00:00",
+      "nodes": [
+        {
+          "id": "linux",
+          "platform": "linux",
+          "socket": "/tmp/cento-linux.sock"
+        }
+      ],
+      "health": {
+        "overall": "healthy",
+        "local": "linux",
+        "counts": {
+          "online": 1,
+          "offline": 0,
+          "degraded": 0
+        },
+        "nodes": [
+          {
+            "id": "linux",
+            "platform": "linux",
+            "role": "worker",
+            "state": "online",
+            "is_local": true,
+            "socket": "/tmp/cento-linux.sock",
+            "socket_present": true,
+            "reasons": [],
+            "remediation": {
+              "severity": "ok",
+              "owner": "local operator",
+              "action": "monitor",
+              "commands": ["cento cluster status"]
+            }
+          }
+        ],
+        "reasons": [],
+        "actions": []
+      },
+      "status": {
+        "ok": true,
+        "stdout": "nodes\nlinux connected",
+        "stderr": ""
+      },
+      "mesh": {
+        "ok": true,
+        "stdout": "srw------- /tmp/cento-linux.sock",
+        "stderr": ""
+      }
+    },
+    "error": null
+  },
+  "git": {
+    "status_short": "",
+    "error": null
+  },
+  "jobs": {
+    "payload": {
+      "jobs": [],
+      "counts": {},
+      "states": {}
+    },
+    "error": null
+  },
+  "actions": {
+    "payload": [
+      {
+        "id": "cluster_status",
+        "label": "Cluster status",
+        "allowlist": ["linux", "macos"],
+        "command": ["./scripts/cento.sh", "cluster", "status"],
+        "dry_run_command": ["./scripts/cento.sh", "cluster", "status"],
+        "availability_check": "always"
+      }
+    ],
+    "error": null
+  }
+}

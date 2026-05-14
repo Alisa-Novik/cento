@@ -23,9 +23,18 @@ workspace/factory-integration-worktrees/*
 workspace/tmp/*
 !workspace/tmp/.gitkeep
 
+.cento/builds/*
+!.cento/builds/.gitkeep
+.cento/worksets/*
+!.cento/worksets/.gitkeep
+
 logs/*
 
 experimental/redmine-career-consulting/data/postgres/
 experimental/redmine-career-consulting/themes/
 
+.env
+.env.*
+!.env.example
+!.env.mcp.example
 .env.mcp

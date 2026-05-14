@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -15,16 +16,30 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 STATE_DIR = Path.home() / ".local" / "state" / "cento"
 DEFAULT_TARGETS = {"builder": 4, "validator": 3, "small": 3, "coordinator": 1}
+DEFAULT_AGENT_RUNTIME = os.environ.get("CENTO_AGENT_RUNTIME", "auto")
 DEFAULT_CODEX_MODEL = os.environ.get("CENTO_POOL_CODEX_MODEL", "gpt-5.4-mini")
+DEFAULT_CLAUDE_MODEL = os.environ.get("CENTO_POOL_CLAUDE_MODEL", "claude-sonnet-4-6")
 ACTIVE_STATUSES = {"planned", "launching", "running"}
 ENDED_STATUSES = {"dry_run", "succeeded", "failed", "blocked", "stale", "exited_unknown"}
 LANES = ("validator", "small", "builder", "coordinator")
+DEFAULT_REPAIR_LANES = ("validator", "small", "builder", "coordinator")
 SMALL_TOKENS = ("screenshot", "evidence", "strict review", "template", "fixture", "docs", "process", "heartbeat", "stale", "cron", "pool")
 VALIDATION_MODES = ("no-model", "cheap-model", "strong-model")
 DEFAULT_CHEAP_VALIDATOR_MODEL = DEFAULT_CODEX_MODEL
 DEFAULT_STRONG_VALIDATOR_MODEL = os.environ.get("CENTO_POOL_STRONG_VALIDATOR_MODEL", "gpt-5.3-codex-spark")
 MANUAL_VALIDATION_MODES = {"manual-planning", "manual-review"}
 HIGH_RISK_VALUES = {"high", "critical"}
+
+
+def now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def rel_path(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        return path.as_posix()
 
 
 def run_json(command: list[str], timeout: int = 25) -> dict[str, Any]:
@@ -106,6 +121,211 @@ def issue_is_candidate(issue: dict[str, Any], lane: str) -> bool:
 
 def story_manifest_path(issue_id: int) -> Path:
     return ROOT / "workspace" / "runs" / "agent-work" / str(issue_id) / "story.json"
+
+
+def validation_manifest_path(issue_id: int) -> Path:
+    return ROOT / "workspace" / "runs" / "agent-work" / str(issue_id) / "validation.json"
+
+
+def slugify(value: str, fallback: str = "agent-work") -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", str(value or "").lower()).strip("-")
+    return slug[:64] or fallback
+
+
+def issue_text(issue: dict[str, Any]) -> str:
+    parts = [
+        str(issue.get("subject") or ""),
+        str(issue.get("description") or ""),
+        str(issue.get("package") or ""),
+    ]
+    return "\n\n".join(part.strip() for part in parts if part and part.strip())
+
+
+def repair_role_for_lane(issue: dict[str, Any], lane: str) -> str:
+    if lane == "validator":
+        return "validator"
+    if lane == "coordinator":
+        return "coordinator"
+    if lane in {"small", "builder"}:
+        return "builder"
+    role = str(issue.get("role") or "builder").strip() or "builder"
+    return role if role in {"builder", "validator", "coordinator", "docs-evidence"} else "builder"
+
+
+def parse_repair_lanes(value: str) -> tuple[str, ...]:
+    raw = [item.strip() for item in str(value or "").split(",") if item.strip()]
+    if not raw or raw == ["all"]:
+        return DEFAULT_REPAIR_LANES
+    lanes: list[str] = []
+    for item in raw:
+        if item == "all":
+            lanes.extend(lane for lane in DEFAULT_REPAIR_LANES if lane not in lanes)
+            continue
+        if item not in LANES:
+            raise ValueError(f"unknown repair lane: {item}")
+        if item not in lanes:
+            lanes.append(item)
+    return tuple(lanes)
+
+
+def build_repaired_story_manifest(issue: dict[str, Any], *, lane: str) -> dict[str, Any]:
+    issue_id = int(issue.get("id") or 0)
+    subject = str(issue.get("subject") or f"Agent work {issue_id}").strip()
+    package = str(issue.get("package") or "agent-ops").strip() or "agent-ops"
+    role = repair_role_for_lane(issue, lane)
+    run_dir = f"workspace/runs/agent-work/{issue_id}"
+    validation_manifest = f"{run_dir}/validation.json"
+    output_path = f"{run_dir}/worker-handoff.md"
+    validation_mode = "cheap-model" if role == "validator" else "no-model"
+    return {
+        "schema_version": "1.0",
+        "issue": {"id": issue_id, "title": subject, "package": package},
+        "lane": {
+            "owner": "agent-pool-kick",
+            "node": str(issue.get("node") or "linux"),
+            "agent": str(issue.get("agent") or ""),
+            "role": role,
+        },
+        "paths": {"run_dir": run_dir},
+        "scope": {
+            "goal": issue_text(issue) or subject,
+            "acceptance": [
+                "Worker produces a handoff that lists delivered changes, validation, evidence, and residual risk.",
+                "Worker preserves unrelated dirty work and keeps edits scoped to the interpreted issue request.",
+            ],
+        },
+        "expected_outputs": [
+            {
+                "path": output_path,
+                "description": "Worker handoff summarizing implementation, validation, evidence, and residual risk.",
+                "owner": "agent-pool-kick",
+                "required": True,
+            }
+        ],
+        "validation": {
+            "manifest": validation_manifest,
+            "mode": validation_mode,
+            "no_model_eligible": validation_mode == "no-model",
+            "risk": "medium",
+            "escalation_triggers": ["missing_manifest", "failed_deterministic_command", "ambiguity"],
+            "commands": [
+                f"python3 -m json.tool {run_dir}/story.json",
+                f"test -s {output_path}",
+            ],
+        },
+        "deliverables": {
+            "manifest": f"{run_dir}/deliverables.json",
+            "hub": f"{run_dir}/start-here.html",
+        },
+        "review_gate": {
+            "required_sections": ["Delivered", "Validation", "Evidence", "Residual risk"],
+            "residual_risk_required": True,
+        },
+        "metadata": {
+            "drafted_at": now_iso(),
+            "source": "agent-pool-kick-manifest-repair",
+            "repair_lane": lane,
+            "repair_policy": "Minimal canonical story generated to restore dispatch preflight eligibility; worker must produce the actual evidence handoff.",
+            "slug": slugify(subject),
+        },
+    }
+
+
+def build_repaired_validation_manifest(story: dict[str, Any], story_path: Path) -> dict[str, Any]:
+    validation = story.get("validation") if isinstance(story.get("validation"), dict) else {}
+    commands = validation.get("commands") if isinstance(validation.get("commands"), list) else []
+    checks = [
+        {
+            "name": f"command-{index}",
+            "type": "command",
+            "command": str(command),
+            "cwd": ".",
+            "timeout_seconds": 30,
+            "expect_exit": 0,
+            "required": True,
+        }
+        for index, command in enumerate(commands, start=1)
+        if str(command or "").strip()
+    ]
+    return {
+        "schema": "cento.validation-manifest.v1",
+        "task": str(story.get("issue", {}).get("title") or story_path.stem),
+        "story_manifest": rel_path(story_path),
+        "claim": str(story.get("scope", {}).get("goal") or ""),
+        "risk": "medium",
+        "decision_requested": "approve",
+        "checks": checks,
+        "manual_review": [],
+        "coverage": {
+            "deterministic_checks": len(checks),
+            "manual_review_items": 0,
+            "automation_coverage_percent": 100.0 if checks else 0.0,
+        },
+        "stats_policy": {
+            "ai_calls_used": 0,
+            "estimated_ai_cost": 0,
+            "requires_total_duration_ms": True,
+            "requires_per_check_duration_ms": True,
+        },
+        "created_at": now_iso(),
+        "source": "agent-pool-kick-manifest-repair",
+    }
+
+
+def repair_missing_manifests(
+    all_issues: list[dict[str, Any]],
+    *,
+    apply: bool,
+    limit: int,
+    lanes: tuple[str, ...] = DEFAULT_REPAIR_LANES,
+    issue_ids: set[int] | None = None,
+) -> list[dict[str, Any]]:
+    repairs: list[dict[str, Any]] = []
+    seen: set[int] = set()
+    requested_issue_ids = issue_ids or set()
+    for issue in all_issues:
+        if len(repairs) >= limit:
+            break
+        issue_id = int(issue.get("id") or 0)
+        if issue_id <= 0 or issue_id in seen:
+            continue
+        forced = issue_id in requested_issue_ids
+        matching_lane = next(
+            (
+                lane
+                for lane in lanes
+                if issue_is_candidate(issue, lane) or (forced and issue_matches_lane(issue, lane))
+            ),
+            "",
+        )
+        if not matching_lane:
+            continue
+        story_path = story_manifest_path(issue_id)
+        validation_path = validation_manifest_path(issue_id)
+        story_missing = not story_path.exists()
+        validation_missing = not validation_path.exists()
+        if not story_missing and not validation_missing:
+            continue
+        story = build_repaired_story_manifest(issue, lane=matching_lane)
+        validation = build_repaired_validation_manifest(story, story_path)
+        record = {
+            "issue": issue_id,
+            "lane": matching_lane,
+            "subject": issue.get("subject"),
+            "story_manifest": rel_path(story_path),
+            "validation_manifest": rel_path(validation_path),
+            "story_missing": story_missing,
+            "validation_missing": validation_missing,
+            "applied": bool(apply),
+            "forced": forced,
+        }
+        if apply:
+            story_path.parent.mkdir(parents=True, exist_ok=True)
+            story_path.write_text(json.dumps(story, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            validation_path.write_text(json.dumps(validation, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        repairs.append(record)
+        seen.add(issue_id)
+    return repairs
 
 
 def load_story_manifest(issue_id: int) -> tuple[dict[str, Any] | None, Path, str]:
@@ -469,25 +689,45 @@ def build_reason_summary(
     }
 
 
-def dispatch(issue: dict[str, Any], lane: str, *, model_override: str | None = None) -> dict[str, Any]:
+def dispatch_runtime(model_override: str | None = None, runtime_override: str | None = None) -> str:
+    runtime = runtime_override or DEFAULT_AGENT_RUNTIME
+    if runtime == "auto" and model_override and str(model_override).startswith("gpt-"):
+        return "codex"
+    return runtime
+
+
+def dispatch_model(runtime: str, model_override: str | None = None) -> str:
+    if runtime == "claude-code":
+        return model_override or os.environ.get("CENTO_POOL_CLAUDE_MODEL") or DEFAULT_CLAUDE_MODEL
+    if runtime == "codex":
+        return model_override or DEFAULT_CHEAP_VALIDATOR_MODEL
+    if runtime == "auto":
+        return model_override or ""
+    return model_override or DEFAULT_CHEAP_VALIDATOR_MODEL
+
+
+def dispatch(
+    issue: dict[str, Any],
+    lane: str,
+    *,
+    runtime_override: str | None = None,
+    model_override: str | None = None,
+) -> dict[str, Any]:
     issue_id = str(issue["id"])
     if lane == "small":
         role = "builder"
         agent = "small-worker-pool"
-        runtime = "codex"
     elif lane == "validator":
         role = "validator"
         agent = "validator-pool"
-        runtime = "codex"
     elif lane == "coordinator":
         role = "coordinator"
         agent = "coordinator-pool"
-        runtime = "codex"
     else:
         role = "builder"
         agent = "builder-pool"
-        runtime = "codex"
-    model = model_override or DEFAULT_CHEAP_VALIDATOR_MODEL
+    runtime = dispatch_runtime(model_override, runtime_override)
+    model = dispatch_model(runtime, model_override)
     command = [
         "./scripts/cento.sh",
         "agent-work",
@@ -502,7 +742,7 @@ def dispatch(issue: dict[str, Any], lane: str, *, model_override: str | None = N
         "--runtime",
         runtime,
     ]
-    if runtime == "codex" and model:
+    if model:
         command.extend(["--model", model])
     result = run(command, timeout=90)
     return {
@@ -525,11 +765,36 @@ def main() -> int:
     parser.add_argument("--small-target", type=int, default=DEFAULT_TARGETS["small"])
     parser.add_argument("--coordinator-target", type=int, default=DEFAULT_TARGETS["coordinator"])
     parser.add_argument("--max-launch", type=int, default=8)
+    parser.add_argument("--runtime", default="", help="Runtime id for launched workers, such as auto, codex, or claude-code.")
+    parser.add_argument("--model", default="", help="Model override passed to agent-work dispatch for AI runtime lanes.")
+    parser.add_argument("--package", default="", help="Only consider Taskstream issues from this package.")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--repair-missing-manifests", action="store_true", help="Plan minimal canonical story/validation manifests for otherwise eligible live-lane tasks.")
+    parser.add_argument("--repair-apply", action="store_true", help="Write manifest repairs before dispatch planning. Use with --dry-run to repair without launching workers.")
+    parser.add_argument("--repair-limit", type=int, default=3)
+    parser.add_argument("--repair-lanes", default="all", help="Comma-separated lanes to repair: validator,small,builder,coordinator, or all.")
+    parser.add_argument("--repair-issue", type=int, action="append", default=[], help="Force manifest repair for this issue id if it matches a selected lane, even after a preflight failure changed its status.")
     args = parser.parse_args()
 
     runs = active_runs()
     all_issues = issues()
+    package_filter = str(args.package or "").strip()
+    if package_filter:
+        all_issues = [issue for issue in all_issues if str(issue.get("package") or "") == package_filter]
+    manifest_repairs: list[dict[str, Any]] = []
+    if args.repair_missing_manifests:
+        try:
+            repair_lanes = parse_repair_lanes(args.repair_lanes)
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+        manifest_repairs = repair_missing_manifests(
+            all_issues,
+            apply=args.repair_apply,
+            limit=max(0, args.repair_limit),
+            lanes=repair_lanes,
+            issue_ids=set(args.repair_issue or []),
+        )
     blocked = active_issue_ids(runs)
     counts = active_pool_counts(runs)
     targets = {
@@ -553,6 +818,15 @@ def main() -> int:
             }
             if lane == "validator":
                 validation_route = planned_validation_route(issue)
+                runtime_override = str(args.runtime or "") or None
+                if str(args.model or ""):
+                    model_override = str(args.model)
+                elif runtime_override == "claude-code":
+                    model_override = None
+                else:
+                    model_override = DEFAULT_CHEAP_VALIDATOR_MODEL if validation_route["mode"] == "cheap-model" else DEFAULT_STRONG_VALIDATOR_MODEL
+                planned_runtime = dispatch_runtime(model_override if validation_route["mode"] != "no-model" else None, runtime_override)
+                planned_model = dispatch_model(planned_runtime, model_override) if validation_route["mode"] != "no-model" else ""
                 record.update(
                     {
                         "validation_mode": validation_route["mode"],
@@ -561,16 +835,25 @@ def main() -> int:
                         "planned_validation_reason": validation_route["reason"],
                         "story_manifest": validation_route["story_manifest"],
                         "validation_manifest": validation_route["validation_manifest"],
+                        "planned_runtime": "local" if validation_route["mode"] == "no-model" else planned_runtime,
+                        "planned_model": planned_model,
                     }
                 )
                 if not args.dry_run:
                     if validation_route["mode"] == "no-model":
                         record.update(launch_local_validation(issue, validation_route, dry_run=False))
                     else:
-                        model_override = DEFAULT_CHEAP_VALIDATOR_MODEL if validation_route["mode"] == "cheap-model" else DEFAULT_STRONG_VALIDATOR_MODEL
-                        record.update(dispatch(issue, lane, model_override=model_override))
+                        record.update(dispatch(issue, lane, runtime_override=runtime_override, model_override=model_override))
             elif not args.dry_run:
-                record.update(dispatch(issue, lane, model_override=None))
+                record.update(dispatch(issue, lane, runtime_override=str(args.runtime or "") or None, model_override=str(args.model or "") or None))
+            else:
+                planned_runtime = dispatch_runtime(None, str(args.runtime or "") or None)
+                record.update(
+                    {
+                        "planned_runtime": planned_runtime,
+                        "planned_model": dispatch_model(planned_runtime, str(args.model or "") or None) or "weighted-runtime-default",
+                    }
+                )
             launched.append(record)
             reserved.add(int(issue["id"]))
         if len(launched) >= args.max_launch:
@@ -581,6 +864,8 @@ def main() -> int:
         "dry_run": args.dry_run,
         "active_counts": counts,
         "targets": targets,
+        "package_filter": package_filter,
+        "manifest_repairs": manifest_repairs,
         "launched": launched,
         "successful_launches": successful_launches,
         "failed_launches": [item for item in launched if item.get("returncode", 0) not in (0, None)],

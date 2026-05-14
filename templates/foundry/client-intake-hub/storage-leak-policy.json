@@ -1,0 +1,13 @@
+{
+  "blocked_real_inputs": [
+    "resume",
+    "linkedin export",
+    "client notes",
+    "private job search notes"
+  ],
+  "fixture_only": true,
+  "local_first": true,
+  "oci_allowed": false,
+  "public_access_allowed": false,
+  "schema_version": "cento.client_intake_hub.storage.v1"
+}

@@ -1,0 +1,49 @@
+modes:
+  fast:
+    time_budget_minutes: 5
+    validation_tier: smoke
+    info_policy: infer
+    ask_policy: blockers_only
+    commit_policy: none
+    push_policy: none
+    max_workers: 0
+    max_files_changed: 3
+    repair_attempts: 0
+    risk_acceptance: medium
+    behavior:
+      - Patch the visible issue only.
+      - Infer missing details when the choice is reversible.
+      - Skip broad cleanup, refactors, PRs, and full regression.
+
+  standard:
+    time_budget_minutes: 15
+    validation_tier: focused
+    info_policy: ask_if_blocked
+    ask_policy: one_batch_if_material
+    commit_policy: local_commit
+    push_policy: optional
+    max_workers: 2
+    max_files_changed: 8
+    repair_attempts: 1
+    risk_acceptance: low_medium
+    behavior:
+      - Make a scoped product-quality patch.
+      - Ask only if the wrong choice would waste work.
+      - Run targeted validation and commit owned paths when clean.
+
+  thorough:
+    time_budget_minutes: 30
+    validation_tier: product
+    info_policy: ask_first
+    ask_policy: requirements_or_options_first
+    commit_policy: local_commit
+    push_policy: branch
+    pr_policy: draft
+    max_workers: 4
+    max_files_changed: null
+    repair_attempts: 3
+    risk_acceptance: low
+    behavior:
+      - Plan first with options and budget.
+      - Use explicit manifests, workers, and validation evidence.
+      - Push a branch and prepare PR/taskstream evidence when requested.

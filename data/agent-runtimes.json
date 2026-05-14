@@ -7,11 +7,11 @@
       "provider": "openai",
       "model": "gpt-5.3-codex-spark",
       "agent": "codex",
-      "weight": 75,
+      "weight": 85,
       "preferred": true,
       "command_env": "CENTO_CODEX_BIN",
       "default_binary": "codex",
-      "budget_note": "Preferred runtime. Majority share because Codex budget is about 100 USD/month."
+      "budget_note": "Compute policy `codex-first` assigns Codex share 85."
     },
     {
       "id": "claude-code",
@@ -19,11 +19,19 @@
       "provider": "anthropic",
       "model": "claude-sonnet-4-6",
       "agent": "claude-code",
-      "weight": 25,
+      "weight": 15,
       "plan": "personal-pro",
       "command_env": "CENTO_CLAUDE_BIN",
       "default_binary": "claude",
-      "budget_note": "Personal Pro plan budget is about 20-30 USD/month, so route about 20-30% of tasks here."
+      "budget_note": "Compute policy `codex-first` assigns Claude share 15.",
+      "preferred": false
     }
-  ]
+  ],
+  "compute_policy": {
+    "schema_version": "cento.compute_policy.v1",
+    "profile": "codex-first",
+    "policy_path": "/home/alice/projects/cento/.cento/compute-policy.json",
+    "applied_at": "2026-05-05T06:08:59Z",
+    "openai_api_share": 0
+  }
 }

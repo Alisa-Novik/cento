@@ -4,19 +4,19 @@
       "name": "file-exists-factory-safe-integrator-plan-md",
       "path": "workspace/runs/coordination/factory-integration-v1/factory-safe-integrator-plan.md",
       "required": true,
-      "type": "file_exists"
+      "type": "file"
     },
     {
       "name": "file-exists-story-json",
       "path": "workspace/runs/agent-work/drafts/factory-integration-v1-coordinate/story.json",
       "required": true,
-      "type": "file_exists"
+      "type": "file"
     },
     {
       "name": "file-exists-validation-json",
       "path": "workspace/runs/agent-work/drafts/factory-integration-v1-coordinate/validation.json",
       "required": true,
-      "type": "file_exists"
+      "type": "file"
     },
     {
       "command": "test -f workspace/runs/coordination/factory-integration-v1/factory-safe-integrator-plan.md",

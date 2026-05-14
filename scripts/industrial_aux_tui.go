@@ -65,21 +65,23 @@ type quickAction struct {
 }
 
 type agentRun struct {
-	RunID     string      `json:"run_id"`
-	IssueID   interface{} `json:"issue_id"`
-	Package   string      `json:"package"`
-	Node      string      `json:"node"`
-	Agent     string      `json:"agent"`
-	Role      string      `json:"role"`
-	Runtime   string      `json:"runtime"`
-	Model     string      `json:"model"`
-	Command   string      `json:"command"`
-	PID       interface{} `json:"pid"`
-	Status    string      `json:"status"`
-	Health    string      `json:"health"`
-	LogPath   string      `json:"log_path"`
-	Elapsed   string      `json:"elapsed"`
-	UpdatedAt string      `json:"updated_at"`
+	RunID        string      `json:"run_id"`
+	IssueID      interface{} `json:"issue_id"`
+	IssueSubject string      `json:"issue_subject"`
+	Package      string      `json:"package"`
+	Node         string      `json:"node"`
+	Agent        string      `json:"agent"`
+	Role         string      `json:"role"`
+	Runtime      string      `json:"runtime"`
+	Model        string      `json:"model"`
+	Command      string      `json:"command"`
+	PID          interface{} `json:"pid"`
+	Status       string      `json:"status"`
+	Health       string      `json:"health"`
+	LogPath      string      `json:"log_path"`
+	CWD          string      `json:"cwd"`
+	Elapsed      string      `json:"elapsed"`
+	UpdatedAt    string      `json:"updated_at"`
 }
 
 type agentIssue struct {
@@ -677,7 +679,7 @@ func (m auxModel) renderAgents(width int) string {
 	if m.agentErr != "" {
 		rows = append(rows, badgeStyle("WARN").Render("WARN")+" "+auxTextStyle.Render(clip(m.agentErr, width-8)))
 	} else {
-		processRows := agentProcessRuns(m.agents, 5)
+		processRows := agentProcessRuns(m.agents, 4)
 		if len(processRows) > 0 {
 			rows = append(rows, auxMutedStyle.Render("Running now"))
 			for _, run := range processRows {
@@ -778,6 +780,7 @@ func loadAgentBoardCmd(root string) tea.Cmd {
 		if err := json.Unmarshal(listOut, &issuesPayload); err != nil {
 			return agentBoardLoadedMsg{runs: runsPayload.Runs, err: err}
 		}
+		runsPayload.Runs = enrichAgentRunSubjects(runsPayload.Runs, issuesPayload.Issues)
 		managerSummary := agentManagerSummary{}
 		managerCmd := exec.Command("python3", filepath.Join(root, "scripts", "agent_manager.py"), "scan", "--json")
 		managerCmd.Dir = root
@@ -891,15 +894,51 @@ func agentLine(run agentRun, width int) string {
 		role = "shell"
 	}
 	row := fmt.Sprintf(
-		"(%s -> %s -> %s -> %s -> %s)",
-		strings.ToLower(runtimeName(runtime)),
+		"%s %s %s %s %s",
+		runtimeName(runtime),
 		target,
 		role,
 		processStatusLabel(status, health),
 		compactElapsed(run.Elapsed),
 	)
 	prefix := "  " + icon + " "
-	return prefix + auxTextStyle.Bold(true).Render(clip(row, max(8, width-lipgloss.Width(prefix))))
+	line1 := prefix + auxTextStyle.Bold(true).Render(clip(row, max(8, width-lipgloss.Width(prefix))))
+	doing := agentDoing(run)
+	if doing == "" {
+		return line1
+	}
+	line2Prefix := "    doing: "
+	line2 := line2Prefix + auxMutedStyle.Render(clip(doing, max(8, width-lipgloss.Width(line2Prefix))))
+	return lipgloss.JoinVertical(lipgloss.Left, line1, line2)
+}
+
+func agentDoing(run agentRun) string {
+	issue := issueIDValue(run.IssueID)
+	subject := strings.TrimSpace(run.IssueSubject)
+	if subject != "" {
+		if issue > 0 {
+			return fmt.Sprintf("#%d %s", issue, compactSubject(subject))
+		}
+		return compactSubject(subject)
+	}
+	if run.Package != "" && issue > 0 {
+		return fmt.Sprintf("#%d package %s", issue, run.Package)
+	}
+	command := compactCommand(run.Command)
+	cwd := compactPath(run.CWD)
+	if command != "" && cwd != "" {
+		return command + " @ " + cwd
+	}
+	if command != "" {
+		return command
+	}
+	if cwd != "" {
+		return "shell @ " + cwd
+	}
+	if run.LogPath != "" {
+		return filepath.Base(run.LogPath)
+	}
+	return ""
 }
 
 func workLine(issue agentIssue, width int) string {
@@ -1248,6 +1287,48 @@ func compactCommand(command string) string {
 	return filepath.Base(fields[0])
 }
 
+func compactPath(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return ""
+	}
+	if home, err := os.UserHomeDir(); err == nil && home != "" {
+		if path == home {
+			return "~"
+		}
+		prefix := home + string(os.PathSeparator)
+		if strings.HasPrefix(path, prefix) {
+			return "~/" + strings.TrimPrefix(path, prefix)
+		}
+	}
+	return path
+}
+
+func issueIDValue(value interface{}) int {
+	switch typed := value.(type) {
+	case nil:
+		return 0
+	case int:
+		return typed
+	case int64:
+		return int(typed)
+	case float64:
+		return int(typed)
+	case string:
+		parsed, err := strconv.Atoi(strings.TrimSpace(typed))
+		if err == nil {
+			return parsed
+		}
+		return 0
+	default:
+		parsed, err := strconv.Atoi(strings.TrimSpace(fmt.Sprintf("%v", typed)))
+		if err == nil {
+			return parsed
+		}
+		return 0
+	}
+}
+
 func issueLabel(value interface{}) string {
 	switch typed := value.(type) {
 	case nil:
@@ -1262,6 +1343,33 @@ func issueLabel(value interface{}) string {
 	default:
 		return fmt.Sprintf("%v", typed)
 	}
+}
+
+func enrichAgentRunSubjects(runs []agentRun, issues []agentIssue) []agentRun {
+	if len(runs) == 0 || len(issues) == 0 {
+		return runs
+	}
+	byID := make(map[int]agentIssue, len(issues))
+	for _, issue := range issues {
+		byID[issue.ID] = issue
+	}
+	for index := range runs {
+		issueID := issueIDValue(runs[index].IssueID)
+		if issueID == 0 {
+			continue
+		}
+		issue, ok := byID[issueID]
+		if !ok {
+			continue
+		}
+		if strings.TrimSpace(runs[index].IssueSubject) == "" {
+			runs[index].IssueSubject = issue.Subject
+		}
+		if strings.TrimSpace(runs[index].Package) == "" {
+			runs[index].Package = issue.Package
+		}
+	}
+	return runs
 }
 
 func compactElapsed(elapsed string) string {

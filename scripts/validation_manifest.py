@@ -148,8 +148,9 @@ def output_check(item: dict[str, Any], story: dict[str, Any]) -> dict[str, Any] 
         return None
     return {
         "name": str(item.get("name") or check_name("file-exists", Path(path).name)),
-        "type": "file_exists",
+        "type": "file",
         "path": path,
+        "non_empty": True,
         "required": bool(item.get("required", True)),
     }
 
@@ -162,8 +163,9 @@ def screenshot_checks(item: dict[str, Any], story: dict[str, Any]) -> list[dict[
     return [
         {
             "name": check_name("screenshot-exists", name),
-            "type": "file_exists",
+            "type": "file",
             "path": output,
+            "non_empty": True,
             "required": bool(item.get("required", True)),
         },
         {

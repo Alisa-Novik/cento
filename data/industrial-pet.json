@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "activities": [
+    {
+      "id": "sith_snack",
+      "name": "Sith snack",
+      "description": "Offer a tiny dark-side lollipop ration.",
+      "deltas": {
+        "snack": 24,
+        "energy": 5,
+        "menace": 3,
+        "affection": 3
+      },
+      "comments": [
+        "Darth Lolipopus crunches the ration and declares it almost worthy.",
+        "Sugar rises. The tiny Sith points at the next victim.",
+        "A sticky little Force choke is attempted on the snack wrapper."
+      ],
+      "log": [
+        "snack accepted with imperial suspicion",
+        "ration consumed; cape crumbs detected",
+        "lollipop reserves briefly stabilized"
+      ]
+    },
+    {
+      "id": "duel_practice",
+      "name": "Duel practice",
+      "description": "Run a careful saber drill with soft targets.",
+      "deltas": {
+        "snack": -8,
+        "energy": -16,
+        "menace": 22,
+        "affection": 2
+      },
+      "comments": [
+        "Darth Lolipopus bonks the training dummy and bows to nobody.",
+        "The duel is short, dramatic, and mostly aimed at furniture.",
+        "A two-inch saber flourish leaves the room politically unstable."
+      ],
+      "log": [
+        "duel drill completed; dummy humbled",
+        "tiny saber routine improved",
+        "training target accepted defeat"
+      ]
+    },
+    {
+      "id": "nap",
+      "name": "Nap",
+      "description": "Lower the lights and let the Sith recharge.",
+      "deltas": {
+        "snack": -4,
+        "energy": 26,
+        "menace": -5,
+        "affection": 4
+      },
+      "comments": [
+        "Darth Lolipopus naps with one helmeted eye open.",
+        "The cockpit goes quiet except for tiny ominous breathing.",
+        "A blanket is accepted as tribute, not comfort."
+      ],
+      "log": [
+        "nap cycle completed",
+        "rest restored; blanket classified as tribute",
+        "helmet breathing softened for a moment"
+      ]
+    },
+    {
+      "id": "cape_compliment",
+      "name": "Cape compliment",
+      "description": "Praise the cape without sounding insufficiently afraid.",
+      "deltas": {
+        "snack": 0,
+        "energy": 0,
+        "menace": 6,
+        "affection": 18
+      },
+      "comments": [
+        "Darth Lolipopus pretends not to enjoy the cape review.",
+        "The cape swishes. Morale improves. So does tyranny.",
+        "A proud little turn confirms the compliment landed."
+      ],
+      "log": [
+        "cape compliment logged",
+        "swish quality acknowledged",
+        "vanity reserves increased"
+      ]
+    },
+    {
+      "id": "helmet_polish",
+      "name": "Helmet polish",
+      "description": "Buff the tiny helmet until the cockpit glows.",
+      "deltas": {
+        "snack": -2,
+        "energy": 0,
+        "menace": 8,
+        "affection": 10
+      },
+      "comments": [
+        "Darth Lolipopus inspects the shine and sees a future empire.",
+        "Helmet polish complete. The reflection looks extremely serious.",
+        "The tiny mask gleams with unreasonable authority."
+      ],
+      "log": [
+        "helmet polish passed inspection",
+        "mask shine restored",
+        "reflection intimidation increased"
+      ]
+    },
+    {
+      "id": "tiny_mission",
+      "name": "Tiny mission",
+      "description": "Dispatch Darth Lolipopus on a low-risk cockpit patrol.",
+      "deltas": {
+        "snack": -6,
+        "energy": -10,
+        "menace": 16,
+        "affection": 6
+      },
+      "comments": [
+        "Darth Lolipopus returns with a button, a glare, and no explanation.",
+        "The tiny mission succeeds. Nobody admits what it was.",
+        "A secret patrol concludes with suspiciously sticky evidence."
+      ],
+      "log": [
+        "tiny mission returned with classified loot",
+        "cockpit patrol completed",
+        "mission success filed under adorable menace"
+      ]
+    }
+  ],
+  "mood_comments": {
+    "hangry": [
+      "The tiny Sith taps the snack meter with theatrical menace.",
+      "Darth Lolipopus is hungry enough to negotiate poorly."
+    ],
+    "sleepy": [
+      "Helmet tilt indicates the dark side requires a nap.",
+      "Darth Lolipopus is too tired for conquest, but not for judgment."
+    ],
+    "sulking": [
+      "A small cape turn communicates serious displeasure.",
+      "Darth Lolipopus requires recognition before further operations."
+    ],
+    "dramatic": [
+      "The room is 12 percent more imperial than it was a moment ago.",
+      "Darth Lolipopus has entered maximum cape mode."
+    ],
+    "smug": [
+      "Darth Lolipopus radiates sticky, well-fed superiority.",
+      "A tiny nod suggests the cockpit may continue existing."
+    ],
+    "scheming": [
+      "Darth Lolipopus quietly reorganizes the galaxy by snack priority.",
+      "A small Sith plan is forming near the status LEDs."
+    ]
+  },
+  "idle_barks": [
+    "Darth Lolipopus waits beside the console with suspicious patience.",
+    "The tiny Sith checks the room for insufficient loyalty.",
+    "A little cape swish marks the passage of time."
+  ],
+  "rare_events": [
+    {
+      "id": "red_sugar_comet",
+      "one_in": 17,
+      "text": "rare event: red sugar comet sighted over the cockpit",
+      "comment": "Darth Lolipopus absorbs comet vibes and becomes briefly magnificent.",
+      "deltas": {
+        "snack": 8,
+        "energy": 8,
+        "menace": 8,
+        "affection": 8
+      }
+    },
+    {
+      "id": "mini_force_wobble",
+      "one_in": 23,
+      "text": "rare event: a tiny Force wobble rearranged the cape hooks",
+      "comment": "Darth Lolipopus denies all responsibility while standing near the evidence.",
+      "deltas": {
+        "snack": -2,
+        "energy": -2,
+        "menace": 12,
+        "affection": 4
+      }
+    }
+  ]
+}

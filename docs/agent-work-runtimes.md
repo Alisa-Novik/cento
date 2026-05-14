@@ -5,19 +5,26 @@ Cento agent-work dispatch supports weighted local agent runtimes.
 ## Registered Runtimes
 
 Runtime registry: `data/agent-runtimes.json`
+Local command runtime profiles: `.cento/runtimes.yaml`
 
 - `codex`
   - Provider: OpenAI
   - Default model: `gpt-5.3-codex-spark`
-  - Weight: `75`
-  - Role: preferred majority runtime
+  - Weight: controlled by `cento compute-policy`
+  - Role: preferred when Codex limit/subscription capacity is available
 
 - `claude-code`
   - Provider: Anthropic
   - Default model: `claude-sonnet-4-6`
   - Plan: personal Pro
-  - Weight: `25`
-  - Role: secondary runtime for roughly 20-30% of automatic task dispatches
+  - Weight: controlled by `cento compute-policy`
+  - Role: fallback or partial-share runtime for automatic task dispatches
+
+- `claude-code-fast`
+  - Surface: local command runtime profile for Workset/Build-style isolated worktrees
+  - Command: `claude -p --output-format text`
+  - Prompt delivery: stdin from the generated builder prompt
+  - Role: Patch Swarm candidate provider adapter compatible with `candidate_patch.v1` receipts
 
 ## Routing
 
@@ -27,10 +34,17 @@ Automatic routing is deterministic and weighted by issue id, role, and package.
 python3 scripts/agent_work.py runtimes --sample 1000
 ```
 
-Expected result should stay near:
+Expected result for the default `codex-first` policy:
 
-- Codex: about 70-80%
-- Claude Code: about 20-30%
+- Codex: about `85%`
+- Claude Code: about `15%`
+
+To change this mix:
+
+```bash
+cento compute-policy set --codex 70 --claude 30 --openai-api 0 --json
+cento agent-work runtimes --sample 1000 --json
+```
 
 ## Dispatch Examples
 
@@ -55,18 +69,25 @@ python3 scripts/agent_work.py dispatch ISSUE_ID --runtime codex --dry-run
 Spark worker pool planning:
 
 ```bash
-python3 scripts/agent_work.py dispatch-pool --limit 3
+cento agent-pool-kick --dry-run --max-launch 3
 ```
 
-`dispatch-pool` defaults to `runtime=codex` and `model=gpt-5.3-codex-spark`. It prints planned dispatch commands without mutating issues. Add `--execute` only when the operator wants those cheap workers started.
+`agent-pool-kick` honors `CENTO_AGENT_RUNTIME` when set. Otherwise it uses Agent Work `auto` routing and the current compute-policy weights.
 
 ## Overrides
 
 - `CENTO_AGENT_RUNTIME=claude-code` forces the runtime when dispatch uses `--runtime auto`.
+- `CENTO_AGENT_RUNTIME=codex` forces Codex.
 - `CENTO_AGENT_RUNTIME_CONFIG=/path/to/agent-runtimes.json` uses a different runtime registry.
 - `CENTO_CLAUDE_BIN=/path/to/claude` overrides the Claude Code binary.
 - `CENTO_CODEX_BIN=/path/to/codex` overrides the Codex binary.
 
 ## Cost Policy
 
-Codex remains the primary runtime. Claude Code is registered at 25% because its budget is materially lower.
+Use `cento compute-policy` to prefer available agent subscription/limit before metered API calls:
+
+```bash
+cento compute-policy preset codex-first --json
+```
+
+Explicit `api-openai` commands remain explicit API spend.

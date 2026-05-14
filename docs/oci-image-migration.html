@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cento OCI Image Migration</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7f8;
+      --paper: #ffffff;
+      --paper-2: #eef3f4;
+      --ink: #172124;
+      --muted: #53656a;
+      --line: #d6e0e2;
+      --teal: #08746f;
+      --teal-soft: #dff1ef;
+      --blue: #315f9f;
+      --blue-soft: #e3ebf7;
+      --orange: #bf5a1f;
+      --orange-soft: #fff0e6;
+      --green: #237b4b;
+      --green-soft: #e3f3e9;
+      --red: #ad3f32;
+      --red-soft: #f8e4e1;
+      --code: #11191b;
+      --code-line: #253236;
+      --code-text: #e8f3f2;
+      --shadow: 0 18px 44px rgba(23, 33, 36, 0.08);
+      --radius: 8px;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background:
+        linear-gradient(180deg, #fbfcfd 0, var(--bg) 24rem);
+      color: var(--ink);
+      font-family: var(--sans);
+      line-height: 1.56;
+    }
+
+    a {
+      color: var(--teal);
+      text-decoration-color: rgba(8, 116, 111, 0.32);
+      text-underline-offset: 3px;
+    }
+
+    a:hover {
+      text-decoration-color: currentColor;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 270px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .rail {
+      position: sticky;
+      top: 0;
+      align-self: start;
+      height: 100vh;
+      padding: 26px 18px;
+      border-right: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.86);
+      backdrop-filter: blur(16px);
+      overflow-y: auto;
+    }
+
+    .brand {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius);
+      background: var(--teal);
+      color: white;
+      font-family: var(--mono);
+      font-weight: 850;
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 17px;
+      line-height: 1.2;
+    }
+
+    .brand span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    nav {
+      display: grid;
+      gap: 4px;
+    }
+
+    nav a {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      border-radius: var(--radius);
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    nav a:hover {
+      background: var(--teal-soft);
+      color: #075752;
+    }
+
+    .rail-note {
+      margin-top: 24px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    main {
+      min-width: 0;
+    }
+
+    .hero {
+      padding: 54px clamp(22px, 5vw, 76px) 30px;
+      border-bottom: 1px solid var(--line);
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(223, 241, 239, 0.62));
+    }
+
+    .eyebrow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.76);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 760;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .pill.good {
+      color: var(--green);
+      background: var(--green-soft);
+      border-color: rgba(35, 123, 75, 0.22);
+    }
+
+    h1 {
+      max-width: 900px;
+      margin: 0 0 14px;
+      font-size: clamp(36px, 5vw, 66px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 850px;
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(17px, 1.7vw, 21px);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 750;
+      box-shadow: 0 8px 20px rgba(23, 33, 36, 0.06);
+    }
+
+    .button.primary {
+      border-color: transparent;
+      background: var(--teal);
+      color: white;
+    }
+
+    .content {
+      padding: 28px clamp(22px, 5vw, 76px) 72px;
+    }
+
+    section {
+      scroll-margin-top: 24px;
+    }
+
+    .section {
+      margin-top: 30px;
+    }
+
+    .section:first-child {
+      margin-top: 0;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 24px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0 0 9px;
+      font-size: 17px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 14px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .card.small {
+      box-shadow: none;
+      background: var(--paper-2);
+    }
+
+    .metric {
+      display: grid;
+      gap: 4px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 720;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .metric strong {
+      font-size: 24px;
+      line-height: 1.1;
+    }
+
+    .status-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .status-list li {
+      display: grid;
+      grid-template-columns: 160px minmax(0, 1fr);
+      gap: 14px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .status-list li:last-child {
+      border-bottom: 0;
+    }
+
+    .status-list b {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 0.54fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .callout {
+      border-left: 4px solid var(--teal);
+      background: var(--teal-soft);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 14px 16px;
+      color: #123c39;
+    }
+
+    .callout.warn {
+      border-left-color: var(--orange);
+      background: var(--orange-soft);
+      color: #4e2a11;
+    }
+
+    .callout.danger {
+      border-left-color: var(--red);
+      background: var(--red-soft);
+      color: #5d2019;
+    }
+
+    ul,
+    ol {
+      margin: 0;
+      padding-left: 21px;
+    }
+
+    li + li {
+      margin-top: 7px;
+    }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 5px;
+      background: var(--paper-2);
+      color: #153235;
+      font-family: var(--mono);
+      font-size: 0.92em;
+    }
+
+    pre {
+      margin: 10px 0 0;
+      padding: 14px;
+      overflow-x: auto;
+      border-radius: var(--radius);
+      background: var(--code);
+      color: var(--code-text);
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      font-size: inherit;
+    }
+
+    .command-set {
+      display: grid;
+      gap: 14px;
+    }
+
+    .command-set article {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      padding: 14px;
+    }
+
+    .artifact-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .artifact-list a {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .artifact-list a:hover {
+      border-color: rgba(8, 116, 111, 0.45);
+      background: #fbfefd;
+    }
+
+    .artifact-list span {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .step-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: step;
+    }
+
+    .step-list li {
+      counter-increment: step;
+      position: relative;
+      padding: 14px 14px 14px 52px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+    }
+
+    .step-list li::before {
+      content: counter(step);
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      width: 26px;
+      height: 26px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-weight: 800;
+    }
+
+    footer {
+      padding: 22px clamp(22px, 5vw, 76px);
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 860px) {
+      .shell {
+        display: block;
+      }
+
+      .rail {
+        position: relative;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      nav {
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      }
+
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+
+      .status-list li {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail" aria-label="Documentation navigation">
+      <div class="brand">
+        <div class="brand-mark">C</div>
+        <div>
+          <strong>Cento Docs</strong>
+          <span>Storage runbook</span>
+        </div>
+      </div>
+      <nav>
+        <a href="#status">Current state <span>01</span></a>
+        <a href="#done-now">Done now <span>02</span></a>
+        <a href="#commands">Commands <span>03</span></a>
+        <a href="#safety">Safety <span>04</span></a>
+        <a href="#evidence">Evidence <span>05</span></a>
+        <a href="#cost-risk">Cost and risk <span>06</span></a>
+        <a href="#next">Next steps <span>07</span></a>
+        <a href="#handoff">AI handoff <span>08</span></a>
+      </nav>
+      <div class="rail-note">
+        Mirror-only means the cloud copy exists, restore samples pass, and local image files remain untouched.
+      </div>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <div class="eyebrow">
+          <span class="pill good">Completed live mirror</span>
+          <span class="pill">OCI Standard</span>
+          <span class="pill">Private bucket</span>
+          <span class="pill">No reclaim yet</span>
+        </div>
+        <h1>OCI Image Migration</h1>
+        <p>Cento now has a conservative Object Storage path for mirroring run images into a private Oracle Cloud Infrastructure bucket, with receipts and SHA-256 restore verification.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="./oci-image-migration.md">Markdown source</a>
+          <a class="button" href="./storage.md">Storage docs</a>
+          <a class="button" href="./tool-index.md">Tool index</a>
+        </div>
+      </header>
+
+      <div class="content">
+        <section id="status" class="section">
+          <h2>Current Cloud State</h2>
+          <div class="grid">
+            <article class="card metric"><span>Bucket</span><strong>cento-images-standard</strong></article>
+            <article class="card metric"><span>Namespace</span><strong>id4bktw2wcnn</strong></article>
+            <article class="card metric"><span>Region</span><strong>us-ashburn-1</strong></article>
+            <article class="card metric"><span>Object prefix</span><strong>sha256 CAS</strong></article>
+          </div>
+          <div class="card" style="margin-top: 14px;">
+            <ul class="status-list">
+              <li><b>Storage tier</b><span>Standard Object Storage, not Archive.</span></li>
+              <li><b>Public access</b><span>NoPublicAccess.</span></li>
+              <li><b>Versioning</b><span>Disabled, so accidental version growth is not enabled.</span></li>
+              <li><b>Replication</b><span>Disabled, so writes are not copied into another region.</span></li>
+              <li><b>Object events</b><span>Disabled.</span></li>
+              <li><b>Object names</b><span><code>cento/images/v1/objects/sha256/&lt;first2&gt;/&lt;sha256&gt;/&lt;filename&gt;</code></span></li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="done-now" class="section">
+          <h2>Done Now</h2>
+          <div class="two-col">
+            <div class="card">
+              <p>The completed migration copied images under <code>workspace/runs</code> into OCI by content hash, verified a restore sample, and left local originals unchanged.</p>
+              <div class="grid">
+                <article class="card small metric"><span>Planned rows</span><strong>452</strong></article>
+                <article class="card small metric"><span>Unique objects</span><strong>352</strong></article>
+                <article class="card small metric"><span>Duplicate rows</span><strong>100</strong></article>
+                <article class="card small metric"><span>Blocked rows</span><strong>0</strong></article>
+                <article class="card small metric"><span>Uploaded bytes</span><strong>361,679,317</strong></article>
+                <article class="card small metric"><span>Verified sample</span><strong>10 objects</strong></article>
+              </div>
+            </div>
+            <aside class="callout">
+              <strong>Important boundary</strong>
+              <p class="muted">This is not a disk cleanup feature yet. Deletion, replacement, and stub-based reclaim remain future work behind stricter restore gates.</p>
+            </aside>
+          </div>
+        </section>
+
+        <section id="commands" class="section">
+          <h2>Command Surface</h2>
+          <div class="command-set">
+            <article>
+              <h3>Check OCI auth and namespace</h3>
+              <pre><code>cento object-storage status --probe --region us-ashburn-1 --json</code></pre>
+            </article>
+            <article>
+              <h3>Create or verify the private bucket</h3>
+              <pre><code>cento object-storage ensure-bucket \
+  --name cento-images-standard \
+  --namespace id4bktw2wcnn \
+  --region us-ashburn-1 \
+  --json</code></pre>
+            </article>
+            <article>
+              <h3>Plan the image mirror</h3>
+              <pre><code>cento object-storage plan-images \
+  --root workspace/runs \
+  --bucket cento-images-standard \
+  --namespace id4bktw2wcnn \
+  --region us-ashburn-1 \
+  --json</code></pre>
+            </article>
+            <article>
+              <h3>Upload planned unique objects</h3>
+              <pre><code>cento object-storage upload-images \
+  --manifest workspace/runs/object-storage/&lt;run-id&gt;/manifest.json \
+  --bucket cento-images-standard \
+  --namespace id4bktw2wcnn \
+  --region us-ashburn-1 \
+  --live \
+  --json</code></pre>
+            </article>
+            <article>
+              <h3>Verify uploaded objects</h3>
+              <pre><code>cento object-storage verify-images \
+  --manifest workspace/runs/object-storage/&lt;run-id&gt;/upload-receipt.json \
+  --sample 10 \
+  --json</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section id="safety" class="section">
+          <h2>Migration Safety Contract</h2>
+          <div class="grid">
+            <article class="card">
+              <h3>Scanner scope</h3>
+              <ul>
+                <li>Scans image-like files only.</li>
+                <li>Supports <code>.png</code>, <code>.jpg</code>, <code>.jpeg</code>, <code>.gif</code>, <code>.webp</code>, <code>.svg</code>, and <code>.xwd</code>.</li>
+                <li>Skips <code>.git</code>, virtualenvs, <code>__pycache__</code>, and <code>node_modules</code>.</li>
+              </ul>
+            </article>
+            <article class="card">
+              <h3>Leak controls</h3>
+              <ul>
+                <li>Blocks sensitive-looking paths containing <code>token</code>, <code>secret</code>, <code>.env</code>, <code>.pem</code>, or <code>key4.db</code>.</li>
+                <li>Uses a private bucket by default.</li>
+                <li>Does not require pre-authenticated request URLs.</li>
+              </ul>
+            </article>
+            <article class="card">
+              <h3>Local-file contract</h3>
+              <ul>
+                <li>Never deletes source images.</li>
+                <li>Never truncates source images.</li>
+                <li>Never replaces source images.</li>
+              </ul>
+            </article>
+          </div>
+        </section>
+
+        <section id="evidence" class="section">
+          <h2>Evidence And Artifacts</h2>
+          <p class="muted">The live run evidence is stored under <code>workspace/runs/object-storage/image-migration-20260505T051846Z/</code>.</p>
+          <ul class="artifact-list">
+            <li><a href="/api/artifacts?path=workspace/runs/object-storage/image-migration-20260505T051846Z/manifest.json"><strong>Planning manifest</strong><span>manifest.json</span></a></li>
+            <li><a href="/api/artifacts?path=workspace/runs/object-storage/image-migration-20260505T051846Z/summary.md"><strong>Plan summary</strong><span>summary.md</span></a></li>
+            <li><a href="/api/artifacts?path=workspace/runs/object-storage/image-migration-20260505T051846Z/upload-receipt.json"><strong>Upload receipt</strong><span>upload-receipt.json</span></a></li>
+            <li><a href="/api/artifacts?path=workspace/runs/object-storage/image-migration-20260505T051846Z/upload-summary.md"><strong>Upload summary</strong><span>upload-summary.md</span></a></li>
+            <li><a href="/api/artifacts?path=workspace/runs/object-storage/image-migration-20260505T051846Z/verify-receipt.json"><strong>Verify receipt</strong><span>verify-receipt.json</span></a></li>
+          </ul>
+          <div class="callout warn" style="margin-top: 14px;">
+            <strong>Artifact links assume the Cento Console server</strong>
+            <p class="muted">When this page is opened through the console artifact route, the evidence links resolve through <code>/api/artifacts</code>. When browsing files directly, use the paths shown above.</p>
+          </div>
+        </section>
+
+        <section id="cost-risk" class="section">
+          <h2>Cost And Risk</h2>
+          <div class="two-col">
+            <article class="card">
+              <h3>Estimated current storage bill</h3>
+              <p>The mirrored unique object bodies total <code>361,679,317</code> bytes. At current size, Standard Object Storage is estimated around <strong>$0.0086 per month</strong> before tiny request and retrieval effects.</p>
+              <p class="muted">The practical bill risk is not this migration. The practical bill risk is future unbounded upload scope, versioning, replication, lifecycle drift, broad public links, or repeated uploads without idempotency checks.</p>
+            </article>
+            <article class="callout danger">
+              <strong>Bill explosion triggers</strong>
+              <ul>
+                <li>Pointing the scan at broad home directories instead of <code>workspace/runs</code>.</li>
+                <li>Enabling versioning without lifecycle cleanup.</li>
+                <li>Enabling cross-region replication.</li>
+                <li>Re-uploading the same bytes under changing object keys.</li>
+                <li>Adding video, model, database, or archive artifacts without explicit budgets.</li>
+              </ul>
+            </article>
+          </div>
+        </section>
+
+        <section id="next" class="section">
+          <h2>Next Implementation Steps</h2>
+          <ol class="step-list">
+            <li><strong>Resume-safe uploads.</strong> Write partial receipts after each upload, add <code>upload-images --resume</code>, and skip already uploaded matching hashes.</li>
+            <li><strong>Remote object metadata.</strong> Store hash, source path, artifact class, and migration run id on each OCI object.</li>
+            <li><strong>Idempotent re-runs.</strong> Check existing objects before upload and fail closed on mismatched metadata.</li>
+            <li><strong>Storage catalog integration.</strong> Record OCI locations in <code>workspace/storage/catalog.sqlite</code> using <code>artifact_locations</code>.</li>
+            <li><strong>Restore commands.</strong> Add explicit restore paths that download, verify SHA-256, and avoid overwrites by default.</li>
+            <li><strong>Reclaim planning only.</strong> Produce future reclaim plans and restore stubs, but do not remove local files yet.</li>
+          </ol>
+        </section>
+
+        <section id="handoff" class="section">
+          <h2>AI Handoff</h2>
+          <div class="card">
+            <p>Next agent should read:</p>
+            <ul>
+              <li><code>docs/oci-image-migration.md</code></li>
+              <li><code>scripts/object_storage.py</code></li>
+              <li><code>tests/test_object_storage.py</code></li>
+              <li><code>workspace/runs/object-storage/image-migration-20260505T051846Z/upload-receipt.json</code></li>
+              <li><code>workspace/runs/object-storage/image-migration-20260505T051846Z/verify-receipt.json</code></li>
+            </ul>
+            <pre><code>Recommended next task:
+Implement upload-images --resume with partial receipts and tests.
+
+Validation:
+python3 -m pytest tests/test_object_storage.py -q
+python3 -m py_compile scripts/object_storage.py
+zsh -n scripts/completion/_cento
+make check</code></pre>
+          </div>
+        </section>
+      </div>
+      <footer>
+        Generated for local use in the Cento repo. Source: docs/oci-image-migration.md.
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

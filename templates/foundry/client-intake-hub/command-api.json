@@ -1,0 +1,11 @@
+{
+  "commands": [
+    "cento crm intake init --person \"Ada Lovelace\"",
+    "cento crm intake add --person \"Ada Lovelace\" --kind resume --file ./resume.pdf",
+    "cento crm intake plan --person \"Ada Lovelace\"",
+    "cento foundry status RUN_ID",
+    "cento foundry materialize RUN_ID --target-root templates/foundry/client-intake-hub --dry-run --json"
+  ],
+  "schema_version": "cento.client_intake_hub.commands.v1",
+  "source_tool": "cento crm"
+}

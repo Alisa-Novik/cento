@@ -1,0 +1,70 @@
+openai:
+  enabled: true
+  budget_usd_default: 10.00
+  budget_usd_max: 20.00
+  max_parallel_requests: 5
+  timeout_seconds: 90
+  retry_attempts: 1
+  cost_usd_estimate_per_request: 0.20
+  minimum_cost_usd_estimate_per_request: 0.05
+  max_input_chars: 20000
+  max_output_tokens: 2000
+  notification_policy: muted
+
+profiles:
+  api-planner:
+    provider: openai
+    endpoint: responses
+    model: "${CENTO_OPENAI_PLANNER_MODEL}"
+    output_schema: workset_plan.v1
+    cost_usd_estimate: 0.10
+    max_input_chars: 16000
+    max_output_tokens: 1500
+
+  api-section-worker:
+    provider: openai
+    endpoint: responses
+    model: "${CENTO_OPENAI_WORKER_MODEL}"
+    output_schema: docs_section.v1
+    cost_usd_estimate: 0.20
+    max_input_chars: 20000
+    max_output_tokens: 2000
+
+  api-reviewer:
+    provider: openai
+    endpoint: responses
+    model: "${CENTO_OPENAI_REVIEWER_MODEL}"
+    output_schema: validation_review.v1
+    cost_usd_estimate: 0.10
+    max_input_chars: 12000
+    max_output_tokens: 1200
+
+  api-mini-integrator:
+    provider: openai
+    endpoint: responses
+    model: "gpt-4.1-mini"
+    output_schema: validation_review.v1
+    cost_usd_estimate: 0.08
+    max_input_chars: 12000
+    max_output_tokens: 1200
+
+  api-patch-proposal:
+    provider: openai
+    endpoint: responses
+    model: "gpt-4.1-mini"
+    output_schema: patch_proposal.v1
+    cost_usd_estimate: 0.0125
+    max_input_chars: 8000
+    max_output_tokens: 900
+    pricing:
+      input_usd_per_1m: 0.80
+      output_usd_per_1m: 3.20
+
+  api-proreq-planner:
+    provider: openai
+    endpoint: responses
+    model: "${CENTO_OPENAI_PRO_MODEL}"
+    output_schema: hard_proreq_plan.v1
+    cost_usd_estimate: 2.00
+    max_input_chars: 50000
+    max_output_tokens: 5000

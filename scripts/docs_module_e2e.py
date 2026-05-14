@@ -111,7 +111,7 @@ def write_section_stories(run_dir: Path, section_crops: dict[str, str]) -> Path:
             "id": "DOCS-MOD-001",
             "section": "topbar",
             "title": "Global documentation topbar",
-            "acceptance": "Brand, product navigation, Docs active state, review queue link, and New issue action match the screenshot.",
+            "acceptance": "Brand, product navigation, Docs active state, review queue link, and Run pipeline action match the screenshot.",
         },
         {
             "id": "DOCS-MOD-002",

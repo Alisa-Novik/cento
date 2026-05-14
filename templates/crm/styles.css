@@ -328,6 +328,23 @@ button {
   box-shadow: 0 12px 24px rgba(193, 109, 36, 0.24);
 }
 
+.action-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 11px 16px;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: transform 160ms ease, background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.primary-link {
+  color: #fff7ee;
+  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  box-shadow: 0 12px 24px rgba(193, 109, 36, 0.24);
+}
+
 .secondary-button,
 .subtle-button,
 .icon-button {
@@ -346,6 +363,10 @@ button {
 }
 
 button:hover {
+  transform: translateY(-1px);
+}
+
+.action-link:hover {
   transform: translateY(-1px);
 }
 

@@ -1,0 +1,1273 @@
+/* Route-scoped styles for /codebase-intelligence
+   Scope: body.codebaseMode and #codebaseIntelligenceView
+   Do not use selectors from this file that would match the global shell.
+*/
+
+/* ─── Layout overrides ─────────────────────────────────────── */
+
+body.codebaseMode .appShell {
+  grid-template-columns: 1fr;
+}
+
+body.codebaseMode .sidebar,
+body.codebaseMode .taskstreamNav {
+  display: none;
+}
+
+body.codebaseMode .content {
+  padding: 0;
+  border: 0;
+  min-height: calc(100vh - 94px);
+  overflow: hidden;
+}
+
+/* ─── Root view container ───────────────────────────────────── */
+
+#codebaseIntelligenceView {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr) 360px;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: calc(100vh - 94px);
+  background: #0b0b0a;
+  color: var(--text);
+  font-size: 0.82rem;
+}
+
+#codebaseIntelligenceView.hidden {
+  display: none;
+}
+
+#codebaseIntelligenceView:not(.hidden) {
+  display: grid;
+}
+
+#codebaseIntelligenceView .sdHubChildHeader {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+
+/* ─── Left sidebar ──────────────────────────────────────────── */
+
+.ciSidebar {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--line);
+  background: linear-gradient(180deg, #0d0d0c, #090908);
+  overflow-y: auto;
+  padding-bottom: 1rem;
+}
+
+.ciSidebarSection {
+  padding: 0.9rem 0.85rem 0.65rem;
+  border-bottom: 1px solid rgba(45, 33, 26, 0.6);
+}
+
+.ciSidebarSection:last-child {
+  border-bottom: 0;
+}
+
+.ciSidebarLabel {
+  display: block;
+  margin: 0 0 0.45rem;
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.ciSidebarNav {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.ciSidebarNav a {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.32rem 0.45rem;
+  border-radius: 2px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.8rem;
+  transition: color 0.12s, background 0.12s;
+  white-space: nowrap;
+}
+
+.ciSidebarNav a .ciNavIcon {
+  width: 14px;
+  text-align: center;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.ciSidebarNav a:hover {
+  color: var(--text);
+  background: rgba(255, 90, 0, 0.06);
+}
+
+.ciSidebarNav a.active {
+  color: var(--orange);
+  background: rgba(255, 90, 0, 0.1);
+  font-weight: 600;
+}
+
+.ciSidebarNav a.active .ciNavIcon {
+  opacity: 1;
+}
+
+/* Repository section */
+
+.ciRepo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.9rem 0.85rem 0.65rem;
+  border-bottom: 1px solid rgba(45, 33, 26, 0.6);
+}
+
+.ciRepoBranch {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.79rem;
+  color: var(--text);
+}
+
+.ciRepoBranch .ciBranchIcon {
+  opacity: 0.55;
+  font-size: 0.75rem;
+}
+
+.ciRepoStatus {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.38rem;
+  border: 1px solid var(--orange);
+  border-radius: 2px;
+  color: var(--orange);
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-left: auto;
+}
+
+.ciRepoStatus.clean {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.ciRepoMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  color: var(--muted);
+  font-size: 0.73rem;
+}
+
+.ciRepoDirty {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.38rem;
+  color: var(--yellow);
+  font-size: 0.75rem;
+  margin-top: 0.1rem;
+}
+
+.ciRepoDirtyIcon {
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+}
+
+/* Code health */
+
+.ciHealthList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
+  padding: 0.9rem 0.85rem 0.65rem;
+}
+
+.ciHealthRow {
+  display: grid;
+  grid-template-columns: 54px 1fr 30px;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.ciHealthName {
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.ciHealthBar {
+  height: 4px;
+  background: rgba(45, 33, 26, 0.7);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.ciHealthFill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--green);
+  transition: width 0.3s ease;
+}
+
+.ciHealthFill.lang-python { background: #3b82f6; }
+.ciHealthFill.lang-shell  { background: var(--green); }
+.ciHealthFill.lang-go     { background: var(--yellow); }
+.ciHealthFill.lang-js     { background: #f59e0b; }
+.ciHealthFill.lang-ts     { background: var(--cyan); }
+
+.ciHealthPct {
+  font-size: 0.73rem;
+  color: var(--text);
+  text-align: right;
+}
+
+.ciHealthReport {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.35rem 0.85rem 0;
+  padding: 0 0;
+  color: var(--orange);
+  font-size: 0.74rem;
+  text-decoration: none;
+}
+
+.ciHealthReport:hover {
+  text-decoration: underline;
+}
+
+/* ─── Main content area ─────────────────────────────────────── */
+
+.ciMain {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+}
+
+/* ─── Capability cards bar ───────────────────────────────────── */
+
+.ciCapabilityBar {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.ciCapCard {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid rgba(45, 33, 26, 0.7);
+  flex: 1;
+  min-width: 0;
+  cursor: default;
+  transition: background 0.1s;
+}
+
+.ciCapCard:last-child {
+  border-right: 0;
+}
+
+.ciCapCard:hover {
+  background: rgba(255, 90, 0, 0.04);
+}
+
+.ciCapIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+}
+
+.ciCapIcon.blue   { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+.ciCapIcon.purple { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; }
+.ciCapIcon.teal   { background: rgba(77, 215, 209, 0.2); color: var(--cyan); }
+.ciCapIcon.yellow { background: rgba(255, 176, 46, 0.2); color: var(--yellow); }
+.ciCapIcon.green  { background: rgba(16, 182, 106, 0.2); color: var(--green); }
+.ciCapIcon.orange { background: rgba(255, 90, 0, 0.2);  color: var(--orange); }
+
+.ciCapBody {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ciCapCount {
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ciCapDetail {
+  font-size: 0.68rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Graph toolbar ──────────────────────────────────────────── */
+
+.ciGraphToolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.85rem;
+  border-bottom: 1px solid rgba(45, 33, 26, 0.6);
+  background: rgba(11, 11, 10, 0.96);
+  flex-shrink: 0;
+}
+
+.ciGraphTitle {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.ciGraphTitle small {
+  font-weight: 400;
+  color: var(--orange);
+  font-size: 0.72rem;
+  margin-left: 0.35rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ciGraphFilters {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  margin-right: auto;
+}
+
+.ciFilterLabel {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-right: 0.1rem;
+}
+
+.ciFilterBtn {
+  padding: 0.15rem 0.55rem;
+  border: 1px solid rgba(45, 33, 26, 0.8);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.71rem;
+  cursor: pointer;
+  transition: border-color 0.1s, color 0.1s, background 0.1s;
+}
+
+.ciFilterBtn:hover {
+  border-color: var(--line-dim);
+  color: var(--text);
+}
+
+.ciFilterBtn.active {
+  border-color: var(--orange);
+  color: var(--orange);
+  background: rgba(255, 90, 0, 0.08);
+}
+
+.ciFilterBtn.clear {
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.ciFilterBtn.clear:hover {
+  color: var(--text);
+}
+
+.ciGraphControls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.ciSelect {
+  padding: 0.22rem 0.55rem;
+  border: 1px solid var(--line-dim);
+  border-radius: 2px;
+  background: #10100f;
+  color: var(--text);
+  font-size: 0.72rem;
+  cursor: pointer;
+  appearance: none;
+  padding-right: 1.4rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23a89c91'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.45rem center;
+}
+
+.ciSelect:focus {
+  outline: 1px solid var(--orange);
+}
+
+.ciOptionsBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.6rem;
+  border: 1px solid var(--line-dim);
+  border-radius: 2px;
+  background: #10100f;
+  color: var(--muted);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.ciOptionsBtn:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+/* ─── Dependency graph canvas ────────────────────────────────── */
+
+.ciGraphCanvas {
+  flex: 1;
+  position: relative;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 90, 0, 0.03), transparent 60%),
+    #0d0d0c;
+  overflow: hidden;
+  min-height: 320px;
+}
+
+.ciLoading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.ciGraphSvg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Dependency graph nodes */
+
+.ciNode {
+  position: absolute;
+  border: 1px solid;
+  border-radius: 3px;
+  padding: 0.5rem 0.65rem;
+  min-width: 120px;
+  max-width: 180px;
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s;
+  background: rgba(13, 13, 12, 0.92);
+  user-select: none;
+}
+
+.ciNode:hover {
+  box-shadow: 0 0 0 2px currentColor;
+}
+
+.ciNode.active {
+  box-shadow: 0 0 0 2px currentColor, 0 0 12px rgba(255, 90, 0, 0.25);
+}
+
+.ciNode.blue   { border-color: #3b82f6; color: #3b82f6; }
+.ciNode.purple { border-color: #8b5cf6; color: #8b5cf6; }
+.ciNode.yellow { border-color: var(--yellow); color: var(--yellow); }
+.ciNode.teal   { border-color: var(--cyan); color: var(--cyan); }
+.ciNode.green  { border-color: var(--green); color: var(--green); }
+.ciNode.orange { border-color: var(--orange); color: var(--orange); }
+.ciNode.muted  { border-color: var(--line-dim); color: var(--muted); }
+
+.ciNodeHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+
+.ciNodeDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.ciNodeTitle {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ciNodeSub {
+  font-size: 0.67rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ciNodeMeta {
+  display: flex;
+  gap: 0.45rem;
+  margin-top: 0.3rem;
+}
+
+.ciNodeBadge {
+  font-size: 0.63rem;
+  padding: 0.08rem 0.35rem;
+  border: 1px solid rgba(168, 156, 145, 0.2);
+  border-radius: 2px;
+  color: var(--muted);
+}
+
+/* Graph edges / SVG lines */
+
+.ciEdge {
+  stroke: rgba(45, 33, 26, 0.8);
+  stroke-width: 1.5;
+  fill: none;
+}
+
+.ciEdge.active {
+  stroke: var(--orange-soft);
+  stroke-width: 2;
+}
+
+/* Graph minimap */
+
+.ciMinimap {
+  position: absolute;
+  bottom: 0.75rem;
+  right: 0.75rem;
+  width: 120px;
+  height: 70px;
+  border: 1px solid var(--line-dim);
+  background: rgba(11, 11, 10, 0.88);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.ciMinimapViewport {
+  position: absolute;
+  border: 1px solid var(--orange);
+  background: rgba(255, 90, 0, 0.08);
+  border-radius: 1px;
+}
+
+/* Zoom controls */
+
+.ciZoomControls {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 0.75rem;
+  display: flex;
+  gap: 0.25rem;
+}
+
+.ciZoomBtn {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line-dim);
+  background: rgba(11, 11, 10, 0.9);
+  color: var(--muted);
+  font-size: 0.9rem;
+  border-radius: 2px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.ciZoomBtn:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+/* ─── Codebase Data Flow strip ───────────────────────────────── */
+
+.ciDataFlow {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: rgba(11, 11, 10, 0.96);
+  padding: 0.65rem 0.85rem;
+  flex-shrink: 0;
+}
+
+.ciDataFlowTitle {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 0.5rem;
+}
+
+.ciDataFlowTitle small {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 0.7rem;
+  margin-left: 0.4rem;
+}
+
+.ciDataFlowNodes {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow-x: auto;
+}
+
+.ciDfNode {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid rgba(45, 33, 26, 0.8);
+  border-radius: 3px;
+  background: rgba(16, 16, 15, 0.9);
+  min-width: 110px;
+  flex-shrink: 0;
+  cursor: default;
+  transition: border-color 0.1s;
+}
+
+.ciDfNode:hover {
+  border-color: var(--line);
+}
+
+.ciDfArrow {
+  color: var(--muted);
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  padding: 0 0.2rem;
+}
+
+.ciDfIcon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.ciDfBody {
+  display: flex;
+  flex-direction: column;
+}
+
+.ciDfName {
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.ciDfSub {
+  font-size: 0.66rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.ciDfCount {
+  font-size: 0.64rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ─── AI Ask panel ───────────────────────────────────────────── */
+
+.ciAskPanel {
+  border-top: 1px solid rgba(45, 33, 26, 0.6);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ciAskHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.85rem;
+  border-bottom: 1px solid rgba(45, 33, 26, 0.5);
+}
+
+.ciAskTitle {
+  font-size: 0.79rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.ciAskScope {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.71rem;
+}
+
+.ciAskScopeBtn {
+  padding: 0.12rem 0.45rem;
+  border: 1px solid var(--line-dim);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.ciAskScopeBtn:hover,
+.ciAskScopeBtn.active {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.ciAskThread {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow-y: auto;
+  flex: 1;
+  max-height: 220px;
+}
+
+.ciAskMsg {
+  padding: 0.55rem 0.85rem;
+  border-bottom: 1px solid rgba(45, 33, 26, 0.35);
+  display: flex;
+  gap: 0.6rem;
+}
+
+.ciAskMsg.user { background: rgba(255, 90, 0, 0.03); }
+.ciAskMsg.assistant { background: rgba(11, 11, 10, 0.9); }
+
+.ciAskAvatar {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+  padding-top: 0.05rem;
+  min-width: 36px;
+}
+
+.ciAskMsg.user .ciAskAvatar { color: var(--orange); }
+
+.ciAskBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.ciAskText {
+  font-size: 0.77rem;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.ciAskWarning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid rgba(255, 176, 46, 0.3);
+  border-radius: 2px;
+  background: rgba(255, 176, 46, 0.06);
+  font-size: 0.72rem;
+  color: var(--yellow);
+}
+
+.ciAskWarningIcon { flex-shrink: 0; margin-top: 0.05rem; }
+
+.ciAskRefs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  margin-top: 0.45rem;
+}
+
+.ciAskRef {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.69rem;
+  color: var(--orange);
+  text-decoration: none;
+}
+
+.ciAskRef:hover { text-decoration: underline; }
+
+.ciAskRefLine {
+  color: var(--muted);
+  font-size: 0.67rem;
+}
+
+.ciAskInput {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.85rem;
+  border-top: 1px solid rgba(45, 33, 26, 0.5);
+}
+
+.ciAskInputField {
+  flex: 1;
+  background: rgba(18, 17, 15, 0.9);
+  border: 1px solid var(--line-dim);
+  border-radius: 2px;
+  color: var(--text);
+  font-size: 0.78rem;
+  padding: 0.38rem 0.6rem;
+}
+
+.ciAskInputField::placeholder {
+  color: rgba(168, 156, 145, 0.45);
+}
+
+.ciAskInputField:focus {
+  outline: 1px solid var(--orange);
+  border-color: var(--orange);
+}
+
+.ciAskSend {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.38rem 0.7rem;
+  border: 1px solid var(--line-dim);
+  border-radius: 2px;
+  background: #10100f;
+  color: var(--muted);
+  font-size: 0.74rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ciAskSend:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+/* ─── Inspector panel ────────────────────────────────────────── */
+
+.ciInspector {
+  grid-column: 3;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #0d0d0c, #0a0a09);
+  border-left: 0;
+  overflow-y: auto;
+}
+
+.ciInspectorHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.ciInspectorTitle {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.ciInspectorLang {
+  margin-left: auto;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  border-radius: 2px;
+  color: #3b82f6;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.ciInspectorFile {
+  padding: 0.55rem 0.9rem;
+  border-bottom: 1px solid rgba(45, 33, 26, 0.5);
+}
+
+.ciInspectorPath {
+  font-size: 0.74rem;
+  color: var(--orange);
+  word-break: break-all;
+}
+
+.ciInspectorMeta {
+  display: flex;
+  gap: 0.9rem;
+  margin-top: 0.35rem;
+}
+
+.ciInspectorMetaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.ciInspectorMetaLabel {
+  font-size: 0.63rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ciInspectorMetaValue {
+  font-size: 0.76rem;
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Inspector tabs */
+
+.ciInspectorTabs {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.ciTabBtn {
+  padding: 0.45rem 0.75rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.73rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.12s, border-color 0.12s;
+}
+
+.ciTabBtn:hover { color: var(--text); }
+
+.ciTabBtn.active {
+  color: var(--orange);
+  border-bottom-color: var(--orange);
+  font-weight: 600;
+}
+
+/* Inspector content sections */
+
+.ciInspectorContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ciSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ciSectionTitle {
+  font-size: 0.71rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0;
+}
+
+.ciSectionBody {
+  font-size: 0.77rem;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+/* API routes list */
+
+.ciRouteList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+}
+
+.ciRouteRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.74rem;
+  padding: 0.2rem 0;
+}
+
+.ciRouteMethod {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.67rem;
+  font-weight: 700;
+  padding: 0.08rem 0.38rem;
+  border-radius: 2px;
+  min-width: 36px;
+  text-align: center;
+}
+
+.ciRouteMethod.get    { background: rgba(16, 182, 106, 0.15); color: var(--green); }
+.ciRouteMethod.post   { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.ciRouteMethod.put    { background: rgba(255, 176, 46, 0.15); color: var(--yellow); }
+.ciRouteMethod.delete { background: rgba(255, 90, 0, 0.15);  color: var(--orange); }
+.ciRouteMethod.patch  { background: rgba(77, 215, 209, 0.15); color: var(--cyan); }
+
+.ciRoutePath {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  color: var(--text);
+}
+
+.ciRouteDesc {
+  font-size: 0.69rem;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+/* Tech debt / risk items */
+
+.ciRiskList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.ciRiskItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.74rem;
+  color: var(--text);
+}
+
+.ciRiskBullet {
+  flex-shrink: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--line-dim);
+  margin-top: 0.38rem;
+}
+
+.ciRiskBullet.high   { background: var(--orange); }
+.ciRiskBullet.medium { background: var(--yellow); }
+.ciRiskBullet.low    { background: var(--green); }
+
+/* AI assistant card in inspector */
+
+.ciAiCard {
+  border: 1px solid rgba(45, 33, 26, 0.6);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.ciAiCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.7rem;
+  background: rgba(18, 17, 15, 0.8);
+  border-bottom: 1px solid rgba(45, 33, 26, 0.5);
+}
+
+.ciAiCardTitle {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.ciAiCardPill {
+  font-size: 0.65rem;
+  padding: 0.08rem 0.4rem;
+  background: rgba(255, 90, 0, 0.1);
+  border: 1px solid rgba(255, 90, 0, 0.3);
+  border-radius: 10px;
+  color: var(--orange);
+}
+
+.ciAiCardBody {
+  padding: 0.6rem 0.7rem;
+  font-size: 0.75rem;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.ciAiCardBody code {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.7rem;
+  color: var(--orange-soft);
+  background: rgba(255, 90, 0, 0.07);
+  padding: 0.05rem 0.25rem;
+  border-radius: 2px;
+}
+
+.ciAiCardFooter {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.4rem 0.7rem;
+  border-top: 1px solid rgba(45, 33, 26, 0.4);
+}
+
+.ciOpenAiBtn {
+  font-size: 0.71rem;
+  color: var(--orange);
+  text-decoration: none;
+  padding: 0.15rem 0;
+}
+
+.ciOpenAiBtn:hover { text-decoration: underline; }
+
+/* ─── Status / badge utilities ───────────────────────────────── */
+
+.ciBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.4rem;
+  border-radius: 2px;
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ciBadge.healthy  { background: rgba(16, 182, 106, 0.12); color: var(--green);  border: 1px solid rgba(16, 182, 106, 0.3); }
+.ciBadge.warn     { background: rgba(255, 176, 46, 0.12); color: var(--yellow); border: 1px solid rgba(255, 176, 46, 0.3); }
+.ciBadge.error    { background: rgba(255, 90, 0, 0.12);  color: var(--orange); border: 1px solid rgba(255, 90, 0, 0.3); }
+.ciBadge.info     { background: rgba(59, 130, 246, 0.12); color: #3b82f6;      border: 1px solid rgba(59, 130, 246, 0.3); }
+.ciBadge.neutral  { background: rgba(168, 156, 145, 0.1); color: var(--muted); border: 1px solid rgba(168, 156, 145, 0.2); }
+
+/* ─── Responsive — tablet (< 1100px) ────────────────────────── */
+
+@media (max-width: 1100px) {
+  #codebaseIntelligenceView {
+    grid-template-columns: 160px minmax(0, 1fr) 300px;
+  }
+
+  .ciCapCard {
+    padding: 0.5rem 0.55rem;
+  }
+
+  .ciCapDetail {
+    display: none;
+  }
+
+  .ciInspectorContent {
+    padding: 0.6rem 0.7rem;
+  }
+}
+
+/* ─── Responsive — hide inspector (< 900px) ─────────────────── */
+
+@media (max-width: 900px) {
+  #codebaseIntelligenceView {
+    grid-template-columns: 150px minmax(0, 1fr);
+  }
+
+  .ciInspector {
+    display: none;
+  }
+
+  .ciInspector.visible {
+    display: flex;
+    position: fixed;
+    top: 64px;
+    right: 0;
+    bottom: 0;
+    width: 320px;
+    z-index: 200;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.6);
+    border-left: 1px solid var(--line);
+  }
+}
+
+/* ─── Responsive — collapse sidebar (< 680px) ───────────────── */
+
+@media (max-width: 680px) {
+  #codebaseIntelligenceView {
+    grid-template-columns: 1fr;
+  }
+
+  .ciMain,
+  .ciInspector {
+    grid-column: 1;
+  }
+
+  .ciSidebar {
+    display: none;
+  }
+
+  .ciSidebar.visible {
+    display: flex;
+    position: fixed;
+    top: 64px;
+    left: 0;
+    bottom: 0;
+    width: 220px;
+    z-index: 200;
+    border-right: 1px solid var(--line);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.6);
+  }
+
+  .ciCapabilityBar {
+    flex-wrap: wrap;
+  }
+
+  .ciCapCard {
+    flex: 1 1 45%;
+    border-right: 1px solid rgba(45, 33, 26, 0.7);
+    border-bottom: 1px solid rgba(45, 33, 26, 0.7);
+  }
+
+  .ciGraphToolbar {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .ciGraphFilters {
+    order: 3;
+    width: 100%;
+    margin-right: 0;
+  }
+
+  .ciDataFlowNodes {
+    padding-bottom: 0.3rem;
+  }
+}

@@ -786,9 +786,16 @@ def command_integrate(args: argparse.Namespace) -> int:
 
 def command_validate_integrated(args: argparse.Namespace) -> int:
     run_dir = factory_dispatch_core.resolve_run_dir(args.run_dir)
-    payload = factory_integrator_core.validate_integrated(run_dir)
+    payload = factory_integrator_core.validate_integrated(run_dir, auto_merge=args.auto_merge)
     print(json.dumps(payload, indent=2, sort_keys=True) if args.json else rel(run_dir / "integration" / "integrated-validation.json"))
     return 0 if payload["decision"] == "approve" else 1
+
+
+def command_validate_fanout(args: argparse.Namespace) -> int:
+    run_dir = factory_dispatch_core.resolve_run_dir(args.run_dir)
+    payload = factory_integrator_core.validate_fanout(run_dir, max_parallel=args.max_parallel)
+    print(json.dumps(payload, indent=2, sort_keys=True) if args.json else rel(run_dir / "integration" / "validation-fanout.json"))
+    return 0 if payload["status"] == "passed" else 1
 
 
 def command_release_candidate(args: argparse.Namespace) -> int:
@@ -796,6 +803,22 @@ def command_release_candidate(args: argparse.Namespace) -> int:
     payload = factory_integrator_core.render_release_candidate(run_dir)
     print(json.dumps(payload, indent=2, sort_keys=True) if args.json else payload["release_candidate"])
     return 0
+
+
+def command_merge(args: argparse.Namespace) -> int:
+    run_dir = factory_dispatch_core.resolve_run_dir(args.run_dir)
+    if not args.auto_merge_main:
+        print("cento factory merge requires --auto-merge-main", file=sys.stderr)
+        return 2
+    payload = factory_integrator_core.auto_merge_main(
+        run_dir,
+        target_branch=args.target_branch,
+        remote=args.remote,
+        push=args.push,
+        dry_run=args.dry_run,
+    )
+    print(json.dumps(payload, indent=2, sort_keys=True) if args.json else rel(run_dir / "integration" / "merge-receipt.json"))
+    return 0 if payload.get("status") in {"planned", "merged_local", "pushed"} else 1
 
 
 def command_sync_taskstream(args: argparse.Namespace) -> int:
@@ -979,13 +1002,30 @@ def build_parser() -> argparse.ArgumentParser:
 
     validate_integrated = sub.add_parser("validate-integrated", help="Validate integration-state and merge readiness.")
     validate_integrated.add_argument("run_dir")
+    validate_integrated.add_argument("--auto-merge", action="store_true", help="Evaluate readiness against the stricter auto-merge gate.")
     validate_integrated.add_argument("--json", action="store_true")
     validate_integrated.set_defaults(func=command_validate_integrated)
+
+    validate_fanout = sub.add_parser("validate-fanout", help="Validate candidate patches in parallel using cacheable deterministic gates.")
+    validate_fanout.add_argument("run_dir")
+    validate_fanout.add_argument("--max-parallel", type=int, default=32)
+    validate_fanout.add_argument("--json", action="store_true")
+    validate_fanout.set_defaults(func=command_validate_fanout)
 
     release_candidate = sub.add_parser("release-candidate", help="Render integration release-candidate.md and summary HTML.")
     release_candidate.add_argument("run_dir")
     release_candidate.add_argument("--json", action="store_true")
     release_candidate.set_defaults(func=command_release_candidate)
+
+    merge = sub.add_parser("merge", help="Auto-merge a validated Safe Integrator branch into main, optionally pushing after post-merge validation.")
+    merge.add_argument("run_dir")
+    merge.add_argument("--auto-merge-main", action="store_true", help="Required acknowledgement for local main merge.")
+    merge.add_argument("--push", action="store_true", help="Push target branch to the configured remote after post-merge validation.")
+    merge.add_argument("--target-branch", default="main")
+    merge.add_argument("--remote", default="origin")
+    merge.add_argument("--dry-run", action="store_true")
+    merge.add_argument("--json", action="store_true")
+    merge.set_defaults(func=command_merge)
 
     sync_taskstream = sub.add_parser("sync-taskstream", help="Preview Taskstream updates from integration results.")
     sync_taskstream.add_argument("run_dir")

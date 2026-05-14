@@ -1,0 +1,12 @@
+diff --git a/CLUSTER_NOTICE.md b/CLUSTER_NOTICE.md
+--- a/CLUSTER_NOTICE.md
++++ b/CLUSTER_NOTICE.md
+@@ -2,7 +2,7 @@
+ 
+ Updated: 2026-04-30
+ 
+-Cheap Spark/Codex workers are now an explicit coordination option.
++Cheap Spark/Codex workers remain an explicit coordination option.
+ 
+ Use this when there is queued work that is simple, bounded, validator-like, docs/evidence-oriented, or otherwise safe to delegate while the main agent keeps working.
+ 

@@ -1,0 +1,18 @@
+{
+  "schema_version": "cento.worker_artifact.v1",
+  "manifest_path": "tests/fixtures/cento_build/manifest.valid.json",
+  "manifest_id": "build_fixture_docs_page_001",
+  "worker_id": "builder_1",
+  "worker_type": "local",
+  "role": "builder",
+  "status": "completed",
+  "base_ref": "HEAD",
+  "artifact_dir": ".cento/builds/build_fixture_docs_page_001/workers/builder_1",
+  "patch_bundle": ".cento/builds/build_fixture_docs_page_001/integration/patch_bundle.json",
+  "touched_paths": [
+    "tests/fixtures/cento_build/unowned.html"
+  ],
+  "assumptions": [],
+  "validation": [],
+  "risks": []
+}

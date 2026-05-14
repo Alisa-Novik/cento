@@ -17,6 +17,7 @@ from typing import Any
 
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
+EXPLICIT_RUN_ROOT = "CENTO_CLUSTER_JOBS_ROOT" in os.environ
 RUN_ROOT = Path(os.environ.get("CENTO_CLUSTER_JOBS_ROOT", ROOT_DIR / "workspace" / "runs" / "cluster-jobs"))
 TEMPLATE_DIR = ROOT_DIR / "templates" / "jobs-web"
 DEFAULT_HOST = "127.0.0.1"
@@ -205,6 +206,303 @@ def task_details(job: dict[str, Any], run_dir: Path) -> list[dict[str, Any]]:
     return details
 
 
+def read_json_if_exists(path: Path) -> dict[str, Any]:
+    if not path.exists() or not path.is_file():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def read_jsonl_tail(path: Path, limit: int = 4) -> list[dict[str, Any]]:
+    if not path.exists() or not path.is_file():
+        return []
+    rows: list[dict[str, Any]] = []
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(payload, dict):
+            rows.append(payload)
+    return rows[-limit:]
+
+
+def latest_file_time(*paths: Path) -> datetime:
+    latest: datetime | None = None
+    for path in paths:
+        if not path.exists() or not path.is_file():
+            continue
+        stamp = datetime.fromtimestamp(path.stat().st_mtime).astimezone()
+        if latest is None or stamp > latest:
+            latest = stamp
+    return latest or datetime.now().astimezone()
+
+
+def first_existing_path(*paths: Path) -> Path | None:
+    for path in paths:
+        if path.exists() and path.is_file():
+            return path
+    return None
+
+
+def int_value(value: Any) -> int:
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def first_int(*values: Any) -> int:
+    for value in values:
+        parsed = int_value(value)
+        if parsed:
+            return parsed
+    return 0
+
+
+def progress_label(label: str, done: int, total: int) -> str:
+    return f"{label} {done}/{total}" if total else f"{label} {done}"
+
+
+def live_task(task_id: str, title: str, status: str, *, node: str = "local", log: Path | None = None) -> dict[str, Any]:
+    normalized = normalize_status(status)
+    returncode: int | None
+    if normalized in {"completed", "succeeded", "success", "done"}:
+        returncode = 0
+    elif normalized in {"failed", "error", "invalid"}:
+        returncode = 1
+    else:
+        returncode = None
+    return {
+        "id": task_id,
+        "node": node,
+        "title": title,
+        "scope": "",
+        "ownership": [],
+        "returncode": returncode,
+        "elapsed_seconds": None,
+        "log": str(log) if log else "",
+        "log_exists": bool(log and log.exists()),
+        "log_tail": recent_log_tail(log, limit=4) if log else [],
+        "script": "",
+        "script_exists": False,
+        "manifest": "",
+        "manifest_exists": False,
+    }
+
+
+def autopilot_jobs(now: datetime) -> list[dict[str, Any]]:
+    root = Path(os.environ.get("CENTO_WALK_AUTOPILOT_ROOT", ROOT_DIR / "workspace" / "runs" / "walk-autopilot"))
+    if not root.exists() or not root.is_dir():
+        return []
+    jobs: list[dict[str, Any]] = []
+    for run_dir in root.iterdir():
+        if not run_dir.is_dir():
+            continue
+        metrics_path = run_dir / "metrics.jsonl"
+        events_path = run_dir / "events.jsonl"
+        if not metrics_path.exists() and not events_path.exists():
+            continue
+        metrics = read_jsonl_tail(metrics_path, 1)
+        events = read_jsonl_tail(events_path, 1)
+        metric = metrics[-1] if metrics else {}
+        event = events[-1] if events else {}
+        config = read_json_if_exists(run_dir / "config.json")
+        manifest = read_json_if_exists(run_dir / "execution-manifest.json")
+        updated_at = latest_file_time(metrics_path, events_path, run_dir / "handoff.md", run_dir / "factory_promotion.json")
+        for payload in (event, metric):
+            parsed = parse_time(payload.get("written_at"))
+            if parsed and parsed > updated_at:
+                updated_at = parsed
+        status = normalize_status(metric.get("status") or event.get("status"))
+        event_name = str(event.get("event") or "progress")
+        event_status = normalize_status(event.get("status"))
+        degraded_reasons: list[str] = []
+        if "failed" in event_status or event_status == "error":
+            status = "failed"
+            degraded_reasons.append(f"{event_name}={event_status}")
+        if event_name == "hard_stop":
+            status = "failed"
+        completed_exec = int_value(metric.get("completed_proreq_executions") or event.get("execution_index"))
+        expected_exec = first_int(manifest.get("proreq_execution_count"), config.get("proreq_execution_count"))
+        completed_calls = int_value(metric.get("proreq_call_count"))
+        expected_calls = first_int(manifest.get("expected_proreq_call_count"), config.get("target_proreq_calls"), config.get("min_proreq_calls"))
+        completed_swarm = int_value(metric.get("patch_swarm_runs"))
+        expected_swarm = first_int(manifest.get("patch_swarm_milestone_count"), config.get("expected_patch_swarm_runs"))
+        completed_receipts = int_value(metric.get("candidate_patch_receipts"))
+        expected_receipts = first_int(manifest.get("expected_candidate_patch_receipts"), config.get("expected_candidate_patch_receipts"))
+        if event_status and event_status != "unknown":
+            step = f"{event_name.replace('_', ' ')}: {event_status.replace('-', ' ')}"
+        elif expected_exec:
+            step = f"executions {completed_exec}/{expected_exec} · calls {completed_calls}/{expected_calls} · patch swarm {completed_swarm}/{expected_swarm}"
+        else:
+            step = event_name.replace("_", " ")
+        latest_log = first_existing_path(events_path, metrics_path)
+        summary_path = run_dir / "handoff.md"
+        summary = {
+            "id": run_dir.name,
+            "status": status,
+            "feature": f"Factory scale autopilot ({config.get('run_mode') or 'walk'})",
+            "task_count": max(completed_exec, expected_exec),
+            "result_count": completed_exec,
+            "failed_task_count": 1 if degraded_reasons else 0,
+            "summary_exists": summary_path.exists(),
+            "updated_at": updated_at.isoformat(timespec="seconds"),
+            "updated_age": age_label(updated_at, now),
+            "current_step": step,
+            "latest_log": {
+                "path": str(latest_log or ""),
+                "exists": bool(latest_log),
+                "tail": recent_log_tail(latest_log, limit=4) if latest_log else [],
+            },
+            "state": "degraded" if degraded_reasons or status == "failed" else "ok",
+            "degraded_reasons": degraded_reasons,
+        }
+        jobs.append(
+            {
+                "id": run_dir.name,
+                "source": "walk-autopilot",
+                "status": status,
+                "feature": summary["feature"],
+                "created_at": str(config.get("created_at") or ""),
+                "finished_at": "",
+                "updated_at": summary["updated_at"],
+                "updated_age": summary["updated_age"],
+                "repo": str(ROOT_DIR),
+                "run_dir": str(run_dir),
+                "job": str(run_dir / "config.json"),
+                "summary": str(summary_path),
+                "job_summary": summary,
+                "summary_exists": summary_path.exists(),
+                "agent_command": f"cento walk-autopilot factory-scale status --run-id {run_dir.name} --json",
+                "tasks": [
+                    live_task("proreq", progress_label("ProReq calls", completed_calls, expected_calls), status, log=latest_log),
+                    live_task("executions", progress_label("ProReq executions", completed_exec, expected_exec), status, log=latest_log),
+                    live_task("patch-swarm", progress_label("Patch Swarm runs", completed_swarm, expected_swarm), status, log=latest_log),
+                    live_task("receipts", progress_label("Candidate receipts", completed_receipts, expected_receipts), status, log=latest_log),
+                ],
+            }
+        )
+    return jobs
+
+
+def factory_feature(plan: dict[str, Any], queue: dict[str, Any]) -> str:
+    request = plan.get("request") if isinstance(plan.get("request"), dict) else {}
+    for value in (request.get("raw"), plan.get("feature"), plan.get("package"), queue.get("package")):
+        line = first_line(value)
+        if line:
+            return line
+    return "Factory run"
+
+
+def factory_jobs(now: datetime) -> list[dict[str, Any]]:
+    root = Path(os.environ.get("CENTO_FACTORY_RUNS_ROOT", ROOT_DIR / "workspace" / "runs" / "factory"))
+    if not root.exists() or not root.is_dir():
+        return []
+    jobs: list[dict[str, Any]] = []
+    for run_dir in root.iterdir():
+        if not run_dir.is_dir() or not (run_dir / "factory-plan.json").exists():
+            continue
+        plan = read_json_if_exists(run_dir / "factory-plan.json")
+        queue = read_json_if_exists(run_dir / "queue" / "state.json") or read_json_if_exists(run_dir / "queue" / "queue.json")
+        validation = read_json_if_exists(run_dir / "integration" / "validation-fanout.json")
+        integration = read_json_if_exists(run_dir / "integration" / "integration-state.json")
+        stats = queue.get("stats") if isinstance(queue.get("stats"), dict) else {}
+        updated_at = latest_file_time(
+            run_dir / "factory-plan.json",
+            run_dir / "summary.md",
+            run_dir / "queue" / "state.json",
+            run_dir / "queue" / "events.jsonl",
+            run_dir / "integration" / "validation-fanout.json",
+            run_dir / "integration" / "integration-state.json",
+        )
+        for payload in (validation, integration):
+            for key in ("generated_at", "updated_at"):
+                parsed = parse_time(payload.get(key))
+                if parsed and parsed > updated_at:
+                    updated_at = parsed
+        total = int_value(stats.get("total"))
+        tasks_map = queue.get("tasks") if isinstance(queue.get("tasks"), dict) else {}
+        if not total:
+            total = len(tasks_map) or len(plan.get("tasks") or [])
+        status = "queued" if int_value(stats.get("queued")) or int_value(stats.get("waiting")) else "succeeded"
+        if int_value(stats.get("running")) or int_value(stats.get("leased")) or int_value(stats.get("validating")):
+            status = "running"
+        if normalize_status(validation.get("status")) in {"failed", "error", "invalid"}:
+            status = "failed"
+        failed = int_value(stats.get("blocked")) + int_value(stats.get("deadletter")) + int_value(validation.get("failed_count"))
+        if failed:
+            status = "failed"
+        if status == "succeeded" and total and not validation and not (int_value(stats.get("done")) + int_value(stats.get("integrated"))):
+            status = "planned"
+        reasons: list[str] = []
+        if int_value(validation.get("failed_count")):
+            reasons.append(f"{int_value(validation.get('failed_count'))} validation failure(s)")
+        if int_value(stats.get("blocked")):
+            reasons.append(f"{int_value(stats.get('blocked'))} blocked task(s)")
+        readiness = integration.get("merge_readiness") if isinstance(integration.get("merge_readiness"), dict) else {}
+        for blocker in readiness.get("blockers") or []:
+            reasons.append(str(blocker))
+            if len(reasons) >= 3:
+                break
+        if validation:
+            step = f"validation fanout {normalize_status(validation.get('status'))} · {int_value(validation.get('passed_count'))} passed / {int_value(validation.get('failed_count'))} failed"
+        else:
+            step = f"queued {int_value(stats.get('queued'))} · running {int_value(stats.get('running')) + int_value(stats.get('validating'))} · done {int_value(stats.get('done')) + int_value(stats.get('integrated'))} / {total}"
+        latest_log = first_existing_path(run_dir / "queue" / "events.jsonl", run_dir / "integration" / "validation-fanout.json")
+        summary_path = run_dir / "summary.md"
+        summary = {
+            "id": run_dir.name,
+            "status": status,
+            "feature": factory_feature(plan, queue),
+            "task_count": total,
+            "result_count": int_value(stats.get("done")) + int_value(stats.get("integrated")) + int_value(validation.get("passed_count")),
+            "failed_task_count": failed,
+            "summary_exists": summary_path.exists(),
+            "updated_at": updated_at.isoformat(timespec="seconds"),
+            "updated_age": age_label(updated_at, now),
+            "current_step": step,
+            "latest_log": {
+                "path": str(latest_log or ""),
+                "exists": bool(latest_log),
+                "tail": recent_log_tail(latest_log, limit=4) if latest_log else [],
+            },
+            "state": "degraded" if reasons or status == "failed" else ("empty" if total == 0 else "ok"),
+            "degraded_reasons": reasons,
+        }
+        task_rows = []
+        for task_id in sorted(tasks_map)[:8]:
+            task = tasks_map[task_id] if isinstance(tasks_map[task_id], dict) else {}
+            task_rows.append(live_task(str(task.get("task_id") or task_id), str(task.get("title") or ""), normalize_status(task.get("status")), node=str(task.get("node") or "local"), log=latest_log))
+        jobs.append(
+            {
+                "id": run_dir.name,
+                "source": "factory",
+                "status": status,
+                "feature": summary["feature"],
+                "created_at": str(plan.get("created_at") or ""),
+                "finished_at": "",
+                "updated_at": summary["updated_at"],
+                "updated_age": summary["updated_age"],
+                "repo": str(ROOT_DIR),
+                "run_dir": str(run_dir),
+                "job": str(run_dir / "factory-plan.json"),
+                "summary": str(summary_path),
+                "job_summary": summary,
+                "summary_exists": summary_path.exists(),
+                "agent_command": f"cento factory status {run_dir} --json",
+                "tasks": task_rows,
+            }
+        )
+    return jobs
+
+
 def load_jobs() -> dict[str, Any]:
     RUN_ROOT.mkdir(parents=True, exist_ok=True)
     jobs = []
@@ -250,6 +548,7 @@ def load_jobs() -> dict[str, Any]:
         jobs.append(
             {
                 "id": job.get("id", job_path.parent.name),
+                "source": "cluster-jobs",
                 "status": normalized["status"],
                 "feature": normalized["feature"],
                 "created_at": job.get("created_at", ""),
@@ -266,6 +565,18 @@ def load_jobs() -> dict[str, Any]:
                 "tasks": task_details(job, run_dir),
             }
         )
+    if not EXPLICIT_RUN_ROOT or os.environ.get("CENTO_INDUSTRIAL_JOBS_INCLUDE_LIVE") == "1":
+        jobs.extend(autopilot_jobs(current_time))
+        jobs.extend(factory_jobs(current_time))
+    counts = {}
+    states = {}
+    for job in jobs:
+        summary = job.get("job_summary") if isinstance(job.get("job_summary"), dict) else {}
+        status = normalize_status(summary.get("status") or job.get("status"))
+        state = str(summary.get("state") or "unknown")
+        counts[status] = counts.get(status, 0) + 1
+        states[state] = states.get(state, 0) + 1
+    jobs.sort(key=lambda item: parse_time((item.get("job_summary") or {}).get("updated_at")) or datetime.fromtimestamp(0).astimezone(), reverse=True)
     return {
         "updated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "run_root": str(RUN_ROOT),

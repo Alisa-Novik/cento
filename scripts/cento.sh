@@ -12,6 +12,7 @@ CLI_INTERACTIVE="$ROOT_DIR/scripts/cento_interactive.sh"
 PLATFORM_REPORT="$ROOT_DIR/scripts/platform_report.py"
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/cento"
 CONFIG_FILE="$CONFIG_DIR/aliases.sh"
+SECRETS_FILE="${CENTO_SECRETS_ENV:-$CONFIG_DIR/secrets.env}"
 CONFIG_TEMPLATE="$ROOT_DIR/templates/cento/aliases.sh"
 COMPLETION_TEMPLATE="$ROOT_DIR/scripts/completion/_cento"
 COMPLETION_DIR="$CONFIG_DIR/completions"
@@ -45,6 +46,8 @@ Built-ins:
   install [all|zsh|tmux]
                        Install cento shell and tmux integration
   run TOOL [args...]   Run a registered tool by id
+  run fast|standard|thorough --task TEXT [--write PATH]
+                       Create an execution contract; optionally run one local builder
 
 Routing:
   cento TOOL [args...]    Run a registered tool directly
@@ -65,9 +68,24 @@ Examples:
   cento install all
   cento install zsh
   cento install tmux
+  cento run fast --task "Fix app docs page" --write apps/foo/index.html
+  cento run fast --task "Fix app docs page" --write apps/foo/index.html --local-builder fixture --fixture-case valid --apply --validation smoke --commit none
+  cento run fast --task "Fix app docs page" --write apps/foo/index.html --runtime-profile codex-fast --apply --validation smoke --commit none
+  cento build init --task "Fixture docs page patch" --mode fast --write tests/fixtures/cento_build/app_page.html --route /fixture
+  cento build worker run .cento/builds/<id>/manifest.json --worker builder_1 --runtime fixture --fixture-case valid --worktree --timeout 180
+  cento build worker run .cento/builds/<id>/manifest.json --worker builder_1 --runtime-profile codex-fast --worktree
+  cento runtime check codex-fast
+  cento workset check tests/fixtures/cento_workset/workset.valid.json
+  cento workset run tests/fixtures/cento_workset/workset.valid.json --max-workers 2 --runtime-profile fixture-valid --apply sequential --validation smoke
+  cento workset execute tests/fixtures/cento_workset/workset.execute.fixture.json --max-parallel 3 --runtime fixture --integrate sequential --validation smoke
+  cento workset execute .cento/worksets/docs_page.json --max-parallel 6 --runtime api-openai --budget-usd 3 --max-budget-usd 5 --integrate sequential --apply --validation smoke
+  cento build bundle synthesize --manifest tests/fixtures/cento_build/manifest.valid.json --patch tests/fixtures/cento_build/patch.valid.diff
+  cento build integrate tests/fixtures/cento_build/manifest.valid.json --bundle .cento/builds/build_fixture_docs_page_001/integration/patch_bundle.json --dry-run
   cento mcp doctor
   cento mcp docs
   cento scan --query "mcp"
+  cento discord update
+  cento discord rerun
   cento kitty-theme-manager --list-custom
   cento monk
   cento cyber
@@ -118,6 +136,14 @@ load_config() {
     CENTO_ALIAS_DESCRIPTIONS=()
     # shellcheck disable=SC1090
     source "$CONFIG_FILE"
+}
+
+load_secrets_env() {
+    [[ -f "$SECRETS_FILE" ]] || return 0
+    set -a
+    # shellcheck disable=SC1090
+    source "$SECRETS_FILE"
+    set +a
 }
 
 choose_editor() {
@@ -560,6 +586,11 @@ main() {
             ;;
         run)
             [[ $# -gt 0 ]] || cento_die "Usage: cento run TOOL [args...]"
+            case "${1:-}" in
+                --mode|fast|standard|thorough)
+                    exec python3 "$ROOT_DIR/scripts/cento_run_mode.py" "$@"
+                    ;;
+            esac
             local tool_id=$1
             shift
             run_tool "$tool_id" "$@"
@@ -577,4 +608,5 @@ main() {
     esac
 }
 
+load_secrets_env
 main "$@"

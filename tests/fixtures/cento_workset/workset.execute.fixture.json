@@ -1,0 +1,35 @@
+{
+  "schema_version": "cento.workset.v1",
+  "id": "workset_execute_fixture_001",
+  "mode": "fast",
+  "max_parallel": 3,
+  "routes": [
+    "/fixture"
+  ],
+  "tasks": [
+    {
+      "id": "alpha",
+      "task": "Patch alpha fixture",
+      "write_paths": [
+        "standards/README.md"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "beta",
+      "task": "Patch beta fixture",
+      "write_paths": [
+        "standards/mcp.md"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "gamma",
+      "task": "Patch gamma fixture",
+      "write_paths": [
+        "standards/tui.md"
+      ],
+      "depends_on": []
+    }
+  ]
+}

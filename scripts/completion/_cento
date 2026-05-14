@@ -100,6 +100,16 @@ _cento() {
             esac
           fi
           ;;
+        discord|rd)
+          if (( CURRENT == 3 )); then
+            _values 'discord command' \
+              'status[Show Discord launcher and process state]' \
+              'update[Install latest official Linux tarball into the user profile]' \
+              'rerun[Stop and relaunch Discord]'
+          elif (( CURRENT == 4 )) && [[ "${words[3]:-}" == "update" ]]; then
+            _values 'discord update option' '--rerun[Restart Discord after updating]'
+          fi
+          ;;
         bridge)
           if (( CURRENT == 3 )); then
             _values 'bridge command' \
@@ -178,6 +188,74 @@ _cento() {
             _values 'incident key' iphone-ce
           fi
           ;;
+        foundry)
+          if (( CURRENT == 3 )); then
+            _values 'foundry command' \
+              'create[Create a Foundry run spec and fixture tool artifacts]' \
+              'plan[Generate Factory handoff and Workset manifest]' \
+              'execute[Execute the Workset through parallel train e2e]' \
+              'promote[Re-run Factory promotion for the train run]' \
+              'materialize[Plan or apply repo-ready files from a Foundry run]' \
+              'status[Show Foundry run status]' \
+              'validate[Validate Foundry receipts and gates]' \
+              'e2e[Create, plan, execute, promote, and validate a fixture run]'
+          else
+            case "${words[3]:-}" in
+              create)
+                _arguments \
+                  '--domain[Business domain]:domain:' \
+                  '--fixture[Fixture tool]:fixture:(client-intake-hub)' \
+                  '--run-id[Run id]:run id:' \
+                  '--out[Output run directory]:directory:_files -/' \
+                  '--max-parallel[Maximum parallel workers]:count:' \
+                  '--budget-usd[Target budget in USD]:amount:' \
+                  '--max-budget-usd[Hard budget cap in USD]:amount:' \
+                  '--json[Print JSON]'
+                ;;
+              execute)
+                _arguments \
+                  '--runtime[Runtime]:runtime:(fixture api-openai)' \
+                  '--train-run-id[Train run id]:run id:' \
+                  '--budget-usd[Target budget in USD]:amount:' \
+                  '--max-budget-usd[Hard budget cap in USD]:amount:' \
+                  '--max-parallel[Maximum parallel workers]:count:' \
+                  '--validation[Validation tier]:tier:' \
+                  '--json[Print JSON]'
+                ;;
+              promote)
+                _arguments '--dry-run[Plan promotion without applying]' '--apply[Apply in Factory integration worktree]' '--json[Print JSON]'
+                ;;
+              materialize)
+                _arguments \
+                  '--target-root[Repo-relative materialization root]:path:_files -/' \
+                  '--dry-run[Plan real files without writing]' \
+                  '--apply[Write repo-ready files]' \
+                  '--json[Print JSON]'
+                ;;
+              e2e)
+                _arguments \
+                  '--fixture[Fixture tool]:fixture:(client-intake-hub)' \
+                  '--idea[Tool idea]:idea:' \
+                  '--domain[Business domain]:domain:' \
+                  '--run-id[Run id]:run id:' \
+                  '--out[Output run directory]:directory:_files -/' \
+                  '--max-parallel[Maximum parallel workers]:count:' \
+                  '--dry-run[Use fixture runtime]' \
+                  '--live[Use live api-openai runtime]' \
+                  '--real-files[Plan real-file materialization after validation]' \
+                  '--target-root[Repo-relative materialization root]:path:_files -/' \
+                  '--materialize-apply[Apply real files during e2e]' \
+                  '--budget-usd[Target budget in USD]:amount:' \
+                  '--max-budget-usd[Hard budget cap in USD]:amount:' \
+                  '--validation[Validation tier]:tier:' \
+                  '--json[Print JSON]'
+                ;;
+              plan|status|validate)
+                _arguments '--json[Print JSON]'
+                ;;
+            esac
+          fi
+          ;;
         agent-work)
           if (( CURRENT == 3 )); then
             _values 'agent-work command' \
@@ -223,6 +301,110 @@ _cento() {
               'create-investigation-ticket[Create a follow-up ticket]'
           fi
           ;;
+        build)
+          if (( CURRENT == 3 )); then
+            _values 'build command' \
+              'init[Create a build manifest and Builder prompt]' \
+              'check[Validate manifest shape and path policy]' \
+              'prompt[Print or rewrite the Builder prompt]' \
+              'worker[Run one local build worker]' \
+              'apply[Apply an accepted patch bundle]' \
+              'artifact[Check worker artifacts]' \
+              'bundle[Synthesize patch bundles]' \
+              'integrate[Dry-run integrate a patch bundle]' \
+              'receipt[Print the latest build receipt]'
+          else
+            _arguments \
+              '--task[Operator task]:task:' \
+              '--mode[Execution mode]:mode:(fast standard thorough)' \
+              '--write[Owned writable path]:file:_files' \
+              '--read[Read-only path]:file:_files' \
+              '--route[Target route]:route:' \
+              '--patch[Patch diff path]:file:_files' \
+              '--bundle[Patch bundle path]:file:_files' \
+              '--from-receipt[Accepted integration receipt]:file:_files' \
+              '--worker[Worker id]:worker:(builder_1)' \
+              '--runtime[Worker runtime]:runtime:(fixture command fixture-unowned fixture-protected fixture-binary fixture-delete fixture-lockfile local-codex codex)' \
+              '--runtime-profile[Named runtime profile]:profile:(codex-fast fixture-valid python-fixture)' \
+              '--fixture-case[Fixture case]:case:(valid unowned protected delete lockfile binary)' \
+              '--command[Command runtime template]:command:' \
+              '--local-builder[Run one local builder runtime]:runtime:(fixture command)' \
+              '--builder-command[Run-fast command runtime template]:command:' \
+              '--worker-timeout[Run-fast worker timeout seconds]:seconds:' \
+              '--timeout[Worker timeout seconds]:seconds:' \
+              '--worktree[Run in an isolated worktree]' \
+              '--allow-dirty-owned[Allow dirty owned paths]' \
+              '--allow-unsafe-command[Allow raw shell command runtime]' \
+              '--allow-base-mismatch[Allow manifest base mismatch]' \
+              '--dev-raw-patch[Allow raw patch integration for dev]' \
+              '--dry-run[Run integration as a dry-run]' \
+              '--json[Print JSON]'
+          fi
+          ;;
+        runtime)
+          if (( CURRENT == 3 )); then
+            _values 'runtime command' \
+              'list[List runtime profiles]' \
+              'check[Validate one runtime profile]'
+          elif (( CURRENT == 4 )) && [[ "${words[3]:-}" == "check" ]]; then
+            _values 'runtime profile' codex-fast fixture-valid python-fixture
+          else
+            _arguments \
+              '--json[Print JSON]' \
+              '--require-executable[Fail when command executable is missing]'
+          fi
+          ;;
+        workset)
+          if (( CURRENT == 3 )); then
+            _values 'workset command' \
+              'check[Validate workset shape and exclusive paths]' \
+              'run[Run a local exclusive-path workset]' \
+              'execute[Run parallel fixture, local-command, or API workers]' \
+              'materialize-artifact[Convert API artifact to patch bundle]'
+          else
+            _arguments \
+              '--max-parallel[Maximum parallel workers]:count:' \
+              '--max-workers[Maximum parallel workers]:count:' \
+              '--runtime[Worker runtime]:runtime:(api-openai fixture local-command)' \
+              '--runtime-profile[Named runtime profile]:profile:(codex-fast fixture-valid python-fixture)' \
+              '--api-profile[API worker profile]:profile:(api-planner api-section-worker api-reviewer)' \
+              '--budget-usd[Target API budget]:usd:' \
+              '--max-budget-usd[Hard API budget cap]:usd:' \
+              '--integrate[Integration strategy]:strategy:(sequential)' \
+              '--apply[Apply mode]:mode:(sequential none)' \
+              '--validation[Validation tier]:tier:(smoke focused product)' \
+              '--worker-timeout[Worker timeout seconds]:seconds:' \
+              '--fixture-case[Fixture case]:case:(valid unowned protected delete lockfile binary)' \
+              '--allow-dirty-owned[Allow dirty owned paths]' \
+              '--allow-unsafe-command[Allow raw shell command runtime]' \
+              '--json[Print JSON]'
+          fi
+          ;;
+        demo-evidence)
+          if (( CURRENT == 3 )); then
+            _values 'demo-evidence command' \
+              'record[Record a 10-30 second demo clip and evidence receipt]' \
+              'verify[Verify a demo evidence receipt and video]' \
+              'status[Print a demo evidence receipt status]'
+          else
+            _arguments \
+              '--title[Evidence title]:title:' \
+              '--duration[Clip length in seconds, 10-30]:seconds:' \
+              '--fps[Capture frame rate]:fps:' \
+              '--geometry[Capture region WIDTHxHEIGHT+X,Y]:geometry:' \
+              '--out[Output run directory]:directory:_files -/' \
+              '--factory-run[Factory run directory]:directory:_files -/' \
+              '--task[Factory task id]:task:' \
+              '--worker[Worker id]:worker:' \
+              '--notes[Evidence note]:note:' \
+              '--tag[Evidence tag]:tag:' \
+              '--video-name[Video filename]:file:' \
+              '--recorder[Recorder backend]:recorder:(auto x11grab wf-recorder avfoundation synthetic)' \
+              '--avfoundation-input[macOS ffmpeg avfoundation input]:input:' \
+              '--dry-run[Plan recording without capture]' \
+              '--json[Print JSON]'
+          fi
+          ;;
         factory)
           if (( CURRENT == 3 )); then
             _values 'factory command' \
@@ -238,7 +420,9 @@ _cento() {
               'validate[Run T0/T1/T2 validation ladder]' \
               'integrate[Plan, prepare branch, or apply patches via Safe Integrator]' \
               'validate-integrated[Validate integration state and merge readiness]' \
+              'validate-fanout[Run parallel cached candidate validation]' \
               'release-candidate[Render integration release-candidate.md]' \
+              'merge[Auto-merge validated integration branch into main]' \
               'sync-taskstream[Preview Taskstream transitions from integration results]' \
               'release[Write delivery status]' \
               'render-hub[Render start-here and implementation map]' \
@@ -259,7 +443,196 @@ _cento() {
             _arguments \
               '--task[Factory task id]:task:' \
               '--runtime[Runtime adapter]:runtime:(noop local-shell-fixture codex-dry-run)' \
+              '--max-parallel[Maximum validation fanout]:count:' \
+              '--auto-merge[Evaluate auto-merge readiness]' \
+              '--auto-merge-main[Allow local main auto-merge]' \
+              '--push[Push after post-merge validation]' \
+              '--target-branch[Target branch]:branch:' \
+              '--remote[Git remote]:remote:' \
               '--dry-run[Do not execute real workers]' \
+              '--json[Print JSON]'
+          fi
+          ;;
+        parallel-delivery)
+          if (( CURRENT == 3 )); then
+            _values 'parallel-delivery command' \
+              'plan[Write implementation manifest and demo workset]' \
+              'execute[Run Hard ProReq passes and demo validation]' \
+              'demo[Create or execute the 10-lane fixture demo]' \
+              'validate[Validate a parallel delivery run]' \
+              'status[Summarize a parallel delivery run]' \
+              'train[Plan and run a dry-run parallel integration train]' \
+              'patch-swarm[Generate, rank, and integrate many provider-diverse patch candidates]' \
+              'self-improve[Run and manage the gated nightly self-improvement loop]'
+          elif (( CURRENT == 4 )) && [[ "${words[3]:-}" == "train" ]]; then
+            _values 'parallel-delivery train command' \
+              'plan[Create a train manifest and integration queue]' \
+              'run[Simulate train workers or execute the copied Workset]' \
+              'promote[Promote train receipts into Factory Safe Integrator]' \
+              'e2e[Plan, execute, validate, and promote a train]' \
+              'integrate[Dry-run sequential train integration]' \
+              'status[Show train status]' \
+              'validate[Validate train artifacts]'
+          elif (( CURRENT == 4 )) && [[ "${words[3]:-}" == "patch-swarm" ]]; then
+            _values 'parallel-delivery patch-swarm command' \
+              'plan[Create a Patch Swarm manifest]' \
+              'execute[Generate fixture candidate receipts]' \
+              'integrate[Run the dedicated integrator]' \
+              'validate[Validate Patch Swarm artifacts]' \
+              'status[Show Patch Swarm status]' \
+              'e2e[Plan, generate, integrate, and validate]'
+          elif (( CURRENT == 4 )) && [[ "${words[3]:-}" == "self-improve" ]]; then
+            _values 'parallel-delivery self-improve command' \
+              'run[Run the four-pass planning loop]' \
+              'e2e[Run Patch Swarm, Factory, Safe Integrator, and dry-run merge gates]' \
+              'validate[Validate the selected self-improvement run]' \
+              'status[Show self-improvement status]' \
+              'install-cron[Install the nightly cron block]' \
+              'uninstall-cron[Remove the nightly cron block]'
+          else
+            _arguments \
+              '--workset[Workset manifest]:file:_files' \
+              '--max-parallel[Maximum parallel shards]:count:' \
+              '--run-id[Train or delivery run id]:run-id:' \
+              '--run-dir[Run directory]:directory:_files -/' \
+              '--candidate-target[Patch candidate target]:count:' \
+              '--max-parallel-agents[Maximum parallel agents]:count:' \
+              '--budget-cap-usd[Patch Swarm live budget cap]:usd:' \
+              '--max-budget-usd[Hard live budget cap]:usd:' \
+              '--api-sandbox-candidates[Metered api-openai sandbox candidate limit]:count:' \
+              '--budget-cap[Patch Swarm live budget cap]:usd:' \
+              '--providers[Patch providers]:providers:' \
+              '--fixture-only[Use deterministic self-improvement e2e fixture mode]' \
+              '--fixture[Use fixture candidates]' \
+              '--auto-merge-gate[Run Factory auto-merge gate as dry-run]' \
+              '--simulate[Simulate workers]' \
+              '--workset-execute[Run copied Workset through cento workset execute]' \
+              '--runtime[Train worker runtime]:runtime:(fixture local-command api-openai)' \
+              '--runtime-profile[Named runtime profile]:profile:(codex-fast fixture-valid python-fixture)' \
+              '--api-profile[API worker profile]:profile:(api-planner api-section-worker api-reviewer)' \
+              '--api-config[API worker config]:file:_files' \
+              '--budget-usd[Target API budget]:usd:' \
+              '--max-budget-usd[Hard API budget cap]:usd:' \
+              '--validation[Validation tier]:tier:(smoke focused product)' \
+              '--worker-timeout[Worker timeout seconds]:seconds:' \
+              '--retry-attempts[API retry attempts]:count:' \
+              '--fixture-case[Fixture case]:case:(valid unowned protected delete lockfile binary)' \
+              '--allow-dirty-owned[Allow dirty owned paths]' \
+              '--allow-creates[Allow explicit owned creates]' \
+              '--apply[Apply accepted patches in Factory integration worktree]' \
+              '--factory-run[Factory run directory]:directory:_files -/' \
+              '--validate-each[Validate after each applied patch]' \
+              '--branch[Factory integration branch]:branch:' \
+              '--worktree[Factory integration worktree]:directory:_files -/' \
+              '--limit[Maximum patches to apply]:count:' \
+              '--dry-run[Plan integration without applying]' \
+              '--live-pro[Enable live Pro planning where supported]' \
+              '--skip-demo[Skip demo execution]' \
+              '--json[Print JSON]'
+          fi
+          ;;
+        walk-autopilot)
+          if (( CURRENT == 3 )); then
+            _values 'walk-autopilot command' \
+              'run[Run append-only walk loops in the foreground]' \
+              'start-tmux[Start walk loops in a detached tmux session]' \
+              'status[Show latest or named walk autopilot status]' \
+              'review-unblock[Scan Agent Work review and blocked states]' \
+              'patch-swarm[Run Patch Swarm fixture e2e through Walk Autopilot]' \
+              'factory-scale[Run the six-hour Factory scale final test]' \
+              'routing[Run and manage the lightweight routing nativeness loop]'
+          elif (( CURRENT == 4 )) && [[ "${words[3]:-}" == "review-unblock" ]]; then
+            _values 'walk-autopilot review-unblock command' \
+              'run[Run one Review/Unblock decision pass]' \
+              'status[Show latest Review/Unblock run status]'
+          elif (( CURRENT == 4 )) && [[ "${words[3]:-}" == "patch-swarm" ]]; then
+            _values 'walk-autopilot patch-swarm command' \
+              'run[Run one fixture Patch Swarm e2e and write summary artifacts]' \
+              'status[Show latest Patch Swarm autopilot summary]'
+          elif (( CURRENT == 4 )) && [[ "${words[3]:-}" == "factory-scale" ]]; then
+            _values 'walk-autopilot factory-scale command' \
+              'start[Initialize and schedule the Factory scale final test]' \
+              'start-day[Initialize and schedule the day-scale Factory autopilot run]' \
+              'preflight[Check for active Factory scale lanes before starting or advancing]' \
+              'advance[Index completed receipts and write Safe Integrator promotion artifacts]' \
+              'promote[Promote advance candidates into a Factory validation run]' \
+              'tick[Run one Factory scale tick]' \
+              'status[Show log-derived Factory scale status]' \
+              'install-cron[Install the marked Factory scale cron block]' \
+              'uninstall-cron[Remove the marked Factory scale cron block]'
+          elif (( CURRENT == 4 )) && [[ "${words[3]:-}" == "routing" ]]; then
+            _values 'walk-autopilot routing command' \
+              'run[Collect counts-only routing stats and write a decision report]' \
+              'status[Show routing nativeness run and cron status]' \
+              'install-cron[Install the marked four-hour cron block]' \
+              'uninstall-cron[Remove the marked cron block]'
+          else
+            _arguments \
+              '--run-id[Run id]:run-id:' \
+              '--loops[Loop count]:count:' \
+              '--cadence-seconds[Seconds between loops]:seconds:' \
+              '--soft-cap-usd[Soft spend cap]:usd:' \
+              '--hard-cap-usd[Hard spend cap]:usd:' \
+              '--max-worker-launch[Max worker launch count]:count:' \
+              '--factory-run-id[Factory run id]:run-id:' \
+              '--review-unblock-mode[Review/Unblock loop mode]:mode:(report aggressive)' \
+              '--no-review-unblock[Skip Review/Unblock stage]' \
+              '--mode[Review/Unblock standalone mode]:mode:(report aggressive)' \
+              '--every-hours[Routing cron cadence in hours]:hours:' \
+              '--duration-hours[Factory scale duration in hours]:hours:' \
+              '--proreq-executions[Factory scale ProReq-light execution count]:count:' \
+              '--min-proreq-calls[Minimum ProReq-light command-call records]:count:' \
+              '--target-proreq-calls[Target day-scale ProReq-light command-call records]:count:' \
+              '--max-proreq-calls[Maximum allowed day-scale ProReq-light command-call records]:count:' \
+              '--tick-minutes[Factory scale cron cadence in minutes]:minutes:' \
+              '--batch-size[Factory scale executions per tick]:count:' \
+              '--promotion-limit[Selected candidate promotion plan limit]:count:' \
+              '--promotion-plan[Factory scale Safe Integrator promotion plan]:path:_files' \
+              '--factory-run[Factory run directory for promotion]:path:_files' \
+              '--limit[Promotion candidate limit]:count:' \
+              '--exclusive-paths[Skip candidates with overlapping touched paths]' \
+              '--allow-path-overlap[Let Factory reject overlapping owned paths]' \
+              '--allow-incomplete[Allow advance against an incomplete Factory scale run]' \
+              '--allow-live-api[Enable live OpenAI/API lane if budget and rate gates pass]' \
+              '--dashboard-total-spend-usd[OpenAI dashboard total spend snapshot]:usd:' \
+              '--max-live-calls-per-hour[Live OpenAI/API hourly call limit]:count:' \
+              '--min-live-call-spacing-seconds[Live OpenAI/API minimum call spacing]:seconds:' \
+              '--patch-swarm[Enable Patch Swarm fixture milestones]' \
+              '--no-patch-swarm[Disable Patch Swarm fixture milestones]' \
+              '--execute-proreq[Run ProReq-light commands instead of ledger-only mode]' \
+              '--no-install-cron[Initialize factory-scale artifacts without installing cron]' \
+              '--crontab-file[Alternate crontab file]:file:_files' \
+              '--no-agent-work[Write routing reports without Agent Work mutation]' \
+              '--dry-run[Plan without writing crontab]' \
+              '--json[Print JSON]'
+          fi
+          ;;
+        object-storage)
+          if (( CURRENT == 3 )); then
+            _values 'object-storage command' \
+              'status[Check local OCI Object Storage readiness]' \
+              'ensure-bucket[Create or verify a private Standard image bucket]' \
+              'put-dummy[Write and upload a dummy text object]' \
+              'e2e[Run Object Storage MVP e2e validation]' \
+              'plan-images[Write a mirror-only image migration manifest]' \
+              'upload-images[Upload image manifest objects]' \
+              'verify-images[Download and verify uploaded image objects]'
+          else
+            _arguments \
+              '--bucket[OCI Object Storage bucket name]:bucket:' \
+              '--name[OCI Object Storage bucket name]:bucket:' \
+              '--namespace[OCI Object Storage namespace]:namespace:' \
+              '--region[OCI Object Storage region]:region:' \
+              '--compartment-id[OCI compartment OCID]:ocid:' \
+              '--root[Image migration root]:directory:_files -/' \
+              '--manifest[Image migration manifest or receipt]:file:_files' \
+              '--sample[Verification sample size]:count:' \
+              '--prefix[Object name prefix]:prefix:' \
+              '--object-name[Full object name]:object:' \
+              '--out[Run output directory]:directory:_files -/' \
+              '--dry-run[Do not call OCI]' \
+              '--live[Use live OCI upload for e2e]' \
+              '--probe[Probe OCI namespace]' \
               '--json[Print JSON]'
           fi
           ;;

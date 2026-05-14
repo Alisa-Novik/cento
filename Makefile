@@ -8,23 +8,26 @@ DEVICE ?=
 CMD ?= pwd
 ARGS ?=
 
-.PHONY: check tree index platforms inventory snapshot scaffold batch search bt-audio-doctor audio-quick-connect kitty-theme wallpaper display i3reorg dashboard preset bridge quick-help quick-help-fzf network network-tui jobs idea-board tg tui crm funnel funnel-check burp mcp scan cento redmine-e2e tracker-migrate agent-work-e2e agent-work-dual-backend-stress agent-work-app-start agent-work-app-stop agent-work-app-status agent-work-app-sync agent-manager agent-manager-janitor terminal-e2e industrial-e2e
+.PHONY: check tree index platforms inventory snapshot scaffold batch search bt-audio-doctor audio-quick-connect kitty-theme wallpaper display i3reorg dashboard preset bridge quick-help quick-help-fzf network network-tui jobs idea-board tg tui crm funnel funnel-check burp mcp scan cento redmine-e2e tracker-migrate agent-work-e2e agent-work-dual-backend-stress agent-work-app-start agent-work-app-stop agent-work-app-status agent-work-app-sync agent-manager agent-manager-janitor terminal-e2e industrial-e2e test-patch-bundles patch-bundle-fixture test-release-candidate release-candidate-fixture test-taskstream-handoff taskstream-fixture
 
 check:
-	$(PYTHON) -m py_compile scripts/agent_coordinator.py scripts/agent_manager.py scripts/agent_pool_kick.py scripts/agent_work.py scripts/agent_work_app_contract_check.py scripts/agent_work_redmine_replacement_visual_validation.py scripts/agent_work_replacement_migration.py scripts/bluetooth_audio_doctor.py scripts/cento_interactive.py scripts/cento_mcp_server.py scripts/cluster_job_runner.py scripts/crm_module.py scripts/dashboard_server.py scripts/deliverables_hub.py scripts/docs_module_e2e.py scripts/factory.py scripts/factory_autopilot.py scripts/factory_autopilot_e2e.py scripts/factory_autopilot_policy.py scripts/factory_autopilot_policy_matrix_e2e.py scripts/factory_autopilot_render.py scripts/factory_autopilot_runtime_e2e.py scripts/factory_autopilot_state.py scripts/factory_console_e2e.py scripts/factory_dispatch_core.py scripts/factory_dispatch_e2e.py scripts/factory_e2e.py scripts/factory_integrate.py scripts/factory_integrated_validate.py scripts/factory_integration.py scripts/factory_integration_e2e.py scripts/factory_integration_state.py scripts/factory_integrator_core.py scripts/factory_merge_readiness.py scripts/factory_patch.py scripts/factory_plan.py scripts/factory_queue.py scripts/factory_registry_gate.py scripts/factory_release_candidate.py scripts/factory_render.py scripts/factory_runtime.py scripts/factory_runtime_adapters_e2e.py scripts/factory_rollback.py scripts/factory_taskstream_sync.py scripts/factory_validate.py scripts/funnel_check.py scripts/funnel_module.py scripts/gather_context.py scripts/idea_board_server.py scripts/incident_response.py scripts/industrial_activity.py scripts/industrial_activity_contract_check.py scripts/industrial_cluster_contract_check.py scripts/industrial_focus.py scripts/industrial_jobs_contract_check.py scripts/industrial_panel.py scripts/industrial_panel_actions_contract_check.py scripts/industrial_status.py scripts/jobs_server.py scripts/manifest_validate.py scripts/mcp_tooling.py scripts/network_web_server.py scripts/no_model_validate_contract_check.py scripts/no_model_validation_e2e.py scripts/platform_report.py scripts/research_map.py scripts/scan_onepager.py scripts/storage.py scripts/storage_e2e.py scripts/story_manifest.py scripts/story_screenshot_runner.py scripts/tool_index.py scripts/validation_manifest.py scripts/validator_tier0.py
+	$(PYTHON) -m py_compile scripts/agent_coordinator.py scripts/agent_manager.py scripts/agent_pool_kick.py scripts/agent_work.py scripts/agent_work_app_contract_check.py scripts/agent_work_redmine_replacement_visual_validation.py scripts/agent_work_replacement_migration.py scripts/bluetooth_audio_doctor.py scripts/cento_build.py scripts/cento_interactive.py scripts/cento_mcp_server.py scripts/cento_openai_worker.py scripts/cento_run_mode.py scripts/cento_runtime.py scripts/cento_workset.py scripts/cluster_job_runner.py scripts/crm_module.py scripts/dashboard_server.py scripts/deliverables_hub.py scripts/demo_evidence.py scripts/docs_module_e2e.py scripts/factory.py scripts/factory_autopilot.py scripts/factory_autopilot_e2e.py scripts/factory_autopilot_policy.py scripts/factory_autopilot_policy_matrix_e2e.py scripts/factory_autopilot_render.py scripts/factory_autopilot_runtime_e2e.py scripts/factory_autopilot_state.py scripts/factory_console_e2e.py scripts/factory_dispatch_core.py scripts/factory_dispatch_e2e.py scripts/factory_e2e.py scripts/factory_integrate.py scripts/factory_integrated_validate.py scripts/factory_integration.py scripts/factory_integration_e2e.py scripts/factory_integration_state.py scripts/factory_integrator_core.py scripts/factory_merge_readiness.py scripts/factory_patch.py scripts/factory_plan.py scripts/factory_queue.py scripts/factory_registry_gate.py scripts/factory_release_candidate.py scripts/factory_render.py scripts/factory_runtime.py scripts/factory_runtime_adapters_e2e.py scripts/factory_rollback.py scripts/factory_taskstream_sync.py scripts/factory_validate.py scripts/funnel_check.py scripts/funnel_module.py scripts/gather_context.py scripts/idea_board_server.py scripts/incident_response.py scripts/industrial_activity.py scripts/industrial_activity_contract_check.py scripts/industrial_cluster_contract_check.py scripts/industrial_focus.py scripts/industrial_focus_contract_check.py scripts/industrial_jobs_contract_check.py scripts/industrial_mission.py scripts/industrial_panel.py scripts/industrial_panel_actions_contract_check.py scripts/industrial_pet_contract_check.py scripts/industrial_status.py scripts/jobs_server.py scripts/manifest_validate.py scripts/mcp_tooling.py scripts/network_web_server.py scripts/no_model_validate_contract_check.py scripts/no_model_validation_e2e.py scripts/object_storage.py scripts/parallel_delivery_taskstream.py scripts/platform_report.py scripts/research_map.py scripts/scan_onepager.py scripts/storage.py scripts/storage_e2e.py scripts/story_manifest.py scripts/story_screenshot_runner.py scripts/tool_foundry.py scripts/tool_index.py scripts/validation_manifest.py scripts/validator_tier0.py
 	$(PYTHON) scripts/agent_manager_contract_check.py
 	$(PYTHON) scripts/no_model_validate_contract_check.py
+	$(PYTHON) scripts/industrial_focus_contract_check.py
+	$(PYTHON) scripts/industrial_pet_contract_check.py
 	go build -o workspace/tmp/cento-interactive-check ./scripts/cento_interactive.go
 	go build -o workspace/tmp/cento-daily-check ./scripts/daily_tui.go
 	go build -o workspace/tmp/cento-industrial-aux-tui-check ./scripts/industrial_aux_tui.go
 	go build -o workspace/tmp/cento-industrial-cluster-tui-check ./scripts/industrial_cluster_tui.go
 	go build -o workspace/tmp/cento-industrial-jobs-tui-check ./scripts/industrial_jobs_tui.go
+	go build -o workspace/tmp/cento-industrial-pet-tui-check ./scripts/industrial_pet_tui.go
 	go build -o workspace/tmp/cento-network-tui-check ./scripts/network_tui.go
 	go build -o workspace/tmp/telegram-tui-check ./scripts/telegram_tui.go
 	$(PYTHON) -c 'import json, pathlib; json.loads(pathlib.Path("data/tools.json").read_text()); json.loads(pathlib.Path(".mcp.json").read_text())'
 	$(PYTHON) scripts/funnel_check.py
 	./scripts/industrial_panel_e2e.sh
-	bash -n scripts/agent_coordinator_daemon.sh scripts/agent_work_dual_backend_stress.sh scripts/agent_work_e2e.sh scripts/agent_work_hygiene.sh scripts/audio_quick_connect.sh scripts/batch_exec.sh scripts/bridge.sh scripts/burp_suite_community.sh scripts/cento.sh scripts/cento_interactive.sh scripts/cento_temp.sh scripts/cluster.sh scripts/cluster_activity_e2e.sh scripts/cluster_health_e2e.sh scripts/daily_tui.sh scripts/dashboard.sh scripts/display_layout_fix.sh scripts/i3reorg.sh scripts/idea_board.sh scripts/industrial_aux_tui.sh scripts/industrial_cluster_tui.sh scripts/industrial_codex_terminal.sh scripts/industrial_jobs_tui.sh scripts/industrial_macos_preset.sh scripts/industrial_os_preset.sh scripts/industrial_panel_e2e.sh scripts/industrial_workspace.sh scripts/install_linux.sh scripts/install_macos.sh scripts/ios_mobile_e2e.sh scripts/jobs.sh scripts/kitty_theme_manager.sh scripts/lib/common.sh scripts/mobile.sh scripts/network.sh scripts/network_tui.sh scripts/notify.sh scripts/opencode.sh scripts/preset.sh scripts/project_scaffold.sh scripts/quick_help.sh scripts/quick_help_fzf.sh scripts/redmine_workflow_e2e.sh scripts/repo_snapshot.sh scripts/restart_discord.sh scripts/search_report.sh scripts/system_inventory.sh scripts/telegram_tui.sh scripts/terminal_integration_e2e.sh scripts/wallpaper_manager.sh
+	bash -n scripts/agent_coordinator_daemon.sh scripts/agent_work_dual_backend_stress.sh scripts/agent_work_e2e.sh scripts/agent_work_hygiene.sh scripts/audio_quick_connect.sh scripts/batch_exec.sh scripts/bridge.sh scripts/burp_suite_community.sh scripts/cento.sh scripts/cento_interactive.sh scripts/cento_temp.sh scripts/cluster.sh scripts/cluster_activity_e2e.sh scripts/cluster_health_e2e.sh scripts/daily_tui.sh scripts/dashboard.sh scripts/display_layout_fix.sh scripts/i3reorg.sh scripts/idea_board.sh scripts/industrial_aux_tui.sh scripts/industrial_cluster_tui.sh scripts/industrial_codex_terminal.sh scripts/industrial_jobs_tui.sh scripts/industrial_macos_preset.sh scripts/industrial_os_preset.sh scripts/industrial_panel_e2e.sh scripts/industrial_pet_tui.sh scripts/industrial_workspace.sh scripts/install_linux.sh scripts/install_macos.sh scripts/ios_mobile_e2e.sh scripts/jobs.sh scripts/kitty_theme_manager.sh scripts/lib/common.sh scripts/mobile.sh scripts/network.sh scripts/network_tui.sh scripts/notify.sh scripts/opencode.sh scripts/preset.sh scripts/project_scaffold.sh scripts/quick_help.sh scripts/quick_help_fzf.sh scripts/redmine_workflow_e2e.sh scripts/repo_snapshot.sh scripts/restart_discord.sh scripts/search_report.sh scripts/system_inventory.sh scripts/telegram_tui.sh scripts/terminal_integration_e2e.sh scripts/wallpaper_manager.sh
 	zsh -n scripts/completion/_cento
 
 industrial-e2e:
@@ -65,6 +68,27 @@ kitty-theme:
 
 cento:
 	./scripts/cento.sh $(ARGS)
+
+test-patch-bundles:
+	$(PYTHON) -m pytest -q tests/test_patch_bundle_validation.py tests/test_patch_bundle_collector.py
+
+patch-bundle-fixture:
+	$(PYTHON) scripts/parallel_delivery/patch_bundle_fixture.py --out workspace/runs/parallel-delivery/patch-bundle-fixture --base-commit "$$(git rev-parse HEAD)"
+	./scripts/cento.sh parallel-delivery patch-bundles collect --run-id patch-bundle-fixture --bundles-dir workspace/runs/parallel-delivery/patch-bundle-fixture/input/bundles --lease-manifest workspace/runs/parallel-delivery/patch-bundle-fixture/input/leases.json --out workspace/runs/parallel-delivery/patch-bundle-fixture --base-commit "$$(git rev-parse HEAD)" --json
+
+test-release-candidate:
+	$(PYTHON) -m pytest -q tests/test_parallel_delivery_safe_apply.py tests/test_parallel_delivery_release_candidate.py
+
+release-candidate-fixture:
+	$(PYTHON) scripts/parallel_delivery/release_candidate_fixture.py --out workspace/runs/parallel-delivery/release-candidate-fixture --base-commit "$$(git rev-parse HEAD)"
+	./scripts/cento.sh parallel-delivery release-candidate create --integration-receipt workspace/runs/parallel-delivery/release-candidate-fixture/input/integration-receipt.accepted.json --out workspace/runs/parallel-delivery/release-candidate-fixture/dry-run --mode dry-run --target-repo workspace/runs/parallel-delivery/release-candidate-fixture/fixture-repo --base-commit "$$(git rev-parse HEAD)" --json
+
+test-taskstream-handoff:
+	$(PYTHON) -m pytest -q tests/test_parallel_delivery_taskstream.py tests/test_parallel_delivery_agent_work_manifests.py
+
+taskstream-fixture:
+	$(PYTHON) scripts/parallel_delivery/taskstream_fixture.py --out workspace/runs/parallel-delivery/taskstream-fixture --base-commit "$$(git rev-parse HEAD)"
+	./scripts/cento.sh parallel-delivery taskstream emit --split-plan workspace/runs/parallel-delivery/taskstream-fixture/input/split-plan.json --out workspace/runs/parallel-delivery/taskstream-fixture --transport manifest-only --run-preflight
 
 tracker-migrate:
 	$(PYTHON) scripts/migrate_redmine_to_tracker.py $(ARGS)
@@ -139,10 +163,10 @@ agent-work-dual-backend-stress:
 	./scripts/agent_work_dual_backend_stress.sh $(ARGS)
 
 agent-work-app-start:
-	./scripts/cento.sh agent-work-app start
+	$(PYTHON) scripts/agent_work_app.py start
 
 agent-work-app-stop:
-	./scripts/cento.sh agent-work-app stop
+	$(PYTHON) scripts/agent_work_app.py stop
 
 agent-work-app-status:
 	curl -fsS http://127.0.0.1:47910/health

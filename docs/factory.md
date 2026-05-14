@@ -23,8 +23,11 @@ cento factory integrate workspace/runs/factory/factory-planning-e2e --dry-run
 cento factory integrate factory-integration-e2e --plan
 cento factory integrate factory-integration-e2e --prepare-branch --branch factory/factory-integration-e2e/integration
 cento factory integrate factory-integration-e2e --apply --validate-each --limit 3
+cento factory validate-fanout factory-integration-e2e --max-parallel 32 --json
 cento factory validate-integrated factory-integration-e2e
 cento factory release-candidate factory-integration-e2e
+cento factory merge factory-integration-e2e --auto-merge-main --dry-run --json
+cento factory merge factory-integration-e2e --auto-merge-main --push --json
 cento factory sync-taskstream factory-integration-e2e --dry-run
 cento factory release workspace/runs/factory/factory-planning-e2e --json
 cento factory render-hub workspace/runs/factory/factory-planning-e2e
@@ -76,6 +79,9 @@ Each run writes under `workspace/runs/factory/<run-id>/`:
 - `integration/applied-patches.json`
 - `integration/rejected-patches.json`
 - `integration/validation-after-each-patch.json`
+- `integration/validation-fanout.json`
+- `integration/validation-cache/<cache-key>.json`
+- `integration/validation-fanout-log.jsonl`
 - `integration/quarantine/<task-id>/failure.json`
 - `integration/conflict-report.json`
 - `integration/rollback-plan.json`
@@ -84,6 +90,8 @@ Each run writes under `workspace/runs/factory/<run-id>/`:
 - `integration/merge-readiness.json`
 - `integration/taskstream-sync-preview.json`
 - `integration/release-candidate.md`
+- `integration/merge-receipt.json`
+- `integration/push-receipt.json`, when `factory merge --push` succeeds or records a push block
 - `integration/integration-summary.html`
 - `integration/residual-risks.md`
 - `evidence/validation-summary.json`
@@ -115,6 +123,26 @@ Each run writes under `workspace/runs/factory/<run-id>/`:
 - `runtime/<task-id>/stderr.log`
 - `runtime/<task-id>/patch/patch.json`
 - `runtime/<task-id>/collect-result.json`
+- `tasks/<task-id>/evidence/demo-<timestamp>/demo.mp4`, when short demo evidence is recorded
+- `tasks/<task-id>/evidence/demo-<timestamp>/receipt.json`, when short demo evidence is recorded
+
+## Demo Evidence
+
+Factory workers and Codex workers can attach short visual proof to a task with `cento demo-evidence`. Use it after focused validation passes and before Validator or release handoff when the reviewer needs to see a real UI or terminal flow.
+
+```bash
+cento demo-evidence record \
+  --factory-run workspace/runs/factory/<run-id> \
+  --task <task-id> \
+  --worker <worker-id> \
+  --title "Factory task demo" \
+  --duration 15 \
+  --notes "Shows the accepted flow"
+
+cento demo-evidence verify workspace/runs/factory/<run-id>/tasks/<task-id>/evidence/demo-<timestamp>
+```
+
+The tool enforces 10-30 second clips and writes `demo.mp4`, `receipt.json`, and `summary.md`. Use `--dry-run` to plan the recording command and `--recorder synthetic` only to smoke-test the evidence plumbing. See `docs/demo-evidence.md` for recorder backend and troubleshooting details.
 
 ## Guardrails
 
@@ -132,7 +160,11 @@ Generated story manifests are validated with `scripts/story_manifest.py`. Genera
 
 `integrate --dry-run` writes an integration gate plan in dependency order. It checks patch presence, owned paths, protected shared files, `git apply --check` when a patch exists, docs/tool registry alignment, conflicts, validation results, and rollback metadata.
 
-`integrate --plan`, `--prepare-branch`, and `--apply --validate-each` are the factory integration Safe Integrator commands. They create an isolated integration worktree, apply candidate patch bundles one at a time, run validation after each patch, quarantine failures, write `rollback-plan.json`, update `merge-readiness.json`, and render `release-candidate.md`. They do not merge to main.
+`integrate --plan`, `--prepare-branch`, and `--apply --validate-each` are the factory integration Safe Integrator commands. They create an isolated integration worktree, append apply events, apply candidate patch bundles one at a time, run validation after each patch, quarantine failures, write `rollback-plan.json`, update `merge-readiness.json`, and render `release-candidate.md`.
+
+`validate-fanout` runs cacheable deterministic candidate checks in parallel before the serialized apply path becomes the bottleneck. It writes `integration/validation-fanout.json` and `integration/validation-cache/`, keyed by base SHA, patch hash, and validation suite.
+
+`merge --auto-merge-main` is the only automatic main-merge gate. It requires passing Safe Integrator state, release candidate evidence, rollback metadata, validation fanout, a clean main worktree, and the expected target branch. `--dry-run` writes the same merge readiness receipt without merging or pushing. With `--push`, it pushes only after local merge and post-merge validation write `merge-receipt.json` and `push-receipt.json`.
 
 `sync-taskstream --dry-run` writes `integration/taskstream-sync-preview.json`. It previews Review or Blocked transitions from integration results but does not mark Factory tasks Done.
 

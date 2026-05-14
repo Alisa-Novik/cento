@@ -20,6 +20,8 @@ struct ContentView: View {
                 TodayView(
                     kanji: store.currentKanji,
                     streak: store.progress.streak,
+                    position: store.currentPosition,
+                    totalCount: store.totalCount,
                     onStart: startPractice
                 )
             case .strokes:
@@ -72,6 +74,8 @@ struct ContentView: View {
 struct TodayView: View {
     let kanji: DailyKanji
     let streak: Int
+    let position: Int
+    let totalCount: Int
     let onStart: () -> Void
 
     var body: some View {
@@ -97,7 +101,17 @@ struct TodayView: View {
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(Color(red: 1.0, green: 0.34, blue: 0.22))
 
-            Spacer(minLength: 4)
+            VStack(spacing: 3) {
+                Text(kanji.reading)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.78))
+
+                Text("\(position) of \(totalCount)")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.52))
+            }
+
+            Spacer(minLength: 2)
 
             Button(action: onStart) {
                 Text("Let's learn")
@@ -125,6 +139,9 @@ struct StrokePracticeView: View {
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(Color(red: 1.0, green: 0.34, blue: 0.22))
                 Spacer()
+                Text(kanji.reading)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.58))
                 Button(action: onReplay) {
                     Image(systemName: "arrow.clockwise")
                 }
@@ -164,6 +181,16 @@ struct MeaningView: View {
             Text(kanji.meaning)
                 .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(Color(red: 1.0, green: 0.34, blue: 0.22))
+
+            Text(kanji.reading)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.white.opacity(0.78))
+
+            Text(kanji.example)
+                .font(.system(size: 12, weight: .semibold))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white.opacity(0.66))
+                .minimumScaleFactor(0.8)
 
             Text("Current streak \(streak) day\(streak == 1 ? "" : "s")")
                 .font(.system(size: 12, weight: .medium))

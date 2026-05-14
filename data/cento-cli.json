@@ -6,18 +6,51 @@
     "Registered tools can be invoked directly as `cento TOOL [args...]`.",
     "Configured aliases can be invoked directly as `cento ALIAS [args...]`.",
     "Use `cento docs` or `cento interactive` when you need the built-in command surface explained from the canonical JSON source.",
+    "When an operator asks to save something in Docs, default to human-facing files under `docs/` and update navigation when discoverability matters; command-reference docs are a separate surface.",
     "`cento install terminal` installs the managed Zsh/Oh My Zsh completion init plus the Cento prompt segment."
+  ],
+  "checklist": [
+    {
+      "name": "Discover",
+      "summary": "Start with `cento docs`, `cento tools`, and a repo search before adding a new command or workflow."
+    },
+    {
+      "name": "Task",
+      "summary": "For Cento feature, automation, MCP, cluster, mobile, UI, or command behavior changes, create an `agent-work` story manifest and task before implementation."
+    },
+    {
+      "name": "Align",
+      "summary": "Keep `data/cento-cli.json`, affected docs in `docs/`, and any generated indexes aligned with the actual command surface."
+    },
+    {
+      "name": "Validate",
+      "summary": "Run the narrow deterministic checks for the files changed, including JSON validation for docs sources."
+    },
+    {
+      "name": "Evidence",
+      "summary": "Leave validation evidence in the relevant `workspace/runs/agent-work/<issue-id>/` bundle and update Taskstream status."
+    }
   ],
   "routing": [
     {
       "name": "tool-routing",
       "usage": "cento TOOL [args...]",
-      "summary": "Run a registered tool directly by id, including `cento factory` for plan, dispatch, and Safe Integrator artifacts."
+      "summary": "Run a registered tool directly by id, including `cento build` for manifest-owned local worker patch contracts and `cento factory` for plan, dispatch, and Safe Integrator artifacts."
     },
     {
       "name": "alias-routing",
       "usage": "cento ALIAS [args...]",
       "summary": "Run a configured alias directly from `~/.config/cento/aliases.sh`."
+    },
+    {
+      "name": "routing-nativeness-loop",
+      "usage": "cento walk-autopilot routing run --json",
+      "summary": "Collect counts-only routing, observability, Agent Work, skill usage, and cento-native drift stats; write a decision report; and create or update one bounded Agent Work follow-up without implementing from cron."
+    },
+    {
+      "name": "temp-clipboard-routing",
+      "usage": "cento temp run",
+      "summary": "Route operator clipboard/reference copy requests to the fixed pbcopy wrapper only. The command accepts no ids, flags, or alternate temp entries; change the copied Markdown by editing `COPY_FILE` in scripts/cento_temp.sh."
     }
   ],
   "commands": [
@@ -150,19 +183,130 @@
     },
     {
       "name": "run",
-      "summary": "Run a registered tool by id.",
-      "usage": "cento run TOOL [args...]",
-      "flags": [],
+      "summary": "Run a registered tool by id, or create a fast/standard/thorough execution contract that routes owned-path patch work through Build rather than a new worker primitive.",
+      "usage": "cento run TOOL [args...] | cento run fast|standard|thorough --task TEXT [--write PATH] [--local-builder [RUNTIME] --apply]",
+      "flags": [
+        {
+          "name": "--mode fast|standard|thorough",
+          "summary": "Create an execution-mode contract without using the positional mode form.",
+          "usage": "cento run --mode fast --task \"Fix app docs page\" --write apps/foo/index.html"
+        },
+        {
+          "name": "--task TEXT",
+          "summary": "Operator task statement for execution-mode contracts.",
+          "usage": "cento run fast --task \"Fix app docs page\""
+        },
+        {
+          "name": "--write PATH",
+          "summary": "Owned writable path for the generated contract. Repeatable.",
+          "usage": "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html"
+        },
+        {
+          "name": "--local-builder [RUNTIME]",
+          "summary": "Run one local builder runtime, defaulting to the deterministic fixture runtime when no value is supplied.",
+          "usage": "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html --local-builder fixture"
+        },
+        {
+          "name": "--fixture-case valid|unowned|protected|delete|lockfile|binary",
+          "summary": "Select the deterministic fixture worker case.",
+          "usage": "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html --local-builder fixture --fixture-case valid"
+        },
+        {
+          "name": "--builder-command TEXT",
+          "summary": "Unsafe raw command template used when --local-builder command is selected; prefer --runtime-profile.",
+          "usage": "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html --local-builder command --builder-command \"codex exec --prompt-file {prompt}\" --allow-unsafe-command"
+        },
+        {
+          "name": "--runtime-profile NAME",
+          "summary": "Run one local builder from a named profile in .cento/runtimes.yaml.",
+          "usage": "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html --runtime-profile codex-fast --apply"
+        },
+        {
+          "name": "--apply",
+          "summary": "Apply the accepted local-builder patch bundle to the operator worktree.",
+          "usage": "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html --local-builder fixture --fixture-case valid --apply"
+        }
+      ],
       "examples": [
         "cento run scan --query \"mcp\"",
         "cento run crm docs",
-        "cento run factory status workspace/runs/factory/factory-planning-e2e"
+        "cento run factory status workspace/runs/factory/factory-planning-e2e",
+        "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html --route /docs/foo",
+        "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html --route /docs/foo --runtime-profile codex-fast --apply --validation smoke --commit none",
+        "cento run fast --task \"Fix app docs page\" --write apps/foo/index.html --route /docs/foo --local-builder fixture --fixture-case valid --apply --validation smoke --commit none",
+        "cento run --mode standard --task \"Polish Kanji docs\" --write templates/agent-work-app/index.html --validation focused"
+      ],
+      "details": [
+        "`cento run fast --task ... --write PATH` creates the execution contract and an implicit `.cento/builds/<id>/` manifest and Builder prompt. Without `--local-builder` or `--runtime-profile`, the integration receipt remains pending. With `--runtime-profile codex-fast --apply` or `--local-builder fixture --fixture-case valid --apply`, Cento launches one isolated local builder, collects a patch bundle, dry-runs integration, applies the accepted patch, runs smoke validation, and writes Taskstream evidence."
+      ]
+    },
+    {
+      "name": "build",
+      "summary": "Registered tool route for the Build patch unit and safety substrate: owned paths, Builder prompts, patch bundles, dry-run integration, safe apply, and receipts.",
+      "usage": "cento build <init|check|prompt|worker|artifact|bundle|integrate|apply|receipt> [args...]",
+      "flags": [],
+      "examples": [
+        "cento build init --task \"Fixture docs page patch\" --mode fast --write tests/fixtures/cento_build/app_page.html --route /fixture",
+        "cento build check tests/fixtures/cento_build/manifest.valid.json",
+        "cento build prompt tests/fixtures/cento_build/manifest.valid.json",
+        "cento build artifact check tests/fixtures/cento_build/worker_artifact.valid.json",
+        "cento build worker run .cento/builds/<id>/manifest.json --worker builder_1 --runtime fixture --fixture-case valid --worktree --timeout 180",
+        "cento build worker run .cento/builds/<id>/manifest.json --worker builder_1 --runtime-profile codex-fast --worktree",
+        "cento runtime check codex-fast",
+        "cento build bundle synthesize --manifest tests/fixtures/cento_build/manifest.valid.json --patch tests/fixtures/cento_build/patch.valid.diff",
+        "cento build integrate .cento/builds/<id>/manifest.json --bundle .cento/builds/<id>/workers/builder_1/patch_bundle.json --worktree --dry-run",
+        "cento build apply .cento/builds/<id>/manifest.json --bundle .cento/builds/<id>/workers/builder_1/patch_bundle.json --from-receipt .cento/builds/<id>/integration_receipt.json",
+        "cento build receipt .cento/builds/build_fixture_docs_page_001"
+      ],
+      "details": [
+        "This command is routed through data/tools.json and scripts/cento_build.py.",
+        "Build v1.2 is local-only and deterministic. It is the canonical patch unit and safety substrate for Cento/Patch Swarm pilots: manifests, Builder prompts, fixture/local isolated workers, artifact checks, patch bundles, raw patch rejection outside dev mode, dirty-owned-path rejection, unowned/protected/hostile path rejection, hardened runtime profiles, isolated dry-run integration, apply only from accepted integration receipts, and validation/integration/apply/evidence receipts. Cloud workers, API calls, schedulers, PRs, and automatic model patch generation remain outside Build."
+      ]
+    },
+    {
+      "name": "runtime",
+      "summary": "Registered tool route for local builder runtime profile inspection.",
+      "usage": "cento runtime <list|check> [args...]",
+      "flags": [],
+      "examples": [
+        "cento runtime list",
+        "cento runtime check codex-fast",
+        "cento runtime check codex-fast --json",
+        "cento runtime check python-fixture --require-executable"
+      ],
+      "details": [
+        "Runtime profiles live in `.cento/runtimes.yaml` and define argv-array command runtimes or deterministic fixture profiles.",
+        "`cento runtime check` validates the profile shape and reports executable availability without launching a worker."
+      ]
+    },
+    {
+      "name": "workset",
+      "summary": "Registered tool route for Workset parallel lease semantics: exclusive-path local N-worker worksets, dependency gates, structured API artifacts, and sequential integration.",
+      "usage": "cento workset <check|run|execute|materialize-artifact> [args...]",
+      "flags": [],
+      "examples": [
+        "cento workset check tests/fixtures/cento_workset/workset.valid.json",
+        "cento workset check tests/fixtures/cento_workset/workset.execute.api.json --runtime api-openai",
+        "cento workset check tests/fixtures/cento_workset/workset.overlap.json",
+        "cento workset run tests/fixtures/cento_workset/workset.valid.json --max-workers 2 --runtime-profile fixture-valid --apply sequential --validation smoke",
+        "cento workset run workset.json --max-workers 3 --runtime-profile codex-fast --apply sequential --validation smoke",
+        "cento workset execute tests/fixtures/cento_workset/workset.execute.fixture.json --max-parallel 3 --runtime fixture --integrate sequential --validation smoke",
+        "cento workset execute .cento/worksets/docs_page.json --max-parallel 6 --runtime api-openai --budget-usd 3 --max-budget-usd 5 --integrate sequential --apply --validation smoke",
+        "cento workset materialize-artifact .cento/worksets/<run_id>/workers/<worker_id>/artifact.json"
+      ],
+      "details": [
+        "Workset v1 is the canonical parallel lease substrate for Cento/Patch Swarm pilots. It requires exclusive write_paths for each task. No shared files, overlapping paths, or glob write paths are accepted.",
+        "Plain `cento workset check WORKSET` rejects missing write paths. API-worker-created file plans must declare `--runtime api-openai` or `--allow-creates`.",
+        "Workers run in parallel only for patch or structured artifact collection. Integration and apply are always sequential.",
+        "OpenAI API workers use Responses API structured outputs and never mutate repo files directly.",
+        "API worker budgets have a target and hard max; budget-blocked workers still write cost receipts.",
+        "Simple depends_on gates are supported; a task dispatches only after dependencies are completed and applied."
       ]
     },
     {
       "name": "factory",
-      "summary": "Registered tool route for the no-model Cento Factory planning, dispatch dry-run, and Safe Integrator workflow.",
-      "usage": "cento factory <intake|plan|materialize|create-issues|preflight|queue|lease|dispatch|collect|validate|integrate|validate-integrated|release-candidate|sync-taskstream|release|render-hub|status|autopilot|autopilot-status|autopilot-render|runtime> [args...]",
+      "summary": "Registered tool route for the Factory orchestration substrate: intake, planning, materialization, queueing, dry-run dispatch, validation, integration, release candidates, and hubs.",
+      "usage": "cento factory <intake|plan|materialize|create-issues|preflight|queue|lease|dispatch|collect|validate|integrate|validate-integrated|validate-fanout|release-candidate|merge|sync-taskstream|release|render-hub|status|autopilot|autopilot-status|autopilot-render|runtime> [args...]",
       "flags": [],
       "examples": [
         "cento factory intake \"develop me a career consulting module\" --dry-run --out workspace/runs/factory/factory-planning-e2e",
@@ -177,8 +321,11 @@
         "cento factory integrate factory-integration-e2e --plan",
         "cento factory integrate factory-integration-e2e --prepare-branch --branch factory/factory-integration-e2e/integration",
         "cento factory integrate factory-integration-e2e --apply --validate-each --limit 3",
+        "cento factory validate-fanout factory-integration-e2e --max-parallel 32 --json",
         "cento factory validate-integrated factory-integration-e2e",
         "cento factory release-candidate factory-integration-e2e",
+        "cento factory merge factory-integration-e2e --auto-merge-main --dry-run --json",
+        "cento factory merge factory-integration-e2e --auto-merge-main --push --json",
         "cento factory sync-taskstream factory-integration-e2e --dry-run",
         "cento factory release workspace/runs/factory/factory-planning-e2e --json",
         "cento factory render-hub workspace/runs/factory/factory-planning-e2e",
@@ -194,7 +341,81 @@
       ],
       "details": [
         "This command is routed through data/tools.json and scripts/factory.py.",
-        "Factory defaults to deterministic no-model planning, queueing, lease simulation, dry-run dispatch, patch collection, Safe Integrator branch/apply/validate gates, rollback metadata, merge readiness, release evidence, Autopilot dry-run control cycles, and runtime adapter contracts. Live Taskstream creation requires --apply, while integration Taskstream sync is a dry-run preview by default."
+        "Factory defaults to deterministic no-model planning, queueing, lease simulation, dry-run dispatch, patch collection, Safe Integrator branch/apply/validate gates, rollback metadata, merge readiness, release evidence, Autopilot dry-run control cycles, and runtime adapter contracts. Factory is the preferred execution spine for real Patch Swarm pilots; live Taskstream creation requires --apply, while integration Taskstream sync is a dry-run preview by default.",
+        "Factory validate-fanout runs cacheable candidate checks in parallel before serialized Safe Integrator apply.",
+        "Factory merge --auto-merge-main is the only automatic main/push gate and requires release, rollback, validation, clean-worktree, and post-merge receipts.",
+        "Factory merge --auto-merge-main --dry-run writes merge readiness evidence without merging or pushing."
+      ]
+    },
+    {
+      "name": "object-storage",
+      "summary": "Registered tool route for Oracle Object Storage dummy uploads and Cento image mirroring.",
+      "usage": "cento object-storage <status|ensure-bucket|put-dummy|e2e|plan-images|upload-images|verify-images> [args...]",
+      "flags": [
+        {
+          "name": "--bucket",
+          "summary": "OCI Object Storage bucket name. Defaults to CENTO_OBJECT_STORAGE_BUCKET.",
+          "usage": "cento object-storage put-dummy --bucket my-bucket"
+        },
+        {
+          "name": "--namespace",
+          "summary": "OCI Object Storage namespace. Defaults to CENTO_OBJECT_STORAGE_NAMESPACE or OCI CLI auto-discovery.",
+          "usage": "cento object-storage put-dummy --namespace mynamespace"
+        },
+        {
+          "name": "--region",
+          "summary": "OCI region for Object Storage calls, for example us-ashburn-1.",
+          "usage": "cento object-storage e2e --live --region us-ashburn-1"
+        },
+        {
+          "name": "--name",
+          "summary": "Bucket name for ensure-bucket.",
+          "usage": "cento object-storage ensure-bucket --name cento-images-standard"
+        },
+        {
+          "name": "--dry-run",
+          "summary": "Do not call OCI; copy the dummy file into the run-scoped uploaded directory.",
+          "usage": "cento object-storage put-dummy --dry-run"
+        },
+        {
+          "name": "--live",
+          "summary": "Run the e2e through the live OCI CLI upload path.",
+          "usage": "cento object-storage e2e --live --bucket my-bucket"
+        },
+        {
+          "name": "--json",
+          "summary": "Print machine-readable JSON.",
+          "usage": "cento object-storage e2e --json"
+        },
+        {
+          "name": "--manifest",
+          "summary": "Image migration manifest or upload receipt path.",
+          "usage": "cento object-storage upload-images --manifest workspace/runs/object-storage/<run-id>/manifest.json"
+        },
+        {
+          "name": "--sample",
+          "summary": "Number of unique uploaded image objects to verify; 0 means all.",
+          "usage": "cento object-storage verify-images --manifest workspace/runs/object-storage/<run-id>/upload-receipt.json --sample 10"
+        }
+      ],
+      "examples": [
+        "cento object-storage status",
+        "cento object-storage status --probe --json",
+        "cento object-storage ensure-bucket --name cento-images-standard --region us-ashburn-1 --namespace mynamespace --json",
+        "cento object-storage put-dummy --dry-run --json",
+        "cento object-storage put-dummy --region us-ashburn-1 --bucket my-bucket --namespace mynamespace --json",
+        "cento object-storage e2e --json",
+        "cento object-storage e2e --live --region us-ashburn-1 --bucket my-bucket --namespace mynamespace --json",
+        "cento object-storage plan-images --root workspace/runs --bucket cento-images-standard --namespace mynamespace --region us-ashburn-1 --json",
+        "cento object-storage upload-images --manifest workspace/runs/object-storage/<run-id>/manifest.json --live --json",
+        "cento object-storage verify-images --manifest workspace/runs/object-storage/<run-id>/upload-receipt.json --sample 10 --json"
+      ],
+      "details": [
+        "This command is routed through data/tools.json and scripts/object_storage.py.",
+        "The MVP writes workspace/runs/object-storage/<run-id>/dummy.txt, records receipt.json and summary.md, and uploads exactly one text object through `oci os object put` when live mode is configured.",
+        "Image migration writes a mirror-only manifest for workspace run images, blocks sensitive-looking paths, uploads content-addressed objects, and verifies downloads by sha256.",
+        "Dry-run image upload copies files under the run-scoped uploaded directory; live mode requires a private Standard OCI bucket.",
+        "Human runbook: docs/oci-image-migration.html; Markdown source: docs/oci-image-migration.md"
       ]
     },
     {

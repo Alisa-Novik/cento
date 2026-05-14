@@ -1,0 +1,25 @@
+{
+  "checks": [
+    {
+      "name": "profile schema exists",
+      "path": "templates/foundry/client-intake-hub/client-profile.schema.json",
+      "type": "file_exists"
+    },
+    {
+      "name": "ui preview exists",
+      "path": "templates/foundry/client-intake-hub/client-intake-hub.html",
+      "type": "file_exists"
+    },
+    {
+      "name": "storage policy blocks public access",
+      "path": "templates/foundry/client-intake-hub/storage-leak-policy.json",
+      "type": "json_value"
+    },
+    {
+      "name": "CRM Foundry tools API returns metadata",
+      "path": "/api/foundry/tools",
+      "type": "http_get"
+    }
+  ],
+  "schema_version": "cento.client_intake_hub.validation.v1"
+}
