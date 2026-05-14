@@ -90,6 +90,9 @@ Routing rules:
 - `cento walk-autopilot routing run --json`
   Collect counts-only routing and Cento-native observability, write a decision
   report, and hand off bounded follow-up work without implementing from cron.
+- `cento temp run`
+  Copy the fixed Markdown reference configured in `scripts/cento_temp.sh`
+  through `pbcopy`. This route accepts no IDs, flags, or generated temp entries.
 
 Terminal integration:
 

@@ -64,6 +64,7 @@ REPORT_SECTIONS = [
     "## Patch Bundle Checks",
     "## Unsafe Bundle Rejection",
     "## Integration Plan",
+    "## Conflict Triage",
     "## Dry-Run Integration Receipt",
     "## Release Candidate",
     "## Evidence",
@@ -85,6 +86,7 @@ REQUIRED_RUN_FILES = [
     "validation/patch-bundle-validation.json",
     "validation/malformed-artifact-validation.json",
     "integration/integration-plan.json",
+    "integration/conflict-report.md",
     "integration/integration-receipt.json",
     "integration/rejected-patches.json",
     "integration/dry-run-apply-log.jsonl",
@@ -893,6 +895,170 @@ def validate_malformed_artifact_rejection(run_dir: Path) -> list[ValidationCheck
     ]
 
 
+def paths_overlap(left: str, right: str) -> bool:
+    """Return True when two normalized repo-relative paths overlap."""
+    left_clean = str(left).strip().rstrip("/")
+    right_clean = str(right).strip().rstrip("/")
+    return bool(left_clean and right_clean) and (
+        left_clean == right_clean
+        or left_clean.startswith(right_clean + "/")
+        or right_clean.startswith(left_clean + "/")
+    )
+
+
+def integration_conflict_triage(
+    accepted_bundles: list[dict[str, Any]],
+    rejected_bundles: list[dict[str, Any]],
+    task_graph: dict[str, Any],
+) -> dict[str, Any]:
+    """Build deterministic integration buckets without applying patches."""
+    dependency_order = [str(item) for item in task_graph.get("topological_order", []) if str(item)]
+    accepted_by_task = {str(item.get("task_id") or ""): item for item in accepted_bundles}
+    ordered = [accepted_by_task[task_id] for task_id in dependency_order if task_id in accepted_by_task]
+    path_owners: dict[str, list[str]] = {}
+    conflicts: list[dict[str, Any]] = []
+    conflict_bundle_ids: set[str] = set()
+    for index, bundle in enumerate(ordered):
+        bundle_id = str(bundle.get("bundle_id") or "")
+        changed_paths = [str(path).strip().rstrip("/") for path in bundle.get("changed_paths", []) if str(path).strip()]
+        for path in changed_paths:
+            path_owners.setdefault(path, []).append(bundle_id)
+        for previous in ordered[:index]:
+            previous_id = str(previous.get("bundle_id") or "")
+            previous_paths = [str(value).strip().rstrip("/") for value in previous.get("changed_paths", []) if str(value).strip()]
+            for path in changed_paths:
+                for previous_path in previous_paths:
+                    if paths_overlap(path, previous_path):
+                        conflict = {
+                            "type": "same_path",
+                            "path": path,
+                            "other_path": previous_path,
+                            "bundle_ids": sorted([previous_id, bundle_id]),
+                            "task_ids": sorted([str(previous.get("task_id") or ""), str(bundle.get("task_id") or "")]),
+                            "bucket": "needs_human_review",
+                            "reason": "same or overlapping changed path requires serialized review before apply",
+                        }
+                        if conflict not in conflicts:
+                            conflicts.append(conflict)
+                        conflict_bundle_ids.update([previous_id, bundle_id])
+
+    safe_apply: list[dict[str, Any]] = []
+    needs_human_review: list[dict[str, Any]] = []
+    for order, bundle in enumerate(ordered, start=1):
+        row = {
+            "order": order,
+            "task_id": bundle.get("task_id"),
+            "bundle_id": bundle.get("bundle_id"),
+            "patch_bundle": bundle.get("path"),
+            "changed_paths": bundle.get("changed_paths", []),
+        }
+        if str(bundle.get("bundle_id") or "") in conflict_bundle_ids:
+            needs_human_review.append({**row, "reason": "same-path conflict"})
+        else:
+            safe_apply.append(row)
+
+    reject = [
+        {
+            "task_id": item.get("task_id"),
+            "bundle_id": item.get("bundle_id"),
+            "patch_bundle": item.get("path"),
+            "changed_paths": item.get("changed_paths", []),
+            "errors": item.get("errors", []),
+            "reason": "bundle rejected by patch-bundle validation",
+        }
+        for item in rejected_bundles
+    ]
+    buckets = {
+        "safe_apply": safe_apply,
+        "needs_rebase": [],
+        "needs_human_review": needs_human_review,
+        "reject": reject,
+    }
+    return {
+        "dependency_order": dependency_order,
+        "path_owners": {path: sorted(set(bundle_ids)) for path, bundle_ids in sorted(path_owners.items())},
+        "conflicts": conflicts,
+        "conflict_count": len(conflicts),
+        "buckets": buckets,
+        "bucket_counts": {name: len(items) for name, items in buckets.items()},
+        "rollback_metadata": {
+            "strategy": "dry_run_no_changes",
+            "apply_mode": "dry-run",
+            "source_mutation": "none",
+            "rollback_action": "discard fixture evidence or skip conflicted bundle before Safe Integrator handoff",
+        },
+    }
+
+
+def write_conflict_report(run_dir: Path, plan: dict[str, Any]) -> Path:
+    """Write a human-readable conflict triage report."""
+    path = run_dir / "integration" / "conflict-report.md"
+    buckets = plan.get("buckets", {})
+    conflicts = plan.get("conflicts", [])
+    lines = [
+        "# Patch Swarm Integration Conflict Report",
+        "",
+        f"- Run ID: `{plan.get('run_id')}`",
+        f"- Strategy: `{plan.get('strategy')}`",
+        f"- Conflict count: `{len(conflicts)}`",
+        "",
+        "## Dependency Order",
+        "",
+        *[f"- `{task_id}`" for task_id in plan.get("dependency_order", [])],
+        "",
+        "## Safe Apply",
+        "",
+        *(
+            [
+                f"- order `{item.get('order')}` bundle `{item.get('bundle_id')}` task `{item.get('task_id')}`"
+                for item in buckets.get("safe_apply", [])
+            ]
+            or ["- None"]
+        ),
+        "",
+        "## Needs Rebase",
+        "",
+        *([f"- bundle `{item.get('bundle_id')}`: {item.get('reason', '')}" for item in buckets.get("needs_rebase", [])] or ["- None"]),
+        "",
+        "## Needs Human Review",
+        "",
+        *(
+            [
+                f"- bundle `{item.get('bundle_id')}` task `{item.get('task_id')}`: {item.get('reason', '')}"
+                for item in buckets.get("needs_human_review", [])
+            ]
+            or ["- None"]
+        ),
+        "",
+        "## Rejected",
+        "",
+        *(
+            [
+                f"- bundle `{item.get('bundle_id')}` task `{item.get('task_id')}`: {', '.join(item.get('errors', []) or [item.get('reason', '')])}"
+                for item in buckets.get("reject", [])
+            ]
+            or ["- None"]
+        ),
+        "",
+        "## Conflict Details",
+        "",
+        *(
+            [
+                f"- `{item.get('type')}` `{item.get('path')}` vs `{item.get('other_path')}` bundles `{', '.join(item.get('bundle_ids', []))}`"
+                for item in conflicts
+            ]
+            or ["- No same-path conflicts detected."]
+        ),
+        "",
+        "## Rollback",
+        "",
+        f"- Strategy: `{plan.get('rollback_metadata', {}).get('strategy', '')}`",
+        f"- Source mutation: `{plan.get('rollback_metadata', {}).get('source_mutation', '')}`",
+    ]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
+
+
 def create_integration_plan(
     run_dir: Path,
     accepted_bundles: list[dict[str, Any]],
@@ -900,7 +1066,8 @@ def create_integration_plan(
     task_graph: dict[str, Any],
 ) -> dict[str, Any]:
     """Create deterministic integration-plan.json."""
-    accepted_by_task = {str(item["task_id"]): item for item in accepted_bundles}
+    triage = integration_conflict_triage(accepted_bundles, rejected_bundles, task_graph)
+    accepted_by_task = {str(item["task_id"]): item for item in triage["buckets"]["safe_apply"]}
     queue = []
     for task_id in task_graph.get("topological_order", []):
         bundle = accepted_by_task.get(str(task_id))
@@ -911,7 +1078,7 @@ def create_integration_plan(
                 "order": len(queue) + 1,
                 "task_id": bundle["task_id"],
                 "bundle_id": bundle["bundle_id"],
-                "patch_bundle": bundle["path"],
+                "patch_bundle": bundle.get("patch_bundle") or bundle.get("path"),
                 "changed_paths": bundle.get("changed_paths", []),
             }
         )
@@ -925,9 +1092,20 @@ def create_integration_plan(
         "dry_run": True,
         "queue": queue,
         "rejected": rejected_bundles,
-        "evidence_pointers": ["integration/integration-receipt.json", "integration/dry-run-apply-log.jsonl"],
+        "dependency_order": triage["dependency_order"],
+        "conflicts": triage["conflicts"],
+        "conflict_count": triage["conflict_count"],
+        "buckets": triage["buckets"],
+        "bucket_counts": triage["bucket_counts"],
+        "rollback_metadata": triage["rollback_metadata"],
+        "evidence_pointers": [
+            "integration/conflict-report.md",
+            "integration/integration-receipt.json",
+            "integration/dry-run-apply-log.jsonl",
+        ],
     }
     write_json(run_dir / "integration" / "integration-plan.json", plan)
+    write_conflict_report(run_dir, plan)
     return plan
 
 
@@ -958,10 +1136,12 @@ def dry_run_integrate(run_dir: Path, integration_plan: dict[str, Any]) -> dict[s
         "dry_run": True,
         "integrated": integrated,
         "rejected": integration_plan.get("rejected", []),
-        "conflicts": [],
+        "conflicts": integration_plan.get("conflicts", []),
+        "bucket_counts": integration_plan.get("bucket_counts", {}),
+        "rollback_metadata": integration_plan.get("rollback_metadata", {}),
         "final_state": "dry_run_completed",
         "source_mutation": "none",
-        "evidence_pointers": ["integration/dry-run-apply-log.jsonl"],
+        "evidence_pointers": ["integration/conflict-report.md", "integration/dry-run-apply-log.jsonl"],
     }
     write_json(run_dir / "integration" / "integration-receipt.json", receipt)
     return receipt
@@ -1107,6 +1287,12 @@ def write_validation_report(run_dir: Path, summary: dict[str, Any], checks: list
         "",
         f"- Queue length: `{counts.get('integration_queue')}`",
         "- Rejected bundles are excluded from `integration/integration-plan.json`.",
+        "- Conflict buckets are recorded in `integration/conflict-report.md`.",
+        "",
+        "## Conflict Triage",
+        "",
+        "- Safe apply, needs-rebase, needs-human-review, and rejected buckets are deterministic.",
+        "- Same-path conflicts block automatic integration and move bundles to human review.",
         "",
         "## Dry-Run Integration Receipt",
         "",
@@ -1122,6 +1308,7 @@ def write_validation_report(run_dir: Path, summary: dict[str, Any], checks: list
         "",
         "- `validation-summary.json`",
         "- `validation-report.md`",
+        "- `integration/conflict-report.md`",
         "- `command-output.log`",
         "",
         "## Command Logs",
@@ -1148,6 +1335,7 @@ def write_start_here(run_dir: Path, summary: dict[str, Any]) -> None:
         "- `path-leases.json`",
         "- `worker-packets/codex-packet-index.json`",
         "- `validation/patch-bundle-validation.json`",
+        "- `integration/conflict-report.md`",
         "- `integration/integration-receipt.json`",
         "- `release-candidate/release-candidate.json`",
     ]

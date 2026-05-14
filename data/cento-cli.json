@@ -46,6 +46,11 @@
       "name": "routing-nativeness-loop",
       "usage": "cento walk-autopilot routing run --json",
       "summary": "Collect counts-only routing, observability, Agent Work, skill usage, and cento-native drift stats; write a decision report; and create or update one bounded Agent Work follow-up without implementing from cron."
+    },
+    {
+      "name": "temp-clipboard-routing",
+      "usage": "cento temp run",
+      "summary": "Route operator clipboard/reference copy requests to the fixed pbcopy wrapper only. The command accepts no ids, flags, or alternate temp entries; change the copied Markdown by editing `COPY_FILE` in scripts/cento_temp.sh."
     }
   ],
   "commands": [
@@ -178,7 +183,7 @@
     },
     {
       "name": "run",
-      "summary": "Run a registered tool by id, or create a fast/standard/thorough execution contract with optional one-local-builder patch collection for owned-path tasks.",
+      "summary": "Run a registered tool by id, or create a fast/standard/thorough execution contract that routes owned-path patch work through Build rather than a new worker primitive.",
       "usage": "cento run TOOL [args...] | cento run fast|standard|thorough --task TEXT [--write PATH] [--local-builder [RUNTIME] --apply]",
       "flags": [
         {
@@ -237,7 +242,7 @@
     },
     {
       "name": "build",
-      "summary": "Registered tool route for manifest-owned local build packages, local worker patch collection, worker artifact checks, patch bundles, dry-run integration, and safe apply.",
+      "summary": "Registered tool route for the Build patch unit and safety substrate: owned paths, Builder prompts, patch bundles, dry-run integration, safe apply, and receipts.",
       "usage": "cento build <init|check|prompt|worker|artifact|bundle|integrate|apply|receipt> [args...]",
       "flags": [],
       "examples": [
@@ -255,7 +260,7 @@
       ],
       "details": [
         "This command is routed through data/tools.json and scripts/cento_build.py.",
-        "Build v1.2 is local-only and deterministic. It creates manifests and Builder prompts, can run one fixture/local builder in an isolated worktree, checks worker artifacts, synthesizes patch bundles, rejects raw patch integration outside dev mode, rejects dirty owned paths by default, rejects unowned/protected/hostile patch paths, supports hardened runtime profiles, dry-runs in an isolated worktree, applies only from accepted integration receipts, writes validation/integration/apply/evidence receipts, and leaves cloud workers, API calls, schedulers, PRs, and automatic model patch generation for later Factory layers."
+        "Build v1.2 is local-only and deterministic. It is the canonical patch unit and safety substrate for Cento/Patch Swarm pilots: manifests, Builder prompts, fixture/local isolated workers, artifact checks, patch bundles, raw patch rejection outside dev mode, dirty-owned-path rejection, unowned/protected/hostile path rejection, hardened runtime profiles, isolated dry-run integration, apply only from accepted integration receipts, and validation/integration/apply/evidence receipts. Cloud workers, API calls, schedulers, PRs, and automatic model patch generation remain outside Build."
       ]
     },
     {
@@ -276,7 +281,7 @@
     },
     {
       "name": "workset",
-      "summary": "Registered tool route for local N-worker worksets and structured API worker artifacts.",
+      "summary": "Registered tool route for Workset parallel lease semantics: exclusive-path local N-worker worksets, dependency gates, structured API artifacts, and sequential integration.",
       "usage": "cento workset <check|run|execute|materialize-artifact> [args...]",
       "flags": [],
       "examples": [
@@ -290,7 +295,7 @@
         "cento workset materialize-artifact .cento/worksets/<run_id>/workers/<worker_id>/artifact.json"
       ],
       "details": [
-        "Workset v1 requires exclusive write_paths for each task. No shared files, overlapping paths, or glob write paths are accepted.",
+        "Workset v1 is the canonical parallel lease substrate for Cento/Patch Swarm pilots. It requires exclusive write_paths for each task. No shared files, overlapping paths, or glob write paths are accepted.",
         "Plain `cento workset check WORKSET` rejects missing write paths. API-worker-created file plans must declare `--runtime api-openai` or `--allow-creates`.",
         "Workers run in parallel only for patch or structured artifact collection. Integration and apply are always sequential.",
         "OpenAI API workers use Responses API structured outputs and never mutate repo files directly.",
@@ -300,7 +305,7 @@
     },
     {
       "name": "factory",
-      "summary": "Registered tool route for the no-model Cento Factory planning, dispatch dry-run, and Safe Integrator workflow.",
+      "summary": "Registered tool route for the Factory orchestration substrate: intake, planning, materialization, queueing, dry-run dispatch, validation, integration, release candidates, and hubs.",
       "usage": "cento factory <intake|plan|materialize|create-issues|preflight|queue|lease|dispatch|collect|validate|integrate|validate-integrated|validate-fanout|release-candidate|merge|sync-taskstream|release|render-hub|status|autopilot|autopilot-status|autopilot-render|runtime> [args...]",
       "flags": [],
       "examples": [
@@ -336,7 +341,7 @@
       ],
       "details": [
         "This command is routed through data/tools.json and scripts/factory.py.",
-        "Factory defaults to deterministic no-model planning, queueing, lease simulation, dry-run dispatch, patch collection, Safe Integrator branch/apply/validate gates, rollback metadata, merge readiness, release evidence, Autopilot dry-run control cycles, and runtime adapter contracts. Live Taskstream creation requires --apply, while integration Taskstream sync is a dry-run preview by default.",
+        "Factory defaults to deterministic no-model planning, queueing, lease simulation, dry-run dispatch, patch collection, Safe Integrator branch/apply/validate gates, rollback metadata, merge readiness, release evidence, Autopilot dry-run control cycles, and runtime adapter contracts. Factory is the preferred execution spine for real Patch Swarm pilots; live Taskstream creation requires --apply, while integration Taskstream sync is a dry-run preview by default.",
         "Factory validate-fanout runs cacheable candidate checks in parallel before serialized Safe Integrator apply.",
         "Factory merge --auto-merge-main is the only automatic main/push gate and requires release, rollback, validation, clean-worktree, and post-merge receipts.",
         "Factory merge --auto-merge-main --dry-run writes merge readiness evidence without merging or pushing."

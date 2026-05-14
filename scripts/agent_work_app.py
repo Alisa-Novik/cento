@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import glob
+import hashlib
 import json
 import mimetypes
 import os
@@ -9120,6 +9121,11 @@ def patch_swarm_repo_state(repo: Path) -> dict[str, Any]:
     status_lines = [line for line in status_result.stdout.splitlines() if line.strip()]
     dirty_paths = [patch_swarm_status_path(line) for line in status_lines]
     protected_dirty = [path for path in dirty_paths if patch_swarm_protected_path(path)]
+    safety_label = "clean_startable"
+    if protected_dirty:
+        safety_label = "blocked_protected_dirty"
+    elif dirty_paths:
+        safety_label = "startable_unprotected_dirty"
     return {
         "path": str(root),
         "name": root.name,
@@ -9132,6 +9138,8 @@ def patch_swarm_repo_state(repo: Path) -> dict[str, Any]:
         "protected_dirty_count": len(protected_dirty),
         "can_start": not protected_dirty,
         "can_apply_without_override": not status_lines,
+        "safety_label": safety_label,
+        "start_disabled_reason": "protected dirty paths must be cleared" if protected_dirty else "",
     }
 
 
@@ -9234,6 +9242,225 @@ def patch_swarm_product_history(run_dir: Path) -> list[dict[str, Any]]:
     return sorted(rows, key=lambda item: str(item.get("written_at") or ""))[-120:]
 
 
+def patch_swarm_product_run_kind(manifest: dict[str, Any], metadata: dict[str, Any]) -> str:
+    if metadata.get("schema_version") == "cento.patch_swarm.product_metadata.v1" or manifest.get("product_metadata"):
+        return "product"
+    return "engine"
+
+
+def patch_swarm_repo_dirty_file_fingerprints(repo: Path, dirty_paths: list[str]) -> dict[str, Any]:
+    fingerprints: dict[str, Any] = {}
+    for dirty_path in dirty_paths[:100]:
+        clean = str(dirty_path or "").strip().lstrip("/")
+        if not clean:
+            continue
+        path = (repo / clean).resolve()
+        if repo not in path.parents and path != repo:
+            fingerprints[clean] = {"state": "outside_repo"}
+            continue
+        try:
+            if path.is_file():
+                stat = path.stat()
+                if stat.st_size <= 2_000_000:
+                    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+                    fingerprints[clean] = {"state": "file", "size": stat.st_size, "sha256": digest}
+                else:
+                    fingerprints[clean] = {"state": "large_file", "size": stat.st_size}
+            elif path.exists():
+                fingerprints[clean] = {"state": "non_file"}
+            else:
+                fingerprints[clean] = {"state": "missing"}
+        except OSError as exc:
+            fingerprints[clean] = {"state": "error", "error": str(exc)}
+    return fingerprints
+
+
+def patch_swarm_repo_snapshot(repo: Path) -> dict[str, Any]:
+    state = patch_swarm_repo_state(repo)
+    root = Path(state["path"]).resolve()
+    head_result = patch_swarm_git(root, "rev-parse", "HEAD")
+    tree_result = patch_swarm_git(root, "rev-parse", "HEAD^{tree}")
+    status_result = patch_swarm_git(root, "status", "--porcelain=v1")
+    status_lines = [line for line in status_result.stdout.splitlines() if line.strip()]
+    dirty_paths = [patch_swarm_status_path(line) for line in status_lines]
+    snapshot = {
+        "schema_version": "cento.patch_swarm.repo_snapshot.v1",
+        "path": str(root),
+        "branch": state.get("branch", ""),
+        "head": head_result.stdout.strip() if head_result.returncode == 0 else state.get("head", ""),
+        "head_tree": tree_result.stdout.strip() if tree_result.returncode == 0 else "",
+        "status_porcelain": status_lines,
+        "dirty_paths": dirty_paths,
+        "dirty_file_fingerprints": patch_swarm_repo_dirty_file_fingerprints(root, dirty_paths),
+        "captured_at": datetime.now(timezone.utc).isoformat(),
+    }
+    comparable = {
+        "branch": snapshot["branch"],
+        "head": snapshot["head"],
+        "head_tree": snapshot["head_tree"],
+        "status_porcelain": snapshot["status_porcelain"],
+        "dirty_file_fingerprints": snapshot["dirty_file_fingerprints"],
+    }
+    snapshot["fingerprint"] = hashlib.sha256(json.dumps(comparable, sort_keys=True, default=str).encode("utf-8")).hexdigest()
+    return snapshot
+
+
+def patch_swarm_write_no_mutation_receipt(
+    run_dir: Path,
+    phase: str,
+    before: dict[str, Any],
+    after: dict[str, Any],
+    *,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    engine = patch_swarm_engine()
+    compared_fields = ["branch", "head", "head_tree", "status_porcelain", "dirty_file_fingerprints"]
+    changed_fields = [field for field in compared_fields if before.get(field) != after.get(field)]
+    status = "passed" if not changed_fields and before.get("fingerprint") == after.get("fingerprint") else "failed"
+    receipt = {
+        "schema_version": "cento.patch_swarm.no_selected_repo_mutation.v1",
+        "run_id": run_dir.name,
+        "phase": phase,
+        "status": status,
+        "selected_repo": before.get("path") or after.get("path") or "",
+        "compared_fields": compared_fields,
+        "changed_fields": changed_fields,
+        "before": before,
+        "after": after,
+        "written_at": datetime.now(timezone.utc).isoformat(),
+        **(extra or {}),
+    }
+    receipt_path = run_dir / f"product_no_mutation_{phase}.json"
+    engine.write_json(receipt_path, receipt)
+    aggregate = engine.read_json(run_dir / "product_no_mutation_checks.json")
+    checks = [item for item in aggregate.get("checks", []) if isinstance(item, dict) and str(item.get("phase") or "") != phase]
+    checks.append(
+        {
+            "phase": phase,
+            "status": status,
+            "receipt": engine.rel(receipt_path),
+            "changed_fields": changed_fields,
+            "written_at": receipt["written_at"],
+        }
+    )
+    engine.write_json(
+        run_dir / "product_no_mutation_checks.json",
+        {
+            "schema_version": "cento.patch_swarm.no_selected_repo_mutation_index.v1",
+            "run_id": run_dir.name,
+            "status": "passed" if checks and all(item.get("status") == "passed" for item in checks) else "failed",
+            "checks": checks,
+            "written_at": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+    return receipt
+
+
+def patch_swarm_product_artifacts(run_dir: Path, ui_state: dict[str, Any]) -> dict[str, Any]:
+    engine = patch_swarm_engine()
+    artifacts = dict(ui_state.get("artifacts") if isinstance(ui_state.get("artifacts"), dict) else {})
+    optional = {
+        "product_metadata": run_dir / "product_metadata.json",
+        "create_receipt": run_dir / "product_run_create_receipt.json",
+        "approval": run_dir / "supervised_approval.json",
+        "candidate_decisions": run_dir / "candidate_decisions.json",
+        "apply_receipt": run_dir / "product_safe_integrator_apply.json",
+        "no_mutation": run_dir / "product_no_mutation_checks.json",
+        "no_mutation_create": run_dir / "product_no_mutation_create.json",
+        "no_mutation_apply": run_dir / "product_no_mutation_apply.json",
+        "validation_summary": run_dir / "validation_summary.json",
+    }
+    for key, path in optional.items():
+        if path.exists():
+            artifacts[key] = engine.rel(path)
+    return artifacts
+
+
+def patch_swarm_product_candidate_rows(run_dir: Path) -> list[dict[str, Any]]:
+    index = patch_swarm_engine().read_json(run_dir / "candidate_index.json")
+    return [dict(item) for item in index.get("candidates", []) if isinstance(item, dict)]
+
+
+def patch_swarm_product_action_gates(
+    run_dir: Path,
+    *,
+    run_kind: str | None = None,
+    candidates: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    engine = patch_swarm_engine()
+    manifest = engine.read_json(run_dir / "patch_swarm_manifest.json")
+    metadata = engine.read_json(run_dir / "product_metadata.json")
+    kind = run_kind or patch_swarm_product_run_kind(manifest, metadata)
+    base = {
+        "schema_version": "cento.patch_swarm.action_gates.v1",
+        "run_id": run_dir.name,
+        "can_approve": False,
+        "can_apply": False,
+        "can_reject": False,
+        "approve_disabled_reason": "",
+        "apply_disabled_reason": "",
+        "reject_disabled_reason": "",
+    }
+    if kind != "product":
+        return {
+            **base,
+            "approve_disabled_reason": "engine-only run",
+            "apply_disabled_reason": "engine-only run",
+            "reject_disabled_reason": "engine-only run",
+        }
+    candidate_rows = candidates if candidates is not None else patch_swarm_product_candidate_rows(run_dir)
+    by_id = {str(item.get("id") or ""): item for item in candidate_rows}
+    integration = engine.read_json(run_dir / "integration_execution" / "integration_execution.json")
+    validation = engine.read_json(run_dir / "validation_summary.json")
+    approval = engine.read_json(run_dir / "supervised_approval.json")
+    apply_receipt = engine.read_json(run_dir / "product_safe_integrator_apply.json")
+    selected_ids = [str(item) for item in integration.get("selected_candidates", []) if str(item)]
+    approved_ids = [str(item) for item in approval.get("selected_candidate_ids", []) if str(item)]
+    already_approved = approval.get("status") == "approved"
+    already_applied = apply_receipt.get("status") == "applied"
+
+    def all_validated(ids: list[str]) -> bool:
+        return bool(ids) and all(str(by_id.get(candidate_id, {}).get("status") or "") == "validated" for candidate_id in ids)
+
+    approve_reason = ""
+    if already_applied:
+        approve_reason = "already applied"
+    elif already_approved:
+        approve_reason = "already approved"
+    elif validation.get("status") != "passed":
+        approve_reason = "validation not passed"
+    elif not selected_ids:
+        approve_reason = "no selected candidates"
+    elif not all_validated(selected_ids):
+        approve_reason = "selected candidates not validated"
+
+    apply_reason = ""
+    if already_applied:
+        apply_reason = "already applied"
+    elif not already_approved:
+        apply_reason = "approval required"
+    elif not all_validated(approved_ids):
+        apply_reason = "approved candidates not validated"
+
+    reject_reason = ""
+    if already_applied:
+        reject_reason = "already applied"
+    elif already_approved:
+        reject_reason = "already approved"
+    elif not candidate_rows:
+        reject_reason = "no candidates"
+
+    return {
+        **base,
+        "can_approve": approve_reason == "",
+        "can_apply": apply_reason == "",
+        "can_reject": reject_reason == "",
+        "approve_disabled_reason": approve_reason,
+        "apply_disabled_reason": apply_reason,
+        "reject_disabled_reason": reject_reason,
+    }
+
+
 def patch_swarm_product_owned_path(run_id: str, execution_id: str) -> str:
     clean_run = re.sub(r"[^A-Za-z0-9_.-]+", "-", run_id).strip("-") or "run"
     clean_execution = re.sub(r"[^A-Za-z0-9_.-]+", "-", execution_id).strip("-") or "execution"
@@ -9323,13 +9550,22 @@ def patch_swarm_product_run_detail(run_id: str, *, include_candidates: bool = Tr
     apply_receipt = engine.read_json(run_dir / "product_safe_integrator_apply.json")
     factory_promotion = engine.read_json(run_dir / "factory_promotion.json")
     metadata = engine.read_json(run_dir / "product_metadata.json")
+    no_mutation = engine.read_json(run_dir / "product_no_mutation_checks.json")
     selected_repo = metadata.get("selected_repo") if isinstance(metadata.get("selected_repo"), dict) else manifest.get("selected_repo", {})
+    run_kind = patch_swarm_product_run_kind(manifest, metadata)
     candidates = patch_swarm_product_candidates(run_dir) if include_candidates else []
     groups: dict[str, list[dict[str, Any]]] = {}
     for candidate in candidates:
         groups.setdefault(str(candidate.get("execution_id") or "unknown"), []).append(candidate)
+    artifacts = patch_swarm_product_artifacts(run_dir, ui_state)
+    action_gates = patch_swarm_product_action_gates(
+        run_dir,
+        run_kind=run_kind,
+        candidates=candidates if include_candidates else None,
+    )
     run = {
         "run_id": run_dir.name,
+        "run_kind": run_kind,
         "run_dir": engine.rel(run_dir),
         "status": ui_state.get("status") or validation.get("status") or integration.get("status") or receipt.get("status") or manifest.get("status", "unknown"),
         "task_brief": metadata.get("task_brief") or manifest.get("objective", ""),
@@ -9343,13 +9579,17 @@ def patch_swarm_product_run_detail(run_id: str, *, include_candidates: bool = Tr
         "safe_integrator_status": (engine.read_json(run_dir / "safe_integrator_handoff.json")).get("status", ""),
         "approval_status": approval.get("status", "not_approved"),
         "apply_status": apply_receipt.get("status") or factory_promotion.get("status") or "not_applied",
+        "no_mutation_status": no_mutation.get("status", ""),
         "created_at": manifest.get("created_at", ""),
         "updated_at": manifest.get("updated_at", ""),
-        "artifacts": ui_state.get("artifacts", {}),
+        "artifacts": artifacts,
+        "action_gates": action_gates,
     }
     return {
         "schema_version": "cento.patch_swarm.product_run_detail.v1",
         "run": run,
+        "run_kind": run_kind,
+        "action_gates": action_gates,
         "ui_state": ui_state,
         "metadata": metadata,
         "receipt": receipt,
@@ -9358,6 +9598,7 @@ def patch_swarm_product_run_detail(run_id: str, *, include_candidates: bool = Tr
         "approval": approval,
         "apply_receipt": apply_receipt,
         "factory_promotion": factory_promotion,
+        "no_mutation": no_mutation,
         "candidates": candidates,
         "candidate_groups": [{"execution_id": key, "candidates": value} for key, value in groups.items()],
         "history": patch_swarm_product_history(run_dir),
@@ -9392,6 +9633,8 @@ def patch_swarm_product_create_run(payload: dict[str, Any]) -> dict[str, Any]:
     repo_state = patch_swarm_repo_state(Path(repo_path))
     if repo_state.get("protected_dirty"):
         raise AgentWorkAppError("selected repo has protected dirty paths: " + ", ".join(repo_state["protected_dirty"][:5]))
+    repo = Path(repo_state["path"])
+    before_snapshot = patch_swarm_repo_snapshot(repo)
     task_brief = str(payload.get("task_brief") or payload.get("objective") or "").strip()
     if not task_brief:
         raise AgentWorkAppError("task_brief is required")
@@ -9402,8 +9645,9 @@ def patch_swarm_product_create_run(payload: dict[str, Any]) -> dict[str, Any]:
     providers = engine.patch_swarm_provider_list(payload.get("providers") or "codex-exec,claude-code,api-openai")
     mode = str(payload.get("mode") or "fixture").lower()
     live = mode in {"live", "real"}
+    if live:
+        raise AgentWorkAppError("Patch Swarm product runs are fixture-only in this release candidate; live provider dispatch is deferred")
     engine.build_patch_swarm_plan(run_dir, objective=task_brief, candidate_target=candidate_target, max_parallel_agents=max_parallel_agents, providers=providers, live=live)
-    repo = Path(repo_state["path"])
     patch_swarm_retarget_run_to_repo(run_dir, repo, task_brief)
     patch_swarm_write_product_metadata(
         run_dir,
@@ -9428,7 +9672,33 @@ def patch_swarm_product_create_run(payload: dict[str, Any]) -> dict[str, Any]:
         engine.integrate_patch_swarm(run_dir)
         engine.validate_patch_swarm_run(run_dir)
     engine.patch_swarm_write_ui_state(run_dir)
+    after_snapshot = patch_swarm_repo_snapshot(repo)
+    no_mutation = patch_swarm_write_no_mutation_receipt(
+        run_dir,
+        "create",
+        before_snapshot,
+        after_snapshot,
+        extra={
+            "operation": "fixture_run_creation",
+            "mutation_boundary": "run artifacts only",
+        },
+    )
+    create_receipt = {
+        "schema_version": "cento.patch_swarm.product_create_receipt.v1",
+        "run_id": run_dir.name,
+        "status": "created" if no_mutation.get("status") == "passed" else "blocked",
+        "mode": mode,
+        "selected_repo": repo_state,
+        "candidate_count": receipt.get("candidate_count", 0),
+        "validation": engine.rel(run_dir / "validation_summary.json") if (run_dir / "validation_summary.json").exists() else "",
+        "no_mutation_receipt": engine.rel(run_dir / "product_no_mutation_create.json"),
+        "written_at": datetime.now(timezone.utc).isoformat(),
+    }
+    engine.write_json(run_dir / "product_run_create_receipt.json", create_receipt)
+    engine.patch_swarm_write_ui_state(run_dir)
     patch_swarm_append_product_event(run_dir, "product_run_created", {"repo": repo_state["path"], "candidate_target": candidate_target, "mode": mode})
+    if no_mutation.get("status") != "passed":
+        raise AgentWorkAppError("selected repo changed during fixture run creation")
     return patch_swarm_product_run_detail(run_dir.name)
 
 
@@ -9451,6 +9721,9 @@ def patch_swarm_product_selected_candidates(run_dir: Path, candidate_ids: list[s
 def patch_swarm_product_approve(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     engine = patch_swarm_engine()
     run_dir = patch_swarm_run_path(run_id)
+    gates = patch_swarm_product_action_gates(run_dir)
+    if not gates.get("can_approve"):
+        raise AgentWorkAppError(str(gates.get("approve_disabled_reason") or "approval is disabled"))
     selected = patch_swarm_product_selected_candidates(run_dir, payload.get("candidate_ids") if isinstance(payload.get("candidate_ids"), list) else None)
     approval = {
         "schema_version": "cento.patch_swarm.supervised_approval.v1",
@@ -9472,6 +9745,9 @@ def patch_swarm_product_approve(run_id: str, payload: dict[str, Any]) -> dict[st
 def patch_swarm_product_reject(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     engine = patch_swarm_engine()
     run_dir = patch_swarm_run_path(run_id)
+    gates = patch_swarm_product_action_gates(run_dir)
+    if not gates.get("can_reject"):
+        raise AgentWorkAppError(str(gates.get("reject_disabled_reason") or "reject is disabled"))
     candidate_ids = [str(item) for item in payload.get("candidate_ids", []) if str(item)] if isinstance(payload.get("candidate_ids"), list) else []
     if not candidate_ids:
         raise AgentWorkAppError("candidate_ids is required")
@@ -9549,6 +9825,7 @@ def patch_swarm_product_external_apply(run_dir: Path, selected: list[dict[str, A
         "schema_version": "cento.patch_swarm.external_safe_integrator_apply.v1",
         "run_id": run_dir.name,
         "status": "applied" if add_result.returncode == 0 and applied and not rejected else "apply_blocked",
+        "apply_scope": "product_worktree_only",
         "selected_repo": str(repo),
         "branch": branch,
         "worktree": str(worktree),
@@ -9572,27 +9849,35 @@ def patch_swarm_product_external_apply(run_dir: Path, selected: list[dict[str, A
 def patch_swarm_product_apply(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     engine = patch_swarm_engine()
     run_dir = patch_swarm_run_path(run_id)
+    gates = patch_swarm_product_action_gates(run_dir)
+    if not gates.get("can_apply"):
+        raise AgentWorkAppError(str(gates.get("apply_disabled_reason") or "apply is disabled"))
     approval = engine.read_json(run_dir / "supervised_approval.json")
     if approval.get("status") != "approved":
         raise AgentWorkAppError("apply requires supervised approval")
     selected_ids = [str(item) for item in approval.get("selected_candidate_ids", []) if str(item)]
     selected = patch_swarm_product_selected_candidates(run_dir, selected_ids)
     repo_root = engine.patch_swarm_selected_repo_root(run_dir).resolve()
-    if repo_root == ROOT_DIR.resolve() and bool(payload.get("use_factory", True)):
-        promotion = engine.promote_patch_swarm_to_factory(
-            run_dir,
-            selected,
-            factory_run=str(payload.get("factory_run") or ""),
-            apply=True,
-            validate_each=bool(payload.get("validate_each", False)),
-            branch=str(payload.get("branch") or ""),
-            worktree=str(payload.get("worktree") or ""),
-            limit=int(payload.get("limit") or 0),
-        )
-        engine.patch_swarm_write_ui_state(run_dir)
-        patch_swarm_append_product_event(run_dir, "product_factory_apply", {"status": promotion.get("status"), "selected_count": len(selected)})
-    else:
-        patch_swarm_product_external_apply(run_dir, selected, payload)
+    before_snapshot = patch_swarm_repo_snapshot(repo_root)
+    receipt = patch_swarm_product_external_apply(run_dir, selected, payload)
+    after_snapshot = patch_swarm_repo_snapshot(repo_root)
+    no_mutation = patch_swarm_write_no_mutation_receipt(
+        run_dir,
+        "apply",
+        before_snapshot,
+        after_snapshot,
+        extra={
+            "operation": "supervised_product_worktree_apply",
+            "mutation_boundary": "Patch Swarm product worktree only",
+            "worktree": str(receipt.get("worktree") or ""),
+        },
+    )
+    receipt["no_mutation_receipt"] = engine.rel(run_dir / "product_no_mutation_apply.json")
+    receipt["selected_repo_unchanged"] = no_mutation.get("status") == "passed"
+    engine.write_json(run_dir / "product_safe_integrator_apply.json", receipt)
+    engine.patch_swarm_write_ui_state(run_dir)
+    if no_mutation.get("status") != "passed":
+        raise AgentWorkAppError("selected repo changed during Patch Swarm worktree apply")
     return patch_swarm_product_run_detail(run_dir.name)
 
 

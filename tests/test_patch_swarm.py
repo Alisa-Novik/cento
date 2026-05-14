@@ -241,6 +241,7 @@ def test_patch_swarm_product_run_lifecycle_for_selected_repo(monkeypatch, tmp_pa
     swarm_root = configure_patch_swarm_roots(monkeypatch, tmp_path)
     monkeypatch.setattr(app, "PATCH_SWARM_PRODUCT_WORKTREE_ROOT", tmp_path / "worktrees")
     repo = init_git_repo(tmp_path / "selected-app")
+    before_create = app.patch_swarm_repo_snapshot(repo)
 
     detail = app.patch_swarm_product_create_run(
         {
@@ -253,22 +254,42 @@ def test_patch_swarm_product_run_lifecycle_for_selected_repo(monkeypatch, tmp_pa
         }
     )
     run_dir = swarm_root / "patch-swarm-product-test"
+    after_create = app.patch_swarm_repo_snapshot(repo)
 
+    assert detail["run_kind"] == "product"
+    assert detail["run"]["run_kind"] == "product"
     assert detail["run"]["selected_repo"]["path"] == str(repo.resolve())
     assert detail["run"]["candidate_count"] == 10
     assert detail["run"]["selected_count"] == 10
     assert detail["run"]["validation"] == "passed"
+    assert detail["action_gates"]["can_approve"] is True
+    assert detail["action_gates"]["can_apply"] is False
+    assert detail["action_gates"]["apply_disabled_reason"] == "approval required"
     assert (run_dir / "product_metadata.json").exists()
+    assert (run_dir / "product_run_create_receipt.json").exists()
+    assert detail["no_mutation"]["status"] == "passed"
+    assert before_create["fingerprint"] == after_create["fingerprint"]
     assert detail["candidates"][0]["touched_paths"][0].startswith("patch-swarm-candidates/patch-swarm-product-test/")
+    listed = app.patch_swarm_product_run_list()
+    assert next(item for item in listed["runs"] if item["run_id"] == "patch-swarm-product-test")["run_kind"] == "product"
 
     rejected_id = detail["candidates"][-1]["id"]
     rejected = app.patch_swarm_product_reject("patch-swarm-product-test", {"candidate_ids": [rejected_id], "reason": "not this one"})
     assert rejected["candidates"][-1]["decision"] == "rejected"
 
+    try:
+        app.patch_swarm_product_apply("patch-swarm-product-test", {"limit": 1, "use_factory": False})
+    except app.AgentWorkAppError as exc:
+        assert "approval required" in str(exc)
+    else:
+        raise AssertionError("apply was accepted before approval")
+
     selected_id = detail["integration"]["selected_candidates"][0]
     approved = app.patch_swarm_product_approve("patch-swarm-product-test", {"candidate_ids": [selected_id]})
     assert approved["approval"]["status"] == "approved"
     assert approved["approval"]["selected_candidate_ids"] == [selected_id]
+    assert approved["action_gates"]["can_approve"] is False
+    assert approved["action_gates"]["can_apply"] is True
 
     try:
         app.patch_swarm_product_apply(
@@ -280,13 +301,20 @@ def test_patch_swarm_product_run_lifecycle_for_selected_repo(monkeypatch, tmp_pa
     else:
         raise AssertionError("external apply accepted a non-product worktree")
 
-    applied = app.patch_swarm_product_apply("patch-swarm-product-test", {"limit": 1, "use_factory": False})
+    before_apply = app.patch_swarm_repo_snapshot(repo)
+    applied = app.patch_swarm_product_apply("patch-swarm-product-test", {"limit": 1, "use_factory": True})
+    after_apply = app.patch_swarm_repo_snapshot(repo)
     receipt = applied["apply_receipt"]
     selected_candidate = next(item for item in applied["candidates"] if item["id"] == selected_id)
     touched_path = selected_candidate["touched_paths"][0]
     assert receipt["status"] == "applied"
+    assert receipt["apply_scope"] == "product_worktree_only"
+    assert Path(receipt["worktree"]).resolve().is_relative_to((tmp_path / "worktrees").resolve())
     assert Path(receipt["worktree"], touched_path).exists()
     assert not (repo / touched_path).exists()
+    assert before_apply["fingerprint"] == after_apply["fingerprint"]
+    assert applied["no_mutation"]["status"] == "passed"
+    assert applied["action_gates"]["can_apply"] is False
 
 
 def test_patch_swarm_product_blocks_protected_dirty_repo(monkeypatch, tmp_path: Path) -> None:
@@ -296,6 +324,8 @@ def test_patch_swarm_product_blocks_protected_dirty_repo(monkeypatch, tmp_path: 
 
     state = app.patch_swarm_repo_state(repo)
     assert ".env" in state["protected_dirty"]
+    assert state["can_start"] is False
+    assert state["safety_label"] == "blocked_protected_dirty"
 
     try:
         app.patch_swarm_product_create_run(
@@ -310,6 +340,43 @@ def test_patch_swarm_product_blocks_protected_dirty_repo(monkeypatch, tmp_path: 
         assert "protected dirty paths" in str(exc)
     else:
         raise AssertionError("protected dirty repo was accepted")
+
+
+def test_patch_swarm_product_labels_unprotected_dirty_repo_startable(tmp_path: Path) -> None:
+    repo = init_git_repo(tmp_path / "unprotected-dirty")
+    (repo / "notes.txt").write_text("operator local note\n", encoding="utf-8")
+
+    state = app.patch_swarm_repo_state(repo)
+
+    assert state["dirty"] is True
+    assert state["dirty_paths"] == ["notes.txt"]
+    assert state["protected_dirty"] == []
+    assert state["can_start"] is True
+    assert state["safety_label"] == "startable_unprotected_dirty"
+
+
+def test_patch_swarm_engine_runs_are_read_only_in_product_api(monkeypatch, tmp_path: Path) -> None:
+    swarm_root = configure_patch_swarm_roots(monkeypatch, tmp_path)
+    run_dir = swarm_root / "patch-swarm-engine-contract"
+    pd.build_patch_swarm_plan(run_dir, candidate_target=10, max_parallel_agents=2)
+    pd.execute_patch_swarm(run_dir)
+    pd.integrate_patch_swarm(run_dir)
+    pd.validate_patch_swarm_run(run_dir)
+
+    detail = app.patch_swarm_product_run_detail("patch-swarm-engine-contract")
+    listed = app.patch_swarm_product_run_list()
+
+    assert detail["run_kind"] == "engine"
+    assert detail["run"]["run_kind"] == "engine"
+    assert detail["action_gates"]["can_approve"] is False
+    assert detail["action_gates"]["approve_disabled_reason"] == "engine-only run"
+    assert next(item for item in listed["runs"] if item["run_id"] == "patch-swarm-engine-contract")["run_kind"] == "engine"
+    try:
+        app.patch_swarm_product_approve("patch-swarm-engine-contract", {})
+    except app.AgentWorkAppError as exc:
+        assert "engine-only run" in str(exc)
+    else:
+        raise AssertionError("engine run accepted a product approval")
 
 
 def test_patch_swarm_route_is_served_as_app_shell() -> None:

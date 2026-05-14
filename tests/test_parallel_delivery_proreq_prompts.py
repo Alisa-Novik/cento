@@ -115,18 +115,19 @@ def test_master_prompt_exists_and_is_first(tmp_path: Path) -> None:
     assert index["prompts"][0]["path"] == "prompts/prompt-0001-master.md"
 
 
-def test_copy_to_temp_writes_temp_bridge_files(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setenv("CENTO_TEMP_COMMAND_DIR", str(tmp_path / "temp-commands"))
+def test_copy_to_temp_writes_temp_bridge_files(tmp_path: Path) -> None:
     run_dir = build_fixture(tmp_path, 20, copy_to_temp=True)
     bridge = read_json(run_dir / "temp-bridge.json")
     current = ROOT / bridge["current_prompt"] if not Path(bridge["current_prompt"]).is_absolute() else Path(bridge["current_prompt"])
 
     assert bridge["schema_version"] == 1
     assert bridge["artifact_type"] == "temp-bridge"
-    assert bridge["cento_temp_supported"] is True
+    assert bridge["cento_temp_supported"] is False
+    assert bridge["temp_command"] == ""
+    assert "COPY_FILE" in "\n".join(bridge["notes"])
     assert current.exists()
     assert (run_dir / "temp-current-prompt.md").exists()
-    assert (tmp_path / "temp-commands" / "cento-dev-scale-pro-prompt.json").exists()
+    assert not (tmp_path / "temp-commands" / "cento-dev-scale-pro-prompt.json").exists()
 
 
 def test_generator_policy_is_local_only_and_requires_no_api_calls() -> None:

@@ -7321,8 +7321,8 @@ function renderPatchSwarmRunList(payload) {
   patchSwarmRunList.innerHTML = patchSwarmRuns.slice(0, 12).map((run) => {
     const active = patchSwarmDetail?.run?.run_id === run.run_id ? " active" : "";
     const repo = run.selected_repo || {};
-    const isProductRun = Boolean(repo.path || repo.name);
-    const kind = isProductRun ? "product" : "legacy";
+    const kind = run.run_kind || (repo.path || repo.name ? "product" : "engine");
+    const isProductRun = kind === "product";
     const repoLabel = repo.name || repo.path || "legacy engine-only run";
     const status = patchSwarmStatusText(run.status, "unknown");
     const approval = patchSwarmStatusText(run.approval_status, "not approved");
@@ -7372,21 +7372,23 @@ function patchSwarmCanApproveRun() {
   return selectedIds.size > 0 && patchSwarmSelectedValidatedCandidates().length === selectedIds.size;
 }
 
+function patchSwarmActionGates() {
+  return patchSwarmDetail?.action_gates || patchSwarmDetail?.run?.action_gates || {};
+}
+
 function updatePatchSwarmReviewActions() {
-  const canApprove = patchSwarmCanApproveRun();
-  const approved = String(patchSwarmDetail?.run?.approval_status || patchSwarmDetail?.approval?.status || "") === "approved";
-  const candidate = patchSwarmSelectedCandidate();
+  const gates = patchSwarmActionGates();
   if (patchSwarmApproveButton) {
-    patchSwarmApproveButton.disabled = !canApprove;
-    patchSwarmApproveButton.title = canApprove ? "" : "Approval requires selected candidates that passed validation.";
+    patchSwarmApproveButton.disabled = !gates.can_approve;
+    patchSwarmApproveButton.title = gates.can_approve ? "" : (gates.approve_disabled_reason || "Approval is disabled by the run contract.");
   }
   if (patchSwarmApplyButton) {
-    patchSwarmApplyButton.disabled = !approved;
-    patchSwarmApplyButton.title = approved ? "" : "Apply is available after supervised approval.";
+    patchSwarmApplyButton.disabled = !gates.can_apply;
+    patchSwarmApplyButton.title = gates.can_apply ? "" : (gates.apply_disabled_reason || "Apply is disabled by the run contract.");
   }
   if (patchSwarmRejectButton) {
-    patchSwarmRejectButton.disabled = !candidate;
-    patchSwarmRejectButton.title = candidate ? "" : "Select a candidate before rejecting.";
+    patchSwarmRejectButton.disabled = !gates.can_reject;
+    patchSwarmRejectButton.title = gates.can_reject ? "" : (gates.reject_disabled_reason || "Reject is disabled by the run contract.");
   }
 }
 
@@ -7458,6 +7460,15 @@ function renderPatchSwarmCandidates(candidates) {
   renderPatchSwarmDiff(patchSwarmSelectedCandidate());
 }
 
+function patchSwarmArtifactLink(label, path) {
+  if (!path) return `<span>${escapeHtml(label)} pending</span>`;
+  return `<a href="${escapeHtml(`/api/artifacts?path=${encodeURIComponent(path)}`)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>`;
+}
+
+function patchSwarmEvidenceValue(label, value) {
+  return `<code><b>${escapeHtml(label)}</b>${escapeHtml(value || "pending")}</code>`;
+}
+
 function renderPatchSwarmDetail(payload) {
   patchSwarmDetail = payload;
   const run = payload?.run || {};
@@ -7474,12 +7485,16 @@ function renderPatchSwarmDetail(payload) {
   renderPatchSwarmCandidates(candidates);
   const artifacts = run.artifacts || {};
   const repo = run.selected_repo || {};
+  const applyReceipt = payload?.apply_receipt || {};
+  const noMutationReceipt = artifacts.no_mutation_apply || artifacts.no_mutation || "";
   const consoleHref = run.run_id ? `/patch-swarm/runs/${encodeURIComponent(run.run_id)}/console` : "";
   patchSwarmEvidence.innerHTML = `
     ${consoleHref ? `<a href="${escapeHtml(consoleHref)}" target="_blank" rel="noreferrer">Status console</a>` : ""}
-    <a href="${escapeHtml(`/api/artifacts?path=${encodeURIComponent(artifacts.decision_report || "")}`)}" target="_blank" rel="noreferrer">Decision report</a>
-    <a href="${escapeHtml(`/api/artifacts?path=${encodeURIComponent(artifacts.candidate_index || "")}`)}" target="_blank" rel="noreferrer">Candidate index</a>
-    <code>${escapeHtml(repo.path || run.run_dir || "")}</code>
+    ${patchSwarmArtifactLink("Decision report", artifacts.decision_report || "")}
+    ${patchSwarmArtifactLink("Candidate index", artifacts.candidate_index || "")}
+    ${patchSwarmEvidenceValue("Repo", repo.path || run.run_dir || "")}
+    ${patchSwarmEvidenceValue("Worktree", applyReceipt.worktree || "")}
+    ${patchSwarmArtifactLink("No-mutation receipt", noMutationReceipt)}
   `;
   updatePatchSwarmReviewActions();
   renderPatchSwarmRunList({ runs: patchSwarmRuns });

@@ -192,7 +192,7 @@
         },
         {
           "name": "build",
-          "summary": "Create manifest-owned local build packages, run one local worker, check worker artifacts, synthesize patch bundles, dry-run integrate, and apply accepted bundles.",
+          "summary": "Own patch units: create manifest-owned local build packages, run one local worker, check artifacts, synthesize patch bundles, dry-run integrate, and apply accepted bundles.",
           "usage": "cento build <init|check|prompt|worker|artifact|bundle|integrate|apply|receipt> [args...]",
           "flags": [],
           "examples": [
@@ -209,7 +209,7 @@
         },
         {
           "name": "workset",
-          "summary": "Run a minimal local N-worker workset with exclusive write paths, structured API artifacts, and sequential integration.",
+          "summary": "Own parallel lease semantics with local N-worker worksets, exclusive write paths, structured API artifacts, dependency gates, and sequential integration.",
           "usage": "cento workset <check|run|execute|materialize-artifact> [args...]",
           "flags": [],
           "examples": [
@@ -598,10 +598,44 @@
       "notes": [
         "industrial-os writes a guarded block to ~/.config/i3/config so i3 reloads keep the preset active.",
         "The preset applies the Cento Industrial OS Kitty theme, generated wallpaper, Polybar config, Rofi theme, and Picom config; the themed dashboard server stays on the explicit --dashboard-only path.",
-        "Mod+Shift+I runs --workspace and composes workspace 1 into the Discord, hero, terminal, jobs, cluster, activity, and actions tile layout with background images on every generated pane without starting the dashboard server.",
+        "Mod+Shift+I runs --workspace and composes workspace 1 into the Discord, hero, terminal, Darth Lolipopus pet, cluster, activity, and actions tile layout with background images on every generated pane without starting the dashboard server.",
         "Use --black-only or CENTO_INDUSTRIAL_BACKGROUND_MODE=black for plain black workspace pane backgrounds.",
         "Mod+h/j/k/l uses the Industrial OS visual focus router on the cockpit and falls back to native i3 focus elsewhere.",
         "--session reapplies runtime pieces without rewriting the i3 config and is intended for i3 startup."
+      ]
+    },
+    {
+      "id": "industrial-pet",
+      "name": "Darth Lolipopus Pet Pane",
+      "lane": "desktop ops",
+      "kind": "shell",
+      "entrypoint": "./scripts/industrial_pet_tui.sh",
+      "description": "Cute Sith Tamagotchi pane for Darth Lolipopus in the Industrial OS workspace.",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "commands": [
+        "cento industrial-pet",
+        "cento industrial-pet --once --width 98 --height 24",
+        "cento industrial-pet --action nap",
+        "cento industrial-pet --image assets/industrial-os/darth-lolipopus.png",
+        "cento industrial-pet --portrait slot",
+        "cento industrial-pet --reset"
+      ],
+      "outputs": [
+        "${XDG_STATE_HOME:-~/.local/state}/cento/industrial-os/darth-lolipopus.json",
+        "interactive terminal pet pane"
+      ],
+      "docs": [
+        "docs/industrial-pet.md"
+      ],
+      "notes": [
+        "State path, database path, and portrait image path are overrideable with --state, --database, and --image for deterministic tests.",
+        "Industrial OS launches this pane in the bottom-left tile that previously hosted the jobs dashboard.",
+        "The default portrait uses assets/industrial-os/darth-lolipopus.png, matching the rofi launcher side art.",
+        "Industrial OS uses assets/industrial-os/darth-lolipopus-pane.png as a high-resolution Kitty background and runs the TUI with --portrait slot to avoid terminal-cell pixelation.",
+        "Activities are Sith snack, duel practice, nap, cape compliment, helmet polish, and tiny mission."
       ]
     },
     {
@@ -817,34 +851,22 @@
       "lane": "ops",
       "kind": "shell",
       "entrypoint": "./scripts/cento_temp.sh",
-      "description": "Short-lived operator wrappers for fragile one-off commands that should not be pasted as multiline shell.",
+      "description": "One-command operator clipboard bridge that copies the fixed Markdown reference configured in scripts/cento_temp.sh through pbcopy.",
       "platforms": [
         "linux",
         "macos"
       ],
       "commands": [
-        "cento temp run",
-        "cento temp run openai-key",
-        "cento temp show",
-        "cento temp list",
-        "cento temp add ID --title TITLE --node local --command '...'",
-        "cento temp add ID --title TITLE --node macos --command-file /tmp/command.sh",
-        "cento temp run ID",
-        "cento temp run ID --dry-run",
-        "cento temp run ID --no-copy",
-        "cento temp remove ID"
+        "cento temp run"
       ],
       "outputs": [
-        "workspace/runs/temp/commands/*.json",
-        "workspace/runs/temp/history/*/output.log",
-        "~/.config/cento/secrets.env"
+        "clipboard",
+        "workspace/runs/temp/cento-ultimate-ai-reference.md"
       ],
       "notes": [
-        "Use temp commands when an agent needs to give a human a stable command instead of a fragile multiline shell paste.",
-        "Use cento temp run openai-key to prompt once for OPENAI_API_KEY and store it in a chmod 600 machine-local env file.",
-        "Temp commands can target local, macos, or linux; cross-node runs route through cento cluster exec.",
-        "Run output is saved to a history log and the most useful result path is copied to the clipboard by default.",
-        "Remove stale temp commands after use."
+        "Only `cento temp run` is supported. Do not add ids, flags, list/show/add/remove, cross-node targets, secret prompts, or generated temp command registries.",
+        "To change what gets copied, edit only the `COPY_FILE` line in scripts/cento_temp.sh.",
+        "The wrapper validates the fixed Markdown file and runs `pbcopy < \"$COPY_FILE\"`; clipboard transport belongs in the local pbcopy shim, not in cento temp."
       ]
     },
     {
@@ -1183,7 +1205,7 @@
       "lane": "agent ops",
       "kind": "python",
       "entrypoint": "./scripts/agent_work.py",
-      "description": "Taskstream-backed work tracker and first Cento Console section for assigning, splitting, dispatching, and reviewing Cento agent tasks across the Mac/Linux cluster.",
+      "description": "Lifecycle and governance substrate for Taskstream-backed Cento work: story/validation manifests, prompt handoff, dispatch/run ledgers, and review across the Mac/Linux cluster.",
       "platforms": [
         "linux",
         "macos"
@@ -1216,6 +1238,7 @@
       "notes": [
         "The web app shell is the Cento Console with top-level Taskstream, Cluster, Consulting, and Docs sections.",
         "Taskstream is the main tasking backend used by agent-work, the Taskstream section, and cluster dispatch.",
+        "Agent Work story.json and validation.json are the preferred human-visible task contract for Patch Swarm/Factory pilots.",
         "Use split to create one package with node-assigned work items, then dispatch or hand the generated prompt to an agent.",
         "Use agent-pool-kick to keep cheap Spark/Codex workers busy; it is plan-only with --dry-run and launches workers when --dry-run is omitted.",
         "Statuses are Queued, Running, Review, Blocked, and Done."
@@ -1258,7 +1281,7 @@
       "lane": "agent ops",
       "kind": "python",
       "entrypoint": "./scripts/agent_pool_kick.py",
-      "description": "Bounded worker-pool launcher that keeps builder, validator, small-task, and coordinator lanes moving without unbounded dispatch.",
+      "description": "Dry-run-first bounded worker-pool planner and launcher for builder, validator, small-task, and coordinator lanes without unbounded dispatch.",
       "platforms": [
         "linux",
         "macos"
@@ -1279,6 +1302,7 @@
       ],
       "notes": [
         "Dry-run first before launching workers.",
+        "Use as the worker runtime planning surface after real queued work exists; do not create a duplicate Patch Swarm worker pool.",
         "Use --repair-missing-manifests with --repair-lanes all to restore canonical story/validation manifests while keeping dispatch preflight enabled.",
         "Defaults to the weighted runtime policy unless CENTO_AGENT_RUNTIME or --runtime overrides it.",
         "Use --package to constrain dispatch to one Taskstream package before running cron or automation.",
@@ -1462,7 +1486,7 @@
       "lane": "agent ops",
       "kind": "shell",
       "entrypoint": "./scripts/agent_processes_tui.sh",
-      "description": "Mac-friendly Bubble Tea dashboard for cluster-wide managed and manual agent sessions, stale/risk indicators, and queue pressure.",
+      "description": "Read-only process and worker visibility for cluster-wide managed/manual agent sessions, stale/risk indicators, and queue pressure.",
       "platforms": [
         "linux",
         "macos"
@@ -1479,6 +1503,7 @@
       ],
       "notes": [
         "Data comes from `python3 scripts/agent_work.py runs --json --active` and `python3 scripts/agent_work.py list --json`.",
+        "Use this for Patch Swarm runtime visibility before adding a new worker dashboard or process state model.",
         "Attempts `python3 scripts/agent_manager.py scan --json` for risk/stale/manual counts when available.",
         "If manager scan is unavailable, the dashboard remains usable from runs/list data alone.",
         "Press r to refresh, q/Ctrl-C to quit.",
@@ -1523,7 +1548,7 @@
       "kind": "shell",
       "entrypoint": "./scripts/opencode.sh",
       "wrapper": "~/bin/opencode",
-      "description": "Thin wrapper around opencode (Alisa-Novik fork of sst/opencode) — an open-source AI coding agent TUI.",
+      "description": "Thin wrapper around opencode (Alisa-Novik fork of sst/opencode) \u2014 an open-source AI coding agent TUI.",
       "platforms": [
         "linux",
         "macos"
@@ -1536,7 +1561,7 @@
       ],
       "notes": [
         "Binary installed via npm (opencode-ai). Fork source lives at ~/projects/opencode.",
-        "Fork: https://github.com/Alisa-Novik/opencode — based on sst/opencode.",
+        "Fork: https://github.com/Alisa-Novik/opencode \u2014 based on sst/opencode.",
         "Set OPENCODE_FORK_DIR to override the default fork path (~/projects/opencode).",
         "All arguments after 'cento opencode' are forwarded to the opencode binary unchanged."
       ]
@@ -1579,7 +1604,7 @@
       "lane": "agent ops",
       "kind": "python",
       "entrypoint": "./scripts/demo_evidence.py",
-      "description": "Record short 10-30 second desktop demo videos as Factory, Codex worker, and validation evidence with receipts.",
+      "description": "Operator evidence utility for short 10-30 second desktop demo videos after real Factory, Codex worker, or validation flows exist.",
       "platforms": [
         "linux",
         "macos"
@@ -1601,6 +1626,7 @@
       ],
       "notes": [
         "Use this after a Builder or Codex worker has a visible product flow to prove, especially before Factory validation or release handoff.",
+        "Demo evidence is proof for a real flow, not a substitute for a real pilot, patch, integration dry-run, or honest blocker.",
         "The tool enforces a 10-30 second duration window and records requested duration, measured duration, recorder backend, video hash, and paths in receipt.json.",
         "Linux auto mode prefers wf-recorder on Wayland and ffmpeg x11grab on X11; macOS uses ffmpeg avfoundation and may require Screen Recording permission.",
         "Pass --factory-run and --task to colocate evidence under the Factory task bundle.",
@@ -1614,7 +1640,7 @@
       "lane": "agent ops",
       "kind": "python",
       "entrypoint": "./scripts/factory.py",
-      "description": "Deterministic no-model Factory planning, dispatch dry-runs, patch collection, validation, and Safe Integrator workflows.",
+      "description": "Orchestration substrate for deterministic intake, planning, materialization, queueing, dry-run dispatch, patch collection, validation, integration, release candidates, and hubs.",
       "platforms": [
         "linux",
         "macos"
@@ -1643,6 +1669,7 @@
       ],
       "notes": [
         "Factory remains deterministic by default. Use `cento build` for the manifest-owned local build package v1 slice.",
+        "Factory is the preferred execution spine for real Patch Swarm pilots; adapt facade/status gaps instead of creating a new runtime.",
         "Live Taskstream creation and patch application remain explicit opt-in operations on Factory commands.",
         "Factory validate-fanout runs cacheable candidate checks in parallel before serialized Safe Integrator apply.",
         "Factory merge --auto-merge-main is the only automatic main/push gate and requires release, rollback, validation, clean-worktree, and post-merge receipts.",
@@ -1655,7 +1682,7 @@
       "lane": "agent ops",
       "kind": "python",
       "entrypoint": "./scripts/cento_build.py",
-      "description": "Manifest-driven local build package primitive with owned path checks, Builder prompts, one-local-worker patch collection, dry-run patch integration, safe apply, and receipts.",
+      "description": "Patch unit and safety substrate for manifest-owned paths, Builder prompts, patch bundles, dry-run integration, safe apply, and receipts.",
       "platforms": [
         "linux",
         "macos"
@@ -1687,6 +1714,7 @@
       ],
       "notes": [
         "Local-only v1.2; one fixture/local worker can be launched, but there are no cloud workers, API calls, scheduler, PR creation, or automatic model patch generation.",
+        "Treat Build patch bundles and integration receipts as canonical before adding Patch Swarm bundle or apply formats.",
         "Use `cento runtime check codex-fast` and `--runtime-profile codex-fast` for hardened command runtime profiles. Raw shell command runtimes require `--allow-unsafe-command`.",
         "The normal integration path requires a patch bundle. Raw patch integration is rejected unless explicitly run as a dev raw-patch path.",
         "The core acceptance behavior is rejecting dirty owned paths, unowned paths, protected paths, binary patches, path traversal, and undeclared lockfile changes.",
@@ -1728,7 +1756,7 @@
       "lane": "agent ops",
       "kind": "python",
       "entrypoint": "./scripts/cento_workset.py",
-      "description": "Minimal local N-worker runner for exclusive-path build tasks, structured API artifacts, dependency gates, budget caps, and sequential integration.",
+      "description": "Parallel lease substrate for exclusive-path N-worker tasks, structured API artifacts, dependency gates, budget caps, and sequential integration.",
       "platforms": [
         "linux",
         "macos"
@@ -1756,6 +1784,7 @@
       ],
       "notes": [
         "Workset v1 rejects overlapping write paths and glob write paths. Every task must have exclusive write_paths.",
+        "Use Workset exclusive paths as the source of truth for parallel lease semantics before adding Patch Swarm lease concepts.",
         "Plain `cento workset check WORKSET` rejects missing write paths. API-worker-created file plans must declare `--runtime api-openai` or `--allow-creates`.",
         "Workers run in parallel only until patch or structured artifact collection. Integration and apply are always sequential.",
         "OpenAI API workers use Responses API structured outputs and do not mutate repo files directly.",
@@ -1917,7 +1946,7 @@
       "lane": "agent ops",
       "kind": "python",
       "entrypoint": "./scripts/parallel_delivery.py",
-      "description": "Coordinate Hard ProReq fanout, Workset manifests, integrator/validator evidence, and demo receipts for the parallel AI delivery roadmap.",
+      "description": "Patch Swarm and Parallel AI Delivery product facade over Factory orchestration, Build patch units, Workset leases, Agent Work lifecycle, and worker visibility.",
       "platforms": [
         "linux",
         "macos"
@@ -2097,6 +2126,8 @@
       ],
       "notes": [
         "Routes VP-level parallel delivery planning through existing Hard ProReq and Workset pipelines instead of inventing a new orchestration path.",
+        "The 100-call responsibility audit treats Parallel Delivery/Patch Swarm as the product facade, not the owner of duplicate queues, leases, patch bundles, task manifests, release-candidate formats, or dashboards.",
+        "Future Patch Swarm phases should run real low-risk pilots through existing Factory/Build/Workset/Agent Work surfaces with live dispatch off, then add only thin adapters for proven reuse breaks.",
         "Default execution keeps live Pro disabled unless `--live-pro` is passed; image requests still follow the configured Hard ProReq image lane.",
         "The train subcommands plan high-parallel Workset shards and a sequential dry-run integration queue without patch apply.",
         "Train run accepts explicit --simulate or --workset-execute; the Workset mode calls `cento workset execute` and records command/result/receipt artifacts without passing --apply.",

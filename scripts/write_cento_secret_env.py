@@ -55,7 +55,7 @@ def main(argv: list[str]) -> int:
         kept.append("")
     kept.extend(
         [
-            "# Managed by `cento temp run openai-key`.",
+            "# Managed by Cento local secret setup.",
             f"export OPENAI_API_KEY={shlex.quote(api_key)}",
             f"export CENTO_OPENAI_WORKER_MODEL={shlex.quote(model)}",
         ]

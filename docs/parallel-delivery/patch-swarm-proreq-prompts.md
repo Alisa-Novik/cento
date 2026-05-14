@@ -74,7 +74,7 @@ Lane prompts focus on `builder`, `validator`, `docs-evidence`, `coordinator`, `i
 workspace/runs/temp/chatgpt-pro/<run-id>/
 ```
 
-It also writes a `temp-bridge.json` manifest and updates the default `cento temp run` copy-file entry to point at `current.md`. The generator does not copy to the OS clipboard.
+It also writes a `temp-bridge.json` manifest with the generated `current.md` path. `cento temp run` no longer reads generated temp entries; it is a fixed pbcopy wrapper. To copy a generated prompt through that bridge, edit `COPY_FILE` in `scripts/cento_temp.sh` to the generated `current.md` path. The generator does not copy to the OS clipboard.
 
 ## Safety Rules
 

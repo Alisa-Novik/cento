@@ -224,6 +224,23 @@
   - `cento preset industrial-os --dashboard-only --open`
   - `cento dashboard --theme industrial --open`
 
+## Darth Lolipopus Pet Pane
+
+- `id`: `industrial-pet`
+- `lane`: `desktop ops`
+- `kind`: `shell`
+- `entrypoint`: `./scripts/industrial_pet_tui.sh`
+- description: Cute Sith Tamagotchi pane for Darth Lolipopus in the Industrial OS workspace.
+- commands:
+  - `cento industrial-pet`
+  - `cento industrial-pet --once --width 98 --height 24`
+  - `cento industrial-pet --action nap`
+  - `cento industrial-pet --image assets/industrial-os/darth-lolipopus.png`
+  - `cento industrial-pet --portrait slot`
+  - `cento industrial-pet --reset`
+- docs:
+  - [`docs/industrial-pet.md`](./industrial-pet.md)
+
 ## Quick Help
 
 - `id`: `quick-help`
@@ -340,18 +357,9 @@
 - `lane`: `ops`
 - `kind`: `shell`
 - `entrypoint`: `./scripts/cento_temp.sh`
-- description: Short-lived operator wrappers for fragile one-off commands that should not be pasted as multiline shell.
+- description: One-command operator clipboard bridge that copies the fixed Markdown reference configured in scripts/cento_temp.sh through pbcopy.
 - commands:
   - `cento temp run`
-  - `cento temp run openai-key`
-  - `cento temp show`
-  - `cento temp list`
-  - `cento temp add ID --title TITLE --node local --command '...'`
-  - `cento temp add ID --title TITLE --node macos --command-file /tmp/command.sh`
-  - `cento temp run ID`
-  - `cento temp run ID --dry-run`
-  - `cento temp run ID --no-copy`
-  - `cento temp remove ID`
 
 ## Search Report
 
@@ -530,7 +538,7 @@
 - `lane`: `agent ops`
 - `kind`: `python`
 - `entrypoint`: `./scripts/agent_work.py`
-- description: Taskstream-backed work tracker and first Cento Console section for assigning, splitting, dispatching, and reviewing Cento agent tasks across the Mac/Linux cluster.
+- description: Lifecycle and governance substrate for Taskstream-backed Cento work: story/validation manifests, prompt handoff, dispatch/run ledgers, and review across the Mac/Linux cluster.
 - commands:
   - `cento agent-work bootstrap`
   - `cento agent-work create --title "Fix dashboard" --node linux --agent codex`
@@ -568,7 +576,7 @@
 - `lane`: `agent ops`
 - `kind`: `python`
 - `entrypoint`: `./scripts/agent_pool_kick.py`
-- description: Bounded worker-pool launcher that keeps builder, validator, small-task, and coordinator lanes moving without unbounded dispatch.
+- description: Dry-run-first bounded worker-pool planner and launcher for builder, validator, small-task, and coordinator lanes without unbounded dispatch.
 - commands:
   - `cento agent-pool-kick --dry-run`
   - `cento agent-pool-kick --max-launch 3 --dry-run`
@@ -651,7 +659,7 @@
 - `lane`: `agent ops`
 - `kind`: `shell`
 - `entrypoint`: `./scripts/agent_processes_tui.sh`
-- description: Mac-friendly Bubble Tea dashboard for cluster-wide managed and manual agent sessions, stale/risk indicators, and queue pressure.
+- description: Read-only process and worker visibility for cluster-wide managed/manual agent sessions, stale/risk indicators, and queue pressure.
 - commands:
   - `cento agent-processes`
   - `cento agent-processes --once`
@@ -709,7 +717,7 @@
 - `lane`: `agent ops`
 - `kind`: `python`
 - `entrypoint`: `./scripts/demo_evidence.py`
-- description: Record short 10-30 second desktop demo videos as Factory, Codex worker, and validation evidence with receipts.
+- description: Operator evidence utility for short 10-30 second desktop demo videos after real Factory, Codex worker, or validation flows exist.
 - commands:
   - `cento demo-evidence record --title "Factory UI walkthrough" --duration 15`
   - `cento demo-evidence record --factory-run workspace/runs/factory/<run> --task <task-id> --worker <worker-id> --duration 15 --notes "Shows accepted flow"`
@@ -724,7 +732,7 @@
 - `lane`: `agent ops`
 - `kind`: `python`
 - `entrypoint`: `./scripts/factory.py`
-- description: Deterministic no-model Factory planning, dispatch dry-runs, patch collection, validation, and Safe Integrator workflows.
+- description: Orchestration substrate for deterministic intake, planning, materialization, queueing, dry-run dispatch, patch collection, validation, integration, release candidates, and hubs.
 - commands:
   - `cento factory --help`
   - `cento factory intake "develop me a career consulting module" --dry-run --out workspace/runs/factory/factory-planning-e2e`
@@ -746,7 +754,7 @@
 - `lane`: `agent ops`
 - `kind`: `python`
 - `entrypoint`: `./scripts/cento_build.py`
-- description: Manifest-driven local build package primitive with owned path checks, Builder prompts, one-local-worker patch collection, dry-run patch integration, safe apply, and receipts.
+- description: Patch unit and safety substrate for manifest-owned paths, Builder prompts, patch bundles, dry-run integration, safe apply, and receipts.
 - commands:
   - `cento build --help`
   - `cento build init --task "Fixture docs page patch" --mode fast --write tests/fixtures/cento_build/app_page.html --route /fixture`
@@ -782,7 +790,7 @@
 - `lane`: `agent ops`
 - `kind`: `python`
 - `entrypoint`: `./scripts/cento_workset.py`
-- description: Minimal local N-worker runner for exclusive-path build tasks, structured API artifacts, dependency gates, budget caps, and sequential integration.
+- description: Parallel lease substrate for exclusive-path N-worker tasks, structured API artifacts, dependency gates, budget caps, and sequential integration.
 - commands:
   - `cento workset check tests/fixtures/cento_workset/workset.valid.json`
   - `cento workset check tests/fixtures/cento_workset/workset.execute.api.json --runtime api-openai`
@@ -862,7 +870,7 @@
 - `lane`: `agent ops`
 - `kind`: `python`
 - `entrypoint`: `./scripts/parallel_delivery.py`
-- description: Coordinate Hard ProReq fanout, Workset manifests, integrator/validator evidence, and demo receipts for the parallel AI delivery roadmap.
+- description: Patch Swarm and Parallel AI Delivery product facade over Factory orchestration, Build patch units, Workset leases, Agent Work lifecycle, and worker visibility.
 - commands:
   - `cento parallel-delivery plan --json`
   - `cento parallel-delivery execute --sleep-seconds 1 --json`
@@ -879,16 +887,31 @@
   - `cento parallel-delivery train status RUN_ID --json`
   - `cento parallel-delivery train validate RUN_ID --json`
   - `cento parallel-delivery patch-swarm plan --candidate-target 100 --max-parallel-agents 5 --json`
+  - `cento parallel-delivery patch-swarm split --request-file REQUEST.md --candidate-target 20 --max-parallel-agents 5 --mode no-model --json`
+  - `cento parallel-delivery patch-swarm leases --run-dir workspace/runs/parallel-delivery/lease-fixture --run-id lease-fixture --fixture --json`
+  - `cento parallel-delivery patch-swarm validate-leases --run-dir workspace/runs/parallel-delivery/lease-fixture --json`
+  - `cento parallel-delivery patch-swarm prompts --run-dir workspace/runs/parallel-delivery/proreq-fixture --count 20 --lane all --chatgpt-pro --copy-to-temp --json`
+  - `cento parallel-delivery patch-swarm worker-packets --run-dir workspace/runs/parallel-delivery/codex-packets-fixture --run-id codex-packets-fixture --fixture --count 10 --json`
+  - `cento parallel-delivery patch-swarm dispatch --run-dir workspace/runs/parallel-delivery/worker-status-fixture --run-id worker-status-fixture --candidate-target 100 --max-parallel-agents 5 --dry-run --fixture --json`
+  - `cento parallel-delivery patch-swarm worker-status --run-dir workspace/runs/parallel-delivery/worker-status-fixture --json`
+  - `cento parallel-delivery status --run worker-status-fixture --run-root workspace/runs/parallel-delivery --json`
+  - `cento parallel-delivery patch-bundles validate --bundle workspace/runs/parallel-delivery/patch-bundle-fixture/input/bundles/bundle-safe-001.json --lease-manifest workspace/runs/parallel-delivery/patch-bundle-fixture/input/leases.json --out workspace/runs/parallel-delivery/patch-bundle-fixture --base-commit HEAD --json`
+  - `cento parallel-delivery patch-bundles collect --run-id patch-bundle-fixture --bundles-dir workspace/runs/parallel-delivery/patch-bundle-fixture/input/bundles --lease-manifest workspace/runs/parallel-delivery/patch-bundle-fixture/input/leases.json --out workspace/runs/parallel-delivery/patch-bundle-fixture --base-commit HEAD --json`
+  - `cento parallel-delivery release-candidate create --integration-receipt workspace/runs/parallel-delivery/release-candidate-fixture/input/integration-receipt.accepted.json --out workspace/runs/parallel-delivery/release-candidate-fixture/dry-run --mode dry-run --target-repo workspace/runs/parallel-delivery/release-candidate-fixture/fixture-repo --base-commit HEAD --json`
+  - `cento parallel-delivery release-candidate create --integration-receipt workspace/runs/parallel-delivery/release-candidate-fixture/input/integration-receipt.accepted.json --out workspace/runs/parallel-delivery/release-candidate-fixture/apply --mode apply --target-repo workspace/runs/parallel-delivery/release-candidate-fixture/fixture-repo --target-worktree workspace/runs/parallel-delivery/release-candidate-fixture/integration-worktree --base-commit HEAD --final-validation-cmd "python -m pytest -q tests" --json`
+  - `cento parallel-delivery taskstream emit --split-plan workspace/runs/parallel-delivery/taskstream-fixture/input/split-plan.json --out workspace/runs/parallel-delivery/taskstream-fixture --transport manifest-only --run-preflight`
+  - `cento parallel-delivery taskstream preflight --manifest-dir workspace/runs/parallel-delivery/taskstream-fixture/work-packages --out workspace/runs/parallel-delivery/taskstream-fixture/preflight`
+  - `cento parallel-delivery taskstream apply --manifest-dir workspace/runs/parallel-delivery/taskstream-fixture/work-packages --out workspace/runs/parallel-delivery/taskstream-fixture/apply --transport agent-work --apply`
   - `cento parallel-delivery patch-swarm execute RUN_ID --fixture --json`
   - `cento parallel-delivery patch-swarm execute RUN_ID --live --budget-cap-usd 1 --max-budget-usd 1 --api-sandbox-candidates 1 --json`
   - `cento parallel-delivery patch-swarm integrate RUN_ID --dry-run --json`
   - `cento parallel-delivery patch-swarm integrate RUN_ID --apply --factory-run workspace/runs/factory/patch-swarm-RUN_ID --validate-each --json`
   - `cento parallel-delivery patch-swarm validate RUN_ID --json`
   - `cento parallel-delivery patch-swarm status RUN_ID --json`
-  - `cento parallel-delivery taskstream emit --split-plan workspace/runs/parallel-delivery/taskstream-fixture/input/split-plan.json --out workspace/runs/parallel-delivery/taskstream-fixture --transport manifest-only --run-preflight`
-  - `cento parallel-delivery taskstream preflight --manifest-dir workspace/runs/parallel-delivery/taskstream-fixture/work-packages --out workspace/runs/parallel-delivery/taskstream-fixture/preflight`
-  - `cento parallel-delivery taskstream apply --manifest-dir workspace/runs/parallel-delivery/taskstream-fixture/work-packages --out workspace/runs/parallel-delivery/taskstream-fixture/apply --transport agent-work --apply`
+  - `cento parallel-delivery patch-swarm status --run-dir workspace/runs/parallel-delivery/console-fixture/fixture-console-25 --write-html --json`
   - `cento parallel-delivery patch-swarm e2e --candidate-target 30 --max-parallel-agents 3 --fixture --json`
+  - `cento parallel-delivery patch-swarm e2e --candidate-target 25 --max-parallel-agents 5 --fixture --run-id fixture-console-25 --output-dir workspace/runs/parallel-delivery/console-fixture/fixture-console-25 --json`
+  - `cento parallel-delivery patch-swarm e2e --candidate-target 100 --max-parallel-agents 5 --fixture --run-root workspace/runs/parallel-delivery/e2e-fixture --json`
   - `cento parallel-delivery self-improve run --json`
   - `cento parallel-delivery self-improve e2e --candidate-target 30 --max-parallel-agents 3 --budget-cap-usd 1 --max-budget-usd 1 --apply --validate-each --auto-merge-gate --json`
   - `cento parallel-delivery self-improve validate --json`
@@ -899,5 +922,15 @@
   - [`docs/ai-self-improvement-nightly.md`](./ai-self-improvement-nightly.md)
   - [`docs/parallel-integration-train.md`](./parallel-integration-train.md)
   - [`docs/parallel-ai-delivery-roadmap.md`](./parallel-ai-delivery-roadmap.md)
+  - [`docs/parallel-delivery/patch-swarm-artifacts.md`](./patch-swarm-artifacts.md)
+  - [`docs/parallel-delivery/patch-swarm-planner.md`](./patch-swarm-planner.md)
+  - [`docs/parallel-delivery/patch-swarm-leasing.md`](./patch-swarm-leasing.md)
+  - [`docs/parallel-delivery/patch-swarm-proreq-prompts.md`](./patch-swarm-proreq-prompts.md)
+  - [`docs/parallel-delivery/patch-swarm-codex-worker-packets.md`](./patch-swarm-codex-worker-packets.md)
+  - [`docs/parallel-delivery/patch-swarm-console.md`](./patch-swarm-console.md)
+  - [`docs/parallel-delivery/patch-bundle-validation.md`](./patch-bundle-validation.md)
+  - [`docs/parallel-delivery/release-candidate-safe-apply.md`](./release-candidate-safe-apply.md)
+  - [`docs/parallel-delivery/patch-swarm-validation-e2e.md`](./patch-swarm-validation-e2e.md)
   - [`docs/parallel-delivery/patch-swarm-taskstream.md`](./patch-swarm-taskstream.md)
+  - [`docs/parallel-delivery/patch-swarm-worker-status.md`](./patch-swarm-worker-status.md)
   - [`docs/patch-swarm.md`](./patch-swarm.md)

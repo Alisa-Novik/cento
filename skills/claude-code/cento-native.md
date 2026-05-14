@@ -25,14 +25,13 @@ Prefer existing paths in this order:
 4. Existing scripts under `scripts/`, after confirming the registered entrypoint.
 5. New code or registry entries only when no existing route fits.
 
-For Cento temporary operator commands, use the generic `temp` tool instead of asking the human to paste multiline shell:
+For the Cento temp clipboard bridge, the only supported operator command is:
 
 ```bash
-cento temp add ID --title TITLE --node local|macos|linux --command-file /tmp/command.sh
-cento temp show ID
-cento temp run ID
-cento temp remove ID
+cento temp run
 ```
+
+To change what it copies, edit only the `COPY_FILE` line in `scripts/cento_temp.sh`. Do not add ids, flags, list/show/add/remove, secret prompts, cross-node routing, or fallback chains to `cento temp`.
 
 For other temporary or one-off shell work, do not add a permanent registered tool by default. Use:
 
@@ -44,7 +43,7 @@ cento bridge to-linux -- '...'
 cento batch-exec --root DIR --pattern GLOB --command '...'
 ```
 
-Use `batch-exec` for one command over directories. Use `cluster exec` or `bridge to-*` for lower-level node-targeted temp commands. If `cento temp ...` is unknown on one node, check the other node before concluding it does not exist.
+Use `batch-exec` for one command over directories. Use `cluster exec` or `bridge to-*` for lower-level node-targeted temporary commands. If clipboard transport breaks, fix the local `pbcopy` shim instead of expanding `cento temp`.
 
 ## Tasking
 

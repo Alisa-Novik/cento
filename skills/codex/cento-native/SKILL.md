@@ -126,14 +126,13 @@ Prefer existing paths in this order:
 4. Existing scripts under `scripts/` only after confirming they are the registered entrypoint or intended backend.
 5. New code or registry entries only when discovery shows no existing path fits.
 
-For Cento temporary operator commands, use the generic `temp` tool instead of asking the human to paste multiline shell:
+For the Cento temp clipboard bridge, never create a temp command registry entry. The only supported operator command is:
 
 ```bash
-cento temp add ID --title TITLE --node local|macos|linux --command-file /tmp/command.sh
-cento temp show ID
-cento temp run ID
-cento temp remove ID
+cento temp run
 ```
+
+To change what it copies, edit only the `COPY_FILE` line in `scripts/cento_temp.sh`. Do not add ids, flags, list/show/add/remove, secret prompts, cross-node routing, or fallback chains to `cento temp`.
 
 For other one-off or temporary shell work, do not add a registered tool by default. Use the existing one-off command surface:
 
@@ -193,7 +192,7 @@ Choose packages conservatively: `agent-ops` for skills/routing/dispatch, `taskst
 - Never overwrite unrelated dirty work. Read `git status --short` and scope edits tightly.
 - Do not run Linux-only tools on macOS or macOS-only tools on Linux unless changing platform support.
 - Do not reset pairing, tunnel, signing, launchd, tmux, Docker, or git state without explaining why first.
-- If a user asks for a temp command, create a `cento temp add ...` entry and give them `cento temp run ID`; do not add a permanent registry entry unless asked.
+- If a user asks for the temp clipboard bridge, keep the route at `cento temp run`; do not create named temp entries or ID-based run variants.
 - If the user says "reuse existing Cento tool", scan `cento tools`, `cento aliases`, `data/tools.json`, and matching scripts before proposing edits.
 
 ## Validation

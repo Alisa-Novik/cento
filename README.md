@@ -89,6 +89,10 @@ The bias is toward low-dependency tooling that works well from a terminal and ca
   Detect two monitors, stack them vertically, and repair your xrandr layout.
 - `i3reorg.sh`
   Keep numeric i3 workspaces on the bottom monitor, move common windows to preferred workspaces, and place the study YouTube window on L2.
+- `industrial_pet_tui.sh`
+  Open the Darth Lolipopus Cute Sith pet pane with the same portrait art used by the rofi launcher.
+- `industrial_pet_tui.go`
+  Bubble Tea implementation for the persistent Darth Lolipopus Tamagotchi pane.
 - `quick_help.sh`
   Open a rofi-style searchable help palette for cento commands, tools, and aliases.
 - `system_inventory.sh`
@@ -111,8 +115,14 @@ The bias is toward low-dependency tooling that works well from a terminal and ca
   Inspect and validate `.cento/runtimes.yaml` profiles for hardened local builder execution.
 - `cento_workset.py`
   Run small exclusive-path local worksets with parallel worker patch collection, structured API artifact workers, simple dependency gates, budget caps, and sequential integration/apply.
+- `parallel_delivery_patch_bundles.py`
+  Collect local Patch Swarm worker patch bundles or evidence-only outputs, validate them against authoritative leases, reject unsafe diffs before integration, and write receipts/reports without applying patches.
+- `parallel_delivery_release_candidate.py`
+  Read accepted Parallel Delivery integration receipts, verify accepted bundle receipts and patch hashes, dry-run or safely apply bundles in isolated targets, and write apply reports, rollback metadata, release notes, and release-candidate artifacts.
 - `parallel_delivery_taskstream.py`
   Convert Patch Swarm split plans into local `agent-work` story and validation manifests, handoff notes, command previews, preflight reports, and apply-gated Taskstream receipts without direct database writes.
+- `parallel_delivery_patch_swarm_console.py`
+  Read Patch Swarm run artifacts and render `console-data.json` plus a static `start-here.html` status hub with relative evidence links.
 - `storage.py`
   Catalog Cento run artifacts into SQLite, classify evidence/logs/screenshots/patches/manifests, plan no-delete lifecycle actions, verify hashes, and render storage reports before high-fanout Factory runs create artifact pressure.
 - `object_storage.py`
@@ -195,8 +205,13 @@ make cento ARGS="workset execute .cento/worksets/docs_page.json --max-parallel 6
 make cento ARGS="build artifact check tests/fixtures/cento_build/worker_artifact.valid.json"
 make cento ARGS="build bundle synthesize --manifest tests/fixtures/cento_build/manifest.valid.json --patch tests/fixtures/cento_build/patch.valid.diff"
 make cento ARGS="build integrate tests/fixtures/cento_build/manifest.valid.json --bundle .cento/builds/build_fixture_docs_page_001/integration/patch_bundle.json --dry-run"
+make patch-bundle-fixture
+make test-patch-bundles
+make release-candidate-fixture
+make test-release-candidate
 make taskstream-fixture
 make test-taskstream-handoff
+make cento ARGS="parallel-delivery patch-swarm status --run-dir workspace/runs/parallel-delivery/console-fixture/fixture-console-25 --write-html --json"
 make cento ARGS="storage scan --root workspace/runs --db workspace/storage/catalog.sqlite"
 make cento ARGS="storage plan --dry-run"
 make cento ARGS="storage query --largest --limit 20"
@@ -240,6 +255,7 @@ make cento ARGS="dark"
 ./scripts/wallpaper_manager.sh --choose
 ./scripts/display_layout_fix.sh --show
 ./scripts/i3reorg.sh --dry-run
+./scripts/industrial_pet_tui.sh --once --width 98 --height 24
 ./scripts/dashboard_server.py
 ./scripts/cluster.sh plan "implement feature A"
 ./scripts/cluster.sh implement "implement feature A" --dry-run
@@ -373,6 +389,8 @@ cento audio-quick-connect "Black Diamond"
 cento audio "Black Diamond"
 cento dashboard
 cento dashboard --open
+cento industrial-pet
+cento industrial-pet --action nap
 cento jobs
 cento jobs --open
 cento idea-board
@@ -754,8 +772,11 @@ The Industrial OS preset:
 - writes managed Polybar, Rofi, and Picom files under `~/.config/cento/industrial-os/`
 - adds a guarded block to `~/.config/i3/config` so i3 reloads start the preset session
 - keeps dashboard startup on the explicit `--dashboard-only --open` path
-- binds `Mod+Shift+I` to compose workspace 1 into the Discord, hero, terminal, jobs, cluster, activity, and quick-actions layout with background images on every generated pane
+- binds `Mod+Shift+I` to compose workspace 1 into the Discord, hero, terminal, Darth Lolipopus pet, cluster, activity, and quick-actions layout with background images on every generated pane
 - supports `cento preset industrial-os --workspace --black-only` to compose the same workspace with plain black pane backgrounds
+- persists the Darth Lolipopus pet state under `${XDG_STATE_HOME:-~/.local/state}/cento/industrial-os/darth-lolipopus.json`
+- uses `assets/industrial-os/darth-lolipopus.png` as the in-pane pet portrait, matching the rofi launcher side art
+- uses `assets/industrial-os/darth-lolipopus-pane.png` for the live Industrial OS pet tile so the portrait stays bitmap-sharp instead of terminal-pixelated
 - routes `Mod+h/j/k/l` through a visual focus helper on the Industrial OS cockpit, with normal i3 focus behavior as fallback elsewhere
 - writes preset logs to `logs/industrial-os/` and workspace compose logs to `logs/industrial-workspace/`
 

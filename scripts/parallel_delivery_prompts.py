@@ -11,7 +11,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import re
 import shutil
 import sys
@@ -31,8 +30,6 @@ ROOT = Path(__file__).resolve().parents[1]
 RUNS_ROOT = ROOT / "workspace" / "runs" / "parallel-delivery"
 DEFAULT_RUN_DIR = RUNS_ROOT / "proreq-fixture"
 DEFAULT_TEMP_ROOT = ROOT / "workspace" / "runs" / "temp" / "chatgpt-pro"
-TEMP_COMMAND_DIR = ROOT / "workspace" / "runs" / "temp" / "commands"
-DEFAULT_TEMP_COMMAND_ID = "cento-dev-scale-pro-prompt"
 
 CURRENT_SCHEMA_VERSION = 1
 DEFAULT_PROMPT_COUNT = 20
@@ -240,14 +237,6 @@ def resolve_index_entry_path(run_dir: Path, value: str) -> Path:
     if root_relative.exists():
         return root_relative
     return run_relative
-
-
-def temp_command_dir() -> Path:
-    value = os.environ.get("CENTO_TEMP_COMMAND_DIR", "")
-    if value:
-        path = Path(value)
-        return path if path.is_absolute() else ROOT / path
-    return TEMP_COMMAND_DIR
 
 
 def validate_prompt_count(count: int) -> int:
@@ -968,31 +957,21 @@ def write_temp_bridge(request: PromptBundleRequest, bundle: dict[str, Any]) -> d
         text = first_prompt.read_text(encoding="utf-8")
         current.write_text(text, encoding="utf-8")
         (run_dir / "temp-current-prompt.md").write_text(text, encoding="utf-8")
-    command_dir = temp_command_dir()
-    command_dir.mkdir(parents=True, exist_ok=True)
-    temp_command = {
-        "copy_file": rel(current),
-        "description": "Default ChatGPT Pro prompt bridge for the latest Patch Swarm prompt bundle.",
-        "id": DEFAULT_TEMP_COMMAND_ID,
-        "node": "local",
-        "title": "Patch Swarm ChatGPT Pro Prompt",
-    }
-    write_json(command_dir / f"{DEFAULT_TEMP_COMMAND_ID}.json", temp_command)
     bridge = {
         "artifact_type": "temp-bridge",
         "cento_temp_command": "cento temp run",
-        "cento_temp_supported": True,
+        "cento_temp_supported": False,
         "created_at": request.fixed_timestamp or utc_now(),
         "current_prompt": rel(current),
         "notes": [
-            "Existing temp bridge supports the default copy_file entry via `cento temp run`.",
-            "The temp run --file and positional file forms are not part of the discovered temp interface.",
+            "`cento temp run` is a fixed pbcopy wrapper and does not read generated temp command JSON.",
+            "To copy this generated prompt through the temp bridge, edit `COPY_FILE` in scripts/cento_temp.sh to the current_prompt path.",
             "Prompt generation did not copy to the OS clipboard.",
         ],
         "run_id": request.run_id,
         "schema_version": CURRENT_SCHEMA_VERSION,
         "source_prompt": "prompts/prompt-0001-master.md",
-        "temp_command": rel(command_dir / f"{DEFAULT_TEMP_COMMAND_ID}.json"),
+        "temp_command": "",
         "temp_dir": rel(temp_dir),
     }
     write_json(run_dir / "temp-bridge.json", bridge)

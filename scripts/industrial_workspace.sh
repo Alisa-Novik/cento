@@ -15,6 +15,7 @@ PANEL_SCRIPT="$ROOT_DIR/scripts/industrial_panel.py"
 HERO_ART="${CENTO_INDUSTRIAL_HERO_ART:-$ROOT_DIR/assets/industrial-os/volcano-pane.png}"
 TERMINAL_ART="${CENTO_INDUSTRIAL_TERMINAL_ART:-$ROOT_DIR/assets/industrial-os/activity-pane.png}"
 JOBS_ART="${CENTO_INDUSTRIAL_JOBS_ART:-$ROOT_DIR/assets/industrial-os/jobs-pane.png}"
+PET_PANE_ART="${CENTO_INDUSTRIAL_PET_PANE_ART:-$ROOT_DIR/assets/industrial-os/darth-lolipopus-pane.png}"
 CLUSTER_ART="${CENTO_INDUSTRIAL_CLUSTER_ART:-$ROOT_DIR/assets/industrial-os/cluster-pane.png}"
 ACTIVITY_ART="${CENTO_INDUSTRIAL_ACTIVITY_ART:-$ROOT_DIR/assets/industrial-os/activity-pane.png}"
 AGENTS_ART="${CENTO_INDUSTRIAL_AGENTS_ART:-$ACTIVITY_ART}"
@@ -67,7 +68,7 @@ KITTY_TERMINAL_OPTIONS=(
 GENERATED_CLASSES=(
     "cento-industrial-hero"
     "cento-industrial-terminal"
-    "cento-industrial-jobs"
+    "cento-industrial-pet"
     "cento-industrial-cluster"
     "cento-industrial-agents"
     "cento-industrial-actions"
@@ -222,6 +223,7 @@ placeholder_names = {
     "industrial hero",
     "terminal",
     "jobs dashboard",
+    "darth lolipopus",
     "cluster status",
     "system resources",
     "activity feed",
@@ -309,6 +311,7 @@ panel_art() {
         hero) printf '%s\n' "$HERO_ART" ;;
         terminal) printf '%s\n' "$TERMINAL_ART" ;;
         jobs) printf '%s\n' "$JOBS_ART" ;;
+        pet) printf '%s\n' "$PET_PANE_ART" ;;
         cluster) printf '%s\n' "$CLUSTER_ART" ;;
         activity) printf '%s\n' "$ACTIVITY_ART" ;;
         agents) printf '%s\n' "$AGENTS_ART" ;;
@@ -369,9 +372,14 @@ launch_panel() {
         )
         append_background_options "$panel" "0.90"
         command=(env CENTO_INDUSTRIAL_HERO_BACKGROUND=1 python3 "$PANEL_SCRIPT" "$panel")
-    elif [[ "$panel" == "jobs" ]]; then
-        append_background_options "$panel" "0.92"
-        command=("$ROOT_DIR/scripts/industrial_jobs_tui.sh")
+    elif [[ "$panel" == "pet" ]]; then
+        if backgrounds_enabled && [[ -f "$PET_PANE_ART" ]]; then
+            append_background_options "$panel" "0.00"
+            command=("$ROOT_DIR/scripts/industrial_pet_tui.sh" "--portrait" "slot")
+        else
+            append_solid_background_options
+            command=("$ROOT_DIR/scripts/industrial_pet_tui.sh")
+        fi
     elif [[ "$panel" == "cluster" ]]; then
         append_background_options "$panel" "0.90"
         command=("$ROOT_DIR/scripts/industrial_cluster_tui.sh")
@@ -422,7 +430,7 @@ ensure_all_windows() {
     ensure_discord
     launch_panel "cento-industrial-hero" "industrial os" "hero"
     launch_terminal
-    launch_panel "cento-industrial-jobs" "jobs dashboard" "jobs"
+    launch_panel "cento-industrial-pet" "darth lolipopus" "pet"
     launch_panel "cento-industrial-cluster" "cluster status" "cluster"
     launch_panel "cento-industrial-agents" "agent runs" "agents"
     launch_panel "cento-industrial-actions" "mozilla vpn" "actions"
@@ -502,7 +510,7 @@ row(
 )
 row(
     [
-        "cento-industrial-jobs",
+        "cento-industrial-pet",
         "cento-industrial-cluster",
         "cento-industrial-agents",
         "cento-industrial-actions",
@@ -604,7 +612,7 @@ print(f"cento-industrial-hero\t{hero_x}\t{y}\t{hero_width}\t{top_height}")
 print(f"cento-industrial-terminal\t{terminal_x}\t{y}\t{terminal_width}\t{top_height}")
 row(
     [
-        "cento-industrial-jobs",
+        "cento-industrial-pet",
         "cento-industrial-cluster",
         "cento-industrial-agents",
         "cento-industrial-actions",

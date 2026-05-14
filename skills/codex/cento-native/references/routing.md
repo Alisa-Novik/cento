@@ -15,7 +15,7 @@ cento docs TOOL
 rg -n 'KEYWORD|TOOL_ID|subcommand|usage' data scripts docs --glob '!docs/nav.html' --glob '!workspace/**' --glob '!logs/**'
 ```
 
-If the user references "registered tools", inspect `data/tools.json`. If they reference "temp commands", use `cento temp` first, then `cluster`, `bridge`, and `batch-exec`.
+If the user references "registered tools", inspect `data/tools.json`. If they reference the temp clipboard bridge, route only to `cento temp run`. For other one-off shell work, use `cluster`, `bridge`, or `batch-exec`.
 
 ## Intent Defaults
 
@@ -38,10 +38,8 @@ When intent is ambiguous, use the lowest side-effect route and ask only if the w
 - Registered command list: `cento tools`
 - Built-in docs: `cento docs`
 - Aliases: `cento aliases`
-- Generic temp command: `cento temp add ID --title TITLE --node local|macos|linux --command-file /tmp/command.sh`
-- Show temp command: `cento temp show ID`
-- Run temp command: `cento temp run ID`
-- Remove temp command: `cento temp remove ID`
+- Temp clipboard bridge: `cento temp run`
+- Change copied Markdown: edit only `COPY_FILE` in `scripts/cento_temp.sh`
 - Mac temp command: `cento cluster exec macos -- '...'`
 - Linux temp command: `cento cluster exec linux -- '...'`
 - VM socket to Mac/Linux: `cento bridge to-mac -- '...'` or `cento bridge to-linux -- '...'`
@@ -79,4 +77,4 @@ Prefer Cento wrappers over raw SSH. Use raw SSH only when wrapper discovery show
 
 Do not assume Linux is reachable. Check `cento gather-context`, `cento cluster status`, or `cento bridge check` first.
 
-Mac and Linux registries can drift. If `cento temp ...` is unknown on one node, check the other node before concluding the tool does not exist.
+Mac and Linux registries can drift, but `cento temp` is intentionally not a cross-node command surface. If clipboard transport breaks, fix the local `pbcopy` shim instead of expanding `cento temp`.

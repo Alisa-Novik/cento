@@ -1,0 +1,546 @@
+{
+  "agent_work_request": {
+    "command": {
+      "command": [
+        "./scripts/cento.sh",
+        "agent-work",
+        "update",
+        "1000188",
+        "--note",
+        "Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260511T200002Z/decision_report.md. Actions=3 actionable=2 severity_counts={'high': 1, 'low': 1, 'medium': 1}.",
+        "--json"
+      ],
+      "command_text": "./scripts/cento.sh agent-work update 1000188 --note 'Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260511T200002Z/decision_report.md. Actions=3 actionable=2 severity_counts={'\"'\"'high'\"'\"': 1, '\"'\"'low'\"'\"': 1, '\"'\"'medium'\"'\"': 1}.' --json",
+      "duration_seconds": 0.179,
+      "exit_code": 0,
+      "json_ok": true,
+      "stderr_bytes": 0,
+      "stdout_bytes": 7473,
+      "timed_out": false
+    },
+    "issue_id": 1000188,
+    "status": "updated",
+    "story_manifest": "workspace/runs/walk-autopilot/routing-native/routing-native-20260511T200002Z/agent-work-story.json"
+  },
+  "decision_report": "workspace/runs/walk-autopilot/routing-native/routing-native-20260511T200002Z/decision_report.md",
+  "latest_dir": "workspace/runs/walk-autopilot/routing-native/latest",
+  "run_dir": "workspace/runs/walk-autopilot/routing-native/routing-native-20260511T200002Z",
+  "run_id": "routing-native-20260511T200002Z",
+  "status": "completed",
+  "summary": {
+    "action_count": 3,
+    "actionable_count": 2,
+    "severity_counts": {
+      "high": 1,
+      "low": 1,
+      "medium": 1
+    }
+  }
+}
+{
+  "agent_work_request": {
+    "command": {
+      "command": [
+        "./scripts/cento.sh",
+        "agent-work",
+        "update",
+        "1000188",
+        "--note",
+        "Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260512T000001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'high': 1, 'low': 1, 'medium': 1}.",
+        "--json"
+      ],
+      "command_text": "./scripts/cento.sh agent-work update 1000188 --note 'Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260512T000001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'\"'\"'high'\"'\"': 1, '\"'\"'low'\"'\"': 1, '\"'\"'medium'\"'\"': 1}.' --json",
+      "duration_seconds": 0.178,
+      "exit_code": 0,
+      "json_ok": true,
+      "stderr_bytes": 0,
+      "stdout_bytes": 7473,
+      "timed_out": false
+    },
+    "issue_id": 1000188,
+    "status": "updated",
+    "story_manifest": "workspace/runs/walk-autopilot/routing-native/routing-native-20260512T000001Z/agent-work-story.json"
+  },
+  "decision_report": "workspace/runs/walk-autopilot/routing-native/routing-native-20260512T000001Z/decision_report.md",
+  "latest_dir": "workspace/runs/walk-autopilot/routing-native/latest",
+  "run_dir": "workspace/runs/walk-autopilot/routing-native/routing-native-20260512T000001Z",
+  "run_id": "routing-native-20260512T000001Z",
+  "status": "completed",
+  "summary": {
+    "action_count": 3,
+    "actionable_count": 2,
+    "severity_counts": {
+      "high": 1,
+      "low": 1,
+      "medium": 1
+    }
+  }
+}
+{
+  "agent_work_request": {
+    "command": {
+      "command": [
+        "./scripts/cento.sh",
+        "agent-work",
+        "update",
+        "1000188",
+        "--note",
+        "Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260512T040001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'high': 1, 'low': 1, 'medium': 1}.",
+        "--json"
+      ],
+      "command_text": "./scripts/cento.sh agent-work update 1000188 --note 'Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260512T040001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'\"'\"'high'\"'\"': 1, '\"'\"'low'\"'\"': 1, '\"'\"'medium'\"'\"': 1}.' --json",
+      "duration_seconds": 0.154,
+      "exit_code": 0,
+      "json_ok": true,
+      "stderr_bytes": 0,
+      "stdout_bytes": 7473,
+      "timed_out": false
+    },
+    "issue_id": 1000188,
+    "status": "updated",
+    "story_manifest": "workspace/runs/walk-autopilot/routing-native/routing-native-20260512T040001Z/agent-work-story.json"
+  },
+  "decision_report": "workspace/runs/walk-autopilot/routing-native/routing-native-20260512T040001Z/decision_report.md",
+  "latest_dir": "workspace/runs/walk-autopilot/routing-native/latest",
+  "run_dir": "workspace/runs/walk-autopilot/routing-native/routing-native-20260512T040001Z",
+  "run_id": "routing-native-20260512T040001Z",
+  "status": "completed",
+  "summary": {
+    "action_count": 3,
+    "actionable_count": 2,
+    "severity_counts": {
+      "high": 1,
+      "low": 1,
+      "medium": 1
+    }
+  }
+}
+{
+  "agent_work_request": {
+    "command": {
+      "command": [
+        "./scripts/cento.sh",
+        "agent-work",
+        "update",
+        "1000188",
+        "--note",
+        "Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260512T080001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'high': 1, 'low': 1, 'medium': 1}.",
+        "--json"
+      ],
+      "command_text": "./scripts/cento.sh agent-work update 1000188 --note 'Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260512T080001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'\"'\"'high'\"'\"': 1, '\"'\"'low'\"'\"': 1, '\"'\"'medium'\"'\"': 1}.' --json",
+      "duration_seconds": 0.156,
+      "exit_code": 0,
+      "json_ok": true,
+      "stderr_bytes": 0,
+      "stdout_bytes": 7473,
+      "timed_out": false
+    },
+    "issue_id": 1000188,
+    "status": "updated",
+    "story_manifest": "workspace/runs/walk-autopilot/routing-native/routing-native-20260512T080001Z/agent-work-story.json"
+  },
+  "decision_report": "workspace/runs/walk-autopilot/routing-native/routing-native-20260512T080001Z/decision_report.md",
+  "latest_dir": "workspace/runs/walk-autopilot/routing-native/latest",
+  "run_dir": "workspace/runs/walk-autopilot/routing-native/routing-native-20260512T080001Z",
+  "run_id": "routing-native-20260512T080001Z",
+  "status": "completed",
+  "summary": {
+    "action_count": 3,
+    "actionable_count": 2,
+    "severity_counts": {
+      "high": 1,
+      "low": 1,
+      "medium": 1
+    }
+  }
+}
+{
+  "agent_work_request": {
+    "command": {
+      "command": [
+        "./scripts/cento.sh",
+        "agent-work",
+        "update",
+        "1000188",
+        "--note",
+        "Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260512T120001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'high': 1, 'low': 1, 'medium': 1}.",
+        "--json"
+      ],
+      "command_text": "./scripts/cento.sh agent-work update 1000188 --note 'Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260512T120001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'\"'\"'high'\"'\"': 1, '\"'\"'low'\"'\"': 1, '\"'\"'medium'\"'\"': 1}.' --json",
+      "duration_seconds": 0.163,
+      "exit_code": 0,
+      "json_ok": true,
+      "stderr_bytes": 0,
+      "stdout_bytes": 7473,
+      "timed_out": false
+    },
+    "issue_id": 1000188,
+    "status": "updated",
+    "story_manifest": "workspace/runs/walk-autopilot/routing-native/routing-native-20260512T120001Z/agent-work-story.json"
+  },
+  "decision_report": "workspace/runs/walk-autopilot/routing-native/routing-native-20260512T120001Z/decision_report.md",
+  "latest_dir": "workspace/runs/walk-autopilot/routing-native/latest",
+  "run_dir": "workspace/runs/walk-autopilot/routing-native/routing-native-20260512T120001Z",
+  "run_id": "routing-native-20260512T120001Z",
+  "status": "completed",
+  "summary": {
+    "action_count": 3,
+    "actionable_count": 2,
+    "severity_counts": {
+      "high": 1,
+      "low": 1,
+      "medium": 1
+    }
+  }
+}
+{
+  "agent_work_request": {
+    "command": {
+      "command": [
+        "./scripts/cento.sh",
+        "agent-work",
+        "update",
+        "1000188",
+        "--note",
+        "Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260512T160001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'high': 1, 'low': 1, 'medium': 1}.",
+        "--json"
+      ],
+      "command_text": "./scripts/cento.sh agent-work update 1000188 --note 'Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260512T160001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'\"'\"'high'\"'\"': 1, '\"'\"'low'\"'\"': 1, '\"'\"'medium'\"'\"': 1}.' --json",
+      "duration_seconds": 0.188,
+      "exit_code": 0,
+      "json_ok": true,
+      "stderr_bytes": 0,
+      "stdout_bytes": 7473,
+      "timed_out": false
+    },
+    "issue_id": 1000188,
+    "status": "updated",
+    "story_manifest": "workspace/runs/walk-autopilot/routing-native/routing-native-20260512T160001Z/agent-work-story.json"
+  },
+  "decision_report": "workspace/runs/walk-autopilot/routing-native/routing-native-20260512T160001Z/decision_report.md",
+  "latest_dir": "workspace/runs/walk-autopilot/routing-native/latest",
+  "run_dir": "workspace/runs/walk-autopilot/routing-native/routing-native-20260512T160001Z",
+  "run_id": "routing-native-20260512T160001Z",
+  "status": "completed",
+  "summary": {
+    "action_count": 3,
+    "actionable_count": 2,
+    "severity_counts": {
+      "high": 1,
+      "low": 1,
+      "medium": 1
+    }
+  }
+}
+{
+  "agent_work_request": {
+    "command": {
+      "command": [
+        "./scripts/cento.sh",
+        "agent-work",
+        "update",
+        "1000188",
+        "--note",
+        "Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260512T200001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'high': 1, 'low': 1, 'medium': 1}.",
+        "--json"
+      ],
+      "command_text": "./scripts/cento.sh agent-work update 1000188 --note 'Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260512T200001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'\"'\"'high'\"'\"': 1, '\"'\"'low'\"'\"': 1, '\"'\"'medium'\"'\"': 1}.' --json",
+      "duration_seconds": 0.172,
+      "exit_code": 0,
+      "json_ok": true,
+      "stderr_bytes": 0,
+      "stdout_bytes": 7473,
+      "timed_out": false
+    },
+    "issue_id": 1000188,
+    "status": "updated",
+    "story_manifest": "workspace/runs/walk-autopilot/routing-native/routing-native-20260512T200001Z/agent-work-story.json"
+  },
+  "decision_report": "workspace/runs/walk-autopilot/routing-native/routing-native-20260512T200001Z/decision_report.md",
+  "latest_dir": "workspace/runs/walk-autopilot/routing-native/latest",
+  "run_dir": "workspace/runs/walk-autopilot/routing-native/routing-native-20260512T200001Z",
+  "run_id": "routing-native-20260512T200001Z",
+  "status": "completed",
+  "summary": {
+    "action_count": 3,
+    "actionable_count": 2,
+    "severity_counts": {
+      "high": 1,
+      "low": 1,
+      "medium": 1
+    }
+  }
+}
+{
+  "agent_work_request": {
+    "command": {
+      "command": [
+        "./scripts/cento.sh",
+        "agent-work",
+        "update",
+        "1000188",
+        "--note",
+        "Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260513T000001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'high': 1, 'low': 1, 'medium': 1}.",
+        "--json"
+      ],
+      "command_text": "./scripts/cento.sh agent-work update 1000188 --note 'Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260513T000001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'\"'\"'high'\"'\"': 1, '\"'\"'low'\"'\"': 1, '\"'\"'medium'\"'\"': 1}.' --json",
+      "duration_seconds": 0.169,
+      "exit_code": 0,
+      "json_ok": true,
+      "stderr_bytes": 0,
+      "stdout_bytes": 7473,
+      "timed_out": false
+    },
+    "issue_id": 1000188,
+    "status": "updated",
+    "story_manifest": "workspace/runs/walk-autopilot/routing-native/routing-native-20260513T000001Z/agent-work-story.json"
+  },
+  "decision_report": "workspace/runs/walk-autopilot/routing-native/routing-native-20260513T000001Z/decision_report.md",
+  "latest_dir": "workspace/runs/walk-autopilot/routing-native/latest",
+  "run_dir": "workspace/runs/walk-autopilot/routing-native/routing-native-20260513T000001Z",
+  "run_id": "routing-native-20260513T000001Z",
+  "status": "completed",
+  "summary": {
+    "action_count": 3,
+    "actionable_count": 2,
+    "severity_counts": {
+      "high": 1,
+      "low": 1,
+      "medium": 1
+    }
+  }
+}
+{
+  "agent_work_request": {
+    "command": {
+      "command": [
+        "./scripts/cento.sh",
+        "agent-work",
+        "update",
+        "1000188",
+        "--note",
+        "Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260513T040001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'high': 1, 'low': 1, 'medium': 1}.",
+        "--json"
+      ],
+      "command_text": "./scripts/cento.sh agent-work update 1000188 --note 'Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260513T040001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'\"'\"'high'\"'\"': 1, '\"'\"'low'\"'\"': 1, '\"'\"'medium'\"'\"': 1}.' --json",
+      "duration_seconds": 0.166,
+      "exit_code": 0,
+      "json_ok": true,
+      "stderr_bytes": 0,
+      "stdout_bytes": 7473,
+      "timed_out": false
+    },
+    "issue_id": 1000188,
+    "status": "updated",
+    "story_manifest": "workspace/runs/walk-autopilot/routing-native/routing-native-20260513T040001Z/agent-work-story.json"
+  },
+  "decision_report": "workspace/runs/walk-autopilot/routing-native/routing-native-20260513T040001Z/decision_report.md",
+  "latest_dir": "workspace/runs/walk-autopilot/routing-native/latest",
+  "run_dir": "workspace/runs/walk-autopilot/routing-native/routing-native-20260513T040001Z",
+  "run_id": "routing-native-20260513T040001Z",
+  "status": "completed",
+  "summary": {
+    "action_count": 3,
+    "actionable_count": 2,
+    "severity_counts": {
+      "high": 1,
+      "low": 1,
+      "medium": 1
+    }
+  }
+}
+{
+  "agent_work_request": {
+    "command": {
+      "command": [
+        "./scripts/cento.sh",
+        "agent-work",
+        "update",
+        "1000188",
+        "--note",
+        "Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260513T080001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'high': 1, 'low': 1, 'medium': 1}.",
+        "--json"
+      ],
+      "command_text": "./scripts/cento.sh agent-work update 1000188 --note 'Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260513T080001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'\"'\"'high'\"'\"': 1, '\"'\"'low'\"'\"': 1, '\"'\"'medium'\"'\"': 1}.' --json",
+      "duration_seconds": 0.162,
+      "exit_code": 0,
+      "json_ok": true,
+      "stderr_bytes": 0,
+      "stdout_bytes": 7473,
+      "timed_out": false
+    },
+    "issue_id": 1000188,
+    "status": "updated",
+    "story_manifest": "workspace/runs/walk-autopilot/routing-native/routing-native-20260513T080001Z/agent-work-story.json"
+  },
+  "decision_report": "workspace/runs/walk-autopilot/routing-native/routing-native-20260513T080001Z/decision_report.md",
+  "latest_dir": "workspace/runs/walk-autopilot/routing-native/latest",
+  "run_dir": "workspace/runs/walk-autopilot/routing-native/routing-native-20260513T080001Z",
+  "run_id": "routing-native-20260513T080001Z",
+  "status": "completed",
+  "summary": {
+    "action_count": 3,
+    "actionable_count": 2,
+    "severity_counts": {
+      "high": 1,
+      "low": 1,
+      "medium": 1
+    }
+  }
+}
+{
+  "agent_work_request": {
+    "command": {
+      "command": [
+        "./scripts/cento.sh",
+        "agent-work",
+        "update",
+        "1000188",
+        "--note",
+        "Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260513T120001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'high': 1, 'low': 1, 'medium': 1}.",
+        "--json"
+      ],
+      "command_text": "./scripts/cento.sh agent-work update 1000188 --note 'Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260513T120001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'\"'\"'high'\"'\"': 1, '\"'\"'low'\"'\"': 1, '\"'\"'medium'\"'\"': 1}.' --json",
+      "duration_seconds": 0.174,
+      "exit_code": 0,
+      "json_ok": true,
+      "stderr_bytes": 0,
+      "stdout_bytes": 7473,
+      "timed_out": false
+    },
+    "issue_id": 1000188,
+    "status": "updated",
+    "story_manifest": "workspace/runs/walk-autopilot/routing-native/routing-native-20260513T120001Z/agent-work-story.json"
+  },
+  "decision_report": "workspace/runs/walk-autopilot/routing-native/routing-native-20260513T120001Z/decision_report.md",
+  "latest_dir": "workspace/runs/walk-autopilot/routing-native/latest",
+  "run_dir": "workspace/runs/walk-autopilot/routing-native/routing-native-20260513T120001Z",
+  "run_id": "routing-native-20260513T120001Z",
+  "status": "completed",
+  "summary": {
+    "action_count": 3,
+    "actionable_count": 2,
+    "severity_counts": {
+      "high": 1,
+      "low": 1,
+      "medium": 1
+    }
+  }
+}
+{
+  "agent_work_request": {
+    "command": {
+      "command": [
+        "./scripts/cento.sh",
+        "agent-work",
+        "update",
+        "1000188",
+        "--note",
+        "Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260513T160001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'high': 1, 'low': 1, 'medium': 1}.",
+        "--json"
+      ],
+      "command_text": "./scripts/cento.sh agent-work update 1000188 --note 'Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260513T160001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'\"'\"'high'\"'\"': 1, '\"'\"'low'\"'\"': 1, '\"'\"'medium'\"'\"': 1}.' --json",
+      "duration_seconds": 0.168,
+      "exit_code": 0,
+      "json_ok": true,
+      "stderr_bytes": 0,
+      "stdout_bytes": 7473,
+      "timed_out": false
+    },
+    "issue_id": 1000188,
+    "status": "updated",
+    "story_manifest": "workspace/runs/walk-autopilot/routing-native/routing-native-20260513T160001Z/agent-work-story.json"
+  },
+  "decision_report": "workspace/runs/walk-autopilot/routing-native/routing-native-20260513T160001Z/decision_report.md",
+  "latest_dir": "workspace/runs/walk-autopilot/routing-native/latest",
+  "run_dir": "workspace/runs/walk-autopilot/routing-native/routing-native-20260513T160001Z",
+  "run_id": "routing-native-20260513T160001Z",
+  "status": "completed",
+  "summary": {
+    "action_count": 3,
+    "actionable_count": 2,
+    "severity_counts": {
+      "high": 1,
+      "low": 1,
+      "medium": 1
+    }
+  }
+}
+{
+  "agent_work_request": {
+    "command": {
+      "command": [
+        "./scripts/cento.sh",
+        "agent-work",
+        "update",
+        "1000188",
+        "--note",
+        "Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260513T200001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'high': 1, 'low': 1, 'medium': 1}.",
+        "--json"
+      ],
+      "command_text": "./scripts/cento.sh agent-work update 1000188 --note 'Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260513T200001Z/decision_report.md. Actions=3 actionable=2 severity_counts={'\"'\"'high'\"'\"': 1, '\"'\"'low'\"'\"': 1, '\"'\"'medium'\"'\"': 1}.' --json",
+      "duration_seconds": 0.163,
+      "exit_code": 0,
+      "json_ok": true,
+      "stderr_bytes": 0,
+      "stdout_bytes": 7473,
+      "timed_out": false
+    },
+    "issue_id": 1000188,
+    "status": "updated",
+    "story_manifest": "workspace/runs/walk-autopilot/routing-native/routing-native-20260513T200001Z/agent-work-story.json"
+  },
+  "decision_report": "workspace/runs/walk-autopilot/routing-native/routing-native-20260513T200001Z/decision_report.md",
+  "latest_dir": "workspace/runs/walk-autopilot/routing-native/latest",
+  "run_dir": "workspace/runs/walk-autopilot/routing-native/routing-native-20260513T200001Z",
+  "run_id": "routing-native-20260513T200001Z",
+  "status": "completed",
+  "summary": {
+    "action_count": 3,
+    "actionable_count": 2,
+    "severity_counts": {
+      "high": 1,
+      "low": 1,
+      "medium": 1
+    }
+  }
+}
+{
+  "agent_work_request": {
+    "command": {
+      "command": [
+        "./scripts/cento.sh",
+        "agent-work",
+        "update",
+        "1000188",
+        "--note",
+        "Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260514T000001Z/decision_report.md. Actions=4 actionable=3 severity_counts={'high': 2, 'low': 1, 'medium': 1}.",
+        "--json"
+      ],
+      "command_text": "./scripts/cento.sh agent-work update 1000188 --note 'Routing nativeness loop wrote a new counts-only decision report. Report: workspace/runs/walk-autopilot/routing-native/routing-native-20260514T000001Z/decision_report.md. Actions=4 actionable=3 severity_counts={'\"'\"'high'\"'\"': 2, '\"'\"'low'\"'\"': 1, '\"'\"'medium'\"'\"': 1}.' --json",
+      "duration_seconds": 0.178,
+      "exit_code": 0,
+      "json_ok": true,
+      "stderr_bytes": 0,
+      "stdout_bytes": 7473,
+      "timed_out": false
+    },
+    "issue_id": 1000188,
+    "status": "updated",
+    "story_manifest": "workspace/runs/walk-autopilot/routing-native/routing-native-20260514T000001Z/agent-work-story.json"
+  },
+  "decision_report": "workspace/runs/walk-autopilot/routing-native/routing-native-20260514T000001Z/decision_report.md",
+  "latest_dir": "workspace/runs/walk-autopilot/routing-native/latest",
+  "run_dir": "workspace/runs/walk-autopilot/routing-native/routing-native-20260514T000001Z",
+  "run_id": "routing-native-20260514T000001Z",
+  "status": "completed",
+  "summary": {
+    "action_count": 4,
+    "actionable_count": 3,
+    "severity_counts": {
+      "high": 2,
+      "low": 1,
+      "medium": 1
+    }
+  }
+}

@@ -19,6 +19,7 @@ This is the canonical product architecture document for the Patch Swarm / Parall
 - [Patch Swarm Console Status](./parallel-delivery/patch-swarm-console.md)
 - [Patch Swarm Patch Bundle Collection and Safety Validation](./parallel-delivery/patch-bundle-validation.md)
 - [Parallel Delivery Safe Apply And Release Candidate](./parallel-delivery/release-candidate-safe-apply.md)
+- [Fixture Sickness Reuse Gate](./fixture-sickness.md)
 
 ## Product Definition
 
